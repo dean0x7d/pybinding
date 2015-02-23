@@ -1,0 +1,4 @@
+[submodule "dependencies/boost_python"]
+	path = dependencies/boost_python
+	url = https://github.com/dean0x7d/python.git
+	branch = break
