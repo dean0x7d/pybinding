@@ -1,0 +1,8 @@
+include CMakeLists.txt license.md
+recursive-include cmake *.cmake
+recursive-include include *.hpp
+recursive-include src *.cpp *.hpp
+recursive-include docs *.py
+recursive-include dependencies/boost_python CMakeLists.txt *.cmake
+recursive-include dependencies/boost_python/include *.hpp
+recursive-include dependencies/boost_python/src *.cpp
