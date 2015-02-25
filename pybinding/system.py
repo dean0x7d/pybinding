@@ -7,138 +7,153 @@ import numpy as _np
 
 
 class System(_pybinding.System):
-    plot3d = False
-
     @property
     def matrix(self) -> _SparseMatrix:
         matrix = self._matrix
         matrix.__class__ = _SparseMatrix
         return matrix
 
-    def draw_bonds(self, ax, offset=(0, 0, 0), alpha=1.0):
-        x0, y0, z0 = offset
-        x, y, z = [], [], []
+    @property
+    def positions(self):
+        return self.x, self.y, self.z
 
-        for i, j in self.matrix.indices():
-            x.extend([self.x[i] + x0, self.x[j] + x0])
-            y.extend([self.y[i] + y0, self.y[j] + y0])
-            z.extend([self.z[i] + z0, self.z[j] + z0])
+    @staticmethod
+    def _plot_hoppings(ax, positions, hoppings, width, offset=(0, 0, 0), boundary=False, **kwargs):
+        if width == 0:
+            return
 
-        if not self.plot3d:
-            # create point pairs that define the lines
-            lines = (((x1, y1), (x2, y2)) for x1, y1, x2, y2
-                     in zip(x[0::2], y[0::2], x[1::2], y[1::2]))
+        ndims = 3 if ax.name == '3d' else 2
+        offset = offset[:ndims]
+        positions = positions[:ndims]
 
-            from matplotlib.collections import LineCollection
-            ax.add_collection(LineCollection(lines, color='black', alpha=0.5*alpha, zorder=-1))
+        if not boundary:
+            # positions += offset
+            positions = tuple(map(lambda v, v0: v + v0, positions, offset))
+            # coor = x[n], y[n], z[n]
+            coor = lambda n: tuple(v[n] for v in positions)
+            lines = ((coor(i), coor(j)) for i, j in hoppings.indices())
         else:
-            # create point pairs that define the lines
-            lines = [((x1, y1, z1), (x2, y2, z2)) for x1, y1, z1, x2, y2, z2
-                     in zip(x[0::2], y[0::2], z[0::2], x[1::2], y[1::2], z[1::2])]
+            coor = lambda n: tuple(v[n] for v in positions)
+            coor_plus = lambda n: tuple(v[n] + v0 for v, v0 in zip(positions, offset))
+            coor_minus = lambda n: tuple(v[n] - v0 for v, v0 in zip(positions, offset))
 
+            from itertools import chain
+            lines = chain(
+                ((coor_plus(i), coor(j)) for i, j in hoppings.indices()),
+                ((coor(i), coor_minus(j)) for i, j in hoppings.indices())
+            )
+
+        if ndims == 2:
+            from matplotlib.collections import LineCollection
+            ax.add_collection(LineCollection(lines, lw=width, **kwargs))
+            ax.autoscale_view()
+        else:
             from mpl_toolkits.mplot3d.art3d import Line3DCollection
-            ax.add_collection3d(Line3DCollection(lines, color='black', alpha=0.5*alpha, zorder=-1))
+            had_data = ax.has_data()
+            ax.add_collection3d(Line3DCollection(list(lines), lw=width, **kwargs))
 
-    def plot(self, color=None, draw_bonds=True, shape_border='', draw_numbers=False, plot3d=False,
-             **kwargs):
+            ax.set_zmargin(0.5)
+            minmax = tuple((v.min(), v.max()) for v in positions)
+            ax.auto_scale_xyz(*minmax, had_data=had_data)
+
+    @staticmethod
+    def _plot_sites(ax, positions, sublattice, radius, offset=(0, 0, 0), **kwargs):
+        if radius == 0:
+            return
+
+        from matplotlib.patches import Circle
+        from matplotlib.collections import PatchCollection
+
+        x0, y0, z0 = offset
+        patches = (Circle((x + x0, y + y0), radius) for x, y in zip(*positions[:2]))
+        collection = PatchCollection(patches, **kwargs)
+        collection.set_array(sublattice)
+        collection.set_alpha(kwargs['alpha'])
+
+        ax.add_collection(collection)
+        ax.set_xmargin(0.01)
+        ax.set_ymargin(0.01)
+        ax.autoscale_view()
+
+    def plot(self, colors: list=None, site_radius=0.025, site_props: dict=None,
+             hopping_width=1, hopping_props: dict=None):
         """
         Parameters
         ----------
-        color : list
+        colors : list
             list of colors to use for the different sublattices
-        s : int
-            dot size
-        alpha : float
-            dot alpha transparency
-        draw_bonds : bool
-            bond lines between atom (may be slow for big systems)
-        shape_border : str
-            color of the shape outline e.g. shape_border='red'
-        draw_numbers : bool
-            for debug only
-
-        Other parameters
-        ----------------
-        kwargs : `~matplotlib.collections.Collection` properties
-            anything that matplotlib scatter takes
+        site_radius : float
+            radius [data units] of the circle prepresenting a lattice site
+        site_props : `~matplotlib.collections.Collection` properties
+            additional plot options for sites
+        hopping_width : float
+            width [figure units] of the hopping lines
+        hopping_props : `~matplotlib.collections.Collection` properties
+            additional plot options for hoppings
         """
-
-        self.plot3d = plot3d
-        if not plot3d:
-            ax = _plt.gca()
-            z = ()
-        else:
-            from mpl_toolkits.mplot3d import Axes3D
-            ax = Axes3D(_plt.gcf())
-            z = (self.z, )
+        ax = _plt.gca()
         ax.set_aspect('equal')
 
-        # draw bond lines between atoms
-        if draw_bonds:
-            self.draw_bonds(ax)
+        # position, sublattice and hopping
+        pos = self.x, self.y, self.z
+        sub = self.sublattice
+        hop = self.matrix
 
-        # set default plot arguments if needed
-        defaults = dict(c=self.sublattice, s=20, alpha=0.8, lw=0.8)
-        kwargs = dict(defaults, **kwargs)
+        # plot hopping lines between sites
+        hopping_defaults = dict(alpha=0.5, color='black', zorder=-1)
+        hopping_props = dict(hopping_defaults, **(hopping_props if hopping_props else {}))
+        self._plot_hoppings(ax, pos, hop, hopping_width, **hopping_props)
 
-        # sublattice colors
-        if color is not None:
+        # plot site positions
+        site_defaults = dict(alpha=0.85, lw=0.1)
+        site_props = dict(site_defaults, **(site_props if site_props else {}))
+        if colors:  # colormap with an integer norm to match the sublattice indices
             from matplotlib.colors import ListedColormap, BoundaryNorm
-            cmap = ListedColormap(color)
-            bounds = list(range(len(color)+1))
-            norm = BoundaryNorm(bounds, cmap.N)
+            site_props['cmap'] = ListedColormap(colors)
+            site_props['norm'] = BoundaryNorm(list(range(len(colors)+1)), len(colors))
+        self._plot_sites(ax, pos, sub, site_radius, **site_props)
 
-            kwargs['cmap'] = cmap
-            kwargs['norm'] = norm
+        # plot periodic part
+        for boundary in self.boundaries:
+            shift = boundary.shift
 
-        # plot the atom positions
-        ax.scatter(self.x, self.y, *z, **kwargs)
+            # shift the main sites and hoppings with lowered alpha
+            kwargs = dict(site_props, alpha=site_props['alpha'] * 0.5)
+            self._plot_sites(ax, pos, sub, site_radius, shift, **kwargs)
+            self._plot_sites(ax, pos, sub, site_radius, -shift, **kwargs)
 
-        # draw periodic part
-        for periodic in self.boundaries:
-            shift = periodic.shift
-            matrix = periodic.matrix
-            matrix.__class__ = _SparseMatrix
+            kwargs = dict(hopping_props, alpha=hopping_props['alpha'] * 0.5)
+            self._plot_hoppings(ax, pos, hop, hopping_width, shift, **kwargs)
+            self._plot_hoppings(ax, pos, hop, hopping_width, -shift, **kwargs)
 
-            kwargs['alpha'] = 0.4
-            ax.scatter(self.x + shift[0], self.y + shift[1], *z, **kwargs)
-            ax.scatter(self.x - shift[0], self.y - shift[1], *z, **kwargs)
-            self.draw_bonds(ax, offset=shift, alpha=0.4)
-            self.draw_bonds(ax, offset=-shift, alpha=0.4)
-
-            for i, j in matrix.indices():
-                zs = ()
-                if plot3d:
-                    zs = [self.z[i], self.z[j]],
-
-                ax.plot([self.x[i]+shift[0], self.x[j]],
-                        [self.y[i]+shift[1], self.y[j]],
-                        *zs,
-                        color='red', alpha=0.5, zorder=-1)
-                ax.plot([self.x[i], self.x[j]-shift[0]],
-                        [self.y[i], self.y[j]-shift[1]],
-                        *zs,
-                        color='red', alpha=0.5, zorder=-1)
-
-        # draw the Hamiltonian index next to each atom (for debugging)
-        if draw_numbers:
-            for i, (x, y) in enumerate(zip(self.x, self.y)):
-                ax.annotate("{}".format(i), (x, y), xycoords='data',
-                            xytext=(2, 5), textcoords='offset points',
-                            )
-
-        # draw the shape outline
-        if shape_border != '':
-            if isinstance(self.shape, _shape.Polygon):
-                # a polygon is just a collection of points
-                ax.plot(_np.append(self.shape.x, self.shape.x[0]),
-                        _np.append(self.shape.y, self.shape.y[0]),
-                        color=shape_border)
-            elif isinstance(self.shape, _shape.Circle):
-                # special handling for a circle
-                center = (self.shape.center[0], self.shape.center[1])
-                circle = _plt.Circle(center, self.shape.r, color=shape_border, fill=False)
-                ax.add_artist(circle)
+            # special color for the boundary hoppings
+            b_hop = boundary.matrix
+            b_hop.__class__ = _SparseMatrix
+            kwargs = dict(hopping_props, color='red')
+            self._plot_hoppings(ax, pos, b_hop, hopping_width, shift, boundary=True, **kwargs)
 
         _plt.xlabel("x (nm)")
         _plt.ylabel("y (nm)")
+
+    def _debug_plot(self, indices=False, shape=False):
+        # show the Hamiltonian index next to each atom (for debugging)
+        if indices:
+            for i, (x, y) in enumerate(zip(self.x, self.y)):
+                _plt.annotate(
+                    str(i), (x, y), xycoords='data', color='black',
+                    horizontalalignment='center', verticalalignment='center',
+                    bbox=dict(boxstyle="round,pad=0.2", fc='white', alpha=0.5, lw=0.5)
+                )
+
+        if shape:
+            kwargs = dict(color='black')
+            if isinstance(self.shape, _shape.Polygon):
+                # a polygon is just a collection of points
+                _plt.plot(_np.append(self.shape.x, self.shape.x[0]),
+                          _np.append(self.shape.y, self.shape.y[0]),
+                          **kwargs)
+            elif isinstance(self.shape, _pybinding.Circle):
+                # special handling for a circle
+                center = (self.shape.center[0], self.shape.center[1])
+                circle = _plt.Circle(center, self.shape.r, fill=False, **kwargs)
+                _plt.gca().add_artist(circle)
