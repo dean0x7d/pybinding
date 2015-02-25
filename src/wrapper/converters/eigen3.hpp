@@ -3,6 +3,7 @@
 #include <boost/python/implicit.hpp>
 #include <boost/python/tuple.hpp>
 #include <boost/python/borrowed.hpp>
+#include <boost/python/cast.hpp>
 namespace bp = boost::python;
 
 #define NPY_NO_DEPRECATED_API NPY_1_8_API_VERSION
@@ -61,9 +62,9 @@ struct denseuref_to_python {
 template<class EigenType>
 struct eigen3_to_numpy {
     static PyObject* convert(const EigenType& eigen_object) {
-        // number of dimensions
+        using scalar_t = typename EigenType::Scalar;
         constexpr int ndim = EigenType::IsVectorAtCompileTime ? 1 : 2;
-        
+
         npy_intp shape[ndim];
         if (ndim == 1) { // row or column vector
             shape[0] = EigenType::IsRowMajor ? eigen_object.cols() : eigen_object.rows();
@@ -73,12 +74,18 @@ struct eigen3_to_numpy {
             shape[1] = eigen_object.cols();
         }
         
-        int type = numpy_type_map<typename EigenType::Scalar>::typenum;
+        int type = numpy_type_map<scalar_t>::typenum;
         int flags = EigenType::IsRowMajor ? NPY_ARRAY_CARRAY : NPY_ARRAY_FARRAY;
 
-        // ndarray from existing data -> it does not own the data and will not delete it
-        return PyArray_New(&PyArray_Type, ndim, shape, type, nullptr,
-                           (void*)eigen_object.data(), 0, flags, nullptr);
+        // new empty ndarray of the correct type and shape
+        PyObject* array = PyArray_New(&PyArray_Type, ndim, shape, type, nullptr,
+                                      nullptr, 0, flags, nullptr);
+        std::memcpy(
+            PyArray_DATA(bp::downcast<PyArrayObject>(array)),
+            eigen_object.data(),
+            eigen_object.size() * sizeof(scalar_t)
+        );
+        return array;
     }
 
     static const PyTypeObject* get_pytype() { return &PyArray_Type; }
