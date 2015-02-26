@@ -28,7 +28,7 @@ class System(_pybinding.System):
 
         if not boundary:
             # positions += offset
-            positions = tuple(map(lambda v, v0: v + v0, positions, offset))
+            positions = tuple(v + v0 for v, v0 in zip(positions, offset))
             # coor = x[n], y[n], z[n]
             coor = lambda n: tuple(v[n] for v in positions)
             lines = ((coor(i), coor(j)) for i, j in hoppings.indices())
@@ -61,12 +61,11 @@ class System(_pybinding.System):
         if radius == 0:
             return
 
-        from matplotlib.patches import Circle
-        from matplotlib.collections import PatchCollection
+        # create array of (x, y) points
+        points = _np.column_stack(v + v0 for v, v0 in zip(positions[:2], offset[:2]))
 
-        x0, y0, z0 = offset
-        patches = (Circle((x + x0, y + y0), radius) for x, y in zip(*positions[:2]))
-        collection = PatchCollection(patches, **kwargs)
+        from pybinding.support.collections import CircleCollection
+        collection = CircleCollection(radius, offsets=points, transOffset=ax.transData, **kwargs)
         collection.set_array(sublattice)
         collection.set_alpha(kwargs['alpha'])
 
