@@ -6,6 +6,10 @@ import sys
 import os
 import platform
 
+if sys.version_info.major < 3:
+    print("Sorry, Python 3 is required")
+    sys.exit(-1)
+
 
 def inject_cmake(base_class):
     def cmake_build():
