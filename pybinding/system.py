@@ -64,15 +64,24 @@ class System(_pybinding.System):
         # create array of (x, y) points
         points = _np.column_stack(v + v0 for v, v0 in zip(positions[:2], offset[:2]))
 
-        from pybinding.support.collections import CircleCollection
-        collection = CircleCollection(radius, offsets=points, transOffset=ax.transData, **kwargs)
-        collection.set_array(sublattice)
-        collection.set_alpha(kwargs['alpha'])
+        if ax.name != '3d':
+            from pybinding.support.collections import CircleCollection
+            col = CircleCollection(radius, offsets=points, transOffset=ax.transData, **kwargs)
+            col.set_array(sublattice)
 
-        ax.add_collection(collection)
-        ax.set_xmargin(0.01)
-        ax.set_ymargin(0.01)
-        ax.autoscale_view()
+            ax.add_collection(col)
+            ax.autoscale_view()
+        else:
+            from pybinding.support.collections import Circle3DCollection
+            col = Circle3DCollection(radius/8, offsets=points, transOffset=ax.transData, **kwargs)
+            col.set_array(sublattice)
+            z = positions[2] + offset[2]
+            col.set_3d_properties(z, 'z')
+
+            had_data = ax.has_data()
+            ax.add_collection(col)
+            minmax = tuple((v.min(), v.max()) for v in positions)
+            ax.auto_scale_xyz(*minmax, had_data=had_data)
 
     def plot(self, colors: list=None, site_radius=0.025, site_props: dict=None,
              hopping_width=1, hopping_props: dict=None):
@@ -92,6 +101,8 @@ class System(_pybinding.System):
         """
         ax = _plt.gca()
         ax.set_aspect('equal')
+        ax.set_xmargin(0.01)
+        ax.set_ymargin(0.01)
 
         # position, sublattice and hopping
         pos = self.x, self.y, self.z
