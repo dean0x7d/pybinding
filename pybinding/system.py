@@ -104,6 +104,14 @@ class System(_pybinding.System):
         ax.set_xmargin(0.01)
         ax.set_ymargin(0.01)
 
+        # default color palettes
+        if not colors or colors == 'default':
+            colors = ["#377ec8", "#ff7f00", "#41ae76", "#e41a1c",
+                      "#984ea3", "#ffff00", "#a65628", "#f781bf"]
+        elif colors == 'pairs':
+            colors = ["#a6cee3", "#1f78b4", "#b2df8a", "#33a02c", "#fb9a99", "#e31a1c",
+                      "#fdbf6f", "#ff7f00", "#cab2d6", "#6a3d9a"]
+
         # position, sublattice and hopping
         pos = self.x, self.y, self.z
         sub = self.sublattice
@@ -115,12 +123,12 @@ class System(_pybinding.System):
         self._plot_hoppings(ax, pos, hop, hopping_width, **hopping_props)
 
         # plot site positions
-        site_defaults = dict(alpha=0.85, lw=0.1)
+        site_defaults = dict(alpha=0.95, lw=0.1)
         site_props = dict(site_defaults, **(site_props if site_props else {}))
-        if colors:  # colormap with an integer norm to match the sublattice indices
-            from matplotlib.colors import ListedColormap, BoundaryNorm
-            site_props['cmap'] = ListedColormap(colors)
-            site_props['norm'] = BoundaryNorm(list(range(len(colors)+1)), len(colors))
+        # colormap with an integer norm to match the sublattice indices
+        from matplotlib.colors import ListedColormap, BoundaryNorm
+        site_props['cmap'] = ListedColormap(colors)
+        site_props['norm'] = BoundaryNorm(list(range(len(colors)+1)), len(colors))
         self._plot_sites(ax, pos, sub, site_radius, **site_props)
 
         # plot periodic part
