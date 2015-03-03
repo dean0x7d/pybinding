@@ -30,7 +30,9 @@ SymmetrySpec Translational::build_for(const Foundation& foundation) const
     // add translations in the hopping directions
     for (const auto& sublattice : foundation.lattice.sublattices) {
         for (const auto& hopping : sublattice.hoppings) {
-            s.add_translation(hopping.relative_index, foundation.lattice);
+            // only take the directions which have a non-negative period length
+            Index3D direction = (length.array() >= 0).select(hopping.relative_index, 0);
+            s.add_translation(direction, foundation.lattice);
         }
     }
 
