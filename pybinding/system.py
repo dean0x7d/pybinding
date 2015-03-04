@@ -66,8 +66,9 @@ class System(_pybinding.System):
 
         if ax.name != '3d':
             from pybinding.support.collections import CircleCollection
-            col = CircleCollection(radius, offsets=points, transOffset=ax.transData, **kwargs)
-            col.set_array(sublattice)
+            idx = positions[2].argsort()  # sort points and sublattice based on z position
+            col = CircleCollection(radius, offsets=points[idx], transOffset=ax.transData, **kwargs)
+            col.set_array(sublattice[idx])
 
             ax.add_collection(col)
             ax.autoscale_view()
