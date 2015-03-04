@@ -1,5 +1,8 @@
 import _pybinding
 from scipy.sparse import csr_matrix as _csrmatrix
+from .system import System as _System
+from .hamiltonian import Hamiltonian as _Hamiltonian
+from .solver.solver_ex import SolverEx as _Solver
 
 
 class Model(_pybinding.Model):
@@ -22,32 +25,28 @@ class Model(_pybinding.Model):
         return result
 
     @property
-    def system(self):
-        from .system import System as SystemEx
+    def system(self) -> _System:
         sys = super().system
-        sys.__class__ = SystemEx
+        sys.__class__ = _System
         sys.shape = self.shape
         sys.lattice = self.lattice
         return sys
 
     @property
-    def _hamiltonian(self):
-        from .hamiltonian import Hamiltonian as HamiltonianEx
+    def _hamiltonian(self) -> _Hamiltonian:
         ham = super().hamiltonian
-        ham.__class__ = HamiltonianEx
+        ham.__class__ = _Hamiltonian
         return ham
 
     @property
     def hamiltonian(self) -> _csrmatrix:
-        from .hamiltonian import Hamiltonian as HamiltonianEx
         ham = super().hamiltonian
-        ham.__class__ = HamiltonianEx
+        ham.__class__ = _Hamiltonian
         return ham.matrix.to_scipy_csr()
 
     @property
-    def solver(self):
-        from .solver.solver_ex import SolverEx
+    def solver(self) -> _Solver:
         sol = super().solver
-        sol.__class__ = SolverEx
+        sol.__class__ = _Solver
         sol.system = self.system
         return sol
