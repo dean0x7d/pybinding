@@ -28,8 +28,6 @@ class Model(_pybinding.Model):
     def system(self) -> _System:
         sys = super().system
         sys.__class__ = _System
-        sys.shape = self.shape
-        sys.lattice = self.lattice
         return sys
 
     @property
