@@ -1,4 +1,6 @@
 import _pybinding
+import numpy as _np
+import matplotlib.pyplot as _plt
 
 
 class Polygon(_pybinding.Polygon):
@@ -10,9 +12,20 @@ class Polygon(_pybinding.Polygon):
     def vertices(self, vertices):
         x, y = zip(*vertices)
 
-        import numpy as np
-        self.x = np.array(x, dtype=np.float32)
-        self.y = np.array(y, dtype=np.float32)
+        self.x = _np.array(x, dtype=_np.float32)
+        self.y = _np.array(y, dtype=_np.float32)
+
+    def plot(self, **kwargs):
+        defaults = dict(color='black')
+        kwargs = dict(defaults, **kwargs)
+        _plt.plot(_np.append(self.x, self.x[0]), _np.append(self.y, self.y[0]), **kwargs)
+
+
+class Circle(_pybinding.Circle):
+    def plot(self, **kwargs):
+        defaults = dict(color='black')
+        kwargs = dict(defaults, **kwargs)
+        _plt.gca().add_artist(_plt.Circle(tuple(self.center), self.r, fill=False, **kwargs))
 
 
 def primitive(v1=None, v2=None, v3=None, nanometers=False):
@@ -54,4 +67,4 @@ def hexagon(side_width):
 
 
 def circle(radius, center=(0, 0, 0)):
-    return _pybinding.Circle(radius, center)
+    return Circle(radius, center)
