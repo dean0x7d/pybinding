@@ -57,6 +57,23 @@ void export_system()
     ;
     register_ptr_to_python<std::shared_ptr<const System>>();
 
+    using tbm::Hopping;
+    class_<Hopping>{"Hopping", no_init}
+    .add_property("relative_index", by_value(&Hopping::relative_index))
+    .def_readonly("to_sublattice", &Hopping::to_sublattice)
+    .def_readonly("energy", &Hopping::energy)
+    ;
+    to_python_converter<std::vector<Hopping>, vector_to_list<Hopping>>{};
+
+    using tbm::Sublattice;
+    class_<Sublattice>{"Sublattice", no_init}
+    .add_property("offset", by_value(&Sublattice::offset))
+    .def_readonly("onsite", &Sublattice::onsite)
+    .def_readonly("alias", &Sublattice::alias)
+    .add_property("hoppings", by_value(&Sublattice::hoppings))
+    ;
+    to_python_converter<std::vector<Sublattice>, vector_to_list<Sublattice>>{};
+
     using tbm::Lattice;
     class_<Lattice, noncopyable>{
         "Lattice", init<int>{args("self", "min_neighbours"_a=1)}
@@ -66,6 +83,9 @@ void export_system()
          args("self", "offset", "onsite_potential"_a=.0f, "alias"_a=-1))
     .def("add_hopping", &Lattice::add_hopping,
          args("self", "relative_index", "from_sublattice", "to_sublattice", "hopping_energy"))
+    .add_property("vectors", by_value(&Lattice::vectors))
+    .add_property("sublattices", by_value(&Lattice::sublattices))
+    .def_readwrite("min_neighbors", &Lattice::min_neighbours)
     ;
     
     using tbm::Shape;

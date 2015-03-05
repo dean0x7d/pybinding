@@ -5,7 +5,6 @@
 #include <boost/python/class.hpp>
 #include <boost/python/list.hpp>
 #include "python_support.hpp"
-#include "converters/tuple.hpp"
 using namespace boost::python;
 
 void export_results()
@@ -14,8 +13,6 @@ void export_results()
     using tbm::DOS;
     using tbm::LDOSpoint;
     using tbm::LDOSenergy;
-
-    create_vector_converter<Cartesian>();
 
     class_<Result>{"Results", no_init};
 
