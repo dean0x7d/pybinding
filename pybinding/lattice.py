@@ -7,9 +7,10 @@ class Lattice(_pybinding.Lattice):
         self.sub = dict()
         self.names = []
 
-    def set_vectors(self, *vectors):
-        for vector in vectors:
-            self.add_vector(tuple(vector))
+    def set_vectors(self, v1, v2=None, v3=None):
+        for vector in (v1, v2, v3):
+            if vector is not None:
+                self.add_vector(tuple(vector))
 
     def create_sublattice(self, offset, onsite_potential=0.0, alias=-1, name=""):
         sublattice_id = super().create_sublattice(offset, onsite_potential, alias)
