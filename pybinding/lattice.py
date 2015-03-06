@@ -52,7 +52,7 @@ class Lattice(_pybinding.Lattice):
             points += [vector, -vector]
             ax.arrow(0, 0, *vector[:2], color='black', alpha=0.8,
                      head_width=0.02, head_length=0.05, length_includes_head=True)
-            annotate_box(r"$v_{}$".format(i+1), xy=vector[:2] / 2, fontcolor='white')
+            annotate_box(r"$v_{}$".format(i+1), vector[:2] / 2, fontcolor='white', fontsize='large')
 
         # annotate the sublattices and neighboring cells
         for sublattice in self.sublattices:
@@ -60,10 +60,8 @@ class Lattice(_pybinding.Lattice):
             for hop in sublattice.hoppings:
                 if tuple(hop.relative_index[:2]) == (0, 0):
                     continue  # skip the original cell
-
                 offset = sum(r * v for r, v in zip(hop.relative_index, self.vectors))
-                for vector in self.vectors:
-                    points += [vector + offset, -vector + offset]
+                points += (0.6 * r * v + offset for r, v in zip(hop.relative_index, self.vectors))
                 annotate_box("{}, {}".format(*hop.relative_index[:2]), xy=offset[:2])
 
         x, y, _ = zip(*points)
