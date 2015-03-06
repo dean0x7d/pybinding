@@ -62,7 +62,8 @@ class Lattice(_pybinding.Lattice):
                     continue  # skip the original cell
                 offset = sum(r * v for r, v in zip(hop.relative_index, self.vectors))
                 points += (0.6 * r * v + offset for r, v in zip(hop.relative_index, self.vectors))
-                annotate_box("{}, {}".format(*hop.relative_index[:2]), xy=offset[:2])
+                annotate_box("{}, {}".format(*hop.relative_index[:2]),
+                             xy=offset[:2] * (1 if len(self.sublattices) != 1 else 1.3))
 
         x, y, _ = zip(*points)
         plt.xlim(min(x), max(x))
