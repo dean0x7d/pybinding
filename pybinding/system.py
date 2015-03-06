@@ -70,3 +70,13 @@ class System(_pybinding.System):
 
         plt.xlabel("x (nm)")
         plt.ylabel("y (nm)")
+
+        def clamp_to_min_limit(lim_func, min_limit=0.35):
+            vmin, vmax = lim_func()
+            if abs(vmax - vmin) < 2 * min_limit:
+                v = (vmax + vmin) / 2
+                vmin, vmax = v - min_limit, v + min_limit
+                lim_func(vmin, vmax)
+
+        clamp_to_min_limit(plt.xlim)
+        clamp_to_min_limit(plt.ylim)
