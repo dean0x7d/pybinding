@@ -14,7 +14,7 @@ class System(_pybinding.System):
         return self.x, self.y, self.z
 
     def plot(self, colors: list=None, site_radius=0.025, site_props: dict=None,
-             hopping_width=1, hopping_props: dict=None):
+             hopping_width=1, hopping_props: dict=None, boundary_color='red'):
         """
         Parameters
         ----------
@@ -53,19 +53,19 @@ class System(_pybinding.System):
             shift = boundary.shift
 
             # shift the main sites and hoppings with lowered alpha
-            site_props['alpha'] = 0.5
-            plot_sites(ax, pos, sub, site_radius, colors, shift, **site_props)
-            plot_sites(ax, pos, sub, site_radius, colors, -shift, **site_props)
+            kwargs = dict(site_props, alpha=0.5)
+            plot_sites(ax, pos, sub, site_radius, colors, shift, **kwargs)
+            plot_sites(ax, pos, sub, site_radius, colors, -shift, **kwargs)
 
-            hopping_props['alpha'] = 0.25
-            plot_hoppings(ax, pos, hop, hopping_width, shift, **hopping_props)
-            plot_hoppings(ax, pos, hop, hopping_width, -shift, **hopping_props)
+            kwargs = dict(hopping_props, alpha=0.25)
+            plot_hoppings(ax, pos, hop, hopping_width, shift, **kwargs)
+            plot_hoppings(ax, pos, hop, hopping_width, -shift, **kwargs)
 
             # special color for the boundary hoppings
             from pybinding.support.sparse import SparseMatrix
             b_hop = boundary.matrix
             b_hop.__class__ = SparseMatrix
-            kwargs = dict(hopping_props, color='red')
+            kwargs = dict(hopping_props, color=boundary_color)
             plot_hoppings(ax, pos, b_hop, hopping_width, shift, boundary=True, **kwargs)
 
         plt.xlabel("x (nm)")
