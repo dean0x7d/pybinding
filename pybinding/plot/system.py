@@ -2,7 +2,13 @@ import matplotlib.pyplot as _plt
 import numpy as _np
 
 
-def make_cmap_and_norm(colors=None):
+def blend_colors(color, bg, blend):
+    from matplotlib.colors import colorConverter
+    color, bg = map(lambda c: _np.array(colorConverter.to_rgb(c)), (color, bg))
+    return (1 - blend) * bg + blend * color
+
+
+def make_cmap_and_norm(colors=None, blend=1):
     # default color palettes
     if not colors or colors == 'default':
         colors = ["#377ec8", "#ff7f00", "#41ae76", "#e41a1c",
@@ -10,6 +16,9 @@ def make_cmap_and_norm(colors=None):
     elif colors == 'pairs':
         colors = ["#a6cee3", "#1f78b4", "#b2df8a", "#33a02c", "#fb9a99", "#e31a1c",
                   "#fdbf6f", "#ff7f00", "#cab2d6", "#6a3d9a"]
+
+    if blend < 1:
+        colors = [blend_colors(c, 'white', blend) for c in colors]
 
     # colormap with an integer norm to match the sublattice indices
     from matplotlib.colors import ListedColormap, BoundaryNorm
@@ -19,12 +28,14 @@ def make_cmap_and_norm(colors=None):
     return cmap, norm
 
 
-def plot_hoppings(ax, positions, hoppings, width, offset=(0, 0, 0), boundary=False, **kwargs):
+def plot_hoppings(ax, positions, hoppings, width,
+                  offset=(0, 0, 0), boundary=False, blend=0.5, **kwargs):
     if width == 0:
         return
 
-    defaults = dict(alpha=0.5, color='black', zorder=-1)
+    defaults = dict(color='black', zorder=-1)
     kwargs = dict(defaults, **kwargs)
+    kwargs['color'] = blend_colors(kwargs['color'], 'white', blend)
 
     ndims = 3 if ax.name == '3d' else 2
     offset = offset[:ndims]
@@ -61,13 +72,14 @@ def plot_hoppings(ax, positions, hoppings, width, offset=(0, 0, 0), boundary=Fal
         ax.auto_scale_xyz(*minmax, had_data=had_data)
 
 
-def plot_sites(ax, positions, sublattice, radius, colors=None, offset=(0, 0, 0), **kwargs):
+def plot_sites(ax, positions, sublattice, radius,
+               colors=None, offset=(0, 0, 0), blend=1, **kwargs):
     if radius == 0:
         return
 
     defaults = dict(alpha=0.95, lw=0.1)
     kwargs = dict(defaults, **kwargs)
-    kwargs['cmap'], kwargs['norm'] = make_cmap_and_norm(colors)
+    kwargs['cmap'], kwargs['norm'] = make_cmap_and_norm(colors, blend)
 
     # create array of (x, y) points
     points = _np.column_stack(v + v0 for v, v0 in zip(positions[:2], offset[:2]))
