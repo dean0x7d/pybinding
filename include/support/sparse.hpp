@@ -22,9 +22,9 @@ public:
     }
 
     void insert(int column, scalar_t value) {
-        auto start_idx = matrix.outerIndexPtr()[row];
+        auto start_idx = matrix.outerIndexPtr()[row-1];
         auto n = idx++;
-        while (n > start_idx && matrix.valuePtr()[n - 1] > column) {
+        while (n > start_idx && matrix.innerIndexPtr()[n - 1] > column) {
             matrix.innerIndexPtr()[n] = matrix.innerIndexPtr()[n - 1];
             matrix.valuePtr()[n] = matrix.valuePtr()[n - 1];
             --n;
