@@ -107,9 +107,23 @@ def plot_sites(ax, positions, sublattice, radius,
 
 def plot_site_indices(system):
     # show the Hamiltonian index next to each atom (for debugging)
-    for i, (x, y) in enumerate(zip(system.x, system.y)):
-        _plt.annotate(
-            str(i), (x, y), xycoords='data', color='black',
-            horizontalalignment='center', verticalalignment='center',
-            bbox=dict(boxstyle="round,pad=0.2", fc='white', alpha=0.5, lw=0.5)
-        )
+    from pybinding.plot.annotate import annotate_box
+    for i, xy in enumerate(zip(system.x, system.y)):
+        annotate_box(i, xy)
+
+
+def plot_hopping_values(system):
+    from pybinding.plot.annotate import annotate_box
+    pos = _np.array(system.positions[:2]).T
+
+    for i, j, t in system.matrix.triplets():
+        annotate_box(t, (pos[i] + pos[j]) / 2)
+
+    for boundary in system.boundaries:
+        from pybinding.support.sparse import SparseMatrix
+        hoppings = boundary.matrix
+        hoppings.__class__ = SparseMatrix
+
+        for i, j, t in hoppings.triplets():
+            annotate_box(t, (pos[i] + pos[j] + boundary.shift[:2]) / 2)
+            annotate_box(t, (pos[i] + pos[j] - boundary.shift[:2]) / 2)
