@@ -4,6 +4,23 @@ import matplotlib.pyplot as _plt
 
 
 class Polygon(_pybinding.Polygon):
+    """Shape defined by a list of vertices
+
+    Parameters
+    ----------
+    *vertices : tuple
+        Polygon vertices. Must be defined in clockwise or counterclockwise order.
+    """
+
+    def __init__(self, *vertices):
+        super().__init__()
+        if not vertices:
+            return
+
+        # vertices may be specified directly as arguments
+        # or as an iterable in the first argument
+        self.vertices = vertices if len(vertices) > 1 else vertices[0]
+
     @property
     def vertices(self):
         return zip(self.x, self.y)
@@ -11,6 +28,8 @@ class Polygon(_pybinding.Polygon):
     @vertices.setter
     def vertices(self, vertices):
         x, y = zip(*vertices)
+        if len(x) < 3:
+            raise ValueError("A polygon must have at least 3 sides")
 
         self.x = _np.array(x, dtype=_np.float32)
         self.y = _np.array(y, dtype=_np.float32)
@@ -29,8 +48,7 @@ class Circle(_pybinding.Circle):
 
 
 def primitive(v1=None, v2=None, v3=None, nanometers=False):
-    """
-    Shape of the lattice's primitive unit cell.
+    """Shape of the lattice's primitive unit cell.
 
     Parameters
     ----------
@@ -46,24 +64,16 @@ def primitive(v1=None, v2=None, v3=None, nanometers=False):
 
 
 def rectangle(x, y=None):
-    y = y if y is not None else x
+    y = y if y else x
     x0 = x / 2
     y0 = y / 2
-
-    rect = Polygon()
-    rect.vertices = (x0, y0), (x0, -y0), (-x0, -y0), (-x0, y0)
-    return rect
+    return Polygon([x0, y0], [x0, -y0], [-x0, -y0], [-x0, y0])
 
 
-def hexagon(side_width):
-    import math
-    x0 = side_width * math.sqrt(3)/2
-    y0 = side_width
-
-    h = Polygon()
-    h.vertices = (0, y0), (x0, y0/2), (x0, -y0/2), (0, -y0), (-x0, -y0/2), (-x0, y0/2)
-    h.offset = (0, 0)
-    return h
+def regular_polygon(num_sides, radius):
+    from math import pi, sin, cos
+    angles = [2 * n * pi / num_sides for n in range(num_sides)]
+    return Polygon((radius * sin(a), radius * cos(a)) for a in angles)
 
 
 def circle(radius, center=(0, 0, 0)):
