@@ -100,15 +100,15 @@ void System::build_boundaries_from(Foundation& foundation, const Symmetry& symme
         auto& boundary = boundaries.back();
 
         // preallocate data (overestimated)
-        auto initial_size = foundation.size_n;
+        auto reserve_nonzeros = foundation.size_n * foundation.lattice.max_hoppings() / 2;
         for (int n = 0; n < translation.boundary.size(); ++n) {
             if (translation.boundary[n] < 0)
-                initial_size *= foundation.size[n];
+                reserve_nonzeros *= foundation.size[n];
         }
 
         boundary.shift = translation.shift_lenght;
         boundary.matrix.resize(num_valid_sites, num_valid_sites);
-        auto boundary_matrix_view = compressed_inserter(boundary.matrix, initial_size);
+        auto boundary_matrix_view = compressed_inserter(boundary.matrix, reserve_nonzeros);
 
         // loop over all periodic boundary sites
         foundation.for_sites(translation.boundary, [&](Site site) {
