@@ -37,24 +37,17 @@ def plot_hoppings(ax, positions, hoppings, width,
     kwargs['cmap'], kwargs['norm'] = make_cmap_and_norm(hoppings.values, colors, blend)
 
     ndims = 3 if ax.name == '3d' else 2
-    offset = offset[:ndims]
-    positions = positions[:ndims]
+    offset = _np.array(offset[:ndims])
+    positions = _np.array(positions[:ndims]).T
 
     if not boundary:
-        # positions += offset
-        positions = tuple(v + v0 for v, v0 in zip(positions, offset))
-        # coor = x[n], y[n], z[n]
-        coor = lambda n: tuple(v[n] for v in positions)
-        lines = ((coor(i), coor(j)) for i, j in hoppings.indices())
+        pos = positions + offset
+        lines = ((pos[i], pos[j]) for i, j in hoppings.indices())
     else:
-        coor = lambda n: tuple(v[n] for v in positions)
-        coor_plus = lambda n: tuple(v[n] + v0 for v, v0 in zip(positions, offset))
-        coor_minus = lambda n: tuple(v[n] - v0 for v, v0 in zip(positions, offset))
-
         from itertools import chain
         lines = chain(
-            ((coor_plus(i), coor(j)) for i, j in hoppings.indices()),
-            ((coor(i), coor_minus(j)) for i, j in hoppings.indices())
+            ((positions[i] + offset, positions[j]) for i, j in hoppings.indices()),
+            ((positions[i], positions[j] - offset) for i, j in hoppings.indices())
         )
 
     if ndims == 2:
@@ -71,7 +64,7 @@ def plot_hoppings(ax, positions, hoppings, width,
         ax.add_collection3d(col)
 
         ax.set_zmargin(0.5)
-        minmax = tuple((v.min(), v.max()) for v in positions)
+        minmax = _np.vstack((positions.min(axis=0), positions.max(axis=0))).T
         ax.auto_scale_xyz(*minmax, had_data=had_data)
 
 
@@ -92,7 +85,7 @@ def plot_sites(ax, positions, sublattice, radius, offset=(0, 0, 0), blend=1, **k
     kwargs['cmap'], kwargs['norm'] = make_cmap_and_norm(sublattice, colors, blend)
 
     # create array of (x, y) points
-    points = _np.column_stack(v + v0 for v, v0 in zip(positions[:2], offset[:2]))
+    points = _np.array(positions[:2]).T + offset[:2]
 
     if ax.name != '3d':
         from pybinding.support.collections import CircleCollection
