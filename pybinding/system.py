@@ -56,8 +56,8 @@ class System(_pybinding.System):
             plot_sites(ax, pos, sub, site_radius, colors, shift, blend=0.5, **site_props)
             plot_sites(ax, pos, sub, site_radius, colors, -shift, blend=0.5, **site_props)
 
-            plot_hoppings(ax, pos, hop, hopping_width, shift, blend=0.25, **hopping_props)
-            plot_hoppings(ax, pos, hop, hopping_width, -shift, blend=0.25, **hopping_props)
+            plot_hoppings(ax, pos, hop, hopping_width, shift, blend=0.5, **hopping_props)
+            plot_hoppings(ax, pos, hop, hopping_width, -shift, blend=0.5, **hopping_props)
 
             # special color for the boundary hoppings
             from pybinding.support.sparse import SparseMatrix

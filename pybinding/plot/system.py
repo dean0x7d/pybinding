@@ -8,34 +8,33 @@ def blend_colors(color, bg, blend):
     return (1 - blend) * bg + blend * color
 
 
-def make_cmap_and_norm(colors=None, blend=1):
-    # default color palettes
-    if not colors or colors == 'default':
-        colors = ["#377ec8", "#ff7f00", "#41ae76", "#e41a1c",
-                  "#984ea3", "#ffff00", "#a65628", "#f781bf"]
-    elif colors == 'pairs':
-        colors = ["#a6cee3", "#1f78b4", "#b2df8a", "#33a02c", "#fb9a99", "#e31a1c",
-                  "#fdbf6f", "#ff7f00", "#cab2d6", "#6a3d9a"]
-
+def make_cmap_and_norm(data, colors, blend=1):
+    if not isinstance(colors, (list, tuple)):
+        colors = [colors]
     if blend < 1:
         colors = [blend_colors(c, 'white', blend) for c in colors]
 
-    # colormap with an integer norm to match the sublattice indices
+    # colormap with an boundary norm to match the unique data points
     from matplotlib.colors import ListedColormap, BoundaryNorm
     cmap = ListedColormap(colors)
-    norm = BoundaryNorm(list(range(len(colors)+1)), len(colors))
+    data = _np.unique(data)
+    norm = BoundaryNorm(list(data) + [data[-1] + 1], len(data))
 
     return cmap, norm
 
 
 def plot_hoppings(ax, positions, hoppings, width,
-                  offset=(0, 0, 0), boundary=False, blend=0.5, **kwargs):
+                  offset=(0, 0, 0), boundary=False, blend=1, **kwargs):
     if width == 0:
         return
 
-    defaults = dict(color='black', zorder=-1)
+    defaults = dict(zorder=-1)
     kwargs = dict(defaults, **kwargs)
-    kwargs['color'] = blend_colors(kwargs['color'], 'white', blend)
+
+    colors = kwargs.pop('colors', ['#777777'])
+    if colors == 'default':
+        colors = ["#666666", "#1b9e77", "#7570b3", "#e7298a", "#66a61e", "#e6ab02", "#a6761d"]
+    kwargs['cmap'], kwargs['norm'] = make_cmap_and_norm(hoppings.values, colors, blend)
 
     ndims = 3 if ax.name == '3d' else 2
     offset = offset[:ndims]
@@ -60,12 +59,16 @@ def plot_hoppings(ax, positions, hoppings, width,
 
     if ndims == 2:
         from matplotlib.collections import LineCollection
-        ax.add_collection(LineCollection(lines, lw=width, **kwargs))
+        col = LineCollection(lines, lw=width, **kwargs)
+        col.set_array(hoppings.values.copy())
+        ax.add_collection(col)
         ax.autoscale_view()
     else:
         from mpl_toolkits.mplot3d.art3d import Line3DCollection
         had_data = ax.has_data()
-        ax.add_collection3d(Line3DCollection(list(lines), lw=width, **kwargs))
+        col = Line3DCollection(list(lines), lw=width, **kwargs)
+        col.set_array(hoppings.values.copy())
+        ax.add_collection3d(col)
 
         ax.set_zmargin(0.5)
         minmax = tuple((v.min(), v.max()) for v in positions)
@@ -79,7 +82,14 @@ def plot_sites(ax, positions, sublattice, radius,
 
     defaults = dict(alpha=0.95, lw=0.1)
     kwargs = dict(defaults, **kwargs)
-    kwargs['cmap'], kwargs['norm'] = make_cmap_and_norm(colors, blend)
+
+    if not colors or colors == 'default':
+        colors = ["#377ec8", "#ff7f00", "#41ae76", "#e41a1c",
+                  "#984ea3", "#ffff00", "#a65628", "#f781bf"]
+    elif colors == 'pairs':
+        colors = ["#a6cee3", "#1f78b4", "#b2df8a", "#33a02c", "#fb9a99", "#e31a1c",
+                  "#fdbf6f", "#ff7f00", "#cab2d6", "#6a3d9a"]
+    kwargs['cmap'], kwargs['norm'] = make_cmap_and_norm(sublattice, colors, blend)
 
     # create array of (x, y) points
     points = _np.column_stack(v + v0 for v, v0 in zip(positions[:2], offset[:2]))
