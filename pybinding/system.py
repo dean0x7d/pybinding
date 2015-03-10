@@ -57,7 +57,7 @@ class System(_pybinding.System):
             from pybinding.support.sparse import SparseMatrix
             b_hop = boundary.matrix
             b_hop.__class__ = SparseMatrix
-            kwargs = dict(hopping_props, colors=boundary_color)
+            kwargs = dict(hopping_props, colors=boundary_color) if boundary_color else hopping_props
             plot_hoppings(ax, pos, b_hop, hopping_width, boundary.shift, boundary=True, **kwargs)
 
         plt.xlabel("x (nm)")

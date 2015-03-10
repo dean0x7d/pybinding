@@ -45,7 +45,7 @@ class Lattice(_pybinding.Lattice):
 
         # plot the primitive cell and it's neighbors (using a model... kind of meta)
         model = pb.Model(self, pb.symmetry.translational())
-        model.system.plot(boundary_color='#777777', **kwargs)
+        model.system.plot(boundary_color=None, **kwargs)
 
         # plot the lattice vectors
         for i, vector in enumerate(self.vectors):
