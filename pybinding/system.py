@@ -13,13 +13,11 @@ class System(_pybinding.System):
     def positions(self):
         return self.x, self.y, self.z
 
-    def plot(self, colors: list=None, site_radius=0.025, site_props: dict=None,
-             hopping_width=1, hopping_props: dict=None, boundary_color='red'):
+    def plot(self, site_radius=0.025, site_props: dict=None,
+             hopping_width=1, hopping_props: dict=None, boundary_color='#ff4444'):
         """
         Parameters
         ----------
-        colors : list
-            list of colors to use for the different sublattices
         site_radius : float
             radius [data units] of the circle prepresenting a lattice site
         site_props : `~matplotlib.collections.Collection` properties
@@ -46,25 +44,21 @@ class System(_pybinding.System):
 
         # plot main part
         plot_hoppings(ax, pos, hop, hopping_width, **hopping_props)
-        plot_sites(ax, pos, sub, site_radius, colors, **site_props)
+        plot_sites(ax, pos, sub, site_radius, **site_props)
 
         # plot periodic part
         for boundary in self.boundaries:
-            shift = boundary.shift
-
             # shift the main sites and hoppings with lowered alpha
-            plot_sites(ax, pos, sub, site_radius, colors, shift, blend=0.5, **site_props)
-            plot_sites(ax, pos, sub, site_radius, colors, -shift, blend=0.5, **site_props)
-
-            plot_hoppings(ax, pos, hop, hopping_width, shift, blend=0.5, **hopping_props)
-            plot_hoppings(ax, pos, hop, hopping_width, -shift, blend=0.5, **hopping_props)
+            for shift in [boundary.shift, -boundary.shift]:
+                plot_sites(ax, pos, sub, site_radius, shift, blend=0.5, **site_props)
+                plot_hoppings(ax, pos, hop, hopping_width, shift, blend=0.5, **hopping_props)
 
             # special color for the boundary hoppings
             from pybinding.support.sparse import SparseMatrix
             b_hop = boundary.matrix
             b_hop.__class__ = SparseMatrix
-            kwargs = dict(hopping_props, color=boundary_color)
-            plot_hoppings(ax, pos, b_hop, hopping_width, shift, boundary=True, **kwargs)
+            kwargs = dict(hopping_props, colors=boundary_color)
+            plot_hoppings(ax, pos, b_hop, hopping_width, boundary.shift, boundary=True, **kwargs)
 
         plt.xlabel("x (nm)")
         plt.ylabel("y (nm)")

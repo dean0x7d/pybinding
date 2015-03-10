@@ -75,14 +75,14 @@ def plot_hoppings(ax, positions, hoppings, width,
         ax.auto_scale_xyz(*minmax, had_data=had_data)
 
 
-def plot_sites(ax, positions, sublattice, radius,
-               colors=None, offset=(0, 0, 0), blend=1, **kwargs):
+def plot_sites(ax, positions, sublattice, radius, offset=(0, 0, 0), blend=1, **kwargs):
     if radius == 0:
         return
 
     defaults = dict(alpha=0.95, lw=0.1)
     kwargs = dict(defaults, **kwargs)
 
+    colors = kwargs.pop('colors', None)
     if not colors or colors == 'default':
         colors = ["#377ec8", "#ff7f00", "#41ae76", "#e41a1c",
                   "#984ea3", "#ffff00", "#a65628", "#f781bf"]
