@@ -17,8 +17,8 @@ def make_cmap_and_norm(data, colors, blend=1):
     # colormap with an boundary norm to match the unique data points
     from matplotlib.colors import ListedColormap, BoundaryNorm
     cmap = ListedColormap(colors)
-    data = _np.unique(data)
-    norm = BoundaryNorm(list(data) + [data[-1] + 1], len(data))
+    boundaries = _np.append(_np.unique(data), _np.inf)
+    norm = BoundaryNorm(boundaries, len(boundaries) - 1)
 
     return cmap, norm
 
