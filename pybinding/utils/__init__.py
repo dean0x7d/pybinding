@@ -52,9 +52,18 @@ def unpack_limits(args):
     elif len(args) == 2:
         x = y = args
     elif len(args) == 4:
-        x = args[:1]
+        x = args[:2]
         y = args[2:]
     else:
         raise Exception('Invalid number of arguments')
 
     return x, y
+
+
+def with_defaults(options: dict, defaults_dict: dict=None, **defaults_kwargs):
+    """ Return a dict where missing keys are filled in by defaults. """
+    options = options if options else {}
+    if defaults_dict:
+        options = dict(defaults_dict, **options)
+    options = dict(defaults_kwargs, **options)
+    return options

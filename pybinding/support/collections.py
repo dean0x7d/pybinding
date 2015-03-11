@@ -1,3 +1,4 @@
+import numpy as np
 from matplotlib.collections import PatchCollection, allow_rasterization
 
 
@@ -12,14 +13,14 @@ class CircleCollection(PatchCollection):
     def __init__(self, radius, **kwargs):
         super().__init__([], **kwargs)
         from matplotlib import path, transforms
-        self.radius = radius
+        self.radius = np.atleast_1d(radius)
         self._paths = [path.Path.unit_circle()]
         self.set_transform(transforms.IdentityTransform())
 
     def _set_transforms(self):
         from matplotlib import transforms
-        import numpy as np
-        self._transforms = np.zeros((1, 3, 3))
+
+        self._transforms = np.zeros((self.radius.size, 3, 3))
         self._transforms[:, 0, 0] = self.radius
         self._transforms[:, 1, 1] = self.radius
         self._transforms[:, 2, 2] = 1
@@ -57,7 +58,6 @@ class Circle3DCollection(CircleCollection):
             ys = []
 
         from mpl_toolkits.mplot3d.art3d import juggle_axes
-        import numpy as np
         self._offsets3d = juggle_axes(xs, ys, np.atleast_1d(zs), zdir)
         self._facecolor3d = self.get_facecolor()
         self._edgecolor3d = self.get_edgecolor()
@@ -66,7 +66,6 @@ class Circle3DCollection(CircleCollection):
         from mpl_toolkits.mplot3d import proj3d
         from mpl_toolkits.mplot3d.art3d import zalpha
         from matplotlib import colors as mcolors
-        import numpy as np
 
         # transform and sort in z direction
         v = np.array(proj3d.proj_transform_clip(*self._offsets3d, M=renderer.M)[:3])

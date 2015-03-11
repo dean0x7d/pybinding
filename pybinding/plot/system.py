@@ -1,10 +1,10 @@
-import matplotlib.pyplot as _plt
-import numpy as _np
+import numpy as np
+from pybinding.utils import with_defaults
 
 
 def blend_colors(color, bg, blend):
     from matplotlib.colors import colorConverter
-    color, bg = map(lambda c: _np.array(colorConverter.to_rgb(c)), (color, bg))
+    color, bg = map(lambda c: np.array(colorConverter.to_rgb(c)), (color, bg))
     return (1 - blend) * bg + blend * color
 
 
@@ -17,7 +17,7 @@ def make_cmap_and_norm(data, colors, blend=1):
     # colormap with an boundary norm to match the unique data points
     from matplotlib.colors import ListedColormap, BoundaryNorm
     cmap = ListedColormap(colors)
-    boundaries = _np.append(_np.unique(data), _np.inf)
+    boundaries = np.append(np.unique(data), np.inf)
     norm = BoundaryNorm(boundaries, len(boundaries) - 1)
 
     return cmap, norm
@@ -28,17 +28,16 @@ def plot_hoppings(ax, positions, hoppings, width,
     if width == 0:
         return
 
-    defaults = dict(zorder=-1)
-    kwargs = dict(defaults, **kwargs)
+    kwargs = with_defaults(kwargs, zorder=-1, colors='#666666')
 
-    colors = kwargs.pop('colors', ['#777777'])
+    colors = kwargs.pop('colors')
     if colors == 'default':
         colors = ["#666666", "#1b9e77", "#7570b3", "#e7298a", "#66a61e", "#e6ab02", "#a6761d"]
     kwargs['cmap'], kwargs['norm'] = make_cmap_and_norm(hoppings.values, colors, blend)
 
     ndims = 3 if ax.name == '3d' else 2
-    offset = _np.array(offset[:ndims])
-    positions = _np.array(positions[:ndims]).T
+    offset = np.array(offset[:ndims])
+    positions = np.array(positions[:ndims]).T
 
     if not boundary:
         pos = positions + offset
@@ -64,41 +63,49 @@ def plot_hoppings(ax, positions, hoppings, width,
         ax.add_collection3d(col)
 
         ax.set_zmargin(0.5)
-        minmax = _np.vstack((positions.min(axis=0), positions.max(axis=0))).T
+        minmax = np.vstack((positions.min(axis=0), positions.max(axis=0))).T
         ax.auto_scale_xyz(*minmax, had_data=had_data)
 
+    return col
 
-def plot_sites(ax, positions, sublattice, radius, offset=(0, 0, 0), blend=1, **kwargs):
-    if radius == 0:
+
+def plot_sites(ax, positions, data, radius, offset=(0, 0, 0), blend=1, **kwargs):
+    if np.all(radius == 0):
         return
 
-    defaults = dict(alpha=0.95, lw=0.1)
-    kwargs = dict(defaults, **kwargs)
+    kwargs = with_defaults(kwargs, alpha=0.95, lw=0.1)
 
-    colors = kwargs.pop('colors', None)
-    if not colors or colors == 'default':
-        colors = ["#377ec8", "#ff7f00", "#41ae76", "#e41a1c",
-                  "#984ea3", "#ffff00", "#a65628", "#f781bf"]
-    elif colors == 'pairs':
-        colors = ["#a6cee3", "#1f78b4", "#b2df8a", "#33a02c", "#fb9a99", "#e31a1c",
-                  "#fdbf6f", "#ff7f00", "#cab2d6", "#6a3d9a"]
-    kwargs['cmap'], kwargs['norm'] = make_cmap_and_norm(sublattice, colors, blend)
+    # create colormap from discrete colors
+    if 'cmap' not in kwargs:
+        colors = kwargs.pop('colors', None)
+        if not colors or colors == 'default':
+            colors = ["#377ec8", "#ff7f00", "#41ae76", "#e41a1c",
+                      "#984ea3", "#ffff00", "#a65628", "#f781bf"]
+        elif colors == 'pairs':
+            colors = ["#a6cee3", "#1f78b4", "#b2df8a", "#33a02c", "#fb9a99", "#e31a1c",
+                      "#fdbf6f", "#ff7f00", "#cab2d6", "#6a3d9a"]
+        kwargs['cmap'], kwargs['norm'] = make_cmap_and_norm(data, colors, blend)
 
     # create array of (x, y) points
-    points = _np.array(positions[:2]).T + offset[:2]
+    points = np.array(positions[:2]).T + offset[:2]
 
     if ax.name != '3d':
+        # sort based on z position to get proper 2D z-order
+        idx = positions[2].argsort()
+        if not np.isscalar(radius):
+            radius = radius[idx]
+        points, data = points[idx], data[idx]
+
         from pybinding.support.collections import CircleCollection
-        idx = positions[2].argsort()  # sort points and sublattice based on z position
-        col = CircleCollection(radius, offsets=points[idx], transOffset=ax.transData, **kwargs)
-        col.set_array(sublattice[idx])
+        col = CircleCollection(radius, offsets=points, transOffset=ax.transData, **kwargs)
+        col.set_array(data)
 
         ax.add_collection(col)
         ax.autoscale_view()
     else:
         from pybinding.support.collections import Circle3DCollection
         col = Circle3DCollection(radius/8, offsets=points, transOffset=ax.transData, **kwargs)
-        col.set_array(sublattice)
+        col.set_array(data)
         z = positions[2] + offset[2]
         col.set_3d_properties(z, 'z')
 
@@ -106,6 +113,8 @@ def plot_sites(ax, positions, sublattice, radius, offset=(0, 0, 0), blend=1, **k
         ax.add_collection(col)
         minmax = tuple((v.min(), v.max()) for v in positions)
         ax.auto_scale_xyz(*minmax, had_data=had_data)
+
+    return col
 
 
 def plot_site_indices(system):
@@ -117,7 +126,7 @@ def plot_site_indices(system):
 
 def plot_hopping_values(system):
     from pybinding.plot.annotate import annotate_box
-    pos = _np.array(system.positions[:2]).T
+    pos = np.array(system.positions[:2]).T
 
     for i, j, t in system.matrix.triplets():
         annotate_box(t, (pos[i] + pos[j]) / 2)
