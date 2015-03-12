@@ -1,6 +1,8 @@
 import _pybinding
 import numpy as _np
 import matplotlib.pyplot as _plt
+import pybinding.plot.utils as pltutils
+from pybinding.utils import with_defaults
 
 
 class SolverEx(_pybinding.Solver):
@@ -122,108 +124,68 @@ class SolverEx(_pybinding.Solver):
         self._plot_eigenvalues_common(degenerate_states if mark_degenerate else None, show_numbers)
         return max_index
 
-    @staticmethod
-    def reduce_degenerate_wavefunctions(energy, psi, idx, epsilon=1e-5):
-        # look for degenerate states
-        indices = _np.argwhere(_np.abs(energy[idx] - energy) < epsilon).flat
-        if len(indices) > 1:
-            print('Degenerate states: {}-{} ({})'.format(indices[0], indices[-1], len(indices)))
+    def get_degenerate_indices(self, index, epsilon=1e-5):
+        """Return a lies of degenerate energy indices (within tolerange epsilon)"""
+        return _np.argwhere(_np.abs(self.energy[index] - self.energy) < epsilon)[:, 0]
 
-        return _np.sum(abs(psi[indices, :])**2, axis=0).squeeze()
+    def get_intensity(self, indices):
+        """Return sum of wavefunction^2 at indices"""
+        return _np.sum(abs(self.psi[indices, :])**2, axis=0).squeeze()
 
-    def _draw_bonds(self, indices=None, alpha=0.5):
-        if indices is None:
-            indices = range(len(self.system.x))
-        x, y = map(lambda v: v[indices], (self.system.x, self.system.y))
-        bonds = self.system.matrix.to_scipy_csr()[indices]
+    def plot_wavefunction(self, index, reduce=1e-5, site_radius=(0.03, 0.05), hopping_width=1,
+                          hopping_props=None, cbar_props=None, **kwargs):
+        from pybinding.plot.system import plot_hoppings, plot_sites
 
-        a, b = [], []
-        for i, j in zip(*bonds.nonzero()):
-            a.extend([x[i], self.system.x[j]])
-            b.extend([y[i], self.system.y[j]])
+        ax = _plt.gca()
+        ax.set_aspect('equal', 'datalim')
+        ax.set_xlabel('x (nm)')
+        ax.set_ylabel('y (nm)')
 
-        # create point pairs that define the lines
-        lines = (((x1, y1), (x2, y2)) for x1, y1, x2, y2
-                 in zip(a[0::2], b[0::2], a[1::2], b[1::2]))
+        if reduce:
+            index = self.get_degenerate_indices(index, reduce)
+        intensity = self.get_intensity(index)
 
-        from matplotlib.collections import LineCollection
-        _plt.gca().add_collection(LineCollection(lines, color='black', alpha=0.5*alpha, zorder=-1))
+        radius = site_radius[0] + site_radius[1] * intensity / intensity.max()
+        collection = plot_sites(ax, self.system.positions, intensity, radius,
+                                **with_defaults(kwargs, cmap='YlGnBu'))
 
-    def _plot_psi(self, index, reduce_degenerate=True):
-        if reduce_degenerate:
-            p = self.reduce_degenerate_wavefunctions(self.energy, self.psi, index)
-        else:
-            p = _np.abs(self.psi[index]).astype(_np.float32)**2
+        plot_hoppings(ax, self.system.positions, self.system.matrix, hopping_width,
+                      **with_defaults(hopping_props, colors='#bbbbbb'))
 
-        _plt.gca().set_aspect('equal')
-        _plt.xlabel('x (nm)')
-        _plt.ylabel('y (nm)')
+        pltutils.colorbar(collection, **with_defaults(cbar_props, pad=0.015, aspect=28))
+        pltutils.despine(trim=True)
+        pltutils.add_margin()
 
-        return p
+        return index
 
-    def plot_psi_scatter(self, index, size=(20, 50), reduce_degenerate=True, limit_nm=None,
-                         draw_bonds=False, color=None, **kwargs):
-        x, y, sub = self.system.x, self.system.y, self.system.sublattice
-        p = self._plot_psi(index, reduce_degenerate)
+    def plot_wavefunction_mesh(self, index, reduce=1e-5, limits=None, grid=(250, 250), **kwargs):
+        ax = _plt.gca()
+        ax.set_aspect('equal')
+        ax.set_xlabel('x (nm)')
+        ax.set_ylabel('y (nm)')
 
-        if limit_nm:
-            args = (_np.abs(x) < limit_nm) & (_np.abs(y) < limit_nm)
-            x, y, p, sub = map(lambda v: v[args], (x, y, p, sub))
-        else:
-            args = range(len(x))
-
-        if draw_bonds:
-            self._draw_bonds(args)
-
-        # sort from lowest to highest
-        sort_index = _np.argsort(p)
-        x, y, p, sub = map(lambda v: v[sort_index], (x, y, p, sub))
-
-        defaults = dict(s=size[1] * p / p.max() + size[0], c=p,
-                        lw=0.1, alpha=0.9, cmap='YlGnBu')
-        if color:
-            from matplotlib.colors import ListedColormap, BoundaryNorm
-            cmap = ListedColormap(color)
-            bounds = list(range(len(color)+1))
-            norm = BoundaryNorm(bounds, cmap.N)
-
-            defaults.update(c=sub, cmap=cmap, norm=norm)
-
-        sc = _plt.scatter(x, y, **dict(defaults, **kwargs))
-        if not color:
-            cbar = _plt.colorbar(sc, pad=0.015, aspect=28)
-            cbar.formatter.set_powerlimits((0, 0))
-            cbar.update_ticks()
-        if limit_nm:
-            _plt.xlim(-limit_nm, limit_nm)
-            _plt.ylim(-limit_nm, limit_nm)
-
-    def plot_psi_map(self, index, reduce_degenerate=True, limit_nm=None, grid_points=250, **kwargs):
         x, y = self.system.x, self.system.y
-        p = self._plot_psi(index, reduce_degenerate)
+        if reduce:
+            index = self.get_degenerate_indices(index, reduce)
+        intensity = self.get_intensity(index)
 
-        if limit_nm:
-            from pybinding.utils import unpack_limits
-            xlim, ylim = unpack_limits(limit_nm)
-        else:
-            xlim = x.min(), x.max()
-            ylim = y.min(), y.max()
+        if not limits:
+            limits = x.min(), x.max(), y.min(), y.max()
+        xlim, ylim = limits[:2], limits[2:]
+        ax.set_xlim(*xlim)
+        ax.set_ylim(*ylim)
 
         from scipy.interpolate import griddata
         grid_x, grid_y = _np.meshgrid(
-            _np.linspace(*xlim, num=grid_points),
-            _np.linspace(*ylim, num=grid_points)
+            _np.linspace(*xlim, num=grid[0]),
+            _np.linspace(*ylim, num=grid[1])
         )
-        grid_z = griddata((x, y), p, (grid_x, grid_y), method='cubic')
+        grid_z = griddata((x, y), intensity, (grid_x, grid_y), method='cubic')
 
-        defaults = dict(cmap='YlGnBu')
-        sc = _plt.pcolormesh(
-            grid_x, grid_y, grid_z,
-            **dict(defaults, **kwargs)
-        )
-        cbar = _plt.colorbar(sc, pad=0.015, aspect=28)
-        cbar.formatter.set_powerlimits((0, 0))
-        cbar.update_ticks()
+        mesh = _plt.pcolormesh(grid_x, grid_y, grid_z, **with_defaults(kwargs, cmap='YlGnBu'))
+        pltutils.colorbar(mesh, pad=0.02, aspect=28)
 
-        _plt.xlim(*xlim)
-        _plt.ylim(*ylim)
+        ax.set_xticks(ax.get_xticks()[1:-1])
+        ax.set_yticks(ax.get_yticks()[1:-1])
+
+        return index
