@@ -39,6 +39,7 @@ class Lattice(_pybinding.Lattice):
     def plot(self, **kwargs):
         import pybinding as pb
         import matplotlib.pyplot as plt
+        import pybinding.plot.utils as pltutils
         from pybinding.plot.annotate import annotate_box
         ax = plt.gca()
         points = []  # for plot limit detection
@@ -61,13 +62,13 @@ class Lattice(_pybinding.Lattice):
                 if tuple(hop.relative_index[:2]) == (0, 0):
                     continue  # skip the original cell
                 offset = sum(r * v for r, v in zip(hop.relative_index, self.vectors))
-                points += (0.6 * r * v + offset for r, v in zip(hop.relative_index, self.vectors))
+                points += (0.5 * r * v + offset for r, v in zip(hop.relative_index, self.vectors))
                 annotate_box("{}, {}".format(*hop.relative_index[:2]),
                              xy=offset[:2] * (1 if len(self.sublattices) != 1 else 1.3))
 
         x, y, _ = zip(*points)
-        plt.xlim(min(x), max(x))
-        plt.ylim(min(y), max(y))
+        pltutils.set_min_range(abs(max(x) - min(x)), 'x')
+        pltutils.set_min_range(abs(max(y) - min(y)), 'y')
 
 
 def square(a=0.2, t=1):

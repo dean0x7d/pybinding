@@ -28,12 +28,13 @@ class System(_pybinding.System):
             additional plot options for hoppings
         """
         import matplotlib.pyplot as plt
+        import pybinding.plot.utils as pltutils
         from pybinding.plot.system import plot_sites, plot_hoppings
 
         ax = plt.gca()
         ax.set_aspect('equal')
-        ax.set_xmargin(0.01)
-        ax.set_ymargin(0.01)
+        ax.set_xlabel("x (nm)")
+        ax.set_ylabel("y (nm)")
 
         # position, sublattice and hopping
         pos = self.x, self.y, self.z
@@ -60,15 +61,6 @@ class System(_pybinding.System):
             kwargs = dict(hopping_props, colors=boundary_color) if boundary_color else hopping_props
             plot_hoppings(ax, pos, b_hop, hopping_width, boundary.shift, boundary=True, **kwargs)
 
-        plt.xlabel("x (nm)")
-        plt.ylabel("y (nm)")
-
-        def clamp_to_min_limit(lim_func, min_limit=0.35):
-            vmin, vmax = lim_func()
-            if abs(vmax - vmin) < 2 * min_limit:
-                v = (vmax + vmin) / 2
-                vmin, vmax = v - min_limit, v + min_limit
-                lim_func(vmin, vmax)
-
-        clamp_to_min_limit(plt.xlim)
-        clamp_to_min_limit(plt.ylim)
+        pltutils.set_min_range(0.5)
+        pltutils.despine(trim=True)
+        pltutils.add_margin()
