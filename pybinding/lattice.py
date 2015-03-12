@@ -40,7 +40,7 @@ class Lattice(_pybinding.Lattice):
         import pybinding as pb
         import matplotlib.pyplot as plt
         import pybinding.plot.utils as pltutils
-        from pybinding.plot.annotate import annotate_box
+
         ax = plt.gca()
         points = []  # for plot limit detection
 
@@ -53,18 +53,19 @@ class Lattice(_pybinding.Lattice):
             points += [vector, -vector]
             ax.arrow(0, 0, *vector[:2], color='black', alpha=0.8,
                      head_width=0.02, head_length=0.05, length_includes_head=True)
-            annotate_box(r"$v_{}$".format(i+1), vector[:2] / 2, fontcolor='white', fontsize='large')
+            pltutils.annotate_box(r"$v_{}$".format(i+1), vector[:2] / 2,
+                                  fontcolor='white', fontsize='large')
 
         # annotate the sublattices and neighboring cells
         for sublattice in self.sublattices:
-            annotate_box(self.names[sublattice.alias], xy=sublattice.offset[:2])
+            pltutils.annotate_box(self.names[sublattice.alias], xy=sublattice.offset[:2])
             for hop in sublattice.hoppings:
                 if tuple(hop.relative_index[:2]) == (0, 0):
                     continue  # skip the original cell
                 offset = sum(r * v for r, v in zip(hop.relative_index, self.vectors))
                 points += (0.5 * r * v + offset for r, v in zip(hop.relative_index, self.vectors))
-                annotate_box("{}, {}".format(*hop.relative_index[:2]),
-                             xy=offset[:2] * (1 if len(self.sublattices) != 1 else 1.3))
+                pltutils.annotate_box("{}, {}".format(*hop.relative_index[:2]),
+                                      xy=offset[:2] * (1 if len(self.sublattices) != 1 else 1.3))
 
         x, y, _ = zip(*points)
         pltutils.set_min_range(abs(max(x) - min(x)), 'x')

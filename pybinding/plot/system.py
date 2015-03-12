@@ -1,18 +1,13 @@
 import numpy as np
+import pybinding.plot.utils as pltutils
 from pybinding.utils import with_defaults
-
-
-def blend_colors(color, bg, blend):
-    from matplotlib.colors import colorConverter
-    color, bg = map(lambda c: np.array(colorConverter.to_rgb(c)), (color, bg))
-    return (1 - blend) * bg + blend * color
 
 
 def make_cmap_and_norm(data, colors, blend=1):
     if not isinstance(colors, (list, tuple)):
         colors = [colors]
     if blend < 1:
-        colors = [blend_colors(c, 'white', blend) for c in colors]
+        colors = [pltutils.blend_colors(c, 'white', blend) for c in colors]
 
     # colormap with an boundary norm to match the unique data points
     from matplotlib.colors import ListedColormap, BoundaryNorm
@@ -119,17 +114,15 @@ def plot_sites(ax, positions, data, radius, offset=(0, 0, 0), blend=1, **kwargs)
 
 def plot_site_indices(system):
     # show the Hamiltonian index next to each atom (for debugging)
-    from pybinding.plot.annotate import annotate_box
     for i, xy in enumerate(zip(system.x, system.y)):
-        annotate_box(i, xy)
+        pltutils.annotate_box(i, xy)
 
 
 def plot_hopping_values(system):
-    from pybinding.plot.annotate import annotate_box
     pos = np.array(system.positions[:2]).T
 
     for i, j, t in system.matrix.triplets():
-        annotate_box(t, (pos[i] + pos[j]) / 2)
+        pltutils.annotate_box(t, (pos[i] + pos[j]) / 2)
 
     for boundary in system.boundaries:
         from pybinding.support.sparse import SparseMatrix
@@ -137,5 +130,5 @@ def plot_hopping_values(system):
         hoppings.__class__ = SparseMatrix
 
         for i, j, t in hoppings.triplets():
-            annotate_box(t, (pos[i] + pos[j] + boundary.shift[:2]) / 2)
-            annotate_box(t, (pos[i] + pos[j] - boundary.shift[:2]) / 2)
+            pltutils.annotate_box(t, (pos[i] + pos[j] + boundary.shift[:2]) / 2)
+            pltutils.annotate_box(t, (pos[i] + pos[j] - boundary.shift[:2]) / 2)

@@ -1,4 +1,6 @@
+import numpy as np
 import matplotlib.pyplot as plt
+from pybinding.utils import with_defaults
 
 
 def _get_ax(ax=None):
@@ -48,3 +50,27 @@ def add_margin(margin=0.08, vs='xy', ax=None):
     for v in vs:
         vmin, vmax = getattr(ax, "get_{}lim".format(v))()
         set_min_range(abs(vmax - vmin) * (1 + margin), vs=v, ax=ax)
+
+
+def blend_colors(color, bg, factor):
+    """Blend color with background"""
+    from matplotlib.colors import colorConverter
+    color, bg = map(lambda c: np.array(colorConverter.to_rgb(c)), (color, bg))
+    return (1 - factor) * bg + factor * color
+
+
+def colorbar(mappable=None, cax=None, ax=None, powerlimits=(0, 0), **kwargs):
+    """Convenient colorbar function"""
+    cbar = plt.colorbar(mappable, cax, ax, **kwargs)
+    cbar.solids.set_edgecolor("face")  # remove white gaps between segments
+    if powerlimits:
+        cbar.formatter.set_powerlimits(powerlimits)
+    cbar.update_ticks()
+
+
+def annotate_box(s, xy, fontcolor='black', alpha=0.5, lw=0.3, **kwargs):
+    """Annotate with a box around the text"""
+    bbox = dict(boxstyle="round,pad=0.2", alpha=alpha, lw=lw,
+                fc='white' if fontcolor != 'white' else 'black')
+    plt.annotate(s, xy, **with_defaults(kwargs, color=fontcolor, bbox=bbox,
+                                        horizontalalignment='center', verticalalignment='center'))
