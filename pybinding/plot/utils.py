@@ -1,4 +1,5 @@
 import numpy as np
+import matplotlib as mpl
 import matplotlib.pyplot as plt
 from pybinding.utils import with_defaults
 
@@ -68,9 +69,53 @@ def colorbar(mappable=None, cax=None, ax=None, powerlimits=(0, 0), **kwargs):
     cbar.update_ticks()
 
 
-def annotate_box(s, xy, fontcolor='black', alpha=0.5, lw=0.3, **kwargs):
+def annotate_box(s, xy, fontcolor='black', alpha=0.5, lw=0.3, pad=0.2, **kwargs):
     """Annotate with a box around the text"""
-    bbox = dict(boxstyle="round,pad=0.2", alpha=alpha, lw=lw,
+    bbox = dict(boxstyle="round,pad={}".format(pad), alpha=alpha, lw=lw,
                 fc='white' if fontcolor != 'white' else 'black')
     plt.annotate(s, xy, **with_defaults(kwargs, color=fontcolor, bbox=bbox,
                                         horizontalalignment='center', verticalalignment='center'))
+
+
+def cm2inch(*values):
+    """ Convert from centimeter to inch """
+    return tuple(v / 2.54 for v in values)
+
+
+def legend(*args, reverse=False, facecolor='0.98', lw=0, **kwargs):
+    if not reverse:
+        ret = plt.legend(*args, **kwargs)
+    else:
+        h, l = plt.gca().get_legend_handles_labels()
+        ret = plt.legend(h[::-1], l[::-1], *args, **kwargs)
+
+    frame = ret.get_frame()
+    frame.set_facecolor(facecolor)
+    frame.set_linewidth(lw)
+    return ret
+
+
+def get_palette(name=None, num_colors=8, start=0):
+    if not name:
+        return mpl.rcParams["axes.color_cycle"]
+
+    brewer = dict(Set1=9, Set2=8, Set3=12, Pastel1=9, Pastel2=8, Accent=8, Dark2=8, Paired=12)
+    if name in brewer:
+        total = brewer[name]
+        take = min(num_colors, total)
+        bins = np.linspace(0, 1, total)[:take]
+    else:
+        bins = np.linspace(0, 1, num_colors + 2)[1:-1]
+
+    cmap = plt.get_cmap(name)
+    palette = cmap(bins)[:, :3]
+
+    from itertools import cycle, islice
+    palette = list(islice(cycle(palette), start, start + num_colors))
+    return palette
+
+
+def set_palette(name=None, num_colors=8, start=0):
+    palette = get_palette(name, num_colors, start)
+    mpl.rcParams["axes.color_cycle"] = list(palette)
+    mpl.rcParams["patch.facecolor"] = palette[0]

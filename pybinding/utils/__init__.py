@@ -24,11 +24,6 @@ def toc(msg=""):
     print(msg + time_str)
 
 
-def cm2inch(value):
-    """ Convert from centimeter to inch """
-    return value / 2.54
-
-
 def pairwise(iterable):
     """s -> (s0,s1), (s1,s2), (s2, s3), ..."""
     import itertools
