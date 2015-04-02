@@ -1,17 +1,18 @@
-from collections import defaultdict as _defaultdict
-import numpy as _np
-import matplotlib.pyplot as _plt
+from collections import defaultdict
+import numpy as np
+import matplotlib.pyplot as plt
+from ..utils import with_defaults
+from ..plot import utils as pltutils
 
 
 class Data3D():
-    def __init__(self, file_name=None, title='', description='',
-                 labels=_defaultdict(str)):
+    def __init__(self, file_name=None, title='', description='', labels=defaultdict(str)):
         self.file_name = file_name
         self.title = title
         self.description = description
         self.labels = labels
         self.fields = ['x', 'y', 'z', 'title', 'description', 'labels']
-        self.x, self.y, self.z = (_np.array([]),) * 3  # just so IDEs know these are ndarrays
+        self.x, self.y, self.z = (np.array([]),) * 3  # just so IDEs know these are ndarrays
         self.load()
 
     def copy(self) -> 'Data3D':
@@ -28,8 +29,8 @@ class Data3D():
         return {k: v.strip('$\\') for k, v in self.labels.items()}
 
     def expand_xy(self):
-        x = _np.repeat(self.x, self.y.size).reshape((self.x.size, self.y.size))
-        y = _np.tile(self.y, self.x.size).reshape((self.x.size, self.y.size))
+        x = np.repeat(self.x, self.y.size).reshape((self.x.size, self.y.size))
+        y = np.tile(self.y, self.x.size).reshape((self.x.size, self.y.size))
         return x, y
 
     def crop(self, x=None, y=None):
@@ -42,12 +43,12 @@ class Data3D():
 
         self.x, x_index = cut(self.x, x)
         self.y, y_index = cut(self.y, y)
-        self.z = self.z[_np.ix_(x_index, y_index)]
+        self.z = self.z[np.ix_(x_index, y_index)]
 
     def mirror(self, axis='x'):
         if axis == 'x':
-            self.x = _np.hstack((-self.x[::-1], self.x[1:]))
-            self.z = _np.vstack((self.z[::-1], self.z[1:]))
+            self.x = np.hstack((-self.x[::-1], self.x[1:]))
+            self.z = np.vstack((self.z[::-1], self.z[1:]))
         elif axis == 'y':
             raise Exception('Not implemented yet')
 
@@ -63,12 +64,12 @@ class Data3D():
 
         if size_x != self.x.size and size_x != -1:
             interp_x = interp1d(self.x, self.z, axis=0, kind=kind)
-            self.x = _np.linspace(self.x.min(), self.x.max(), size_x, dtype=_np.float32)
+            self.x = np.linspace(self.x.min(), self.x.max(), size_x, dtype=np.float32)
             self.z = interp_x(self.x)
 
         if size_y != self.y.size and size_y != -1:
             interp_y = interp1d(self.y, self.z, kind=kind)
-            self.y = _np.linspace(self.y.min(), self.y.max(), size_y, dtype=_np.float32)
+            self.y = np.linspace(self.y.min(), self.y.max(), size_y, dtype=np.float32)
             self.z = interp_y(self.y)
 
     def get(self):
@@ -81,11 +82,14 @@ class Data3D():
         x, y = self.expand_xy()
         return x.flatten(), y.flatten(), self.z.flatten()
 
-    def slice_x(self, x):
-        idx = _np.abs(self.x - x).argmin()
-        x_point = self.x[idx]
-        z_slice = self.z[idx, :]
-        return x_point, self.y, z_slice
+    def slice(self, x=None, y=None):
+        """Get a 1D slice of z closest to the given point on the x or y axis (never both)"""
+        if x is not None:
+            idx = np.abs(self.x - x).argmin()
+            return self.z[idx, :], self.x[idx]
+        elif y is not None:
+            idx = np.abs(self.y - y).argmin()
+            return self.z[:, idx], self.y[idx]
 
     def save(self, file_name=None):
         if not file_name:
@@ -94,14 +98,14 @@ class Data3D():
             return
 
         kwargs = {name: self.__dict__[name] for name in self.fields}
-        _np.savez_compressed(file_name, **kwargs)
+        np.savez_compressed(file_name, **kwargs)
 
     def load(self, file_name=None):
         if not file_name:
             file_name = self.file_name
         if not file_name:
             return
-        data = _np.load(file_name)
+        data = np.load(file_name)
 
         # load all fields from file: self.<name> = data[<name>]
         for name in self.fields:
@@ -112,45 +116,40 @@ class Data3D():
         import ast
         self.labels = ast.literal_eval(str(self.labels))
 
-    def plot(self, cmap='rainbow', log_norm=False, z_limits=None):
-        from matplotlib.colors import LogNorm
+    def plot(self, cbar_props=None, **kwargs):
+        plt.gca().get_xaxis().tick_bottom()
+        plt.gca().get_yaxis().tick_left()
 
-        lw = 0.6
-        _plt.gca().tick_params(width=0.5)
-        _plt.gca().get_xaxis().tick_bottom()
-        _plt.gca().get_yaxis().tick_left()
-        for axis in ['top', 'bottom', 'left', 'right']:
-            _plt.gca().spines[axis].set_linewidth(lw)
+        mesh = plt.pcolormesh(*self.get_for_plot(), **with_defaults(kwargs, cmap='RdYlBu_r'))
+        plt.xlim(self.x.min(), self.x.max())
+        plt.ylim(self.y.min(), self.y.max())
 
-        mesh = _plt.pcolormesh(
-            *self.get_for_plot(),
-            cmap=cmap,
-            norm=LogNorm() if log_norm else None
-        )
-        _plt.xlim(self.x.min(), self.x.max())
-        _plt.ylim(self.y.min(), self.y.max())
-        if z_limits:
-            mesh.set_clim(*z_limits)
-        cbar = _plt.colorbar(aspect=35, pad=0.015)
-        cbar.outline.set_linewidth(lw)  # only works after set_clim()
-        cbar.ax.set_xlabel(self.labels['z'])
-        cbar.ax.xaxis.set_label_position('top')
+        if cbar_props is not False:
+            cbar = plt.colorbar(**with_defaults(cbar_props, pad=0.015, aspect=30))
+            cbar.ax.set_xlabel(self.labels['z'])
+            cbar.ax.xaxis.set_label_position('top')
 
-        _plt.title(self.title)
-        _plt.xlabel(self.labels['x'])
-        _plt.ylabel(self.labels['y'])
+        plt.title(self.title)
+        plt.xlabel(self.labels['x'])
+        plt.ylabel(self.labels['y'])
 
-    def plot_slice_x(self, x, **kwargs):
-        x_point, y, z_slice = self.slice_x(x)
-        _plt.plot(y, z_slice, **kwargs)
+        return mesh
 
-        x_split = self.labels['x'].split(' ', 1)
-        x_label = x_split[0]
-        x_unit = '' if len(x_split) == 1 else x_split[1].strip('()')
-        _plt.title('{}, {} = {:.2g} {}'.format(self.title, x_label, x_point, x_unit))
+    def plot_slice(self, x=None, y=None, **kwargs):
+        z, value = self.slice(x, y)
 
-        _plt.xlabel(self.labels['y'])
-        _plt.ylabel(self.labels['z'])
-        _plt.xlim(y.min(), y.max())
+        v = 'x' if x is not None else 'y'
+        v_array = getattr(self, v)
+        plt.plot(v_array, z, **kwargs)
 
-        return x_point
+        split = self.labels[v].split(' ', 1)
+        label = split[0]
+        unit = '' if len(split) == 1 else split[1].strip('()')
+        plt.title('{}, {} = {:.2g} {}'.format(self.title, label, value, unit))
+
+        plt.xlim(v_array.min(), v_array.max())
+        plt.xlabel(self.labels[v])
+        plt.ylabel(self.labels['z'])
+        pltutils.despine()
+
+        return value
