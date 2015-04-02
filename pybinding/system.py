@@ -39,7 +39,7 @@ class System(_pybinding.System):
         # position, sublattice and hopping
         pos = self.x, self.y, self.z
         sub = self.sublattice
-        hop = self.matrix
+        hop = self.matrix.tocoo()
         site_props = site_props if site_props else {}
         hopping_props = hopping_props if hopping_props else {}
 
@@ -56,8 +56,9 @@ class System(_pybinding.System):
 
             # special color for the boundary hoppings
             from pybinding.support.sparse import SparseMatrix
-            b_hop = boundary.matrix
-            b_hop.__class__ = SparseMatrix
+            matrix = boundary.matrix
+            matrix.__class__ = SparseMatrix
+            b_hop = matrix.tocoo()
             kwargs = dict(hopping_props, colors=boundary_color) if boundary_color else hopping_props
             plot_hoppings(ax, pos, b_hop, hopping_width, boundary.shift, boundary=True, **kwargs)
 

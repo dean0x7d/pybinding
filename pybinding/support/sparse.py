@@ -14,9 +14,12 @@ class SparseMatrix(_pybinding.SparseURef):
     def nnz(self):
         return self.values.size
 
-    def to_scipy_csr(self):
+    def tocsr(self):
         from scipy.sparse import csr_matrix
         return csr_matrix(self.data_pack, shape=self.shape, copy=False)
+
+    def tocoo(self):
+        return self.tocsr().tocoo()
 
     def indices(self):
         for i, (start, end) in enumerate(zip(self.outer_starts[:-1], self.outer_starts[1:])):

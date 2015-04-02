@@ -28,7 +28,7 @@ def plot_hoppings(ax, positions, hoppings, width,
     colors = kwargs.pop('colors')
     if colors == 'default':
         colors = ["#666666", "#1b9e77", "#7570b3", "#e7298a", "#66a61e", "#e6ab02", "#a6761d"]
-    kwargs['cmap'], kwargs['norm'] = make_cmap_and_norm(hoppings.values, colors, blend)
+    kwargs['cmap'], kwargs['norm'] = make_cmap_and_norm(hoppings.data, colors, blend)
 
     ndims = 3 if ax.name == '3d' else 2
     offset = np.array(offset[:ndims])
@@ -36,25 +36,25 @@ def plot_hoppings(ax, positions, hoppings, width,
 
     if not boundary:
         pos = positions + offset
-        lines = ((pos[i], pos[j]) for i, j in hoppings.indices())
+        lines = ((pos[i], pos[j]) for i, j in zip(hoppings.row, hoppings.col))
     else:
         from itertools import chain
         lines = chain(
-            ((positions[i] + offset, positions[j]) for i, j in hoppings.indices()),
-            ((positions[i], positions[j] - offset) for i, j in hoppings.indices())
+            ((positions[i] + offset, positions[j]) for i, j in zip(hoppings.row, hoppings.col)),
+            ((positions[i], positions[j] - offset) for i, j in zip(hoppings.row, hoppings.col))
         )
 
     if ndims == 2:
         from matplotlib.collections import LineCollection
         col = LineCollection(lines, lw=width, **kwargs)
-        col.set_array(hoppings.values.copy())
+        col.set_array(hoppings.data)
         ax.add_collection(col)
         ax.autoscale_view()
     else:
         from mpl_toolkits.mplot3d.art3d import Line3DCollection
         had_data = ax.has_data()
         col = Line3DCollection(list(lines), lw=width, **kwargs)
-        col.set_array(hoppings.values.copy())
+        col.set_array(hoppings.data)
         ax.add_collection3d(col)
 
         ax.set_zmargin(0.5)

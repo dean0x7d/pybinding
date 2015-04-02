@@ -103,7 +103,7 @@ class Solver(_pybinding.Solver):
         return max_index
 
     def plot_wavefunction(self, index, reduce=1e-5, site_radius=(0.03, 0.05), hopping_width=1,
-                          hopping_props=None, cbar_props=None, **kwargs):
+                          hopping_props=None, cbar_props=None, limits=None, **kwargs):
         from pybinding.plot.system import plot_hoppings, plot_sites
 
         ax = plt.gca()
@@ -115,11 +115,19 @@ class Solver(_pybinding.Solver):
             index = self.get_degenerate_indices(self.energy, index, reduce)
         intensity = self.get_intensity(index)
 
+        x, y, z = self.system.positions
+        hoppings = self.system.matrix.tocsr()
+        if limits:
+            xlim, ylim = limits[:2], limits[2:]
+            idx = (x > xlim[0]) & (x < xlim[1]) & (y > ylim[0]) & (y < ylim[1])
+            x, y, z, intensity = (v[idx] for v in (x, y, z, intensity))
+            hoppings = hoppings[idx][:, idx]
+
         radius = site_radius[0] + site_radius[1] * intensity / intensity.max()
-        collection = plot_sites(ax, self.system.positions, intensity, radius,
+        collection = plot_sites(ax, (x, y, z), intensity, radius,
                                 **with_defaults(kwargs, cmap='YlGnBu'))
 
-        plot_hoppings(ax, self.system.positions, self.system.matrix, hopping_width,
+        plot_hoppings(ax, (x, y, z), hoppings.tocoo(), hopping_width,
                       **with_defaults(hopping_props, colors='#bbbbbb'))
 
         pltutils.colorbar(collection, **with_defaults(cbar_props, pad=0.015, aspect=28))

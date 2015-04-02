@@ -40,7 +40,7 @@ class Model(_pybinding.Model):
     def hamiltonian(self) -> csr_matrix:
         ham = super().hamiltonian
         ham.__class__ = Hamiltonian
-        return ham.matrix.to_scipy_csr()
+        return ham.matrix.tocsr()
 
     @property
     def solver(self) -> Solver:
