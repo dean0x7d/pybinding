@@ -35,7 +35,7 @@ public:
 
     void compress() {
         // close outerIndexPtr
-        start_row(matrix.rows() + 1);
+        start_row(matrix.outerSize());
         // trim valuePtr and innerIndexPtr
         matrix.resizeNonZeros(idx);
     }
