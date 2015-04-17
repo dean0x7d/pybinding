@@ -69,12 +69,20 @@ def colorbar(mappable=None, cax=None, ax=None, powerlimits=(0, 0), **kwargs):
     cbar.update_ticks()
 
 
-def annotate_box(s, xy, fontcolor='black', alpha=0.5, lw=0.3, pad=0.2, **kwargs):
+def annotate_box(s, xy, fontcolor='black', **kwargs):
     """Annotate with a box around the text"""
-    bbox = dict(boxstyle="round,pad={}".format(pad), alpha=alpha, lw=lw,
-                fc='white' if fontcolor != 'white' else 'black')
-    plt.annotate(s, xy, **with_defaults(kwargs, color=fontcolor, bbox=bbox,
-                                        horizontalalignment='center', verticalalignment='center'))
+    kwargs['bbox'] = with_defaults(
+        kwargs.get('bbox', {}),
+        boxstyle="round,pad=0.2", alpha=0.5, lw=0.3, fc='white' if fontcolor != 'white' else 'black'
+    )
+
+    if all(key in kwargs for key in ['arrowprops', 'xytext']):
+        kwargs['arrowprops'] = with_defaults(
+            kwargs['arrowprops'], dict(arrowstyle="->", color=fontcolor)
+        )
+
+    plt.annotate(s, xy, **with_defaults(kwargs, color=fontcolor, horizontalalignment='center',
+                                        verticalalignment='center'))
 
 
 def cm2inch(*values):
