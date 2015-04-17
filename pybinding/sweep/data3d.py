@@ -138,11 +138,11 @@ class Data3D():
     def plot_slice(self, x=None, y=None, **kwargs):
         z, value = self.slice(x, y)
 
-        v = 'x' if x is not None else 'y'
+        v = 'y' if x is not None else 'x'
         v_array = getattr(self, v)
         plt.plot(v_array, z, **kwargs)
 
-        split = self.labels[v].split(' ', 1)
+        split = self.labels['x' if x is not None else 'y'].split(' ', 1)
         label = split[0]
         unit = '' if len(split) == 1 else split[1].strip('()')
         plt.title('{}, {} = {:.2g} {}'.format(self.title, label, value, unit))
