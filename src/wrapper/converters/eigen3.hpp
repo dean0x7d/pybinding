@@ -131,8 +131,7 @@ struct numpy_to_eigen3 {
         if (!ndarray)
             is_convertible = false;
         
-        if (is_convertible && ndim == 2)
-        { // additional check for matrices
+        if (is_convertible) {
             if (EigenType::IsRowMajor && !PyArray_IS_C_CONTIGUOUS(ndarray))
                 is_convertible = false; // row major only accepts C-style array
             if (!EigenType::IsRowMajor && !PyArray_IS_F_CONTIGUOUS(ndarray))
