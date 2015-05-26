@@ -1,67 +1,66 @@
 import _pybinding
-import matplotlib.pyplot as _plt
+from .plot import utils as pltutils
+from .utils import with_defaults
+import matplotlib.pyplot as plt
+import numpy as np
 
 
 class LDOSpoint(_pybinding.LDOSpoint):
     def plot(self, **kwargs):
-        _plt.plot(self.energy, self.ldos, **kwargs)
-        _plt.xlim(self.energy.min(), self.energy.max())
-        _plt.ylabel('LDOS')
-        _plt.xlabel('E (eV)')
+        plt.plot(self.energy, self.ldos, **kwargs)
+        plt.xlim(self.energy.min(), self.energy.max())
+        plt.ylabel('LDOS')
+        plt.xlabel('E (eV)')
+        pltutils.despine()
 
 
 class DOS(_pybinding.DOS):
     def plot(self, **kwargs):
-        _plt.plot(self.energy, self.dos, **kwargs)
-        _plt.xlim(self.energy.min(), self.energy.max())
-        _plt.ylabel('DOS')
-        _plt.xlabel('E (eV)')
+        plt.plot(self.energy, self.dos, **kwargs)
+        plt.xlim(self.energy.min(), self.energy.max())
+        plt.ylabel('DOS')
+        plt.xlabel('E (eV)')
+        pltutils.despine()
 
 
 class LDOSenergy(_pybinding.LDOSenergy):
-    def plot(self, limit_nm=None, grid_points=250, **kwargs):
+    def plot(self, limits=None, grid=(250, 250), **kwargs):
+        ax = plt.gca()
+        ax.set_aspect('equal')
+        ax.set_xlabel('x (nm)')
+        ax.set_ylabel('y (nm)')
+
         x, y = self.system.x, self.system.y
 
-        if limit_nm:
-            from pybinding.utils import unpack_limits
-            xlim, ylim = unpack_limits(limit_nm)
-        else:
-            xlim = x.min(), x.max()
-            ylim = y.min(), y.max()
+        if not limits:
+            limits = x.min(), x.max(), y.min(), y.max()
+        xlim, ylim = limits[:2], limits[2:]
+        ax.set_xlim(*xlim)
+        ax.set_ylim(*ylim)
 
-        import numpy as _np
-        grid_x, grid_y = _np.meshgrid(
-            _np.linspace(*xlim, num=grid_points),
-            _np.linspace(*ylim, num=grid_points)
-        )
         from scipy.interpolate import griddata
+        grid_x, grid_y = np.meshgrid(
+            np.linspace(*xlim, num=grid[0]),
+            np.linspace(*ylim, num=grid[1])
+        )
         grid_z = griddata((x, y), self.ldos, (grid_x, grid_y), method='cubic')
 
-        defaults = dict(cmap='YlGnBu')
-        sc = _plt.pcolormesh(
-            grid_x, grid_y, grid_z,
-            **dict(defaults, **kwargs)
-        )
-        cbar = _plt.colorbar(sc, pad=0.015, aspect=28)
-        cbar.formatter.set_powerlimits((0, 0))
-        cbar.update_ticks()
+        mesh = plt.pcolormesh(grid_x, grid_y, grid_z, **with_defaults(kwargs, cmap='YlGnBu'))
+        pltutils.colorbar(mesh, pad=0.02, aspect=28)
 
-        _plt.xlim(*xlim)
-        _plt.ylim(*ylim)
-        _plt.gca().set_aspect('equal')
-        _plt.xlabel('x (nm)')
-        _plt.ylabel('y (nm)')
+        ax.set_xticks(ax.get_xticks()[1:-1])
+        ax.set_yticks(ax.get_yticks()[1:-1])
 
 
-def ldos_point(model, energy: 'ndarray', broadening: float, position: tuple, sublattice=-1):
+def ldos_point(model, energy: np.ndarray, broadening: float, position: tuple, sublattice=-1):
     return model.calculate(LDOSpoint(energy, broadening, position, sublattice))
 
 
-def dos(model, energy: 'ndarray', broadening: float):
-    return model.calculate(model, DOS(energy, broadening))
+def dos(model, energy: np.ndarray, broadening: float):
+    return model.calculate(DOS(energy, broadening))
 
 
 def ldos_energy(model, energy: float, broadening: float, sublattice=-1):
-    res = model.calculate(model, LDOSenergy(energy, broadening, sublattice))
+    res = model.calculate(LDOSenergy(energy, broadening, sublattice))
     res.system = model.system
     return res
