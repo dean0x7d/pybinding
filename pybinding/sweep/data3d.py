@@ -5,7 +5,7 @@ from ..utils import with_defaults
 from ..plot import utils as pltutils
 
 
-class Data3D():
+class Data3D:
     def __init__(self, file_name=None, title='', description='', labels=defaultdict(str)):
         self.file_name = file_name
         self.title = title
@@ -72,6 +72,20 @@ class Data3D():
             self.y = np.linspace(self.y.min(), self.y.max(), size_y, dtype=np.float32)
             self.z = interp_y(self.y)
 
+    def convolve_gaussian(self, sigma, extend=10):
+        def convolve(x, z0):
+            gaussian = np.exp(-0.5 * ((x - x[x.size / 2]) / sigma)**2)
+            gaussian /= gaussian.sum()
+
+            z = np.concatenate((z0[extend::-1], z0, z0[:-extend:-1]))
+            z = np.convolve(z, gaussian, 'same')
+
+            z = z[extend:-extend]
+            return z
+
+        for i in range(self.y.size):
+            self.z[:, i] = convolve(self.x, self.z[:, i])
+
     def get(self):
         return self.x, self.y, self.z
 
@@ -115,6 +129,12 @@ class Data3D():
         # labels are stored as repr() of dict(), so to get the value
         import ast
         self.labels = ast.literal_eval(str(self.labels))
+
+    def export_text(self, file_name):
+        with open(file_name, 'w') as file:
+            file.write('# {x:12}{y:13}{z:13}\n'.format(**self.labels))
+            for x, y, z in zip(*self.get_flat()):
+                file.write(("{:13.5e}"*3 + '\n').format(x, y, z))
 
     def plot(self, cbar_props=None, **kwargs):
         plt.gca().get_xaxis().tick_bottom()
