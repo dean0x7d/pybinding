@@ -4,7 +4,6 @@
 #include <boost/python/class.hpp>
 #include <boost/python/pure_virtual.hpp>
 #include <boost/python/tuple.hpp>
-#include <boost/python/register_ptr_to_python.hpp>
 #include "python_support.hpp"
 using namespace boost::python;
 
@@ -58,11 +57,10 @@ void export_modifiers()
 {
     using tbm::Hamiltonian;
 
-    class_<Hamiltonian, std::shared_ptr<Hamiltonian>, noncopyable>{"Hamiltonian", no_init}
+    class_<Hamiltonian, noncopyable>{"Hamiltonian", no_init}
     .add_property("_matrix", &Hamiltonian::matrix_union)
     .def_readonly("report", &Hamiltonian::report)
     ;
-    register_ptr_to_python<std::shared_ptr<const Hamiltonian>>();
 
     class_<PyOnsite, noncopyable>{"OnsiteModifier"}
     .def("is_complex", &PyOnsite::is_complex)

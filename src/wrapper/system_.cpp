@@ -5,10 +5,9 @@
 #include "system/SystemModifiers.hpp"
 
 #include <boost/python/class.hpp>
-#include <boost/python/register_ptr_to_python.hpp>
+#include <boost/python/tuple.hpp>
 #include <boost/python/pure_virtual.hpp>
 #include "python_support.hpp"
-#include "converters/tuple.hpp"
 using namespace boost::python;
 
 
@@ -41,9 +40,8 @@ void export_system()
     .add_property("shift", make_getter(&System::Boundary::shift, rbv))
     .add_property("matrix", &System::Boundary::matrix_uref)
     ;
-    to_python_converter<std::vector<System::Boundary>, vector_to_list<System::Boundary>>{};
 
-    class_<System, std::shared_ptr<System>>{"System", no_init}
+    class_<System>{"System", no_init}
     .def("find_nearest", &System::find_nearest, args("self", "position", "sublattice"_a=-1),
          "Find the index of the atom closest to the given coordiantes.")
     .add_property("num_sites", &System::num_sites)
@@ -55,7 +53,6 @@ void export_system()
     .add_property("_matrix", &System::matrix_uref)
     .def_readonly("report", &System::report)
     ;
-    register_ptr_to_python<std::shared_ptr<const System>>();
 
     using tbm::Hopping;
     class_<Hopping>{"Hopping", no_init}
@@ -63,7 +60,6 @@ void export_system()
     .def_readonly("to_sublattice", &Hopping::to_sublattice)
     .def_readonly("energy", &Hopping::energy)
     ;
-    to_python_converter<std::vector<Hopping>, vector_to_list<Hopping>>{};
 
     using tbm::Sublattice;
     class_<Sublattice>{"Sublattice", no_init}
@@ -72,7 +68,6 @@ void export_system()
     .def_readonly("alias", &Sublattice::alias)
     .add_property("hoppings", by_value(&Sublattice::hoppings))
     ;
-    to_python_converter<std::vector<Sublattice>, vector_to_list<Sublattice>>{};
 
     using tbm::Lattice;
     class_<Lattice, noncopyable>{

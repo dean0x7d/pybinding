@@ -8,7 +8,7 @@ void export_solver()
     using tbm::Solver;
     using tbm::SolverFactory;
 
-    class_<Solver, std::shared_ptr<Solver>, noncopyable> {
+    class_<Solver, noncopyable> {
         "Solver", "Abstract base solver", no_init
     }
     .def("solve", &Solver::solve, arg("self"))

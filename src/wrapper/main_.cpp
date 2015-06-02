@@ -2,8 +2,6 @@
 #include <boost/python/module.hpp>
 #include <boost/python/def.hpp>
 #include <boost/python/class.hpp>
-#include <boost/python/docstring_options.hpp>
-#include "converters/tuple.hpp"
 #include "converters/eigen3.hpp"
 #include "python_support.hpp"
 using namespace boost::python;
@@ -28,7 +26,6 @@ BOOST_PYTHON_MODULE(_pybinding)
     eigen3_numpy_register_type<ArrayX<bool>>();
     eigen3_numpy_register_type<Cartesian>();
     eigen3_numpy_register_type<Index3D>();
-    create_vector_converter<Cartesian>();
     to_python_converter<DenseURef, denseuref_to_python, true>{};
 
     // sparse matrix class
@@ -39,12 +36,6 @@ BOOST_PYTHON_MODULE(_pybinding)
     .add_property("outer_starts", by_value(&SparseURef::outer_starts))
     .add_property("values", by_value(&SparseURef::values))
     ;
-    
-    // tuple converters
-    create_tuple_converter<float, float, int>();
-    
-    // turn on docstrings with C++ signature
-    docstring_options local_docstring_options(true, true, false);
     
     // export all classes
     export_core();
