@@ -6,7 +6,6 @@
 
 #include <boost/python/class.hpp>
 #include <boost/python/tuple.hpp>
-#include <boost/python/register_ptr_to_python.hpp>
 #include <boost/python/pure_virtual.hpp>
 #include "python_support.hpp"
 using namespace boost::python;
@@ -42,7 +41,7 @@ void export_system()
     .add_property("matrix", &System::Boundary::matrix_uref)
     ;
 
-    class_<System, std::shared_ptr<System>>{"System", no_init}
+    class_<System>{"System", no_init}
     .def("find_nearest", &System::find_nearest, args("self", "position", "sublattice"_a=-1),
          "Find the index of the atom closest to the given coordiantes.")
     .add_property("num_sites", &System::num_sites)
@@ -54,7 +53,6 @@ void export_system()
     .add_property("_matrix", &System::matrix_uref)
     .def_readonly("report", &System::report)
     ;
-    register_ptr_to_python<std::shared_ptr<const System>>();
 
     using tbm::Hopping;
     class_<Hopping>{"Hopping", no_init}
