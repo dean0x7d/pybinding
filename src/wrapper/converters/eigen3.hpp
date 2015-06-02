@@ -113,7 +113,9 @@ struct construct_eigen<EigenType, 2> {
 template<class EigenType>
 struct numpy_to_eigen3 {
     numpy_to_eigen3() {
-        bp::converter::registry::push_back(&convertible, &construct, bp::type_id<EigenType>());
+        bp::converter::registry::insert_rvalue_converter(
+            &convertible, &construct, bp::type_id<EigenType>(), &PyArray_Type
+        );
     }
     
     static void* convertible(PyObject* obj_ptr) {
@@ -171,7 +173,9 @@ struct numpy_to_eigen3 {
 template<class EigenType, bool is_vector>
 struct tuple_to_eigen3 {
     tuple_to_eigen3() {
-        bp::converter::registry::push_back(&convertible, &construct, bp::type_id<EigenType>());
+        bp::converter::registry::insert_rvalue_converter(
+            &convertible, &construct, bp::type_id<EigenType>(), &PyArray_Type
+        );
     }
     
     static void* convertible(PyObject* obj_ptr) {
