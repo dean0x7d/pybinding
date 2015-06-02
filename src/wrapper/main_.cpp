@@ -2,7 +2,6 @@
 #include <boost/python/module.hpp>
 #include <boost/python/def.hpp>
 #include <boost/python/class.hpp>
-#include <boost/python/docstring_options.hpp>
 #include "converters/tuple.hpp"
 #include "converters/eigen3.hpp"
 #include "python_support.hpp"
@@ -42,9 +41,6 @@ BOOST_PYTHON_MODULE(_pybinding)
     
     // tuple converters
     create_tuple_converter<float, float, int>();
-    
-    // turn on docstrings with C++ signature
-    docstring_options local_docstring_options(true, true, false);
     
     // export all classes
     export_core();
