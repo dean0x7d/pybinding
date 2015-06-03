@@ -4,24 +4,32 @@
 
 namespace tbm {
 
+struct KPMConfig {
+    float lambda = 4.0; ///< controls the accuracy of the kernel polynomial method
+    float min_energy = 0.0; ///< lowest eigenvalue of the Hamiltonian
+    float max_energy = 0.0; ///< highest eigenvalue of the Hamiltonian
+
+    bool use_reordering = true; ///< Hamiltonian reordering optimization
+    float lanczos_precision = 0.002; ///< how precise should the min/max energy estimation be
+    float scaling_tolerance = 0.01; ///< the eigenvalue bounds are not precise
+};
+
 /**
  Kernel polynomial method for calculating Green's function.
  */
 template<typename scalar_t>
-class KPM : public GreensT<scalar_t> {
+class KPMStrategy : public GreensStrategyT<scalar_t> {
     using real_t = num::get_real_t<scalar_t>;
     using complex_t = num::get_complex_t<scalar_t>;
     using SparseMatrix = SparseMatrixX<scalar_t>;
     
-protected: // a factory must be used to create this
-    KPM(real_t lambda, real_t min_energy, real_t max_energy);
-    friend class KPMFactory;
-    
+public:
+    explicit KPMStrategy(const KPMConfig& config) : config(config) {}
+
 protected: // required implementation
     virtual void hamiltonian_changed() override;
-    virtual ArrayX<std::complex<float>> v_calculate(int i, int j, ArrayX<float> energy,
-                                                   float broadening) override;
-    virtual std::string v_report(bool shortform) const override;
+    virtual ArrayXcf calculate(int i, int j, ArrayXd energy, float broadening) override;
+    virtual std::string report(bool shortform) const override;
     
 private:
     /// @return (a, b) scaling parameters calculated from min_energy and max_energy
@@ -46,14 +54,8 @@ private:
                                               const ArrayX<scalar_t>& moments);
 
 private:
+    KPMConfig config;
     SparseMatrix h2_matrix; ///< scaled Hamiltonian matrix
-
-    // input parameters
-    const real_t lambda; ///< controls the accuracy of the kernel polynomial method
-    real_t min_energy, max_energy; ///< extreme eigenvalues of the Hamiltonian
-    bool use_reordering; ///< should the Hamiltonian reordering optimization be used
-    real_t lanczos_precision; ///< how precise should the min/max energy estimation be
-    real_t scaling_tolerance; ///< allow some tolerance because the energy bounds are not precise
 
     // work variables
     int num_moments; ///< number of moments to use for the Green's function calculation
@@ -64,52 +66,52 @@ private:
     Chrono lanczos_timer, reordering_timer, moments_timer, greens_timer;
 
 protected: // declare used inherited members (template class requirement)
-    using GreensT<scalar_t>::hamiltonian;
+    using GreensStrategyT<scalar_t>::hamiltonian;
 };
 
-
 /**
- Concrete GreensFactory for creating KPM objects.
+ Concrete Greens for creating KPM objects.
  */
-class KPMFactory : public GreensFactory {
-public:
-    struct defaults {
-        static constexpr double lambda = 4.0;
-        static constexpr double min_energy = 0.0;
-        static constexpr double max_energy = 0.0;
-        
-        static constexpr bool use_reordering = true;
-        static constexpr double lanczos_precision = 0.002; // percent
-        static constexpr double scaling_tolerance = 0.01;
-    };
+class KPM : public Greens {
+public: // construction and configuration
+    static constexpr auto defaults = KPMConfig{};
 
-    KPMFactory(double lambda = defaults::lambda,
-               double energy_min = defaults::min_energy,
-               double energy_max = defaults::max_energy)
-        : lambda{lambda}, energy_min{energy_min}, energy_max{energy_max}
-    {}
+    KPM(const std::shared_ptr<const Model>& model,
+        float lambda = defaults.lambda,
+        std::pair<float, float> energy_range = {defaults.min_energy, defaults.max_energy})
+    {
+        if (energy_range.first > energy_range.second)
+            throw std::invalid_argument{"KPM: Invalid energy range specified (min > max)."};
+        if (lambda <= 0)
+            throw std::invalid_argument{"KPM: Lambda must be positive."};
 
-    // required implementation
-    virtual std::unique_ptr<Greens>
-        create_for(const std::shared_ptr<const Hamiltonian>& h) const override;
-    
+        set_model(model);
+
+        config.lambda = lambda;
+        config.min_energy = energy_range.first;
+        config.max_energy = energy_range.second;
+    }
+
     /// Set the advanced options of KPM
-    void advanced(bool use_reordering = defaults::use_reordering,
-                  double lanczos_precision = defaults::lanczos_precision,
-                  double scaling_tolerance = defaults::scaling_tolerance);
+    void advanced(bool use_reordering = defaults.use_reordering,
+                  float lanczos_precision = defaults.lanczos_precision,
+                  float scaling_tolerance = defaults.scaling_tolerance)
+    {
+        config.use_reordering = use_reordering;
+        config.lanczos_precision = lanczos_precision;
+        config.scaling_tolerance = scaling_tolerance;
+    }
 
-private: // create template
-    template<typename scalar_t>
-    std::unique_ptr<Greens>
-        try_create_for(const std::shared_ptr<const Hamiltonian>& hamiltonian) const;
+public: // calculation
+    ArrayXcf calc_greens(int i, int j, ArrayXd energy, float broadening);
+    ArrayXf calc_ldos(ArrayXd energy, float broadening, Cartesian position, int sublattice = -1);
 
-private: // factory variables
-    double lambda;
-    double energy_min, energy_max;
-    
-    bool use_reordering = defaults::use_reordering;
-    double lanczos_precision = defaults::lanczos_precision;
-    double scaling_tolerance = defaults::scaling_tolerance;
+protected: // required implementation
+    virtual std::unique_ptr<GreensStrategy>
+        create_strategy_for(const std::shared_ptr<const Hamiltonian>&) const override;
+
+private:
+    KPMConfig config = defaults;
 };
     
 } // namespace tbm

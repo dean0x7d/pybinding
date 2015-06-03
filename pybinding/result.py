@@ -5,7 +5,11 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 
-class LDOSpoint(_pybinding.LDOSpoint):
+class LDOSpoint:
+    def __init__(self, energy, ldos):
+        self.energy = energy
+        self.ldos = ldos
+
     def plot(self, **kwargs):
         plt.plot(self.energy, self.ldos, **kwargs)
         plt.xlim(self.energy.min(), self.energy.max())
@@ -50,10 +54,6 @@ class LDOSenergy(_pybinding.LDOSenergy):
 
         ax.set_xticks(ax.get_xticks()[1:-1])
         ax.set_yticks(ax.get_yticks()[1:-1])
-
-
-def ldos_point(model, energy: np.ndarray, broadening: float, position: tuple, sublattice=-1):
-    return model.calculate(LDOSpoint(energy, broadening, position, sublattice))
 
 
 def dos(model, energy: np.ndarray, broadening: float):

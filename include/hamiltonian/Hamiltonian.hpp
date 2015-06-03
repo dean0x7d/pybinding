@@ -19,6 +19,8 @@ public:
 
     virtual SparseURef matrix_union() const = 0;
     virtual int non_zeros() const = 0;
+    virtual int rows() const = 0;
+    virtual int cols() const = 0;
 
     std::string report;
 };
@@ -40,6 +42,8 @@ public:
 
     virtual SparseURef matrix_union() const override { return matrix; }
     virtual int non_zeros() const override { return matrix.nonZeros(); }
+    virtual int rows() const override { return matrix.rows(); }
+    virtual int cols() const override { return matrix.cols(); }
 
 private: // build the Hamiltonian
     void build_main(const System& s, const HamiltonianModifiers& m);

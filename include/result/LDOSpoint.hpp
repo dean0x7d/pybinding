@@ -12,7 +12,6 @@ public:
               short sublattice = -1, std::vector<Cartesian> k_path = {});
 
     virtual void visit(const Solver* solver) override;
-    virtual void visit(Greens* greens) override;
 
 public:
     const ArrayX<float>& get_ldos() const { return ldos; }
@@ -20,8 +19,7 @@ public:
 
 protected:
     ArrayX<float> calc_ldos(const Solver* solver);
-    ArrayX<float> calc_ldos(Greens* greens);
-    
+
 protected:
     ArrayX<float> energy;
     ArrayX<float> ldos;

@@ -5,7 +5,7 @@ namespace tbm {
 
 class System;
 class Solver;
-class Greens;
+class GreensStrategy;
 class Model;
 
 /**
@@ -14,7 +14,7 @@ class Model;
 class Result {
 public:
     virtual void visit(const Solver*) {}
-    virtual void visit(Greens*) {}
+    virtual void visit(GreensStrategy*) {}
 
     std::shared_ptr<const System> system;
     Model* model;

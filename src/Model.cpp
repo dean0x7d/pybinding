@@ -1,4 +1,5 @@
 #include "Model.hpp"
+#include "hamiltonian/Hamiltonian.hpp"
 using namespace tbm;
 
 void Model::set_lattice(const std::shared_ptr<Lattice>& new_lattice)
@@ -50,14 +51,6 @@ void Model::set_solver(const std::shared_ptr<SolverFactory>& new_solver_factory)
     }
 }
 
-void Model::set_greens(const std::shared_ptr<GreensFactory>& new_greens_factory)
-{
-    if (greens_factory != new_greens_factory) {
-        greens_factory = new_greens_factory;
-        _greens.reset();
-    }
-}
-
 void Model::add_site_state_modifier(const std::shared_ptr<SiteStateModifier>& m)
 {
     if (system_modifiers.add_unique(m)) {
@@ -86,8 +79,7 @@ void Model::add_hopping_modifier(const std::shared_ptr<HoppingModifier>& m)
         _hamiltonian.reset();
 }
 
-std::shared_ptr<const System> Model::system()
-{
+std::shared_ptr<const System> Model::system() const {
     if (!_system) {
         // check for all the required parameters
         if (!_lattice)
@@ -101,8 +93,7 @@ std::shared_ptr<const System> Model::system()
     return _system;
 }
 
-std::shared_ptr<const Hamiltonian> Model::hamiltonian()
-{
+std::shared_ptr<const Hamiltonian> Model::hamiltonian() const {
     if (!_hamiltonian) {
         // create a new Hamiltonian of suitable type
         if (hamiltonian_modifiers.any_complex() || _symmetry)
@@ -114,8 +105,7 @@ std::shared_ptr<const Hamiltonian> Model::hamiltonian()
     return _hamiltonian;
 }
 
-std::shared_ptr<Solver> Model::solver()
-{
+std::shared_ptr<Solver> Model::solver() const {
     if (!solver_factory)
         throw std::logic_error{"The eigensolver was not defined."};
     
@@ -134,25 +124,6 @@ std::shared_ptr<Solver> Model::solver()
     return _solver;
 }
 
-std::shared_ptr<Greens> Model::greens()
-{
-    if (!greens_factory)
-        throw std::logic_error{"The Green's functions was not defined."};
-    
-    if (_greens) {
-        // try to assign a new Hamiltonian to the existing solver
-        bool success = _greens->set_hamiltonian(hamiltonian());
-        if (!success) // fails if the they have incompatible scalar types
-            _greens.reset();
-    }
-    
-    // the factory creates a greens object with a scalar type suited to the Hamiltonian
-    if (!_greens)
-        _greens = greens_factory->create_for(hamiltonian());
-    
-    return _greens;
-}
-
 std::string Model::build_report()
 {
     // this could be a single line, but GCC 4.8 produces a runtime error otherwise
@@ -167,9 +138,7 @@ std::string Model::compute_report(bool shortform)
     
     if (solver_factory)
         report += solver()->report(shortform);
-    if (greens_factory)
-        report += greens()->report(shortform);
-    
+
     return report;
 }
 
@@ -180,6 +149,4 @@ void Model::calculate(Result& result)
 
     if (solver_factory)
         solver()->accept(result);
-    if (greens_factory)
-        greens()->accept(result);
 }

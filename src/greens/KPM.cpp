@@ -1,4 +1,5 @@
 #include "greens/KPM.hpp"
+#include "Model.hpp"
 #include "hamiltonian/Hamiltonian.hpp"
 using namespace tbm;
 
@@ -9,34 +10,21 @@ using namespace tbm;
 
 
 template<typename scalar_t>
-KPM<scalar_t>::KPM(real_t lambda, real_t min_energy, real_t max_energy)
-    : lambda{lambda}, min_energy{min_energy}, max_energy{max_energy},
-      use_reordering{KPMFactory::defaults::use_reordering},
-      lanczos_precision{KPMFactory::defaults::lanczos_precision},
-      scaling_tolerance{KPMFactory::defaults::scaling_tolerance}
+auto KPMStrategy<scalar_t>::scaling_params() const -> std::tuple<real_t, real_t>
 {
-    if (min_energy > max_energy)
-        throw std::invalid_argument{"(KPM) Invalid energy range specified (min > max)."};
-    if (lambda <= 0)
-        throw std::invalid_argument{"(KPM) Lambda must be positive."};
-}
-
-template<typename scalar_t>
-auto KPM<scalar_t>::scaling_params() const -> std::tuple<real_t, real_t>
-{
-    real_t a = (max_energy - min_energy) / 2;
-    real_t b = (max_energy + min_energy) / 2;
-    a *= 1 + scaling_tolerance;
+    real_t a = (config.max_energy - config.min_energy) / 2;
+    real_t b = (config.max_energy + config.min_energy) / 2;
+    a *= 1 + config.scaling_tolerance;
 
     // Round to zero if b is very small in order to make the the sparse matrix smaller
-    if (std::abs(b / a) < 0.01 * scaling_tolerance)
+    if (std::abs(b / a) < 0.01 * config.scaling_tolerance)
         b = 0;
 
     return std::make_tuple(a, b);
 }
 
 template<typename scalar_t>
-void KPM<scalar_t>::scale_hamiltonian()
+void KPMStrategy<scalar_t>::scale_hamiltonian()
 {
     const auto& h_matrix = hamiltonian->get_matrix();
     real_t a, b; std::tie(a, b) = scaling_params();
@@ -58,7 +46,7 @@ void KPM<scalar_t>::scale_hamiltonian()
 }
 
 template<typename scalar_t>
-int KPM<scalar_t>::scale_and_reorder_hamiltonian(int target_index, int translate_index)
+int KPMStrategy<scalar_t>::scale_and_reorder_hamiltonian(int target_index, int translate_index)
 {
     // The original *unscaled* Hamiltonian
     const auto& h_matrix = hamiltonian->get_matrix();
@@ -141,19 +129,20 @@ int KPM<scalar_t>::scale_and_reorder_hamiltonian(int target_index, int translate
 };
 
 template<typename scalar_t>
-ArrayXcf KPM<scalar_t>::v_calculate(int i, int j, ArrayXf energy, float broadening)
-{
-    if (min_energy == max_energy) {
+ArrayXcf KPMStrategy<scalar_t>::calculate(int i, int j, ArrayXd energy_, float broadening) {
+    ArrayX<real_t> energy = energy_.cast<real_t>();
+
+    if (config.min_energy == config.max_energy) {
         lanczos_timer.tic();
         // Determine energy bounds with a quick Lanczos procedure
-        std::tie(min_energy, max_energy, lanczos_loops) =
-            compute::minmax_eigenvalues(hamiltonian->get_matrix(), lanczos_precision);
+        std::tie(config.min_energy, config.max_energy, lanczos_loops) =
+            compute::minmax_eigenvalues(hamiltonian->get_matrix(), config.lanczos_precision);
         lanczos_timer.toc();
     }
 
     // Scaling the Hamiltonian between -1 and 1 is required by KPM.
     // The matrix reordering is an optional optimization.
-    if (use_reordering) {
+    if (config.use_reordering) {
         reordering_timer.tic();
         // The reordered value of index i is returned by the function
         i = scale_and_reorder_hamiltonian(j, i);
@@ -170,7 +159,7 @@ ArrayXcf KPM<scalar_t>::v_calculate(int i, int j, ArrayXf energy, float broadeni
     energy = (energy - b) / a;
     broadening = broadening / a; // just scale, no offset for broadening
 
-    num_moments = static_cast<int>(std::ceil(lambda / broadening));
+    num_moments = static_cast<int>(std::ceil(config.lambda / broadening));
     num_moments = (num_moments > 0) ? num_moments : 2;
 
     moments_timer.tic();
@@ -187,7 +176,7 @@ ArrayXcf KPM<scalar_t>::v_calculate(int i, int j, ArrayXf energy, float broadeni
 }
 
 template<typename scalar_t>
-ArrayX<scalar_t> KPM<scalar_t>::calculate_moments(int i, int j) const
+ArrayX<scalar_t> KPMStrategy<scalar_t>::calculate_moments(int i, int j) const
 {
     auto system_size = h2_matrix.rows();
     const auto reordered_steps_size = static_cast<int>(reordered_steps.size());
@@ -244,7 +233,7 @@ ArrayX<scalar_t> KPM<scalar_t>::calculate_moments(int i, int j) const
     // The Lorentz kernel as a function of n (n is declared real_t to get proper fp division)
     auto lorentz_kernel = [=](real_t n) {
         using std::sinh;
-        return sinh(lambda * (1 - n / num_moments)) / sinh(lambda);
+        return sinh(config.lambda * (1 - n / num_moments)) / sinh(config.lambda);
     };
 
     for (int n = 0; n < num_moments; ++n)
@@ -254,7 +243,7 @@ ArrayX<scalar_t> KPM<scalar_t>::calculate_moments(int i, int j) const
 };
 
 template<typename scalar_t>
-auto KPM<scalar_t>::calculate_greens(const ArrayX<real_t>& energy,
+auto KPMStrategy<scalar_t>::calculate_greens(const ArrayX<real_t>& energy,
                                      const ArrayX<scalar_t>& moments)
 -> ArrayX<complex_t>
 {
@@ -275,13 +264,13 @@ auto KPM<scalar_t>::calculate_greens(const ArrayX<real_t>& energy,
 }
 
 template<typename scalar_t>
-void KPM<scalar_t>::hamiltonian_changed()
+void KPMStrategy<scalar_t>::hamiltonian_changed()
 {
     h2_matrix.resize(0, 0);
 }
 
 template<typename scalar_t>
-std::string KPM<scalar_t>::v_report(bool is_shortform) const
+std::string KPMStrategy<scalar_t>::report(bool is_shortform) const
 {
     std::string report;
     std::string line_fmt, lanczos_fmt, reorder_fmt, kpm_fmt, greens_fmt;
@@ -310,10 +299,14 @@ std::string KPM<scalar_t>::v_report(bool is_shortform) const
         report += format(line_fmt, message, time);
     };
 
-    if (lanczos_loops > 0)
-        append_report(format(lanczos_fmt, min_energy, max_energy, lanczos_loops), lanczos_timer);
+    if (lanczos_loops > 0) {
+        append_report(
+            format(lanczos_fmt, config.min_energy, config.max_energy, lanczos_loops),
+            lanczos_timer
+        );
+    }
 
-    if (use_reordering) {
+    if (config.use_reordering) {
         const int reordered_steps_size = reordered_steps.size();
         bool used_full_system = reordered_steps_size < num_moments / 2;
         int limit = !used_full_system ? num_moments / 2 : reordered_steps_size;
@@ -342,45 +335,53 @@ std::string KPM<scalar_t>::v_report(bool is_shortform) const
 }
 
 
-template<typename scalar_t>
-std::unique_ptr<Greens>
-    KPMFactory::try_create_for(const std::shared_ptr<const Hamiltonian>& ham) const
-{
-    auto cast_ham = std::dynamic_pointer_cast<const HamiltonianT<scalar_t>>(ham);
-    if (!cast_ham)
-        return nullptr;
-    
-    // The following KPM constructor may convert the arguments from double to float - that's OK
-    std::unique_ptr<KPM<scalar_t>> kpm{
-        new KPM<scalar_t>(lambda, energy_min, energy_max)
-    };
-    kpm->set_hamiltonian(cast_ham);
-    
-    kpm->lanczos_precision = lanczos_precision;
-    kpm->use_reordering = use_reordering;
-    kpm->scaling_tolerance = scaling_tolerance;
+namespace {
+    template<class scalar_t>
+    std::unique_ptr<GreensStrategy> try_create_for(const std::shared_ptr<const Hamiltonian>& ham,
+                                                   const KPMConfig& config) {
+        auto cast_ham = std::dynamic_pointer_cast<const HamiltonianT<scalar_t>>(ham);
+        if (!cast_ham)
+            return nullptr;
 
-    return std::move(kpm);
+        auto kpm = cpp14::make_unique<KPMStrategy<scalar_t>>(config);
+        kpm->set_hamiltonian(cast_ham);
+
+        return std::move(kpm);
+    }
 }
 
-std::unique_ptr<Greens>
-    KPMFactory::create_for(const std::shared_ptr<const Hamiltonian>& hamiltonian) const
+std::unique_ptr<GreensStrategy>
+KPM::create_strategy_for(const std::shared_ptr<const Hamiltonian>& hamiltonian) const
 {
-    std::unique_ptr<Greens> new_greens;
+    std::unique_ptr<GreensStrategy> new_greens;
     
-    if (!new_greens) new_greens = try_create_for<float>(hamiltonian);
-    if (!new_greens) new_greens = try_create_for<std::complex<float>>(hamiltonian);
-//    if (!new_greens) new_greens = try_create_for<double>(hamiltonian);
-//    if (!new_greens) new_greens = try_create_for<std::complex<double>>(hamiltonian);
+    if (!new_greens) new_greens = try_create_for<float>(hamiltonian, config);
+    if (!new_greens) new_greens = try_create_for<std::complex<float>>(hamiltonian, config);
+//    if (!new_greens) new_greens = try_create_for<double>(hamiltonian, config);
+//    if (!new_greens) new_greens = try_create_for<std::complex<double>>(hamiltonian, config);
     if (!new_greens)
-        throw std::runtime_error{"KPMFactory: unknown Hamiltonian type."};
+        throw std::runtime_error{"KPM: unknown Hamiltonian type."};
     
     return new_greens;
 }
 
-void KPMFactory::advanced(bool use_reordering, double lanczos_precision, double scaling_tolerance)
-{
-    this->use_reordering = use_reordering;
-    this->lanczos_precision = lanczos_precision;
-    this->scaling_tolerance = scaling_tolerance;
+ArrayXcf KPM::calc_greens(int i, int j, ArrayXd energy, float broadening) {
+    auto size = model->hamiltonian()->rows();
+    if (i < 0 || i > size || j < 0 || j > size)
+        throw std::logic_error{"KPM::calc_greens(i,j): invalid value for i or j."};
+
+    // time the calculation
+    calculation_timer.tic();
+    auto greens_function = strategy->calculate(i, j, energy, broadening);
+    calculation_timer.toc();
+
+    return greens_function;
+}
+
+ArrayXf KPM::calc_ldos(ArrayXd energy, float broadening, Cartesian position, int sublattice) {
+    auto i = model->system()->find_nearest(position, sublattice);
+    auto greens_function = calc_greens(i, i, energy, broadening);
+
+    using physics::pi;
+    return -1/pi * greens_function.imag();
 }

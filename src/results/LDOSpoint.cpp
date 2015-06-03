@@ -60,34 +60,3 @@ void LDOSpoint::visit(const Solver* solver)
         ldos /= k_path.size();
     }
 }
-
-ArrayXf LDOSpoint::calc_ldos(Greens* greens)
-{
-    int i = system->find_nearest(target_position, target_sublattice);
-    
-    // get the Green's function
-    ArrayXcf G = greens->calculate(i, i, energy, broadening);
-    
-    // calculate LDOS
-    return -1/pi * G.imag();
-}
-
-void LDOSpoint::visit(Greens* greens)
-{
-    if (k_path.size() == 0) {
-        ldos = calc_ldos(greens);
-    }
-    else {
-        ldos = ArrayXf::Zero(energy.size());
-        for (const auto& k : k_path) {
-            model->set_wave_vector(k);
-            ArrayXf new_ldos = calc_ldos(model->greens().get());
-            for (auto& l : new_ldos) {
-                if (isnan(l))
-                    l = 0;
-            }
-            ldos += new_ldos;
-        }
-        ldos /= k_path.size();
-    }
-}
