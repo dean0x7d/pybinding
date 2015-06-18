@@ -27,7 +27,7 @@ void export_results()
     class_<LDOSpoint, bases<Result>>{
         "LDOSpoint", "Calculate the LDOS at the given point as a function of energy.",
         init<ArrayXd, float, Cartesian, int, std::vector<Cartesian>>{
-            args("self", "energy", "broadening", "position", "sublattice"_a=-1, "k_path"_a=list{})
+            args("self", "energy", "broadening", "position", "sublattice"_kw=-1, "k_path"_kw=list{})
         }
     }
     .add_property("ldos", const_ref(&LDOSpoint::get_ldos))
@@ -36,7 +36,7 @@ void export_results()
     
     class_<LDOSenergy, bases<Result>>{
         "LDOSenergy", "Calculate the LDOS at the given energy as a function of position.",
-        init<float, float, int>{args("self", "energy", "broadening", "sublattice"_a=-1)}
+        init<float, float, int>{args("self", "energy", "broadening", "sublattice"_kw=-1)}
     }
     .add_property("ldos", const_ref(&LDOSenergy::get_ldos))
     ;

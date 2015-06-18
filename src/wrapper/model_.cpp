@@ -27,7 +27,7 @@ void export_core()
          "Accept a Results object that will process and save some data.")
     .def("build_report", &Model::build_report,
          "Report of the last build operation: system and Hamiltonian")
-    .def("compute_report", &Model::compute_report, args("self", "shortform"_a=false),
+    .def("compute_report", &Model::compute_report, args("self", "shortform"_kw=false),
          "Report of the last compute operation: eigensolver and/or Green's function")
     .def("clear_symmetry", &Model::clear_symmetry)
     .def("clear_system_modifiers", &Model::clear_system_modifiers)

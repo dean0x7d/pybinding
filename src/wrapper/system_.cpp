@@ -42,7 +42,7 @@ void export_system()
     ;
 
     class_<System>{"System", no_init}
-    .def("find_nearest", &System::find_nearest, args("self", "position", "sublattice"_a=-1),
+    .def("find_nearest", &System::find_nearest, args("self", "position", "sublattice"_kw=-1),
          "Find the index of the atom closest to the given coordiantes.")
     .add_property("num_sites", &System::num_sites)
     .add_property("x", const_ref(&System::x))
@@ -71,11 +71,11 @@ void export_system()
 
     using tbm::Lattice;
     class_<Lattice, noncopyable>{
-        "Lattice", init<int>{args("self", "min_neighbours"_a=1)}
+        "Lattice", init<int>{args("self", "min_neighbours"_kw=1)}
     }
     .def("add_vector", &Lattice::add_vector, args("self", "primitive_vector"))
     .def("create_sublattice", &Lattice::create_sublattice,
-         args("self", "offset", "onsite_potential"_a=.0f, "alias"_a=-1))
+         args("self", "offset", "onsite_potential"_kw=.0f, "alias"_kw=-1))
     .def("add_hopping", &Lattice::add_hopping,
          args("self", "relative_index", "from_sublattice", "to_sublattice", "hopping_energy"))
     .add_property("vectors", by_value(&Lattice::vectors))
