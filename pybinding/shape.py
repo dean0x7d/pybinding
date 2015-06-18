@@ -76,9 +76,9 @@ def rectangle(x, y=None):
     return Polygon([x0, y0], [x0, -y0], [-x0, -y0], [-x0, y0])
 
 
-def regular_polygon(num_sides, radius):
+def regular_polygon(num_sides, radius, angle=0):
     from math import pi, sin, cos
-    angles = [2 * n * pi / num_sides for n in range(num_sides)]
+    angles = [angle + 2 * n * pi / num_sides for n in range(num_sides)]
     return Polygon((radius * sin(a), radius * cos(a)) for a in angles)
 
 
