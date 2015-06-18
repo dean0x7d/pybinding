@@ -34,6 +34,24 @@ def despine(trim=False, ax=None):
             getattr(ax, "set_{}ticks".format(v))(ticks)
 
 
+def despine_all(ax=None):
+    """Remove all spines, axes labels and ticks
+    """
+    ax = _get_ax(ax)
+    if ax.name == '3d':
+        return
+
+    for side in ['top', 'right', 'bottom', 'left']:
+        ax.spines[side].set_visible(False)
+
+    ax.xaxis.set_ticks_position('none')
+    ax.yaxis.set_ticks_position('none')
+    ax.set_xlabel('')
+    ax.set_ylabel('')
+    ax.set_xticks([])
+    ax.set_yticks([])
+
+
 def set_min_range(min_range, vs='xy', ax=None):
     """Set minimum axis range"""
     ax = _get_ax(ax)
@@ -62,11 +80,13 @@ def blend_colors(color, bg, factor):
 
 def colorbar(mappable=None, cax=None, ax=None, powerlimits=(0, 0), **kwargs):
     """Convenient colorbar function"""
-    cbar = plt.colorbar(mappable, cax, ax, **kwargs)
+    cbar = plt.colorbar(mappable, cax, ax, **with_defaults(kwargs, pad=0.02, aspect=28))
     cbar.solids.set_edgecolor("face")  # remove white gaps between segments
-    if powerlimits:
+    if powerlimits and hasattr(cbar.formatter, 'set_powerlimits'):
         cbar.formatter.set_powerlimits(powerlimits)
     cbar.update_ticks()
+
+    return cbar
 
 
 def annotate_box(s, xy, fontcolor='black', **kwargs):
