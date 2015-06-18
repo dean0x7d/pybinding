@@ -13,8 +13,8 @@ class System(_pybinding.System):
     def positions(self):
         return self.x, self.y, self.z
 
-    def plot(self, site_radius=0.025, site_props: dict=None,
-             hopping_width=1, hopping_props: dict=None, boundary_color='#ff4444'):
+    def plot(self, site_radius: float=0.025, site_props: dict=None, hopping_width: float=1,
+             hopping_props: dict=None, boundary_color: str='#ff4444', rotate: tuple=(0, 1, 2)):
         """
         Parameters
         ----------
@@ -26,6 +26,10 @@ class System(_pybinding.System):
             width [figure units] of the hopping lines
         hopping_props : `~matplotlib.collections.Collection` properties
             additional plot options for hoppings
+        rotate : tuple
+            axes to direction mapping:
+            (0, 1, 2) -> (x, y, z) plots xy-plane
+            (1, 2, 0) -> (y, z, x) plots yz-plane
         """
         import matplotlib.pyplot as plt
         import pybinding.plot.utils as pltutils
@@ -38,6 +42,7 @@ class System(_pybinding.System):
 
         # position, sublattice and hopping
         pos = self.x, self.y, self.z
+        pos = tuple(pos[i] for i in rotate)
         sub = self.sublattice
         hop = self.matrix.tocoo()
         site_props = site_props if site_props else {}
