@@ -8,7 +8,7 @@ LDOSenergy::LDOSenergy(float energy, float broadening, short sublattice)
     : target_energy{energy}, broadening{broadening}, target_sublattice{sublattice}
 {}
 
-void LDOSenergy::visit(const Solver* solver)
+void LDOSenergy::visit(const SolverStrategy* solver)
 {
     using physics::pi;
 

@@ -8,7 +8,7 @@ DOS::DOS(ArrayXd energy, float broadening)
     : energy{energy.cast<float>()}, broadening{broadening}
 {}
 
-void DOS::visit(const Solver* solver)
+void DOS::visit(const SolverStrategy* solver)
 {
     const float inverted_broadening = 1 / (broadening*broadening);
     // TODO: also handle <double>

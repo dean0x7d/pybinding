@@ -42,13 +42,6 @@ class Model(_pybinding.Model):
         ham.__class__ = Hamiltonian
         return ham.matrix.tocsr()
 
-    @property
-    def solver(self) -> Solver:
-        sol = super().solver
-        sol.__class__ = Solver
-        sol.system = self.system
-        return sol
-
     def plot_bands(self, k0, k1, *ks, step, names=None):
         # TODO: move into Solver
         import numpy as np
@@ -63,7 +56,7 @@ class Model(_pybinding.Model):
 
             for k in zip(*k_list):
                 self.set_wave_vector(k)
-                energy.append(self.solver.energy.copy())
+                energy.append(self.solver.eigenvalues.copy())
             points += [len(energy)-1]
 
         for point in points[1:-1]:

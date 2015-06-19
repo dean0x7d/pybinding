@@ -7,43 +7,26 @@
 
 namespace tbm {
 
-class Result;
+class Model;
+class System;
 class Hamiltonian;
 template <typename scalar_t> class HamiltonianT;
 
 /**
  Abstract base class for an eigensolver
  */
-class Solver {
+class SolverStrategy {
 public:
-    virtual ~Solver() = default;
+    virtual ~SolverStrategy() = default;
 
-    /// Try to set the Hamiltonian - returns false if the given H is the wrong type for this Solver
-    virtual bool set_hamiltonian(const std::shared_ptr<const Hamiltonian>& hamiltonian) = 0;
+    /// Returns false if the given Hamiltonian is the wrong type for this SolverStrategy
+    virtual bool set_hamiltonian(const std::shared_ptr<const Hamiltonian>&) = 0;
     
-    /// Diagonalize the given Hamiltonian
-    void solve();
-    
-    /// Get some information
-    std::string report(bool shortform) const;
-    /// Accept a Result visitor
-    virtual void accept(Result& result);
-    /// Clear data - reset to unsolved state
-    virtual void clear() = 0;
-    
-public: // get functions
+    virtual void solve() = 0;
     virtual DenseURef eigenvalues() const = 0;
     virtual DenseURef eigenvectors() const = 0;
 
-protected: // derived classes implement these
-    virtual void v_solve() = 0;
-    virtual std::string v_report(bool /*shortform*/) const { return ""; }
-
-protected:
-    bool is_solved = false;
-
-private:
-    Chrono solve_timer;
+    virtual std::string report(bool shortform) const = 0;
 };
 
 
@@ -51,16 +34,16 @@ private:
  Abstract base with scalar type specialization
  */
 template<typename scalar_t>
-class SolverT : public Solver {
+class SolverStrategyT : public SolverStrategy {
     using real_t = num::get_real_t<scalar_t>;
+
 public:
-    virtual ~SolverT() { Log::d("~Solver<" + num::scalar_name<scalar_t>() + ">()"); }
+    virtual ~SolverStrategyT() { Log::d("SolverStrategy<" + num::scalar_name<scalar_t>() + ">()"); }
     
     virtual bool set_hamiltonian(const std::shared_ptr<const Hamiltonian>& ham) final {
         // check if it's compatible
         if (auto cast_ham = std::dynamic_pointer_cast<const HamiltonianT<scalar_t>>(ham)) {
             if (hamiltonian != cast_ham) {
-                clear();
                 hamiltonian = cast_ham;
                 hamiltonian_changed();
             }
@@ -86,17 +69,39 @@ protected:
 
 
 /**
- The factory will produce the Solver class with the right scalar type.
+ The factory will produce the SolverStrategy class with the right scalar type.
  This is an abstract base factory. The derived factories will need to
  implement the create_for(hamiltonian) method.
  */
-class SolverFactory {
+class Solver {
 public:
-    virtual ~SolverFactory() = default;
+    virtual ~Solver() = default;
 
-    /// Create a new Solver object for this Hamiltonian
-    virtual std::unique_ptr<Solver>
-        create_for(const std::shared_ptr<const Hamiltonian>& hamiltonian) const = 0;
+public:
+    void set_model(const std::shared_ptr<const Model>& new_model);
+
+    /// Get some information about what happened during the last calculation
+    std::string report(bool shortform) const {
+        return strategy->report(shortform) + " " + calculation_timer.str();
+    }
+
+public:
+    /// Diagonalize the given Hamiltonian
+    void solve();
+
+    std::shared_ptr<const System> system() const;
+    DenseURef eigenvalues();
+    DenseURef eigenvectors();
+
+protected:
+    /// Create a new SolverStrategy object for this Hamiltonian
+    virtual std::unique_ptr<SolverStrategy>
+        create_strategy_for(const std::shared_ptr<const Hamiltonian>&) const = 0;
+
+protected:
+    std::shared_ptr<const Model> model;
+    std::unique_ptr<SolverStrategy> strategy;
+    Chrono calculation_timer; ///< last calculation time
 };
 
 } // namespace tbm

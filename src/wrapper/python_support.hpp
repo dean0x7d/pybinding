@@ -5,24 +5,29 @@
 #include <boost/python/copy_const_reference.hpp>
 #include <boost/python/return_by_value.hpp>
 
-namespace boost {
-    namespace python {
-        template <class F>
-        object const_ref(F f) {
-            return make_function(f, return_value_policy<copy_const_reference>());
-        }
+namespace boost { namespace python {
 
-        template<class Property>
-        object by_value(Property pm) {
-            return make_getter(pm, return_value_policy<return_by_value>());
-        }
-
-        template<class Property>
-        object by_const_ref(Property pm) {
-            return make_getter(pm, return_value_policy<copy_const_reference>());
-        }
-    }
+template<class F>
+object internal_ref(F f) {
+    return make_function(f, with_custodian_and_ward_postcall<0, 1>{});
 }
+
+template <class F>
+object const_ref(F f) {
+    return make_function(f, return_value_policy<copy_const_reference>());
+}
+
+template<class Property>
+object by_value(Property pm) {
+    return make_getter(pm, return_value_policy<return_by_value>());
+}
+
+template<class Property>
+object by_const_ref(Property pm) {
+    return make_getter(pm, return_value_policy<copy_const_reference>());
+}
+
+}}
 
 /**
  Ensure that the current thread is ready to call the Python C API.

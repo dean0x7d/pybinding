@@ -10,7 +10,6 @@ void export_core()
     .def("add", &Model::set_lattice)
     .def("add", &Model::set_shape)
     .def("add", &Model::set_symmetry)
-    .def("add", &Model::set_solver)
     .def("add", &Model::add_site_state_modifier)
     .def("add", &Model::add_position_modifier)
     .def("add", &Model::add_onsite_modifier)
@@ -21,17 +20,11 @@ void export_core()
     .add_property("symmetry", &Model::symmetry, &Model::set_symmetry)
     .add_property("system", &Model::system)
     .add_property("hamiltonian", &Model::hamiltonian)
-    .add_property("solver", &Model::solver, &Model::set_solver)
-    .def("_calculate", &Model::calculate, args("self", "result"),
-         "Accept a Results object that will process and save some data.")
     .def("build_report", &Model::build_report,
          "Report of the last build operation: system and Hamiltonian")
-    .def("compute_report", &Model::compute_report, args("self", "shortform"_kw=false),
-         "Report of the last compute operation: eigensolver and/or Green's function")
     .def("clear_symmetry", &Model::clear_symmetry)
     .def("clear_system_modifiers", &Model::clear_system_modifiers)
     .def("clear_hamiltonian_modifiers", &Model::clear_hamiltonian_modifiers)
     .def("clear_all_modifiers", &Model::clear_all_modifiers)
-    .def("clear_solver", &Model::clear_solver)
     ;
 }

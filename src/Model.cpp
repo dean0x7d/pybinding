@@ -43,14 +43,6 @@ void Model::set_symmetry(const std::shared_ptr<Symmetry>& new_symmetry)
     }
 }
 
-void Model::set_solver(const std::shared_ptr<SolverFactory>& new_solver_factory)
-{
-    if (solver_factory != new_solver_factory) {
-        solver_factory = new_solver_factory;
-        _solver.reset();
-    }
-}
-
 void Model::add_site_state_modifier(const std::shared_ptr<SiteStateModifier>& m)
 {
     if (system_modifiers.add_unique(m)) {
@@ -105,48 +97,10 @@ std::shared_ptr<const Hamiltonian> Model::hamiltonian() const {
     return _hamiltonian;
 }
 
-std::shared_ptr<Solver> Model::solver() const {
-    if (!solver_factory)
-        throw std::logic_error{"The eigensolver was not defined."};
-    
-    if (_solver) {
-        // try to assign a new Hamiltonian to the existing solver
-        bool success = _solver->set_hamiltonian(hamiltonian());
-        if (!success) // fails if the they have incompatible scalar types
-            _solver.reset();
-    }
-    
-    // the factory creates a solver with a scalar type suited to the Hamiltonian
-    if (!_solver)
-        _solver = solver_factory->create_for(hamiltonian());
-
-    _solver->solve();
-    return _solver;
-}
-
 std::string Model::build_report()
 {
     // this could be a single line, but GCC 4.8 produces a runtime error otherwise
     auto ret = system()->report + '\n';
     ret += hamiltonian()->report;
     return ret;
-}
-
-std::string Model::compute_report(bool shortform)
-{
-    std::string report;
-    
-    if (solver_factory)
-        report += solver()->report(shortform);
-
-    return report;
-}
-
-void Model::calculate(Result& result)
-{
-    result.system = system();
-    result.model = this;
-
-    if (solver_factory)
-        solver()->accept(result);
 }

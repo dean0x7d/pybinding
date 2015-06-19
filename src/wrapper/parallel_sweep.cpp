@@ -3,6 +3,7 @@
 #include "python_support.hpp"
 
 #include "Model.hpp"
+#include "result/Result.hpp"
 #include "support/thread.hpp"
 using namespace boost::python;
 
@@ -52,12 +53,12 @@ void parallel_sweep(std::size_t size, std::size_t num_threads, std::size_t queue
     auto work_threads = std::vector<std::thread>{num_threads > 0 ? num_threads : 1};
     for (auto& thread : work_threads) {
         thread = std::thread([&] {
-            QueueGuard<Job> guard{report_queue};
-            while (auto maybe_job = work_queue.pop()) {
-                auto job = maybe_job.get();
-                job.model->calculate(*job.result);
-                report_queue.push(std::move(job));
-            }
+//            QueueGuard<Job> guard{report_queue};
+//            while (auto maybe_job = work_queue.pop()) {
+//                auto job = maybe_job.get();
+//                job.model->calculate(*job.result);
+//                report_queue.push(std::move(job));
+//            }
         });
     }
 

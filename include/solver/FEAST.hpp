@@ -5,31 +5,38 @@
 #ifdef TBM_USE_FEAST
 namespace tbm {
 
+struct FEASTConfig {
+    // required user config
+    float energy_min = 0; ///< lowest eigenvalue
+    float energy_max = 0; ///< highest eigenvalue
+    int initial_size_guess = 0; ///< initial user guess for the subspace size
+
+    // optional user config
+    bool is_verbose = false; ///< [false] print information directly to stdout
+    bool recycle_subspace = false; ///< [false] use previous data as a starting point
+
+    // advanced optional user config
+    int contour_points = 8; ///< [8] complex integral contour point
+    int max_refinement_loops = 5; ///< [20] maximum number of refinement loops
+    int sp_stop_criteria = 3; ///< [5] single precision error trace stopping criteria
+    int dp_stop_criteria = 10; ///< [12] double precision error trace stopping criteria
+    bool residual_convergence = false; /**< [false] use residual stop criteria
+                                           instead of error trace criteria */
+
+    // implementation detail config
+    char matrix_format = 'F'; ///<  full matrix 'F' or triangular: lower 'L' and upper 'U'
+    int system_size = 0; ///< size of the Hamiltonian matrix, i.e. number of atoms in the system
+};
+
 /**
- Implementation of the FEAST eigensolver.
+ Implementation of the FEASTStrategy eigensolver.
  */
 template<typename scalar_t>
-class FEAST : public SolverT<scalar_t> {
+class FEASTStrategy : public SolverStrategyT<scalar_t> {
     using real_t = num::get_real_t<scalar_t>;
     using complex_t = num::get_complex_t<scalar_t>;
+
 public:
-    
-    struct Params {
-        real_t energy_min, energy_max; ///< solution energy range
-        int initial_size_guess; ///< initial user guess for the subspace size
-        char matrix_format = 'F'; ///<  full matrix 'F' or triangular: lower 'L' and upper 'U'
-        int system_size; ///< size of the Hamiltonian matrix, i.e. number of atoms in the system
-        
-        bool is_verbose = false; ///< [false] print information directly to stdout
-        bool recycled_subspace = false; ///< [false] use previous data as a starting point
-        int contour_points = 8; ///< [8] complex integral contour point
-        int max_refinement_loops = 5; ///< [20] maximum number of refinement loops
-        int sp_stop_criteria = 3; ///< [5] single precision error trace stopping criteria
-        int dp_stop_criteria = 10; ///< [12] double precision error trace stopping criteria
-        bool residual_convergence = false; /**< [false] use residual stop criteria
-                                           instead of error trace criteria */
-    };
-    
     struct Info {
         int suggested_size; ///< post-calculation suggested subspace size
         int final_size; ///< final subspace size
@@ -42,9 +49,8 @@ public:
         bool size_warning = false; ///< the initial subspace size was too small
     };
     
-protected:
-    FEAST(real_t energy_min, real_t energy_max, int subspace_size_guess,
-          bool recycle_subspace, bool is_verbose);
+public:
+    explicit FEASTStrategy(const FEASTConfig& config) : config(config) {}
 
 public: // overrides
     // map eigenvalues and wavefunctions to only expose results up to the usable subspace size
@@ -55,12 +61,9 @@ public: // overrides
         return Map<const ArrayXX<scalar_t>>(_eigenvectors.data(), _eigenvectors.rows(), info.final_size);
     }
 
-    virtual std::string v_report(bool shortform) const override;
-    /// FEAST will not clear data if recycle_subspace == true
-    virtual void clear() override;
-
-protected: // overrides
-    virtual void v_solve() override;
+    virtual void solve() override;
+    virtual std::string report(bool shortform) const override;
+    virtual void hamiltonian_changed() override;
 
 private: // implementation
     void init_feast(); ///< initialize FEAST parameters
@@ -71,65 +74,55 @@ private: // implementation
 
 private:
     int	fpm[128]; ///< FEAST init parameters
-    Params params;
+    FEASTConfig config;
     Info info;
     ArrayX<real_t> residual; ///< relative residual
 
 protected: // declared used inherited members (template class requirement)
-    using Solver::is_solved;
-    using SolverT<scalar_t>::_eigenvalues;
-    using SolverT<scalar_t>::_eigenvectors;
-    using SolverT<scalar_t>::hamiltonian;
-
-    friend class FEASTFactory;
+    using SolverStrategyT<scalar_t>::_eigenvalues;
+    using SolverStrategyT<scalar_t>::_eigenvectors;
+    using SolverStrategyT<scalar_t>::hamiltonian;
 };
 
 
 /**
- Concrete SolverFactory for creating FEAST objects.
+ FEAST eigensolver.
  */
-class FEASTFactory : public SolverFactory {
-public:
-    struct defaults {
-        static constexpr bool recycle_subspace = false;
-        static constexpr bool is_verbose = false;
-    };
+class FEAST : public Solver {
+public: // construction and configuration
+    static constexpr auto defaults = FEASTConfig{};
     
     /**
      Find the eigenvalues and eigenvectors in the given energy range.
      
-     @param energy_min Bottom limit of the energy range.
-     @param energy_max Top limit of the energy range.
-     @param subspace_size_guess Initial guess for the number of states in the energy range.
-     The optimal value should be 50% bigger than final subspace size.
+     @param energy_range Where to look for eigenvalues.
+     @param initial_size_guess A guess for the number of eigenvalues in the energy range.
+                               The optimal value should be 50% bigger than final subspace size.
      @param recycle_subspace Reuse previous results as initial data for the solver.
      @param is_verbose Activate FEAST solver info (prints directly to stdout).
      */
-    FEASTFactory(double energy_min, double energy_max, int subspace_size_guess,
-                 bool recycle_subspace = defaults::recycle_subspace,
-                 bool is_verbose = defaults::is_verbose)
-        : energy_min{energy_min}, energy_max{energy_max}, subspace_size{subspace_size_guess},
-          recycle_subspace{recycle_subspace}, is_verbose{is_verbose}
-    {}
-    
+    FEAST(const std::shared_ptr<const Model>& model,
+          std::pair<double, double> energy_range,
+          int initial_size_guess,
+          bool recycle_subspace = defaults.recycle_subspace,
+          bool is_verbose = defaults.is_verbose,
+          FEASTConfig const& c = {})
+        : config(c) {
+        config.energy_min = static_cast<float>(energy_range.first);
+        config.energy_max = static_cast<float>(energy_range.second);
+        config.initial_size_guess = initial_size_guess;
+        config.recycle_subspace = recycle_subspace;
+        config.is_verbose = is_verbose;
+
+        set_model(model);
+    }
+
     // required implementation
-    virtual std::unique_ptr<Solver> 
-        create_for(const std::shared_ptr<const Hamiltonian>& hamiltonian) const override;
-    /// Set the advanced options of the FEAST solver
-    FEASTFactory& advanced(int points, int loops, int sp, int dp, bool stop_residual);
-    
-private: // create template
-    template<typename scalar_t>
-    std::unique_ptr<Solver> try_create_for(const std::shared_ptr<const Hamiltonian>& h) const;
-    
+    virtual std::unique_ptr<SolverStrategy>
+        create_strategy_for(const std::shared_ptr<const Hamiltonian>&) const override;
+
 private:
-    // basic
-    double energy_min, energy_max;
-    int subspace_size;
-    bool recycle_subspace, is_verbose;
-    
-    // advanced
-    FEAST<double>::Params params;
+    FEASTConfig config;
 };
 
 } // namespace tbm

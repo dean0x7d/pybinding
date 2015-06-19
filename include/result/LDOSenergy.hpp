@@ -8,7 +8,7 @@ class LDOSenergy : public Result {
 public:
     LDOSenergy(float energy, float broadening, short sublattice = -1);
 
-    virtual void visit(const Solver* solver) override;
+    virtual void visit(const SolverStrategy* solver) override;
     const ArrayX<float>& get_ldos() const { return ldos; }
 
 protected:

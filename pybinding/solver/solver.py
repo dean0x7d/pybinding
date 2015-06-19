@@ -1,26 +1,45 @@
 import _pybinding
 import numpy as np
 import matplotlib.pyplot as plt
+from ..system import System
 from ..plot import utils as pltutils
 from ..utils import with_defaults
 
 
-class Solver(_pybinding.Solver):
-    def __init__(self):
-        super().__init__()
-        self.system = None
+class Solver:
+    def __init__(self, impl: _pybinding.Solver):
+        self.impl = impl
+
+    def set_model(self, model):
+        self.impl.set_model(model)
+
+    def solve(self):
+        self.impl.solve()
+
+    def report(self, shortform=False):
+        return self.impl.report(shortform)
 
     @property
-    def psi(self) -> 'np.ndarray':
-        # transpose because it's easier to access the state number as the first index
-        return super().psi.transpose()
+    def system(self) -> System:
+        s = self.impl.system
+        s.__class__ = System
+        return s
 
-    def get_intensity(self, indices) -> 'np.ndarray':
+    @property
+    def eigenvalues(self) -> np.ndarray:
+        return self.impl.eigenvalues
+
+    @property
+    def eigenvectors(self) -> np.ndarray:
+        # transpose because it's easier to access the state number as the first index
+        return self.impl.eigenvectors.transpose()
+
+    def get_intensity(self, indices) -> np.ndarray:
         """Return sum of wavefunction^2 at indices"""
-        return np.sum(abs(self.psi[indices, :])**2, axis=0).squeeze()
+        return np.sum(abs(self.eigenvectors[indices, :])**2, axis=0).squeeze()
 
     def save(self, file):
-        np.savez_compressed(file, energy=self.energy, psi=self.psi)
+        np.savez_compressed(file, energy=self.eigenvalues, psi=self.eigenvectors)
 
     @staticmethod
     def get_degenerate_indices(energy, index, epsilon=1e-5) -> 'np.ndarray':
@@ -41,11 +60,11 @@ class Solver(_pybinding.Solver):
     def _reduce_degenerate_energy(self, position) -> 'np.ndarray':
         # intensity of wavefunction^2 at the given position for every state
         atom_idx = self.system.find_nearest(position)
-        intensity = abs(self.psi[:, atom_idx])**2
+        intensity = abs(self.eigenvectors[:, atom_idx])**2
         p0 = intensity.copy()
 
         # the instensity of each degenerate state is updated to: sum_N / N
-        states = self.find_degenerate_states(self.energy)
+        states = self.find_degenerate_states(self.eigenvalues)
         for indices in states:
             indices = list(indices)  # convert tuple to list for 1D ndarray indexing
             intensity[indices] = np.sum(p0[indices]) / len(indices)
@@ -57,27 +76,27 @@ class Solver(_pybinding.Solver):
         if mark_degenerate:
             # draw lines between degenerate states
             from matplotlib.collections import LineCollection
-            pairs = ((s[0], s[-1]) for s in self.find_degenerate_states(self.energy))
-            lines = [[(i, self.energy[i]) for i in pair] for pair in pairs]
+            pairs = ((s[0], s[-1]) for s in self.find_degenerate_states(self.eigenvalues))
+            lines = [[(i, self.eigenvalues[i]) for i in pair] for pair in pairs]
             plt.gca().add_collection(LineCollection(lines, color='black', alpha=0.5))
 
         if number_states:
             # draw a number next to each state
-            for i in range(len(self.energy)):
-                pltutils.annotate_box(i, (i, self.energy[i]), fontsize='x-small',
+            for i in range(len(self.eigenvalues)):
+                pltutils.annotate_box(i, (i, self.eigenvalues[i]), fontsize='x-small',
                                       xytext=(0, -10), textcoords='offset points')
 
         plt.xlabel('state')
         plt.ylabel('E (eV)')
-        plt.xlim(-1, len(self.energy))
+        plt.xlim(-1, len(self.eigenvalues))
         xticks, _ = plt.xticks()
-        plt.xticks([x for x in xticks if 0 <= x < len(self.energy)])
+        plt.xticks([x for x in xticks if 0 <= x < len(self.eigenvalues)])
         pltutils.despine()
 
     def plot_eigenvalues(self, mark_degenerate=True, number_states=False, **kwargs):
         """Standard eigenvalues scatter plot"""
-        states = np.arange(0, self.energy.size)
-        plt.scatter(states, self.energy, **with_defaults(kwargs, c='#377ec8', s=15, lw=0.1))
+        states = np.arange(0, self.eigenvalues.size)
+        plt.scatter(states, self.eigenvalues, **with_defaults(kwargs, c='#377ec8', s=15, lw=0.1))
         self._plot_eigenvalues_common(mark_degenerate, number_states)
 
     def plot_eigenvalues_cmap(self, position, size=(7, 77), mark_degenerate=True,
@@ -86,13 +105,13 @@ class Solver(_pybinding.Solver):
 
         The colormap indicates wavefunction intensity at the given position.
         """
-        states = np.arange(0, self.energy.size)
+        states = np.arange(0, self.eigenvalues.size)
         intensity = self._reduce_degenerate_energy(position)
         max_index = intensity.argmax()
 
         # higher intensity states should be drawn above lower intensity states
         idx = np.argsort(intensity)
-        states, energy, intensity = (v[idx] for v in (states, self.energy, intensity))
+        states, energy, intensity = (v[idx] for v in (states, self.eigenvalues, intensity))
 
         kwargs = with_defaults(kwargs, cmap='YlOrRd', lw=0.2, alpha=0.85,
                                c=intensity, s=size[0] + size[1] * intensity / intensity.max())
@@ -112,7 +131,7 @@ class Solver(_pybinding.Solver):
         ax.set_ylabel('y (nm)')
 
         if reduce:
-            index = self.get_degenerate_indices(self.energy, index, reduce)
+            index = self.get_degenerate_indices(self.eigenvalues, index, reduce)
         intensity = self.get_intensity(index)
 
         x, y, z = self.system.positions
@@ -144,7 +163,7 @@ class Solver(_pybinding.Solver):
 
         x, y = self.system.x, self.system.y
         if reduce:
-            index = self.get_degenerate_indices(self.energy, index, reduce)
+            index = self.get_degenerate_indices(self.eigenvalues, index, reduce)
         intensity = self.get_intensity(index)
 
         if not limits:

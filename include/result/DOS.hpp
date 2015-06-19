@@ -11,7 +11,7 @@ class DOS : public Result {
 public:
     DOS(ArrayXd energy, float broadening);
 
-    virtual void visit(const Solver* solver) override;
+    virtual void visit(const SolverStrategy* solver) override;
 
 public:
     const ArrayX<float>& get_dos() const { return dos; }

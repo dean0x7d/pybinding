@@ -1,27 +1,43 @@
 #include "solver/Solver.hpp"
-#include "result/Result.hpp"
+#include "Model.hpp"
 using namespace tbm;
 
-void Solver::solve()
-{
-    if (is_solved)
+void Solver::set_model(const std::shared_ptr<const Model>& new_model) {
+    if (!new_model)
+        throw std::logic_error{"Solver::set_model(): trying to set nullptr."};
+
+    if (model == new_model)
         return;
 
-    solve_timer.tic();
-    v_solve();
-    solve_timer.toc();
-    is_solved = true;
+    model = new_model;
+    if (strategy) {
+        // try to assign a new Hamiltonian to the existing Solver strategy
+        bool success = strategy->set_hamiltonian(model->hamiltonian());
+        if (!success) // fails if the they have incompatible scalar types
+            strategy.reset();
+    }
+
+    // creates a SolverStrategy with a scalar type suited to the Hamiltonian
+    if (!strategy)
+        strategy = create_strategy_for(model->hamiltonian());
 }
 
-std::string Solver::report(bool shortform) const
-{
-    auto report = v_report(shortform);
-    report += " " + solve_timer.str();
-    return report;
+void Solver::solve() {
+    calculation_timer.tic();
+    strategy->solve();
+    calculation_timer.toc();
 }
 
-void Solver::accept(Result& result)
-{
+std::shared_ptr<const System> Solver::system() const {
+    return model->system();
+}
+
+DenseURef Solver::eigenvalues() {
     solve();
-    result.visit(this);
+    return strategy->eigenvalues();
+}
+
+DenseURef Solver::eigenvectors() {
+    solve();
+    return strategy->eigenvectors();
 }

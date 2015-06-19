@@ -11,14 +11,14 @@ public:
     LDOSpoint(ArrayXd energy, float broadening, Cartesian position,
               short sublattice = -1, std::vector<Cartesian> k_path = {});
 
-    virtual void visit(const Solver* solver) override;
+    virtual void visit(const SolverStrategy* solver) override;
 
 public:
     const ArrayX<float>& get_ldos() const { return ldos; }
     const ArrayX<float>& get_energy() const { return energy; }
 
 protected:
-    ArrayX<float> calc_ldos(const Solver* solver);
+    ArrayX<float> calc_ldos(const SolverStrategy* solver);
 
 protected:
     ArrayX<float> energy;

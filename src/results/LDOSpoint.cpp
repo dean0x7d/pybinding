@@ -16,7 +16,7 @@ LDOSpoint::LDOSpoint(ArrayXd energy, float broadening, Cartesian position,
       k_path{std::move(k_path)}
 {}
 
-ArrayXf LDOSpoint::calc_ldos(const Solver* solver)
+ArrayXf LDOSpoint::calc_ldos(const SolverStrategy* solver)
 {
     // find the lattice site closest to the desired coordinates
     int site_index = system->find_nearest(target_position, target_sublattice);
@@ -46,17 +46,7 @@ ArrayXf LDOSpoint::calc_ldos(const Solver* solver)
     return ldos;
 }
 
-void LDOSpoint::visit(const Solver* solver)
+void LDOSpoint::visit(const SolverStrategy* solver)
 {
-    if (k_path.size() == 0) {
-        ldos = calc_ldos(solver);
-    }
-    else {
-        ldos = ArrayXf::Zero(energy.size());
-        for (const auto& k : k_path) {
-            model->set_wave_vector(k);
-            ldos += calc_ldos(model->solver().get());
-        }
-        ldos /= k_path.size();
-    }
+    ldos = calc_ldos(solver);
 }
