@@ -2,7 +2,7 @@
 #include "support/dense.hpp"
 #include "support/sparse.hpp"
 
-enum class ScalarType {f, cf, d, cd, i, none};
+enum class ScalarType {f, cf, d, cd, i8, i16, i32, none};
 
 namespace detail {
     template<typename scalar_t> inline ScalarType get_type();
@@ -10,7 +10,9 @@ namespace detail {
     template<> inline ScalarType get_type<std::complex<float>>() { return ScalarType::cf; }
     template<> inline ScalarType get_type<double>() { return ScalarType::d; }
     template<> inline ScalarType get_type<std::complex<double>>() { return ScalarType::cd; }
-    template<> inline ScalarType get_type<int>() { return ScalarType::i; }
+    template<> inline ScalarType get_type<std::int8_t>() { return ScalarType::i8; }
+    template<> inline ScalarType get_type<std::int16_t>() { return ScalarType::i16; }
+    template<> inline ScalarType get_type<std::int32_t>() { return ScalarType::i32; }
 }
 
 struct DenseURef {

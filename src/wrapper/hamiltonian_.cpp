@@ -58,7 +58,7 @@ void export_modifiers()
     using tbm::Hamiltonian;
 
     class_<Hamiltonian, noncopyable>{"Hamiltonian", no_init}
-    .add_property("matrix", &Hamiltonian::matrix_union)
+    .add_property("matrix", internal_ref(&Hamiltonian::matrix_union))
     .def_readonly("report", &Hamiltonian::report)
     ;
 

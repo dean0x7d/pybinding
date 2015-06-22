@@ -34,39 +34,38 @@ public:
 void export_system()
 {
     using tbm::System;
-    auto rbv = return_value_policy<return_by_value>{};
 
     class_<System::Boundary>{"Boundary", no_init}
-    .add_property("shift", make_getter(&System::Boundary::shift, rbv))
-    .add_property("matrix", &System::Boundary::matrix_uref)
+    .add_property("shift", copy_value(&System::Boundary::shift))
+    .add_property("matrix", sparse_uref(&System::Boundary::matrix))
     ;
 
     class_<System>{"System", no_init}
     .def("find_nearest", &System::find_nearest, args("self", "position", "sublattice"_kw=-1),
          "Find the index of the atom closest to the given coordiantes.")
     .add_property("num_sites", &System::num_sites)
-    .add_property("x", const_ref(&System::x))
-    .add_property("y", const_ref(&System::y))
-    .add_property("z", const_ref(&System::z))
-    .add_property("sublattice", by_value(&System::sublattice))
-    .add_property("boundaries", by_value(&System::boundaries))
-    .add_property("matrix", &System::matrix_uref)
+    .add_property("x", dense_uref(&System::x))
+    .add_property("y", dense_uref(&System::y))
+    .add_property("z", dense_uref(&System::z))
+    .add_property("sublattice", dense_uref(&System::sublattice))
+    .add_property("boundaries", &System::boundaries)
+    .add_property("matrix", sparse_uref(&System::matrix))
     .def_readonly("report", &System::report)
     ;
 
     using tbm::Hopping;
     class_<Hopping>{"Hopping", no_init}
-    .add_property("relative_index", by_value(&Hopping::relative_index))
+    .add_property("relative_index", copy_value(&Hopping::relative_index))
     .def_readonly("to_sublattice", &Hopping::to_sublattice)
     .def_readonly("energy", &Hopping::energy)
     ;
 
     using tbm::Sublattice;
     class_<Sublattice>{"Sublattice", no_init}
-    .add_property("offset", by_value(&Sublattice::offset))
+    .add_property("offset", copy_value(&Sublattice::offset))
     .def_readonly("onsite", &Sublattice::onsite)
     .def_readonly("alias", &Sublattice::alias)
-    .add_property("hoppings", by_value(&Sublattice::hoppings))
+    .add_property("hoppings", &Sublattice::hoppings)
     ;
 
     using tbm::Lattice;
@@ -78,8 +77,8 @@ void export_system()
          args("self", "offset", "onsite_potential"_kw=.0f, "alias"_kw=-1))
     .def("add_hopping", &Lattice::add_hopping,
          args("self", "relative_index", "from_sublattice", "to_sublattice", "hopping_energy"))
-    .add_property("vectors", by_value(&Lattice::vectors))
-    .add_property("sublattices", by_value(&Lattice::sublattices))
+    .add_property("vectors", &Lattice::vectors)
+    .add_property("sublattices", &Lattice::sublattices)
     .def_readwrite("min_neighbors", &Lattice::min_neighbours)
     ;
     
@@ -99,17 +98,17 @@ void export_system()
             (arg("self"), "radius", "center")
         }
     }
-    .add_property("r", make_getter(&Circle::radius, rbv), make_setter(&Circle::radius))
-    .add_property("center", make_getter(&Circle::_center, rbv), make_setter(&Circle::_center))
+    .add_property("r", &Circle::radius, &Circle::radius)
+    .add_property("center", &Circle::_center, &Circle::_center)
     ;
     
     using tbm::Polygon;
     class_<Polygon, bases<Shape>, noncopyable> {
         "Polygon", "Shape defined by a list of vertices", init<> {arg("self")}
     }
-    .add_property("x", make_getter(&Polygon::x, rbv), make_setter(&Polygon::x))
-    .add_property("y", make_getter(&Polygon::y, rbv), make_setter(&Polygon::y))
-    .add_property("offset", make_getter(&Polygon::offset, rbv), make_setter(&Polygon::offset))
+    .add_property("x", copy_value(&Polygon::x), &Polygon::x)
+    .add_property("y", copy_value(&Polygon::y), &Polygon::y)
+    .add_property("offset", copy_value(&Polygon::offset), &Polygon::offset)
     ;
 
     using tbm::Symmetry;

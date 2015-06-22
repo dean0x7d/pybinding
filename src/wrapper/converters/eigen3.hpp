@@ -43,11 +43,18 @@ struct denseuref_to_python {
             shape[1] = u.cols;
         }
 
-        int type = NPY_INT32;
-        if (u.type == ScalarType::f)  type = NPY_FLOAT;
-        if (u.type == ScalarType::cf) type = NPY_CFLOAT;
-        if (u.type == ScalarType::d)  type = NPY_DOUBLE;
-        if (u.type == ScalarType::cd) type = NPY_CDOUBLE;
+        auto const type = [&]{
+            switch (u.type) {
+                case ScalarType::f: return NPY_FLOAT;
+                case ScalarType::cf: return NPY_CFLOAT;
+                case ScalarType::d: return NPY_DOUBLE;
+                case ScalarType::cd: return NPY_CDOUBLE;
+                case ScalarType::i8: return NPY_INT8;
+                case ScalarType::i16: return NPY_INT16;
+                case ScalarType::i32: return NPY_INT32;
+                default: return NPY_VOID;
+            }
+        }();
 
         int flags = u.is_row_major ? NPY_ARRAY_CARRAY : NPY_ARRAY_FARRAY;
 

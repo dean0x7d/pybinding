@@ -21,20 +21,18 @@ BOOST_PYTHON_MODULE(_pybinding)
     eigen3_numpy_register_type<ArrayXf>();
     eigen3_numpy_register_type<ArrayXd>();
     eigen3_numpy_register_type<ArrayXcf>();
-    eigen3_numpy_register_type<ArrayXi>();
     eigen3_numpy_register_type<ArrayX<short>>();
-    eigen3_numpy_register_type<ArrayX<bool>>();
     eigen3_numpy_register_type<Cartesian>();
     eigen3_numpy_register_type<Index3D>();
     to_python_converter<DenseURef, denseuref_to_python, true>{};
 
     // sparse matrix class
     class_<SparseURef> {"SparseURef", no_init}
-    .add_property("rows", by_value(&SparseURef::rows))
-    .add_property("cols", by_value(&SparseURef::cols))
-    .add_property("inner_indices", by_value(&SparseURef::inner_indices))
-    .add_property("outer_starts", by_value(&SparseURef::outer_starts))
-    .add_property("values", by_value(&SparseURef::values))
+    .add_property("rows", &SparseURef::rows)
+    .add_property("cols", &SparseURef::cols)
+    .add_property("inner_indices", internal_ref(&SparseURef::inner_indices))
+    .add_property("outer_starts", internal_ref(&SparseURef::outer_starts))
+    .add_property("values", internal_ref(&SparseURef::values))
     ;
     
     // export all classes

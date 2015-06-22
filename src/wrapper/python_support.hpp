@@ -1,30 +1,51 @@
 #pragma once
-#include "Python.h"
 #include <boost/python/data_members.hpp>
 #include <boost/python/return_value_policy.hpp>
 #include <boost/python/copy_const_reference.hpp>
 #include <boost/python/return_by_value.hpp>
 
+#include "support/uref.hpp"
+
 namespace boost { namespace python {
 
-template<class F>
-object internal_ref(F f) {
-    return make_function(f, with_custodian_and_ward_postcall<0, 1>{});
+template<class Class, class Data, class = cpp14::enable_if_t<!std::is_function<Data>::value>>
+object copy_value(Data Class::* d) {
+    return make_getter(d, return_value_policy<return_by_value>());
 }
 
-template <class F>
-object const_ref(F f) {
-    return make_function(f, return_value_policy<copy_const_reference>());
+template<class Function>
+object internal_ref(Function f) {
+    return make_function(f, return_value_policy<
+        return_by_value, with_custodian_and_ward_postcall<0, 1>
+    >{});
 }
 
-template<class Property>
-object by_value(Property pm) {
-    return make_getter(pm, return_value_policy<return_by_value>());
+template<class Class, class Data, class = cpp14::enable_if_t<!std::is_function<Data>::value>>
+object internal_ref(Data Class::* d) {
+    return make_getter(d, return_value_policy<
+        return_by_value, with_custodian_and_ward_postcall<0, 1>
+    >{});
 }
 
-template<class Property>
-object by_const_ref(Property pm) {
-    return make_getter(pm, return_value_policy<copy_const_reference>());
+template<class Class, class Data>
+object dense_uref(Data (Class::*pmf)() const) {
+    return make_function([pmf](Class& c) { return DenseURef{(c.*pmf)()}; }, return_value_policy<
+        return_by_value, with_custodian_and_ward_postcall<0, 1>
+    >{});
+}
+
+template<class Class, class Data, class = cpp14::enable_if_t<!std::is_function<Data>::value>>
+object dense_uref(Data Class::* d) {
+    return make_function([d](Class& c) { return DenseURef{c.*d}; }, return_value_policy<
+        return_by_value, with_custodian_and_ward_postcall<0, 1>
+    >{});
+}
+
+template<class Class, class Data, class = cpp14::enable_if_t<!std::is_function<Data>::value>>
+object sparse_uref(Data Class::* d) {
+    return make_function([d](Class& c) { return SparseURef{c.*d}; }, return_value_policy<
+        return_by_value, with_custodian_and_ward_postcall<0, 1>
+    >{});
 }
 
 }}

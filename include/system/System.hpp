@@ -1,7 +1,6 @@
 #pragma once
 #include "support/dense.hpp"
 #include "support/sparse.hpp"
-#include "support/uref.hpp"
 #include <vector>
 
 namespace tbm {
@@ -21,7 +20,6 @@ public:
     struct Boundary {
         Boundary(const System* system) : system(system) {}
 
-        SparseURef matrix_uref() const { return matrix; }
         std::tuple<Cartesian, Cartesian> get_position_pair(int i, int j) const {
             return std::make_tuple(system->positions[i], system->positions[j] - shift);
         }
@@ -48,14 +46,13 @@ public:
         return std::make_tuple(positions[i], positions[j]);
     }
 
-public: // getters - required for python bindings
+public:
     int num_sites() const { return positions.size(); }
     const ArrayXf& x() const { return positions.x; }
     const ArrayXf& y() const { return positions.y; }
     const ArrayXf& z() const { return positions.z; }
-    SparseURef matrix_uref() const { return matrix; }
 
-public: // properties
+public:
     CartesianArray positions; ///< coordinates of all the lattice sites
     ArrayX<short> sublattice; ///< sublattice indices of all the sites
     SparseMatrixX<float> matrix; ///< base hopping information
