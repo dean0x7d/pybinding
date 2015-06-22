@@ -93,12 +93,16 @@ public:
     DenseURef eigenvalues();
     DenseURef eigenvectors();
 
+    ArrayXd calc_dos(ArrayXd energies, double broadening);
+    ArrayXd calc_ldos(double energy, double broadening, int target_sublattice);
+
 protected:
     /// Create a new SolverStrategy object for this Hamiltonian
     virtual std::unique_ptr<SolverStrategy>
         create_strategy_for(const std::shared_ptr<const Hamiltonian>&) const = 0;
 
 protected:
+    bool is_solved = false;
     std::shared_ptr<const Model> model;
     std::unique_ptr<SolverStrategy> strategy;
     Chrono calculation_timer; ///< last calculation time

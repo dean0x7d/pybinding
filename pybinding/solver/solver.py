@@ -36,6 +36,12 @@ class Solver:
         """Return sum of wavefunction^2 at indices"""
         return np.sum(abs(self.eigenvectors[indices, :])**2, axis=0).squeeze()
 
+    def calc_dos(self, energies, broadening) -> np.ndarray:
+        return self.impl.calc_dos(energies, broadening)
+
+    def calc_ldos(self, energy, broadening, sublattice=-1) -> np.ndarray:
+        return self.impl.calc_ldos(energy, broadening, sublattice)
+
     def save(self, file):
         np.savez_compressed(file, energy=self.eigenvalues, psi=self.eigenvectors)
 

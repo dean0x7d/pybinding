@@ -43,7 +43,6 @@ BOOST_PYTHON_MODULE(_pybinding)
     export_solver();
     export_greens();
     export_modifiers();
-    export_results();
     export_parallel_sweep();
 
 #ifdef TBM_USE_MKL

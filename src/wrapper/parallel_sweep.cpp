@@ -3,12 +3,10 @@
 #include "python_support.hpp"
 
 #include "Model.hpp"
-#include "result/Result.hpp"
 #include "support/thread.hpp"
 using namespace boost::python;
 
 using ModelPtr = std::shared_ptr<tbm::Model>;
-using ResultPtr = std::shared_ptr<tbm::Result>;
 
 struct Job {
     Job() = default;
@@ -16,7 +14,6 @@ struct Job {
 
     std::size_t id = 0;
     ModelPtr model;
-    ResultPtr result;
 };
 
 void parallel_sweep(std::size_t size, std::size_t num_threads, std::size_t queue_size,
@@ -38,7 +35,6 @@ void parallel_sweep(std::size_t size, std::size_t num_threads, std::size_t queue
             auto job = Job{i};
             gil_ensure([&] {
                 job.model = extract<ModelPtr>{make_model(job.id)};
-                job.result = extract<ResultPtr>{make_result(job.id)};
                 // Hamiltonian construction relies on Python and must be done here
                 job.model->hamiltonian();
             });
@@ -67,7 +63,7 @@ void parallel_sweep(std::size_t size, std::size_t num_threads, std::size_t queue
         while (auto maybe_job = report_queue.pop()) {
             GILEnsure gil_lock;
             auto job = maybe_job.get();
-            report(job.model, job.result, job.id);
+//            report(job.model, job.result, job.id);
         }
     });
 
