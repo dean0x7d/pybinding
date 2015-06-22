@@ -9,5 +9,5 @@ from .lattice import Lattice
 
 from . import lattice, shape, symmetry
 from . import system, hamiltonian
-from . import solver, greens
+from . import solver, greens, results
 from . import electric, magnetic

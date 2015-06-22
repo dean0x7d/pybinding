@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 from ..system import System
 from ..plot import utils as pltutils
 from ..utils import with_defaults
+from .. import results
 
 
 class Solver:
@@ -32,18 +33,20 @@ class Solver:
         # transpose because it's easier to access the state number as the first index
         return self.impl.eigenvectors.transpose()
 
-    def get_intensity(self, indices) -> np.ndarray:
-        """Return sum of wavefunction^2 at indices"""
-        return np.sum(abs(self.eigenvectors[indices, :])**2, axis=0).squeeze()
+    def calc_intensity(self, indices, reduce=1e-5):
+        if reduce:
+            indices = self.get_degenerate_indices(self.eigenvalues, indices, reduce)
+
+        # wavefunction**2 at each index
+        intensity = np.sum(abs(self.eigenvectors[indices, :])**2, axis=0).squeeze()
+        return results.SpatialMap.from_system(intensity, self.system)
 
     def calc_dos(self, energies, broadening) -> np.ndarray:
         return self.impl.calc_dos(energies, broadening)
 
-    def calc_ldos(self, energy, broadening, sublattice=-1) -> np.ndarray:
-        return self.impl.calc_ldos(energy, broadening, sublattice)
-
-    def save(self, file):
-        np.savez_compressed(file, energy=self.eigenvalues, psi=self.eigenvectors)
+    def calc_ldos(self, energy, broadening, sublattice=-1):
+        ldos = self.impl.calc_ldos(energy, broadening, sublattice)
+        return results.SpatialMap.from_system(ldos, self.system)
 
     @staticmethod
     def get_degenerate_indices(energy, index, epsilon=1e-5) -> 'np.ndarray':
@@ -124,72 +127,6 @@ class Solver:
 
         self._plot_eigenvalues_common(mark_degenerate, number_states)
         return max_index
-
-    def plot_wavefunction(self, index, reduce=1e-5, site_radius=(0.03, 0.05), hopping_width=1,
-                          hopping_props=None, cbar_props=None, limits=None, **kwargs):
-        from pybinding.plot.system import plot_hoppings, plot_sites
-
-        ax = plt.gca()
-        ax.set_aspect('equal', 'datalim')
-        ax.set_xlabel('x (nm)')
-        ax.set_ylabel('y (nm)')
-
-        if reduce:
-            index = self.get_degenerate_indices(self.eigenvalues, index, reduce)
-        intensity = self.get_intensity(index)
-
-        x, y, z = self.system.positions
-        hoppings = self.system.matrix.tocsr()
-        if limits:
-            xlim, ylim = limits[:2], limits[2:]
-            idx = (x > xlim[0]) & (x < xlim[1]) & (y > ylim[0]) & (y < ylim[1])
-            x, y, z, intensity = (v[idx] for v in (x, y, z, intensity))
-            hoppings = hoppings[idx][:, idx]
-
-        radius = site_radius[0] + site_radius[1] * intensity / intensity.max()
-        collection = plot_sites(ax, (x, y, z), intensity, radius,
-                                **with_defaults(kwargs, cmap='YlGnBu'))
-
-        plot_hoppings(ax, (x, y, z), hoppings.tocoo(), hopping_width,
-                      **with_defaults(hopping_props, colors='#bbbbbb'))
-
-        pltutils.colorbar(collection, **with_defaults(cbar_props, pad=0.015, aspect=28))
-        pltutils.despine(trim=True)
-        pltutils.add_margin()
-
-        return index
-
-    def plot_wavefunction_mesh(self, index, reduce=1e-5, limits=None, grid=(250, 250), **kwargs):
-        ax = plt.gca()
-        ax.set_aspect('equal')
-        ax.set_xlabel('x (nm)')
-        ax.set_ylabel('y (nm)')
-
-        x, y = self.system.x, self.system.y
-        if reduce:
-            index = self.get_degenerate_indices(self.eigenvalues, index, reduce)
-        intensity = self.get_intensity(index)
-
-        if not limits:
-            limits = x.min(), x.max(), y.min(), y.max()
-        xlim, ylim = limits[:2], limits[2:]
-        ax.set_xlim(*xlim)
-        ax.set_ylim(*ylim)
-
-        from scipy.interpolate import griddata
-        grid_x, grid_y = np.meshgrid(
-            np.linspace(*xlim, num=grid[0]),
-            np.linspace(*ylim, num=grid[1])
-        )
-        grid_z = griddata((x, y), intensity, (grid_x, grid_y), method='cubic')
-
-        mesh = plt.pcolormesh(grid_x, grid_y, grid_z, **with_defaults(kwargs, cmap='YlGnBu'))
-        pltutils.colorbar(mesh, pad=0.02, aspect=28)
-
-        ax.set_xticks(ax.get_xticks()[1:-1])
-        ax.set_yticks(ax.get_yticks()[1:-1])
-
-        return index
 
     def plot_bands(self, k0, k1, *ks, step, names=None):
         ks = [np.array(k) for k in (k0, k1) + ks]
