@@ -97,8 +97,7 @@ std::shared_ptr<const Hamiltonian> Model::hamiltonian() const {
     return _hamiltonian;
 }
 
-std::string Model::build_report()
-{
+std::string Model::report() {
     // this could be a single line, but GCC 4.8 produces a runtime error otherwise
     auto ret = system()->report + '\n';
     ret += hamiltonian()->report;

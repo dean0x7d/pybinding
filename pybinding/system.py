@@ -1,17 +1,48 @@
 import _pybinding
-from .support.sparse import SparseMatrix as _SparseMatrix
+from .support.sparse import SparseMatrix
+
+import numpy as np
 
 
-class System(_pybinding.System):
+class System:
+    def __init__(self, impl: _pybinding.System):
+        self.impl = impl
+
     @property
-    def matrix(self) -> _SparseMatrix:
-        matrix = self._matrix
-        matrix.__class__ = _SparseMatrix
-        return matrix
+    def num_sites(self) -> int:
+        return self.impl.num_sites
+
+    @property
+    def matrix(self) -> SparseMatrix:
+        return SparseMatrix(self.impl.matrix)
+
+    @property
+    def x(self) -> np.ndarray:
+        return self.impl.x
+
+    @property
+    def y(self) -> np.ndarray:
+        return self.impl.y
+
+    @property
+    def z(self) -> np.ndarray:
+        return self.impl.z
 
     @property
     def positions(self):
         return self.x, self.y, self.z
+
+    @property
+    def sublattice(self) -> np.ndarray:
+        return self.impl.sublattice
+
+    @property
+    def boundaries(self):
+        return self.impl.boundaries
+
+    def find_nearest(self, position, sublattice=-1) -> int:
+        """Find the index of the atom closest to the given coordiantes."""
+        return self.impl.find_nearest(position, sublattice)
 
     def plot(self, site_radius: float=0.025, site_props: dict=None, hopping_width: float=1,
              hopping_props: dict=None, boundary_color: str='#ff4444', rotate: tuple=(0, 1, 2)):
@@ -61,8 +92,7 @@ class System(_pybinding.System):
 
             # special color for the boundary hoppings
             from pybinding.support.sparse import SparseMatrix
-            matrix = boundary.matrix
-            matrix.__class__ = SparseMatrix
+            matrix = SparseMatrix(boundary.matrix)
             b_hop = matrix.tocoo()
             kwargs = dict(hopping_props, colors=boundary_color) if boundary_color else hopping_props
             plot_hoppings(ax, pos, b_hop, hopping_width, boundary.shift, boundary=True, **kwargs)

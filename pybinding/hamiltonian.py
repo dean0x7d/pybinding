@@ -1,10 +1,11 @@
 import _pybinding
-from .support.sparse import SparseMatrix as _SparseMatrix
+from .support.sparse import SparseMatrix
 
 
-class Hamiltonian(_pybinding.Hamiltonian):
+class Hamiltonian:
+    def __init__(self, impl: _pybinding.Hamiltonian):
+        self.impl = impl
+
     @property
-    def matrix(self) -> _SparseMatrix:
-        matrix = self._matrix
-        matrix.__class__ = _SparseMatrix
-        return matrix
+    def matrix(self) -> SparseMatrix:
+        return SparseMatrix(self.impl.matrix)

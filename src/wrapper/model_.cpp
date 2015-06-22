@@ -20,7 +20,7 @@ void export_core()
     .add_property("symmetry", &Model::symmetry, &Model::set_symmetry)
     .add_property("system", &Model::system)
     .add_property("hamiltonian", &Model::hamiltonian)
-    .def("build_report", &Model::build_report,
+    .def("report", &Model::report,
          "Report of the last build operation: system and Hamiltonian")
     .def("clear_symmetry", &Model::clear_symmetry)
     .def("clear_system_modifiers", &Model::clear_system_modifiers)

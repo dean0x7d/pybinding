@@ -126,8 +126,7 @@ def plot_hopping_values(system):
 
     for boundary in system.boundaries:
         from pybinding.support.sparse import SparseMatrix
-        hoppings = boundary.matrix
-        hoppings.__class__ = SparseMatrix
+        hoppings = SparseMatrix(boundary.matrix)
 
         for i, j, t in hoppings.triplets():
             pltutils.annotate_box(t, (pos[i] + pos[j] + boundary.shift[:2]) / 2)

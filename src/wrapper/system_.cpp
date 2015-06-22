@@ -50,7 +50,7 @@ void export_system()
     .add_property("z", const_ref(&System::z))
     .add_property("sublattice", by_value(&System::sublattice))
     .add_property("boundaries", by_value(&System::boundaries))
-    .add_property("_matrix", &System::matrix_uref)
+    .add_property("matrix", &System::matrix_uref)
     .def_readonly("report", &System::report)
     ;
 

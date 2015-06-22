@@ -15,7 +15,7 @@ parameters = {
 
 def calc_ldos(params):
     model = pb.Model(*params['model'])
-    greens = pb.greens.KPM(model)
+    greens = pb.greens.make_kpm(model)
     return greens.calc_ldos(*params['ldos'])
 
 

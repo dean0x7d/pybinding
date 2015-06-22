@@ -40,7 +40,7 @@ public: // get results
 
 public: // get information
     /// Report of the last build operation: system and Hamiltonian
-    std::string build_report();
+    std::string report();
 
 public:
     void clear_symmetry() { _symmetry.reset(); }

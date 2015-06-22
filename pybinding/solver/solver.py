@@ -21,9 +21,7 @@ class Solver:
 
     @property
     def system(self) -> System:
-        s = self.impl.system
-        s.__class__ = System
-        return s
+        return System(self.impl.system)
 
     @property
     def eigenvalues(self) -> np.ndarray:
@@ -186,3 +184,25 @@ class Solver:
         ax.set_yticks(ax.get_yticks()[1:-1])
 
         return index
+
+    def plot_bands(self, k0, k1, *ks, step, names=None):
+        ks = [np.array(k) for k in (k0, k1) + ks]
+        energy = []
+        points = [0]
+        for start, end in zip(ks[:-1], ks[1:]):
+            num_steps = max(abs(end - start) / step)
+            k_list = (np.linspace(s, e, num_steps) for s, e in zip(start, end))
+
+            for k in zip(*k_list):
+                self.model.set_wave_vector(k)
+                energy.append(self.eigenvalues)
+            points += [len(energy)-1]
+
+        for point in points[1:-1]:
+            plt.axvline(point, color='black', ls='--')
+        plt.xticks(points, names if names else [])
+
+        plt.plot(energy, color='blue')
+        plt.xlim(0, len(energy) - 1)
+        plt.xlabel('k-space')
+        plt.ylabel('E (eV)')

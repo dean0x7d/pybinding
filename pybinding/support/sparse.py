@@ -1,18 +1,21 @@
 import _pybinding
 
 
-class SparseMatrix(_pybinding.SparseURef):
+class SparseMatrix:
+    def __init__(self, impl: _pybinding.SparseURef):
+        self.impl = impl
+
     @property
     def data_pack(self):
-        return self.values, self.inner_indices, self.outer_starts
+        return self.impl.values, self.impl.inner_indices, self.impl.outer_starts
 
     @property
     def shape(self):
-        return self.rows, self.cols
+        return self.impl.rows, self.impl.cols
 
     @property
     def nnz(self):
-        return self.values.size
+        return self.impl.values.size
 
     def tocsr(self):
         from scipy.sparse import csr_matrix
@@ -22,11 +25,13 @@ class SparseMatrix(_pybinding.SparseURef):
         return self.tocsr().tocoo()
 
     def indices(self):
-        for i, (start, end) in enumerate(zip(self.outer_starts[:-1], self.outer_starts[1:])):
+        row_boundaries = zip(self.impl.outer_starts[:-1], self.impl.outer_starts[1:])
+        for i, (start, end) in enumerate(row_boundaries):
             for idx in range(start, end):
-                yield i, self.inner_indices[idx]
+                yield i, self.impl.inner_indices[idx]
 
     def triplets(self):
-        for i, (start, end) in enumerate(zip(self.outer_starts[:-1], self.outer_starts[1:])):
+        row_boundaries = zip(self.impl.outer_starts[:-1], self.impl.outer_starts[1:])
+        for i, (start, end) in enumerate(row_boundaries):
             for idx in range(start, end):
-                yield i, self.inner_indices[idx], self.values[idx]
+                yield i, self.impl.inner_indices[idx], self.impl.values[idx]
