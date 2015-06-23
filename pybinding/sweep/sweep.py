@@ -4,6 +4,7 @@ import matplotlib.pyplot as _plt
 import pybinding as _pb
 from pybinding.utils import progressbar as _progressbar
 from .data3d import Data3D
+from _pybinding import KPMldos
 
 
 class Execute(type):
@@ -112,15 +113,15 @@ class Sweep(metaclass=Execute):
         pass
 
     def prepare_data(self):
-        result = self.make_result(self.range[0])
+        result = self.make_result(self.make_model(0), self.range[0])
         self.data.x = self.range
         self.data.y = result.energy.copy()
         self.data.z = _np.zeros((self.data.x.size, self.data.y.size), _np.float32)
 
-    def report(self, model, result, job_id):
+    def report(self, result, job_id):
         self.data.z[job_id, :] = result.ldos
 
-        report = model.compute_report(shortform=True)
+        report = result.report()
         var_name = self.data.plain_labels()['x']
         print("{:3}| {} = {:.2f}, {}".format(
             self.pbar.currval + 1, var_name, self.range[job_id], report))
@@ -159,8 +160,8 @@ class Sweep(metaclass=Execute):
         params = to_tuple(self.constant) + to_tuple(self.variable(var))
         return _pb.Model(*params)
 
-    def make_result(self, job_id):
-        return self.result(self.range[job_id])
+    def make_result(self, model, job_id):
+        return self.result(model, self.range[job_id])
 
     def run(self):
         self.prepare_data()
@@ -173,7 +174,7 @@ class Sweep(metaclass=Execute):
 
         from pybinding.utils import cpuinfo
         print('\n', cpuinfo.name(), '\n', cpuinfo.threads(), '\n', sep='')
-        print(self.make_model(self.range[0]).build_report(), '\n')
+        print(self.make_model(self.range[0]).report(), '\n')
         self.pbar.update()
 
         from _pybinding import parallel_sweep

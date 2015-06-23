@@ -1,2 +1,2 @@
 from .greens import Greens
-from .KPM import make_kpm
+from .KPM import KPM, make_kpm
