@@ -1,9 +1,29 @@
-import _pybinding
-from .support.sparse import SparseMatrix
+from collections import namedtuple
 
 import numpy as np
 
+import _pybinding
+from .support.sparse import SparseMatrix
+from .support.pickle import pickleable_impl
 
+Positions = namedtuple('Positions', 'x y z')
+
+
+@pickleable_impl('shift matrix.')
+class Boundary:
+    def __init__(self, impl: _pybinding.Boundary):
+        self.impl = impl
+
+    @property
+    def shift(self) -> np.ndarray:
+        return self.impl.shift
+
+    @property
+    def matrix(self) -> SparseMatrix:
+        return SparseMatrix(self.impl.matrix)
+
+
+@pickleable_impl('positions sublattice matrix. boundaries[]')
 class System:
     def __init__(self, impl: _pybinding.System):
         self.impl = impl
@@ -18,19 +38,19 @@ class System:
 
     @property
     def x(self) -> np.ndarray:
-        return self.impl.x
+        return self.impl.positions.x
 
     @property
     def y(self) -> np.ndarray:
-        return self.impl.y
+        return self.impl.positions.y
 
     @property
     def z(self) -> np.ndarray:
-        return self.impl.z
+        return self.impl.positions.z
 
     @property
     def positions(self):
-        return self.x, self.y, self.z
+        return Positions(self.x, self.y, self.z)
 
     @property
     def sublattice(self) -> np.ndarray:
@@ -38,7 +58,7 @@ class System:
 
     @property
     def boundaries(self):
-        return self.impl.boundaries
+        return [Boundary(b) for b in self.impl.boundaries]
 
     def find_nearest(self, position, sublattice=-1) -> int:
         """Find the index of the atom closest to the given coordiantes."""
@@ -91,9 +111,7 @@ class System:
                 plot_hoppings(ax, pos, hop, hopping_width, shift, blend=0.5, **hopping_props)
 
             # special color for the boundary hoppings
-            from pybinding.support.sparse import SparseMatrix
-            matrix = SparseMatrix(boundary.matrix)
-            b_hop = matrix.tocoo()
+            b_hop = boundary.matrix.tocoo()
             kwargs = dict(hopping_props, colors=boundary_color) if boundary_color else hopping_props
             plot_hoppings(ax, pos, b_hop, hopping_width, boundary.shift, boundary=True, **kwargs)
 

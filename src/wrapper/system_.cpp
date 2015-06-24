@@ -34,19 +34,18 @@ public:
 void export_system()
 {
     using tbm::System;
+    using Boundary = tbm::System::Boundary;
 
-    class_<System::Boundary>{"Boundary", no_init}
-    .add_property("shift", copy_value(&System::Boundary::shift))
-    .add_property("matrix", sparse_uref(&System::Boundary::matrix))
+    class_<Boundary>{"Boundary", no_init}
+    .add_property("shift", copy_value(&Boundary::shift))
+    .add_property("matrix", sparse_uref(&Boundary::matrix))
     ;
 
     class_<System>{"System", no_init}
     .def("find_nearest", &System::find_nearest, args("self", "position", "sublattice"_kw=-1),
          "Find the index of the atom closest to the given coordiantes.")
     .add_property("num_sites", &System::num_sites)
-    .add_property("x", dense_uref(&System::x))
-    .add_property("y", dense_uref(&System::y))
-    .add_property("z", dense_uref(&System::z))
+    .add_property("positions", internal_ref(&System::positions))
     .add_property("sublattice", dense_uref(&System::sublattice))
     .add_property("boundaries", &System::boundaries)
     .add_property("matrix", sparse_uref(&System::matrix))

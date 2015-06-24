@@ -1,37 +1,41 @@
 import _pybinding
+from scipy.sparse import csr_matrix
 
 
 class SparseMatrix:
     def __init__(self, impl: _pybinding.SparseURef):
         self.impl = impl
 
+    def __getstate__(self):
+        return self.arrays, self.shape
+
+    def __setstate__(self, state):
+        self.impl = csr_matrix(*state)
+
     @property
-    def data_pack(self):
-        return self.impl.values, self.impl.inner_indices, self.impl.outer_starts
+    def arrays(self):
+        return self.impl.data, self.impl.indices, self.impl.indptr
 
     @property
     def shape(self):
-        return self.impl.rows, self.impl.cols
+        return self.impl.shape
 
     @property
     def nnz(self):
-        return self.impl.values.size
+        return self.impl.data.size
+
+    @property
+    def csr_data(self):
+        return self.arrays, self.shape
 
     def tocsr(self):
-        from scipy.sparse import csr_matrix
-        return csr_matrix(self.data_pack, shape=self.shape, copy=False)
+        return csr_matrix(*self.csr_data, copy=False)
 
     def tocoo(self):
-        return self.tocsr().tocoo()
-
-    def indices(self):
-        row_boundaries = zip(self.impl.outer_starts[:-1], self.impl.outer_starts[1:])
-        for i, (start, end) in enumerate(row_boundaries):
-            for idx in range(start, end):
-                yield i, self.impl.inner_indices[idx]
+        return self.tocsr().tocoo(copy=False)
 
     def triplets(self):
-        row_boundaries = zip(self.impl.outer_starts[:-1], self.impl.outer_starts[1:])
+        row_boundaries = zip(self.impl.indptr[:-1], self.impl.indptr[1:])
         for i, (start, end) in enumerate(row_boundaries):
             for idx in range(start, end):
-                yield i, self.impl.inner_indices[idx], self.impl.values[idx]
+                yield i, self.impl.indices[idx], self.impl.data[idx]

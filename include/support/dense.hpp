@@ -101,6 +101,7 @@ private:
 public:
     CartesianArray() = default;
     CartesianArray(int size) : x(size), y(size), z(size) {}
+    CartesianArray(ArrayXf const& x, ArrayXf const& y, ArrayXf const& z) : x(x), y(y), z(z) {}
 
     CartesianRef operator[](int i) { return {x[i], y[i], z[i]}; }
     Cartesian operator[](int i) const { return {x[i], y[i], z[i]}; }

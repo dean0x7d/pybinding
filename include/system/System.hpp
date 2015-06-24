@@ -34,7 +34,6 @@ public:
     System(const Lattice& lattice, const Shape& shape,
            const Symmetry* symmetry, const SystemModifiers& system_modifers);
 
-private: // build functions
     void build_from(Foundation& foundation);
     void build_boundaries_from(Foundation& foundation, const Symmetry& symmetry);
 
@@ -42,15 +41,10 @@ public:
     /// Find the index of the site nearest to the given position. Optional: filter by sublattice.
     int find_nearest(const Cartesian& position, short sublattice = -1) const;
 
+    int num_sites() const { return positions.size(); }
     std::tuple<Cartesian, Cartesian> get_position_pair(int i, int j) const {
         return std::make_tuple(positions[i], positions[j]);
     }
-
-public:
-    int num_sites() const { return positions.size(); }
-    const ArrayXf& x() const { return positions.x; }
-    const ArrayXf& y() const { return positions.y; }
-    const ArrayXf& z() const { return positions.z; }
 
 public:
     CartesianArray positions; ///< coordinates of all the lattice sites

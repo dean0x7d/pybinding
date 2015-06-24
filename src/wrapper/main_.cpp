@@ -11,7 +11,6 @@ void export_system();
 void export_solver();
 void export_greens();
 void export_modifiers();
-void export_results();
 void export_parallel_sweep();
 
 BOOST_PYTHON_MODULE(_pybinding)
@@ -24,15 +23,22 @@ BOOST_PYTHON_MODULE(_pybinding)
     eigen3_numpy_register_type<ArrayX<short>>();
     eigen3_numpy_register_type<Cartesian>();
     eigen3_numpy_register_type<Index3D>();
-    to_python_converter<DenseURef, denseuref_to_python, true>{};
+    to_python_converter<DenseURef, denseuref_to_python>{};
 
-    // sparse matrix class
+    class_<CartesianArray>{
+        "CartesianArray",
+        init<ArrayXf const&, ArrayXf const&, ArrayXf const&>{args("self", "x", "y", "z")}
+    }
+    .add_property("x", dense_uref(&CartesianArray::x), &CartesianArray::x)
+    .add_property("y", dense_uref(&CartesianArray::y), &CartesianArray::y)
+    .add_property("z", dense_uref(&CartesianArray::z), &CartesianArray::z)
+    ;
+
     class_<SparseURef> {"SparseURef", no_init}
-    .add_property("rows", &SparseURef::rows)
-    .add_property("cols", &SparseURef::cols)
-    .add_property("inner_indices", internal_ref(&SparseURef::inner_indices))
-    .add_property("outer_starts", internal_ref(&SparseURef::outer_starts))
-    .add_property("values", internal_ref(&SparseURef::values))
+    .add_property("shape", [](SparseURef const& s) { return make_tuple(s.rows, s.cols); })
+    .add_property("data", internal_ref(&SparseURef::values))
+    .add_property("indices", internal_ref(&SparseURef::inner_indices))
+    .add_property("indptr", internal_ref(&SparseURef::outer_starts))
     ;
     
     // export all classes
