@@ -1,41 +1,25 @@
 import pytest
-import pybinding as pb
 import numpy as np
+
+import pybinding as pb
 from pybinding.repository import graphene
 
-
-parameters = {
-    'graphene_square': (
-        dict(model=[graphene.lattice.monolayer(), pb.shape.rectangle(50)],
-             ldos=[np.linspace(0, 0.5, 11), 0.03, (0, 0)]),
-        [0.0212, 0.0261, 0.0328, 0.0406, 0.0513, 0.0589, 0.0675, 0.0792, 0.087, 0.0968, 0.108]
-    )
+models = {
+    'graphene-pristine': [graphene.lattice.monolayer(), pb.shape.rectangle(70)],
+    'graphene-magnetic_field': [graphene.lattice.monolayer(), pb.shape.rectangle(70),
+                                pb.magnetic.constant(60)],
 }
 
 
-def calc_ldos(params):
-    model = pb.Model(*params['model'])
-    greens = pb.greens.make_kpm(model)
-    return greens.calc_ldos(*params['ldos'])
+@pytest.fixture(scope='module', ids=list(models.keys()), params=models.values())
+def kpm(request):
+    model = pb.Model(*request.param)
+    return pb.greens.make_kpm(model)
 
 
-def generate_data(show_plot=False):
-    for name, (params, _) in parameters.items():
-        result = calc_ldos(params)
-        values = ', '.join('{:.3g}'.format(v) for v in result.ldos)
-        print('{name}: [{values}]'.format(**locals()))
+def test_ldos(kpm, baseline, plot):
+    result = kpm.calc_ldos(energy=np.linspace(-0.6, 0.6, 200), broadening=0.03, position=(0, 0))
+    expected = baseline(result)
 
-        if show_plot:
-            import matplotlib.pyplot as plt
-            result.plot()
-            plt.show()
-
-
-@pytest.mark.parametrize('params, expected', parameters.values(), ids=list(parameters.keys()))
-def test_kpm(params, expected):
-    result = calc_ldos(params)
-    assert np.allclose(result.ldos, expected, 1.e-2)
-
-
-if __name__ == '__main__':
-    generate_data()
+    plot(result.plot, expected.plot)
+    assert pytest.fuzzy_equal(result, expected, rtol=1e-3, atol=1e-6)

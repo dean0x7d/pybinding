@@ -1,5 +1,5 @@
 import _pybinding
-from ..result import LDOSpoint
+from ..results import LDOSpoint
 
 import numpy as np
 

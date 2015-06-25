@@ -1,11 +1,26 @@
-from .utils import with_defaults
-from .plot import utils as pltutils
-
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy.sparse import csr_matrix
 
-__all__ = ['SpatialMap']
+from .utils import with_defaults
+from .plot import utils as pltutils
+from .support.pickle import pickleable
+
+__all__ = ['LDOSpoint', 'SpatialMap']
+
+
+@pickleable
+class LDOSpoint:
+    def __init__(self, energy, ldos):
+        self.energy = energy
+        self.ldos = ldos
+
+    def plot(self, **kwargs):
+        plt.plot(self.energy, self.ldos, **kwargs)
+        plt.xlim(self.energy.min(), self.energy.max())
+        plt.ylabel('LDOS')
+        plt.xlabel('E (eV)')
+        pltutils.despine()
 
 
 class SpatialMap:
