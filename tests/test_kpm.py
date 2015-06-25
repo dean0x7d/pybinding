@@ -21,5 +21,5 @@ def test_ldos(kpm, baseline, plot):
     result = kpm.calc_ldos(energy=np.linspace(-0.6, 0.6, 200), broadening=0.03, position=(0, 0))
     expected = baseline(result)
 
-    plot(result.plot, expected.plot)
+    plot(result, expected, 'plot')
     assert pytest.fuzzy_equal(result, expected, rtol=1e-3, atol=1e-6)

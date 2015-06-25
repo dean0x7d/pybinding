@@ -4,7 +4,10 @@ import matplotlib.pyplot as plt
 
 
 def pytest_addoption(parser):
-    parser.addoption("--alwaysplot", action="store_true", help="Plot even for tests which pass.")
+    parser.addoption("--alwaysplot", action="store_true",
+                     help="Plot even for tests which pass.")
+    parser.addoption("--savebaseline", action="store_true",
+                     help="Save a new baseline for all tests.")
 
 
 # noinspection PyUnusedLocal
@@ -17,7 +20,7 @@ def pytest_runtest_makereport(item, call, __multicall__):
     return rep
 
 
-def _make_file_path(request, directory: str, extenstion: str):
+def _make_file_path(request, directory: str, name: str='', ext: str=''):
     basedir = request.fspath.join('..').join(directory)
     if not basedir.exists():
         basedir.mkdir()
@@ -27,47 +30,66 @@ def _make_file_path(request, directory: str, extenstion: str):
     if not subdir.exists():
         subdir.mkdir()
 
-    test_name = request.node.name.replace('test_', '')
-    file_path = subdir.join(test_name + extenstion)
-    return file_path
+    if not name:
+        name = request.node.name.replace('test_', '')
+
+    return subdir.join(name + ext)
 
 
 @pytest.fixture
 def baseline(request):
-    file_path = _make_file_path(request, 'baseline_data', '.pbz')
+    def get_expected(result, group=''):
+        isarray = isinstance(result, np.ndarray)
 
-    def func(generated):
-        if file_path.exists():
-            return generated.__class__.from_file(str(file_path))
+        name = request.node.name.replace('test_', '')
+        if group:
+            part = name.partition('[')
+            name = group + part[1] + part[2]
+
+        ext = '.npz' if isarray else '.pbz'
+        file_path = _make_file_path(request, 'baseline_data', name, ext)
+        file_str = str(file_path)
+
+        if not request.config.getoption("--savebaseline") and file_path.exists():
+            if isarray:
+                return np.load(file_str)['data']
+            else:
+                return result.__class__.from_file(file_str)
         else:
-            generated.save(str(file_path))
-            return generated
+            if isarray:
+                np.savez_compressed(file_str, data=result)
+            else:
+                result.save(file_str)
+            return result
 
-    return func
+    return get_expected
 
 
 @pytest.yield_fixture
 def plot(request):
     class Gather:
-        def __call__(self, plot_result, plot_expected, *args, **kwargs):
+        def __call__(self, result, expected, method, *args, **kwargs):
             self.__dict__.update(**locals())
 
-    d = Gather()
-    yield d
+        def plot(self, what):
+            d = self.__dict__
+            if what in d:
+                getattr(d[what], d['method'])(*d['args'], **d['kwargs'])
+
+    gather = Gather()
+    yield gather
 
     if request.config.getoption("--alwaysplot") or request.node.rep_call.failed:
         plt.figure(figsize=(6, 3))
         plt.subplot(121)
-        # noinspection PyUnresolvedReferences
-        d.plot_result(*d.args, **d.kwargs)
+        gather.plot('result')
         plt.title("result")
 
         plt.subplot(122)
-        # noinspection PyUnresolvedReferences
-        d.plot_expected(*d.args, **d.kwargs)
+        gather.plot('expected')
         plt.title("expected")
 
-        file_path = _make_file_path(request, 'plots', '.png')
+        file_path = _make_file_path(request, 'plots', ext='.png')
         plt.savefig(str(file_path))
         plt.close()
 

@@ -1,12 +1,15 @@
-import _pybinding
 import numpy as np
 import matplotlib.pyplot as plt
-from ..system import System
-from ..plot import utils as pltutils
-from ..utils import with_defaults
+
+import _pybinding
 from .. import results
+from ..system import System
+from ..utils import with_defaults
+from ..plot import utils as pltutils
+from ..support.pickle import pickleable_impl
 
 
+@pickleable_impl('system. eigenvalues eigenvectors')
 class Solver:
     def __init__(self, impl: _pybinding.Solver):
         self.impl = impl
@@ -30,15 +33,14 @@ class Solver:
 
     @property
     def eigenvectors(self) -> np.ndarray:
-        # transpose because it's easier to access the state number as the first index
-        return self.impl.eigenvectors.transpose()
+        return self.impl.eigenvectors
 
     def calc_intensity(self, indices, reduce=1e-5):
         if reduce:
             indices = self.get_degenerate_indices(self.eigenvalues, indices, reduce)
 
         # wavefunction**2 at each index
-        intensity = np.sum(abs(self.eigenvectors[indices, :])**2, axis=0).squeeze()
+        intensity = np.sum(abs(self.eigenvectors[:, indices])**2, axis=0).squeeze()
         return results.SpatialMap.from_system(intensity, self.system)
 
     def calc_dos(self, energies, broadening) -> np.ndarray:
@@ -67,7 +69,7 @@ class Solver:
     def _reduce_degenerate_energy(self, position) -> 'np.ndarray':
         # intensity of wavefunction^2 at the given position for every state
         atom_idx = self.system.find_nearest(position)
-        intensity = abs(self.eigenvectors[:, atom_idx])**2
+        intensity = abs(self.eigenvectors[atom_idx, :])**2
         p0 = intensity.copy()
 
         # the instensity of each degenerate state is updated to: sum_N / N

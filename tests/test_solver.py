@@ -1,45 +1,39 @@
 import pytest
+
 import pybinding as pb
-import numpy as np
 from pybinding.repository import graphene
 
-TOLERANCE = 1.e-2, 1.e-6
-
-parameters = {
-    'graphene_square': (
-        dict(model=[graphene.lattice.monolayer(), pb.shape.rectangle(3)],
-             feast=[(-0.1, 0.1), 10]),
-        [-0.0113, -7.15e-05, 0, 0, 7.15e-05, 0.0113]
-    )
+solvers = ['feast']
+models = {
+    'graphene-pristine': {'model': [graphene.lattice.monolayer(), pb.shape.rectangle(10)],
+                          'feast': [(-0.1, 0.1), 28]},
+    'graphene-magnetic_field': {'model': [graphene.lattice.monolayer(), pb.shape.rectangle(6),
+                                          pb.magnetic.constant(10)],
+                                'feast': [(-0.1, 0.1), 18]},
 }
 
 
-def make_solver(params, name):
-    model = pb.Model(*params['model'])
-    make = getattr(pb.solver, 'make_{}'.format(name))
-    return make(model, *params[name])
+@pytest.fixture(scope='module', ids=list(models.keys()), params=models.values())
+def model_ex(request):
+    return pb.Model(*request.param['model']), request.param
 
 
-def generate_data():
-    for name, (params, _) in parameters.items():
-        solver = make_solver(params, 'feast')
-        values = ', '.join('{:.3g}'.format(v) for v in solver.eigenvalues)
-        print('{name}: [{values}]'.format(**locals()))
+@pytest.fixture(scope='module', params=solvers)
+def solver(request, model_ex):
+    model, solver_cfg = model_ex
+    solver = pb.solver.make_feast(model, *solver_cfg[request.param])
+    solver.solve()
+    return solver
 
 
-@pytest.mark.parametrize('params, expected', parameters.values(), ids=list(parameters.keys()))
-def test_feast(params, expected):
-    solver = make_solver(params, 'feast')
+def test_pickle_round_trip(solver, tmpdir):
+    file_name = str(tmpdir.join('file.npz'))
+    solver.save(file_name)
+    from_file = pb.solver.Solver.from_file(file_name)
 
-    assert np.allclose(solver.eigenvalues, expected, *TOLERANCE)
-    assert solver.eigenvectors.shape == (solver.eigenvalues.size, solver.system.num_sites)
-
-    # property lifetime test
-    values, vectors, system = solver.eigenvalues, solver.eigenvectors, solver.system
-    del solver
-    assert np.allclose(values, expected, *TOLERANCE)
-    assert vectors.shape == (values.size, system.num_sites)
+    assert pytest.fuzzy_equal(solver, from_file)
 
 
-if __name__ == '__main__':
-    generate_data()
+def test_eigenvalues(solver, baseline):
+    expected_eigenvalues = baseline(solver.eigenvalues)
+    assert pytest.fuzzy_equal(solver.eigenvalues, expected_eigenvalues, 1.e-3, 1.e-6)
