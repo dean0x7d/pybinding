@@ -4,12 +4,12 @@ import numpy as np
 
 import _pybinding
 from .support.sparse import SparseMatrix
-from .support.pickle import pickleable_impl
+from .support.pickle import pickleable
 
 Positions = namedtuple('Positions', 'x y z')
 
 
-@pickleable_impl('shift matrix.')
+@pickleable(impl='shift matrix.')
 class Boundary:
     def __init__(self, impl: _pybinding.Boundary):
         self.impl = impl
@@ -23,7 +23,7 @@ class Boundary:
         return SparseMatrix(self.impl.matrix)
 
 
-@pickleable_impl('positions sublattice matrix. boundaries[]')
+@pickleable(impl='positions sublattice matrix. boundaries[]')
 class System:
     def __init__(self, impl: _pybinding.System):
         self.impl = impl

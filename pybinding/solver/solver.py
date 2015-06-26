@@ -6,10 +6,10 @@ from .. import results
 from ..system import System
 from ..utils import with_defaults
 from ..plot import utils as pltutils
-from ..support.pickle import pickleable_impl
+from ..support.pickle import pickleable
 
 
-@pickleable_impl('system. eigenvalues eigenvectors')
+@pickleable(impl='system. eigenvalues eigenvectors')
 class Solver:
     def __init__(self, impl: _pybinding.Solver):
         self.impl = impl

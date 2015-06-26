@@ -104,11 +104,14 @@ def fuzzy_equal(data, expected, rtol=1e-05, atol=1e-08):
                 all(fuzzy_equal(a, b, *tol) for a, b in zip(data, expected)))
     if isinstance(data, dict):
         return (len(data) == len(expected) and
-                all(fuzzy_equal(a, b, *tol) for a, b in zip(data.values(), expected.values())))
-    elif hasattr(data, '__getstate__'):
-        return fuzzy_equal(data.__getstate__(), expected.__getstate__(), *tol)
+                all(fuzzy_equal(data[k], expected[k], *tol) for k in data.keys()))
     else:
-        return data == expected
+        specials = [s for s in ['__getstate__', '__getinitargs__'] if hasattr(data, s)]
+        if specials:
+            return all(fuzzy_equal(getattr(data, s)(), getattr(expected, s)(), *tol)
+                       for s in specials)
+        else:
+            return data == expected
 
 
 def pytest_namespace():
