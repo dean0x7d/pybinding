@@ -15,8 +15,7 @@ def coulomb(beta, r_const=.0, offset=(0, 0, 0)):
     offset: tuple of floats, optional
         Position of the charge.
     """
-    from pybinding.constant import hbar
-    from .lattice import vf
+    from .constants import hbar, vf
     # beta is dimensionless -> multiply hbar*vF makes it [eV * nm]
     beta *= hbar * vf
 

@@ -1,11 +1,10 @@
 import numpy as _np
 from pybinding import modifier
+from .constants import a_cc, beta, hbar
 
 
 @modifier.hopping_energy
 def strained_hopping(hopping, x1, y1, z1, x2, y2, z2):
-    from .lattice import a_cc, beta
-
     l = _np.sqrt((x1-x2)**2 + (y1-y2)**2 + (z1-z2)**2)
     w = l / a_cc - 1
     return hopping * _np.exp(-beta * w)
@@ -30,8 +29,6 @@ def gaussian_bump(h0, r_limit):
 
 def triaxial(magnetic_field):
     def field_to_strain(field):
-        from pybinding.constant import hbar
-        from .lattice import a_cc, beta
         return field * a_cc / (4 * hbar * beta) * 10**-18
 
     c = field_to_strain(magnetic_field)
