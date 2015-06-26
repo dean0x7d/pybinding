@@ -2,11 +2,13 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 import _pybinding
-from .. import results
-from ..system import System
-from ..utils import with_defaults
-from ..plot import utils as pltutils
-from ..support.pickle import pickleable
+from . import results
+from .system import System
+from .utils import with_defaults
+from .plot import utils as pltutils
+from .support.pickle import pickleable
+
+__all__ = ['Solver', 'make_feast']
 
 
 @pickleable(impl='system. eigenvalues eigenvectors')
@@ -151,3 +153,12 @@ class Solver:
         plt.xlim(0, len(energy) - 1)
         plt.xlabel('k-space')
         plt.ylabel('E (eV)')
+
+
+def make_feast(model, energy_range, initial_size_guess, recycle_subspace=False, is_verbose=False):
+    try:
+        return Solver(_pybinding.FEAST(model, energy_range, initial_size_guess,
+                                       recycle_subspace, is_verbose))
+    except AttributeError:
+        raise Exception("The module was compiled without the FEAST solver.\n"
+                        "Use a different solver or recompile the module with FEAST.")
