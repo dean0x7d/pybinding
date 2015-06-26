@@ -1,9 +1,11 @@
 import _pybinding
+from .support.pickle import pickleable
 
 
+@pickleable(props='vectors sublattices min_neighbors')
 class Lattice(_pybinding.Lattice):
-    def __init__(self, min_neighbours=1):
-        super().__init__(min_neighbours)
+    def __init__(self, min_neighbors=1):
+        super().__init__(min_neighbors)
         self.sub = dict()
         self.names = []
 

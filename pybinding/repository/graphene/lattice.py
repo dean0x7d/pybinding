@@ -11,7 +11,7 @@ vf = 3 / (2 * hbar) * abs(t) * a_cc  # [nm/s]
 
 
 def monolayer(onsite_a=0, onsite_b=0):
-    lat = Lattice(min_neighbours=2)
+    lat = Lattice(min_neighbors=2)
     lat.set_vectors([a, 0], [0.5 * a, 0.5 * math.sqrt(3) * a])
 
     sub_a = lat.create_sublattice((0, -a_cc/2), onsite_a, name='a')
@@ -28,7 +28,7 @@ def monolayer(onsite_a=0, onsite_b=0):
 
 def monolayer_alt(onsite_a=0, onsite_b=0):
     """ Alternative graphene lattice specification: different lattice vectors """
-    lat = Lattice(min_neighbours=2)
+    lat = Lattice(min_neighbors=2)
     lat.set_vectors(
         [ 0.5 * a, 0.5 * math.sqrt(3) * a],
         [-0.5 * a, 0.5 * math.sqrt(3) * a],
@@ -55,7 +55,7 @@ def monolayer_alt(onsite_a=0, onsite_b=0):
 
 def monolayer_4atom(onsite_a=0, onsite_b=0):
     """ Graphene with 4 atoms per unit cell: square lattice instead of triangular """
-    lat = Lattice(min_neighbours=2)
+    lat = Lattice(min_neighbors=2)
     lat.set_vectors([a, 0], [0, 3*a_cc])
 
     a1 = lat.create_sublattice((-a/4, -a_cc * 5/4), onsite_a, name='a')
@@ -78,7 +78,7 @@ def monolayer_4atom(onsite_a=0, onsite_b=0):
 
 def monolayer_nn(onsite_a=0, onsite_b=0):
     """ Next-nearest neighbour model of graphene """
-    lat = Lattice(min_neighbours=2)
+    lat = Lattice(min_neighbors=2)
     lat.set_vectors([a, 0], [0.5 * a, 0.5*math.sqrt(3) * a])
 
     sub_a = lat.create_sublattice((0, -a_cc/2), onsite_a, name='a')
@@ -106,7 +106,7 @@ def bilayer(onsite_a1=0, onsite_b1=0, onsite_a2=0, onsite_b2=0):
     # gamma3 = -0.3
     # gamma4 = -0.04
 
-    lat = Lattice(min_neighbours=2)
+    lat = Lattice(min_neighbors=2)
     lat.set_vectors(
         [ 0.5 * a, 0.5 * math.sqrt(3) * a],
         [-0.5 * a, 0.5 * math.sqrt(3) * a],

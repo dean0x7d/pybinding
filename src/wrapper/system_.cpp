@@ -53,32 +53,54 @@ void export_system()
     ;
 
     using tbm::Hopping;
-    class_<Hopping>{"Hopping", no_init}
+    class_<Hopping>{"Hopping"}
     .add_property("relative_index", copy_value(&Hopping::relative_index))
     .def_readonly("to_sublattice", &Hopping::to_sublattice)
     .def_readonly("energy", &Hopping::energy)
+    .enable_pickling()
+    .def("__getstate__", [](Hopping const& h) {
+        return make_tuple(h.relative_index, h.to_sublattice, h.energy);
+    })
+    .def("__setstate__", [](Hopping& h, tuple t) {
+        h = {extract<decltype(h.relative_index)>(t[0]), extract<decltype(h.to_sublattice)>(t[1]),
+             extract<decltype(h.energy)>(t[2])};
+    })
     ;
 
     using tbm::Sublattice;
-    class_<Sublattice>{"Sublattice", no_init}
+    class_<Sublattice>{"Sublattice"}
     .add_property("offset", copy_value(&Sublattice::offset))
     .def_readonly("onsite", &Sublattice::onsite)
     .def_readonly("alias", &Sublattice::alias)
     .add_property("hoppings", &Sublattice::hoppings)
+    .enable_pickling()
+    .def("__getstate__", [](Sublattice const& s) {
+        return make_tuple(s.offset, s.onsite, s.alias, s.hoppings);
+    })
+    .def("__setstate__", [](Sublattice& s, tuple t) {
+        s = {extract<decltype(s.offset)>(t[0]), extract<decltype(s.onsite)>(t[1]),
+             extract<decltype(s.alias)>(t[2]), extract<decltype(s.hoppings)>(t[3])};
+    })
     ;
 
     using tbm::Lattice;
     class_<Lattice, noncopyable>{
-        "Lattice", init<int>{args("self", "min_neighbours"_kw=1)}
+        "Lattice", init<int>{args("self", "min_neighbors"_kw=1)}
     }
     .def("add_vector", &Lattice::add_vector, args("self", "primitive_vector"))
     .def("create_sublattice", &Lattice::create_sublattice,
          args("self", "offset", "onsite_potential"_kw=.0f, "alias"_kw=-1))
     .def("add_hopping", &Lattice::add_hopping,
          args("self", "relative_index", "from_sublattice", "to_sublattice", "hopping_energy"))
-    .add_property("vectors", &Lattice::vectors)
-    .add_property("sublattices", &Lattice::sublattices)
+    .add_property("vectors", &Lattice::vectors, &Lattice::vectors)
+    .add_property("sublattices", &Lattice::sublattices, [](Lattice& l, std::vector<Sublattice> s) {
+        l.has_onsite_potential = std::any_of(s.begin(), s.end(), [](Sublattice const& sub) {
+            return sub.onsite != 0;
+        });
+        l.sublattices = std::move(s);
+    })
     .def_readwrite("min_neighbors", &Lattice::min_neighbours)
+    .enable_pickling()
     ;
     
     using tbm::Shape;

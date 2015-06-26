@@ -17,7 +17,7 @@ def mos2():
     # convenient
     rt3 = math.sqrt(3)
 
-    lat = Lattice(min_neighbours=2)
+    lat = Lattice(min_neighbors=2)
     lat.set_vectors([a, 0], [0.5 * a, 0.5*rt3 * a])
 
     lat.create_sublattice((0, 0), eps0)
