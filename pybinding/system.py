@@ -51,6 +51,11 @@ class System:
         return self.impl.positions.z
 
     @property
+    def xyz(self) -> np.ndarray:
+        """Return a new array with shape=(N, 3). Convenient, but slow for big systems."""
+        return np.array(self.positions).T
+
+    @property
     def positions(self):
         return Positions(self.x, self.y, self.z)
 
@@ -62,9 +67,21 @@ class System:
     def boundaries(self):
         return [Boundary(b) for b in self.impl.boundaries]
 
-    def find_nearest(self, position, sublattice=-1) -> int:
-        """Find the index of the atom closest to the given coordiantes."""
-        return self.impl.find_nearest(position, sublattice)
+    def find_nearest(self, position, at_sublattice=-1) -> int:
+        """Find the index of the atom closest to the given position."""
+        if hasattr(self.impl, 'find_nearest'):
+            # use cpp implementation
+            return self.impl.find_nearest(position, int(at_sublattice))
+        else:
+            # fallback numpy implementation
+            r = np.array(position)
+            distance = np.linalg.norm(self.xyz[:, :len(r)] - r, axis=1)
+            if at_sublattice < 0:
+                return np.argmin(distance)
+            else:
+                from numpy import ma
+                masked_distance = ma.array(distance, mask=self.sublattice != at_sublattice)
+                return ma.argmin(masked_distance)
 
     def plot(self, site_radius: float=0.025, site_props: dict=None, hopping_width: float=1,
              hopping_props: dict=None, boundary_color: str='#ff4444', rotate: tuple=(0, 1, 2)):

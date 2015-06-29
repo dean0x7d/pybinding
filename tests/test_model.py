@@ -35,6 +35,14 @@ def test_pickle_round_trip(model, tmpdir):
 
 
 def test_system(model, baseline, plot):
-    expected = baseline(model.system)
-    plot(model.system, expected, 'plot')
-    assert pytest.fuzzy_equal(model.system, expected)
+    system = model.system
+    expected = baseline(system)
+
+    plot(system, expected, 'plot')
+    assert pytest.fuzzy_equal(system, expected)
+
+    idx = system.num_sites // 2
+    assert idx == system.find_nearest(system.xyz[idx])
+    assert idx == system.find_nearest(system.xyz[idx], system.sublattice[idx])
+    assert idx == expected.find_nearest(expected.xyz[idx])
+    assert idx == expected.find_nearest(expected.xyz[idx], expected.sublattice[idx])
