@@ -66,7 +66,7 @@ setup(
     packages=find_packages(exclude=['boost_python', 'tests*']),
     package_data=dict(pybinding=['../_pybinding' + sysconfig.get_config_var('EXT_SUFFIX')]),
     install_requires=['numpy>=1.9.0', 'scipy>=0.15', 'matplotlib>=1.4.3',
-                      'py-cpuinfo>=0.1.4', 'progressbar2>=2.7.3'],
+                      'py-cpuinfo>=0.1.4', 'progressbar2>=2.7.3', 'pytest>=2.7'],
     zip_safe=False,
     cmdclass=dict(build_py=inject_cmake(build_py), develop=inject_cmake(develop))
 )
