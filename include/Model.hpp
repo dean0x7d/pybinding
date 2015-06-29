@@ -60,6 +60,8 @@ private:
 
     mutable std::shared_ptr<const System> _system; ///< holds system data: atom coordinates and hoppings
     mutable std::shared_ptr<const Hamiltonian> _hamiltonian; ///< the Hamiltonian matrix
+
+    mutable std::string build_report;
 };
 
 } // namespace tbm

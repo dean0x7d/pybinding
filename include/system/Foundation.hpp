@@ -17,7 +17,7 @@ struct Site;
  */
 class Foundation {
 public:
-    Foundation(const Lattice& lattice, const Shape& shape, const Symmetry* symmetry);
+    Foundation(const Lattice& lattice, const Shape& shape);
 
     /// Evaluate which lattice sites are inside the shape
     void cut_down_to(const Shape& shape);

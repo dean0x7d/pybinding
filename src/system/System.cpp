@@ -4,31 +4,9 @@
 #include "system/Foundation.hpp"
 #include "system/Symmetry.hpp"
 #include "system/SystemModifiers.hpp"
-#include "utils/Chrono.hpp"
 #include "support/format.hpp"
-using namespace tbm;
 
-System::System(const Lattice& lattice, const Shape& shape,
-               const Symmetry* symmetry, const SystemModifiers& system_modifers)
-{
-    auto build_time = Chrono{};
-    auto foundation = Foundation{lattice, shape, symmetry};
-
-    for (const auto& site_state_modifier : system_modifers.state)
-        site_state_modifier->apply(foundation.is_valid, foundation.positions);
-    for (const auto& position_modifier : system_modifers.position)
-        position_modifier->apply(foundation.positions);
-
-    build_from(foundation);
-    if (symmetry)
-        build_boundaries_from(foundation, *symmetry);
-
-    if (num_sites() == 0) // sanity check
-        throw std::runtime_error{"Sanity fail: the system was built with 0 lattice sites."};
-
-    report = fmt::format("Built system with {} lattice sites, {}",
-                         fmt::with_suffix(num_sites()), build_time.toc());
-}
+namespace tbm {
 
 int System::find_nearest(const Cartesian& target_position, short target_sublattice) const
 {
@@ -52,36 +30,61 @@ int System::find_nearest(const Cartesian& target_position, short target_sublatti
     return nearest_index;
 }
 
-void System::build_from(Foundation& foundation)
-{
-    // count the number of valid sites and assign a Hamiltonian index to them
-    const auto num_valid_sites = foundation.finalize();
+std::unique_ptr<System> build_system(Lattice const& lattice, Shape const& shape,
+                                     SystemModifiers const& system_modifers,
+                                     Symmetry const* symmetry) {
+    auto system = cpp14::make_unique<System>();
 
-    // allocate base data
-    max_elements_per_site = foundation.lattice.max_hoppings()
-        + foundation.lattice.has_onsite_potential;
-    positions.resize(num_valid_sites);
-    sublattice.resize(num_valid_sites);
-    matrix.resize(num_valid_sites, num_valid_sites);
-    const auto reserve_nonzeros = (foundation.lattice.max_hoppings() * num_valid_sites) / 2
-        + foundation.lattice.has_onsite_potential * num_valid_sites;
-    auto matrix_view = compressed_inserter(matrix, reserve_nonzeros);
-    
-    // populate base data
+    auto foundation = Foundation{lattice, shape};
+    foundation.cut_down_to(shape);
+    if (symmetry)
+        foundation.cut_down_to(*symmetry);
+
+    for (auto const& site_state_modifier : system_modifers.state)
+        site_state_modifier->apply(foundation.is_valid, foundation.positions);
+    for (auto const position_modifier : system_modifers.position)
+        position_modifier->apply(foundation.positions);
+
+    populate_body(*system, foundation);
+    if (symmetry)
+        populate_boundaries(*system, foundation, *symmetry);
+
+    if (system->num_sites() == 0) // sanity check
+        throw std::runtime_error{"Sanity fail: the system was built with 0 lattice sites."};
+
+    return system;
+}
+
+void populate_body(System& system, Foundation& foundation) {
+    // count the number of valid sites and assign a Hamiltonian index to them
+    auto const num_valid_sites = foundation.finalize();
+
+    // allocate
+    system.max_elements_per_site = foundation.lattice.max_hoppings()
+                                   + foundation.lattice.has_onsite_potential;
+    system.positions.resize(num_valid_sites);
+    system.sublattice.resize(num_valid_sites);
+    system.matrix.resize(num_valid_sites, num_valid_sites);
+
+    auto const reserve_nonzeros = (foundation.lattice.max_hoppings() * num_valid_sites) / 2
+                                  + foundation.lattice.has_onsite_potential * num_valid_sites;
+    auto matrix_view = compressed_inserter(system.matrix, reserve_nonzeros);
+
+    // populate
     foundation.for_each_site([&](Site site) {
-        const auto index = site.hamiltonian_index();
+        auto const index = site.hamiltonian_index();
         if (index < 0)
             return; // invalid site
 
-        positions[index] = site.position();
-        sublattice[index] = foundation.lattice[site.sublattice].alias;
+        system.positions[index] = site.position();
+        system.sublattice[index] = foundation.lattice[site.sublattice].alias;
 
         matrix_view.start_row(index);
         if (foundation.lattice.has_onsite_potential)
             matrix_view.insert(index, foundation.lattice[site.sublattice].onsite);
 
-        foundation.for_each_neighbour(site, [&](Site neighbour, const Hopping& hopping) {
-            const auto neighbour_index = neighbour.hamiltonian_index();
+        foundation.for_each_neighbour(site, [&](Site neighbour, Hopping const& hopping) {
+            auto const neighbour_index = neighbour.hamiltonian_index();
             // this also makes sure that the neighbour is valid, i.e. 'neighbour_index != -1'
             if (neighbour_index > index && hopping.energy != 0)
                 matrix_view.insert(neighbour_index, hopping.energy);
@@ -90,14 +93,16 @@ void System::build_from(Foundation& foundation)
     matrix_view.compress();
 }
 
-void System::build_boundaries_from(Foundation& foundation, const Symmetry& symmetry)
-{
-    const auto num_valid_sites = foundation.finalize();
+void populate_boundaries(System& system, Foundation& foundation, Symmetry const& symmetry) {
+    auto const num_valid_sites = foundation.finalize();
     auto symmetry_area = symmetry.build_for(foundation);
 
-    boundaries.emplace_back(this);
+    // a boundary is added first to prevent copying of Eigen::SparseMatrix
+    // --> revise when Eigen types become movable
+
+    system.boundaries.emplace_back(system);
     for (const auto& translation : symmetry_area.translations) {
-        auto& boundary = boundaries.back();
+        auto& boundary = system.boundaries.back();
 
         // preallocate data (overestimated)
         auto reserve_nonzeros = foundation.size_n * foundation.lattice.max_hoppings() / 2;
@@ -119,18 +124,20 @@ void System::build_boundaries_from(Foundation& foundation, const Symmetry& symme
             // shift site by a translation unit
             auto shifted_site = site.shift(translation.shift_index);
             // and see if it has valid neighbours
-            foundation.for_each_neighbour(shifted_site, [&](Site neighbour, const Hopping& hopping) {
+            foundation.for_each_neighbour(shifted_site, [&](Site neighbour, Hopping const& hop) {
                 if (neighbour.hamiltonian_index() < 0)
                     return; // invalid
 
-                boundary_matrix_view.insert(neighbour.hamiltonian_index(), hopping.energy);
+                boundary_matrix_view.insert(neighbour.hamiltonian_index(), hop.energy);
             });
         });
         boundary_matrix_view.compress();
 
         boundary.max_elements_per_site = foundation.lattice.max_hoppings();
         if (boundary.matrix.nonZeros() > 0)
-            boundaries.emplace_back(this);
+            system.boundaries.emplace_back(system);
     }
-    boundaries.pop_back();
+    system.boundaries.pop_back();
 }
+
+} // namespace tbm

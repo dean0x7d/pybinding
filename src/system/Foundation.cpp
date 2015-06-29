@@ -3,7 +3,7 @@
 #include "system/Symmetry.hpp"
 using namespace tbm;
 
-Foundation::Foundation(const Lattice& lattice, const Shape& shape, const Symmetry* symmetry)
+Foundation::Foundation(const Lattice& lattice, const Shape& shape)
     : size_n(static_cast<int>(lattice.sublattices.size())), lattice(lattice)
 {
     Cartesian vector_length = shape.length_for(lattice);
@@ -42,10 +42,6 @@ Foundation::Foundation(const Lattice& lattice, const Shape& shape, const Symmetr
 
     is_valid = ArrayX<bool>::Constant(num_sites, true);
     neighbour_count = ArrayX<int16_t>::Zero(num_sites);
-
-    cut_down_to(shape);
-    if (symmetry)
-        cut_down_to(*symmetry);
 }
 
 void Foundation::cut_down_to(const Shape& shape)

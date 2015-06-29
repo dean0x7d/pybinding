@@ -1,5 +1,7 @@
 #include "Model.hpp"
 #include "hamiltonian/Hamiltonian.hpp"
+#include "support/format.hpp"
+#include "utils/Chrono.hpp"
 using namespace tbm;
 
 void Model::set_lattice(const std::shared_ptr<Lattice>& new_lattice)
@@ -78,8 +80,12 @@ std::shared_ptr<const System> Model::system() const {
             throw std::logic_error{"A lattice must be defined."};
         if (!_shape)
             _shape = std::make_shared<Primitive>();
-        
-        _system = std::make_shared<System>(*_lattice, *_shape, _symmetry.get(), system_modifiers);
+
+        auto build_time = Chrono{};
+        _system = build_system(*_lattice, *_shape, system_modifiers, _symmetry.get());
+
+        build_report = fmt::format("Built system with {} lattice sites, {}",
+                                   fmt::with_suffix(_system->num_sites()), build_time.toc());
     }
     
     return _system;
@@ -99,7 +105,7 @@ std::shared_ptr<const Hamiltonian> Model::hamiltonian() const {
 
 std::string Model::report() {
     // this could be a single line, but GCC 4.8 produces a runtime error otherwise
-    auto ret = system()->report + '\n';
+    auto ret = build_report + '\n';
     ret += hamiltonian()->report;
     return ret;
 }

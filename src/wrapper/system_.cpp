@@ -49,7 +49,6 @@ void export_system()
     .add_property("sublattice", dense_uref(&System::sublattice))
     .add_property("boundaries", &System::boundaries)
     .add_property("matrix", sparse_uref(&System::matrix))
-    .def_readonly("report", &System::report)
     ;
 
     using tbm::Hopping;

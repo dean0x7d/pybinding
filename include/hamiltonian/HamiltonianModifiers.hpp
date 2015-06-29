@@ -81,7 +81,7 @@ void HamiltonianModifiers::apply_to_hoppings(const S& system, Fn lambda) const {
             for (auto it = sparse_row(system.matrix, row); it; ++it, ++n) {
                 hopping_indices[n] = std::make_tuple(it.row(), it.col());
                 hopping_values[n] = it.value();
-                std::make_tuple(pi[n], pj[n]) = system.get_position_pair(it.row(), it.col());
+                std::make_pair(pi[n], pj[n]) = system.get_position_pair(it.row(), it.col());
             }
         }
         
