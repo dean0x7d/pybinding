@@ -1,7 +1,8 @@
 import numpy as np
 import matplotlib as mpl
 import matplotlib.pyplot as plt
-from pybinding.utils import with_defaults
+
+from .utils import with_defaults
 
 
 def _get_ax(ax=None):
@@ -93,7 +94,8 @@ def annotate_box(s, xy, fontcolor='black', **kwargs):
     """Annotate with a box around the text"""
     kwargs['bbox'] = with_defaults(
         kwargs.get('bbox', {}),
-        boxstyle="round,pad=0.2", alpha=0.5, lw=0.3, fc='white' if fontcolor != 'white' else 'black'
+        boxstyle="round,pad=0.2", alpha=0.5, lw=0.3,
+        fc='white' if fontcolor != 'white' else 'black'
     )
 
     if all(key in kwargs for key in ['arrowprops', 'xytext']):
@@ -147,3 +149,19 @@ def set_palette(name=None, num_colors=8, start=0):
     palette = get_palette(name, num_colors, start)
     mpl.rcParams["axes.color_cycle"] = list(palette)
     mpl.rcParams["patch.facecolor"] = palette[0]
+
+
+def direct_cmap_norm(data, colors, blend=1):
+    """Colormap with direct mapping: data[i] -> colors[i]"""
+    if not isinstance(colors, (list, tuple)):
+        colors = [colors]
+    if blend < 1:
+        colors = [blend_colors(c, 'white', blend) for c in colors]
+
+    # colormap with an boundary norm to match the unique data points
+    from matplotlib.colors import ListedColormap, BoundaryNorm
+    cmap = ListedColormap(colors)
+    boundaries = np.append(np.unique(data), np.inf)
+    norm = BoundaryNorm(boundaries, len(boundaries) - 1)
+
+    return cmap, norm

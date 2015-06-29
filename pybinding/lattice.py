@@ -1,6 +1,8 @@
 import _pybinding
 from .support.pickle import pickleable
 
+__all__ = ['Lattice', 'square']
+
 
 @pickleable(props='vectors sublattices min_neighbors')
 class Lattice(_pybinding.Lattice):
@@ -41,7 +43,7 @@ class Lattice(_pybinding.Lattice):
     def plot(self, **kwargs):
         import pybinding as pb
         import matplotlib.pyplot as plt
-        import pybinding.plot.utils as pltutils
+        from . import pltutils
 
         ax = plt.gca()
         points = []  # for plot limit detection

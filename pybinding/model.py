@@ -1,8 +1,9 @@
-import _pybinding
 from scipy.sparse import csr_matrix
+
+import _pybinding
 from .system import System
-from .hamiltonian import Hamiltonian
 from .lattice import Lattice
+from .support.sparse import SparseMatrix
 
 
 class Model(_pybinding.Model):
@@ -26,8 +27,8 @@ class Model(_pybinding.Model):
 
     @property
     def hamiltonian(self) -> csr_matrix:
-        ham = Hamiltonian(super().hamiltonian)
-        return ham.matrix.tocsr()
+        matrix = SparseMatrix(super().hamiltonian.matrix)
+        return matrix.tocsr()
 
     @property
     def lattice(self) -> Lattice:

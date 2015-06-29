@@ -7,7 +7,5 @@ if sys.platform.startswith("linux"):
 from .model import Model
 from .lattice import Lattice
 
-from . import lattice, shape, symmetry
-from . import system, hamiltonian
-from . import solver, greens, results
-from . import electric, magnetic
+from . import (constants, electric, greens, lattice, magnetic, model,
+               modifier, results, shape, solver, symmetry, system, pltutils)

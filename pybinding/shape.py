@@ -1,8 +1,11 @@
+import numpy as np
+import matplotlib.pyplot as plt
+
 import _pybinding
-import numpy as _np
-import matplotlib.pyplot as _plt
-import pybinding.plot.utils as pltutils
-from pybinding.utils import with_defaults
+from . import pltutils
+from .utils import with_defaults
+
+__all__ = ['Polygon', 'Circle', 'primitive', 'rectangle', 'regular_polygon', 'circle']
 
 
 class Polygon(_pybinding.Polygon):
@@ -33,22 +36,22 @@ class Polygon(_pybinding.Polygon):
         if len(x) < 3:
             raise ValueError("A polygon must have at least 3 sides")
 
-        self.x = _np.array(x, dtype=_np.float32)
-        self.y = _np.array(y, dtype=_np.float32)
+        self.x = np.array(x, dtype=np.float32)
+        self.y = np.array(y, dtype=np.float32)
 
     def plot(self, **kwargs):
-        _plt.plot(_np.append(self.x, self.x[0]), _np.append(self.y, self.y[0]),
-                  **with_defaults(kwargs, color='black'))
-        _plt.axis('scaled')
+        plt.plot(np.append(self.x, self.x[0]), np.append(self.y, self.y[0]),
+                 **with_defaults(kwargs, color='black'))
+        plt.axis('scaled')
         pltutils.despine(trim=True)
         pltutils.add_margin()
 
 
 class Circle(_pybinding.Circle):
     def plot(self, **kwargs):
-        _plt.gca().add_artist(_plt.Circle(tuple(self.center), self.r, fill=False,
-                                          **with_defaults(kwargs, color='black')))
-        _plt.axis('scaled')
+        plt.gca().add_artist(plt.Circle(tuple(self.center), self.r, fill=False,
+                                        **with_defaults(kwargs, color='black')))
+        plt.axis('scaled')
         pltutils.despine(trim=True)
         pltutils.add_margin()
 

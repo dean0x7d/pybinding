@@ -1,8 +1,10 @@
 from collections import defaultdict
+
 import numpy as np
 import matplotlib.pyplot as plt
+
+from .. import pltutils
 from ..utils import with_defaults
-from ..plot import utils as pltutils
 
 
 class Data3D:

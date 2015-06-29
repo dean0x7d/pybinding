@@ -3,9 +3,9 @@ import matplotlib.pyplot as plt
 
 import _pybinding
 from . import results
+from . import pltutils
 from .system import System
 from .utils import with_defaults
-from .plot import utils as pltutils
 from .support.pickle import pickleable
 
 __all__ = ['Solver', 'make_feast']

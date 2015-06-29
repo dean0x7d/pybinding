@@ -1,9 +1,11 @@
 import numpy as _np
 from pybinding import modifier
 
+__all__ = ['constant']
+
 
 def constant(magnetic_field):
-    from pybinding.constant import pi, phi0
+    from pybinding.constants import pi, phi0
     scale = 1e-18  # both the vector potential and coordinates are in [nm] -> scale to [m]
     const = scale * 2 * pi / phi0
 

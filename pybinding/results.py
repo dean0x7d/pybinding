@@ -2,8 +2,9 @@ import numpy as np
 import matplotlib.pyplot as plt
 from scipy.sparse import csr_matrix
 
+from . import pltutils
 from .utils import with_defaults
-from .plot import utils as pltutils
+from .system import plot_sites, plot_hoppings
 from .support.pickle import pickleable
 
 __all__ = ['LDOSpoint', 'SpatialMap']
@@ -120,8 +121,6 @@ class SpatialMap:
 
     def plot_structure(self, site_radius=(0.03, 0.05), site_props: dict=None, hopping_width=1,
                        hopping_props: dict=None, cbar_props: dict=None):
-        from pybinding.plot.system import plot_hoppings, plot_sites
-
         ax = plt.gca()
         ax.set_aspect('equal', 'datalim')
         ax.set_xlabel('x (nm)')

@@ -1,4 +1,6 @@
-from pybinding import modifier
+from . import modifier
+
+__all__ = ['constant']
 
 
 def constant(value):
