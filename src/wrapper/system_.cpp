@@ -84,12 +84,11 @@ void export_system() {
 
     using tbm::Lattice;
     class_<Lattice, noncopyable>{
-        "Lattice", init<int>{args("self", "min_neighbors"_kw=1)}
+        "Lattice", init<Cartesian, optional<Cartesian, Cartesian>>{args("v1", "v2", "v3")}
     }
-    .def("add_vector", &Lattice::add_vector, args("self", "primitive_vector"))
-    .def("create_sublattice", &Lattice::create_sublattice,
+    .def("_create_sublattice", &Lattice::create_sublattice,
          args("self", "offset", "onsite_potential"_kw=.0f, "alias"_kw=-1))
-    .def("add_hopping", &Lattice::add_hopping,
+    .def("_add_hopping", &Lattice::add_hopping,
          args("self", "relative_index", "from_sublattice", "to_sublattice", "hopping_energy"))
     .add_property("vectors", &Lattice::vectors, &Lattice::vectors)
     .add_property("sublattices", &Lattice::sublattices, [](Lattice& l, std::vector<Sublattice> s) {
@@ -100,6 +99,7 @@ void export_system() {
     })
     .def_readwrite("min_neighbors", &Lattice::min_neighbours)
     .enable_pickling()
+    .def("__getinitargs__", [](Lattice const& l) { return l.vectors; })
     ;
     
     using tbm::Shape;

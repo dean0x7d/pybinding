@@ -5,7 +5,7 @@ if sys.platform.startswith("linux"):
     sys.setdlopenflags(os.RTLD_NOW | os.RTLD_GLOBAL)
 
 from .model import Model
-from .lattice import Lattice
+from .lattice import Lattice, make_lattice
 
 from . import (constants, electric, greens, lattice, magnetic, model,
                modifier, results, shape, solver, symmetry, system, pltutils)

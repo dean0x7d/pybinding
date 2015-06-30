@@ -31,11 +31,8 @@ struct Sublattice {
  */
 class Lattice {
 public:
-    /// Constructed with lattice vectors and a minimum number of neighbours
-    Lattice(int min_neighbours = 1) : min_neighbours(min_neighbours) {}
-    
-    /// Primitive lattice vectors - at least one must be defined
-    void add_vector(Cartesian primitive_vector);
+    Lattice(Cartesian v1, Cartesian v2 = Cartesian::Zero(), Cartesian v3 = Cartesian::Zero());
+
     /// Creates a new sublattice at the given position offset and returns the sublattice ID
     sub_id create_sublattice(Cartesian offset, float onsite_potential = 0, sub_id alias = -1);
     /// Use the sublattice ID returned by CreateSublattice() in the from_/to_ sublattice fields 

@@ -1,44 +1,61 @@
+import numpy as np
+
 import _pybinding
 from .support.pickle import pickleable
 
-__all__ = ['Lattice', 'square']
+__all__ = ['Lattice', 'make_lattice', 'square']
 
 
-@pickleable(props='vectors sublattices min_neighbors')
+@pickleable(props='sublattices min_neighbors')
 class Lattice(_pybinding.Lattice):
-    def __init__(self, min_neighbors=1):
-        super().__init__(min_neighbors)
-        self.sub = dict()
-        self.names = []
+    def __init__(self, v1, v2=None, v3=None):
+        super().__init__(*(v for v in [v1, v2, v3] if v is not None))
+        self.ids = dict()
+        self.names = dict()
 
-    def set_vectors(self, v1, v2=None, v3=None):
-        for vector in (v1, v2, v3):
-            if vector is not None:
-                self.add_vector(tuple(vector))
+    def __getitem__(self, name):
+        """Get sublattice ID from name."""
+        if name in self.ids.values():
+            return name  # an ID was given instead of a name, just pass it through
 
-    def create_sublattice(self, offset, onsite_potential=0.0, alias=-1, name=""):
-        sublattice_id = super().create_sublattice(offset, onsite_potential, alias)
-        self.sub[name] = sublattice_id
-        self.names.append(name)
+        if name not in self.ids.keys():
+            raise KeyError("There is no sublattice named '{}'".format(name))
+        return self.ids[name]
+
+    def add_one_sublattice(self, name, offset, onsite_potential=0.0, alias=None):
+        if name in self.names.values():
+            raise RuntimeError("Sublattice '{}' already exists".format(name))
+
+        alias = self.__getitem__(alias) if alias is not None else -1
+        sublattice_id = super()._create_sublattice(offset, onsite_potential, alias)
+        self.ids[name] = sublattice_id
+        self.names[sublattice_id] = name
+
         return sublattice_id
 
-    def set_hoppings(self, *hoppings):
-        for hop in hoppings:
-            self.add_hopping(*hop)
+    def add_sublattices(self, *sublattices):
+        for sub in sublattices:
+            self.add_one_sublattice(*sub)
 
-    def set_hopping_matrix(self, *pairs):
-        import numpy as np
+    def add_one_hopping(self, relative_index, from_sublattice, to_sublattice, hopping_energy):
+        super()._add_hopping(relative_index, self.__getitem__(from_sublattice),
+                             self.__getitem__(to_sublattice), hopping_energy)
+
+    def add_hoppings(self, *hoppings):
+        for hop in hoppings:
+            self.add_one_hopping(*hop)
+
+    def add_hopping_matrices(self, *pairs):
         for relative_index, matrix in pairs:
             for (from_sub, to_sub), hopping_energy in np.ndenumerate(matrix):
-                # skip zero energy hoppings
                 if hopping_energy == 0:
                     continue
-                # only consider lower triangle values of the (0, 0) matrix
-                # the upper triangle implied via Hermitian conjugate
+                # only consider lower triangle values of the relative_index==(0, 0) matrix
+                # the upper triangle is implied via Hermitian conjugation
                 if all(v == 0 for v in relative_index) and from_sub >= to_sub:
                     continue
 
-                self.add_hopping(relative_index, from_sub, to_sub, hopping_energy)
+                self.add_one_hopping(relative_index, from_sub, to_sub, hopping_energy)
 
     def plot(self, **kwargs):
         import pybinding as pb
@@ -76,15 +93,21 @@ class Lattice(_pybinding.Lattice):
         pltutils.set_min_range(abs(max(y) - min(y)), 'y')
 
 
-def square(a=0.2, t=1):
-    lat = Lattice()
-    lat.set_vectors([a, 0], [0, a])
+def make_lattice(vectors, sublattices, hoppings, min_neighbors=1):
+    lat = Lattice(*vectors)
+    lat.add_sublattices(*sublattices)
+    lat.add_hoppings(*hoppings)
+    lat.min_neighbors = min_neighbors
+    return lat
 
-    s = lat.create_sublattice((0, 0))
-    lat.set_hoppings(
-        [(0,  1), s, s, t],
-        [(1,  0), s, s, t],
-        [(1,  1), s, s, t],
-        [(1, -1), s, s, t],
+
+def square(a=0.2, t=1):
+    lat = Lattice([a, 0], [0, a])
+    lat.add_one_sublattice('s', (0, 0))
+    lat.add_hoppings(
+        [(0,  1), 's', 's', t],
+        [(1,  0), 's', 's', t],
+        [(1,  1), 's', 's', t],
+        [(1, -1), 's', 's', t],
     )
     return lat

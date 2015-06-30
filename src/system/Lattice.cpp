@@ -2,11 +2,12 @@
 
 namespace tbm {
 
-void Lattice::add_vector(Cartesian primitive_vector) {
-    if (vectors.size() >= 3)
-        throw std::logic_error{"Lattices with more that 3 dimensions are not supported."};
-    
-    vectors.push_back(primitive_vector);
+Lattice::Lattice(Cartesian v1, Cartesian v2, Cartesian v3) {
+    vectors.push_back(v1);
+    if (v2 != Cartesian::Zero()) vectors.push_back(v2);
+    if (v3 != Cartesian::Zero()) vectors.push_back(v3);
+
+    vectors.shrink_to_fit();
 }
 
 sub_id Lattice::create_sublattice(Cartesian offset, float onsite_potential, sub_id alias) {

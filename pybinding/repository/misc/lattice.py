@@ -1,5 +1,5 @@
-from pybinding.lattice import Lattice
 import math
+import pybinding as pb
 
 
 def mos2():
@@ -17,12 +17,12 @@ def mos2():
     # convenient
     rt3 = math.sqrt(3)
 
-    lat = Lattice(min_neighbors=2)
-    lat.set_vectors([a, 0], [0.5 * a, 0.5*rt3 * a])
-
-    lat.create_sublattice((0, 0), eps0)
-    lat.create_sublattice((0, 0), eps2)
-    lat.create_sublattice((0, 0), eps2)
+    lat = pb.Lattice([a, 0], [0.5 * a, 0.5*rt3 * a])
+    lat.add_sublattices(
+        ['s1', (0, 0), eps0],
+        ['s2', (0, 0), eps2],
+        ['s3', (0, 0), eps2],
+    )
 
     r1 = (1,  0)
     r2 = (1, -1)
@@ -40,5 +40,6 @@ def mos2():
               [0.5*t1 + 0.5*rt3*t2,         0.25*t11 + 0.75*t22, 0.25*rt3*(t11 - t22) + t12],
               [0.5*rt3*t1 - 0.5*t2, -0.25*rt3*(t11 + t22) - t12,        0.75*t11 + 0.25*t22]]
 
-    lat.set_hopping_matrix([r1, t_mat1], [r2, t_mat2], [r3, t_mat3])
+    lat.add_hopping_matrices([r1, t_mat1], [r2, t_mat2], [r3, t_mat3])
+    lat.min_neighbors = 2
     return lat
