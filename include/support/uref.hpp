@@ -2,17 +2,20 @@
 #include "support/dense.hpp"
 #include "support/sparse.hpp"
 
-enum class ScalarType {f, cf, d, cd, i8, i16, i32, none};
+enum class ScalarType {f, cf, d, cd, i8, i16, i32, u8, u16, u32, none};
 
 namespace detail {
-    template<typename scalar_t> inline ScalarType get_type();
-    template<> inline ScalarType get_type<float>() { return ScalarType::f; }
-    template<> inline ScalarType get_type<std::complex<float>>() { return ScalarType::cf; }
-    template<> inline ScalarType get_type<double>() { return ScalarType::d; }
-    template<> inline ScalarType get_type<std::complex<double>>() { return ScalarType::cd; }
-    template<> inline ScalarType get_type<std::int8_t>() { return ScalarType::i8; }
-    template<> inline ScalarType get_type<std::int16_t>() { return ScalarType::i16; }
-    template<> inline ScalarType get_type<std::int32_t>() { return ScalarType::i32; }
+    template<typename scalar_t> constexpr ScalarType get_type();
+    template<> constexpr ScalarType get_type<float>() { return ScalarType::f; }
+    template<> constexpr ScalarType get_type<std::complex<float>>() { return ScalarType::cf; }
+    template<> constexpr ScalarType get_type<double>() { return ScalarType::d; }
+    template<> constexpr ScalarType get_type<std::complex<double>>() { return ScalarType::cd; }
+    template<> constexpr ScalarType get_type<std::int8_t>() { return ScalarType::i8; }
+    template<> constexpr ScalarType get_type<std::int16_t>() { return ScalarType::i16; }
+    template<> constexpr ScalarType get_type<std::int32_t>() { return ScalarType::i32; }
+    template<> constexpr ScalarType get_type<std::uint8_t>() { return ScalarType::u8; }
+    template<> constexpr ScalarType get_type<std::uint16_t>() { return ScalarType::u16; }
+    template<> constexpr ScalarType get_type<std::uint32_t>() { return ScalarType::u32; }
 }
 
 struct DenseURef {

@@ -1,32 +1,33 @@
 #pragma once
+#include "support/uref.hpp"
+
 #include <boost/python/to_python_converter.hpp>
 #include <boost/python/tuple.hpp>
 #include <boost/python/cast.hpp>
-namespace bp = boost::python;
 
 #define NPY_NO_DEPRECATED_API NPY_1_8_API_VERSION
 #include <numpy/ndarrayobject.h>
-#include "support/uref.hpp"
+
 #include <cstdint>
 
+namespace bp = boost::python;
+
+
 /// type map: C++ type to numpy type
-template<class T>
-struct numpy_type_map {
-    static const int typenum;
-};
-template<> const int numpy_type_map<bool>::typenum = NPY_BOOL;
-template<> const int numpy_type_map<float>::typenum = NPY_FLOAT;
-template<> const int numpy_type_map<double>::typenum = NPY_DOUBLE;
-template<> const int numpy_type_map<std::complex<float> >::typenum = NPY_CFLOAT;
-template<> const int numpy_type_map<std::complex<double> >::typenum = NPY_CDOUBLE;
-template<> const int numpy_type_map<std::int8_t>::typenum = NPY_INT8;
-template<> const int numpy_type_map<std::uint8_t>::typenum = NPY_UINT8;
-template<> const int numpy_type_map<std::int16_t>::typenum = NPY_INT16;
-template<> const int numpy_type_map<std::uint16_t>::typenum = NPY_UINT16;
-template<> const int numpy_type_map<std::int32_t>::typenum = NPY_INT32;
-template<> const int numpy_type_map<std::uint32_t>::typenum = NPY_UINT32;
-template<> const int numpy_type_map<std::int64_t>::typenum = NPY_INT64;
-template<> const int numpy_type_map<std::uint64_t>::typenum = NPY_UINT64;
+template<class T> struct dtype;
+template<> struct dtype<bool> { static constexpr auto value = NPY_BOOL; };
+template<> struct dtype<float> { static constexpr auto value = NPY_FLOAT; };
+template<> struct dtype<double> { static constexpr auto value = NPY_DOUBLE; };
+template<> struct dtype<std::complex<float>> { static constexpr auto value = NPY_CFLOAT; };
+template<> struct dtype<std::complex<double>> { static constexpr auto value = NPY_CDOUBLE; };
+template<> struct dtype<std::int8_t> { static constexpr auto value = NPY_INT8; };
+template<> struct dtype<std::int16_t> { static constexpr auto value = NPY_INT16; };
+template<> struct dtype<std::int32_t> { static constexpr auto value = NPY_INT32; };
+template<> struct dtype<std::int64_t> { static constexpr auto value = NPY_INT64; };
+template<> struct dtype<std::uint8_t> { static constexpr auto value = NPY_UINT8; };
+template<> struct dtype<std::uint16_t> { static constexpr auto value = NPY_UINT16; };
+template<> struct dtype<std::uint32_t> { static constexpr auto value = NPY_UINT32; };
+template<> struct dtype<std::uint64_t> { static constexpr auto value = NPY_UINT64; };
 
 template<>
 struct bp::base_type_traits<PyArrayObject> : std::true_type {};
@@ -53,6 +54,9 @@ struct denseuref_to_python {
                 case ScalarType::i8: return NPY_INT8;
                 case ScalarType::i16: return NPY_INT16;
                 case ScalarType::i32: return NPY_INT32;
+                case ScalarType::u8: return NPY_UINT8;
+                case ScalarType::u16: return NPY_UINT16;
+                case ScalarType::u32: return NPY_UINT32;
                 default: return NPY_VOID;
             }
         }();
@@ -82,12 +86,11 @@ struct eigen3_to_numpy {
         }
 
         using scalar_t = typename EigenType::Scalar;
-        int type = numpy_type_map<scalar_t>::typenum;
         int flags = EigenType::IsRowMajor ? NPY_ARRAY_CARRAY : NPY_ARRAY_FARRAY;
 
         // new empty ndarray of the correct type and shape
-        PyObject* array = PyArray_New(&PyArray_Type, ndim, shape, type, nullptr,
-                                      nullptr, 0, flags, nullptr);
+        PyObject* array = PyArray_New(&PyArray_Type, ndim, shape, dtype<scalar_t>::value,
+                                      nullptr, nullptr, 0, flags, nullptr);
         std::memcpy(
             PyArray_DATA(bp::downcast<PyArrayObject>(array)),
             eigen_object.data(),
@@ -148,11 +151,10 @@ struct numpy_to_eigen3 {
     
     static void* convertible(PyObject* p) {
         constexpr auto ndim = EigenType::IsVectorAtCompileTime ? 1 : 2;
-        auto const type = numpy_type_map<typename EigenType::Scalar>::typenum;
 
         // try to make an ndarray from the python object
         auto ndarray = bp::handle<PyArrayObject>{bp::allow_null(PyArray_FROMANY(
-            p, type, ndim, ndim,
+            p, dtype<typename EigenType::Scalar>::value, ndim, ndim,
             EigenType::IsRowMajor ? NPY_ARRAY_C_CONTIGUOUS : NPY_ARRAY_F_CONTIGUOUS
         ))};
         
@@ -172,10 +174,9 @@ struct numpy_to_eigen3 {
                          data)->storage.bytes;
      
         constexpr int ndim = EigenType::IsVectorAtCompileTime ? 1 : 2;
-        auto const type = numpy_type_map<typename EigenType::Scalar>::typenum;
 
         auto ndarray = bp::handle<PyArrayObject>{PyArray_FROMANY(
-            p, type, ndim, ndim,
+            p, dtype<typename EigenType::Scalar>::value, ndim, ndim,
             EigenType::IsRowMajor ? NPY_ARRAY_C_CONTIGUOUS : NPY_ARRAY_F_CONTIGUOUS
         )};
         auto shape = PyArray_SHAPE(ndarray.get());
