@@ -1,13 +1,14 @@
 #include "system/System.hpp"
 #include "system/Shape.hpp"
-#include "system/Lattice.hpp"
 #include "system/Symmetry.hpp"
 #include "system/SystemModifiers.hpp"
+
+#include "python_support.hpp"
 
 #include <boost/python/class.hpp>
 #include <boost/python/tuple.hpp>
 #include <boost/python/pure_virtual.hpp>
-#include "python_support.hpp"
+
 using namespace boost::python;
 
 
@@ -31,8 +32,7 @@ public:
     void apply_dummy(ArrayXf&, ArrayXf&, ArrayXf&) const {}
 };
 
-void export_system()
-{
+void export_system() {
     using tbm::System;
     using Boundary = tbm::System::Boundary;
 

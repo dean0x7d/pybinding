@@ -1,9 +1,10 @@
-#include <thread>
+#include "converters/eigen3.hpp"
+#include "python_support.hpp"
+
 #include <boost/python/module.hpp>
 #include <boost/python/def.hpp>
 #include <boost/python/class.hpp>
-#include "converters/eigen3.hpp"
-#include "python_support.hpp"
+
 using namespace boost::python;
 
 void export_core();
@@ -13,14 +14,12 @@ void export_greens();
 void export_modifiers();
 void export_parallel_sweep();
 
-BOOST_PYTHON_MODULE(_pybinding)
-{
+BOOST_PYTHON_MODULE(_pybinding) {
     // init numpy and register converters
     import_array1();
     eigen3_numpy_register_type<ArrayXf>();
     eigen3_numpy_register_type<ArrayXd>();
     eigen3_numpy_register_type<ArrayXcf>();
-    eigen3_numpy_register_type<ArrayX<short>>();
     eigen3_numpy_register_type<Cartesian>();
     eigen3_numpy_register_type<Index3D>();
     to_python_converter<DenseURef, denseuref_to_python>{};

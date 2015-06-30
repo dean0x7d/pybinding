@@ -1,12 +1,14 @@
 #pragma once
+#include "system/Lattice.hpp"
+
 #include "support/dense.hpp"
 #include "support/sparse.hpp"
+
 #include <vector>
 #include <memory>
 
 namespace tbm {
 
-class Lattice;
 class Shape;
 class Foundation;
 class Symmetry;
@@ -32,7 +34,7 @@ public:
     };
 
     /// Find the index of the site nearest to the given position. Optional: filter by sublattice.
-    int find_nearest(const Cartesian& position, short sublattice = -1) const;
+    int find_nearest(Cartesian position, sub_id sublattice = -1) const;
 
     std::pair<Cartesian, Cartesian> get_position_pair(int i, int j) const {
         return {positions[i], positions[j]};
@@ -41,7 +43,7 @@ public:
     int num_sites() const { return positions.size(); }
 
     CartesianArray positions; ///< coordinates of all the lattice sites
-    ArrayX<short> sublattice; ///< sublattice indices of all the sites
+    ArrayX<sub_id> sublattice; ///< sublattice indices of all the sites
     SparseMatrixX<float> matrix; ///< base hopping information
     std::vector<Boundary> boundaries; ///< boundary information
     int max_elements_per_site; ///< maximum number of Hamiltonian element at any site

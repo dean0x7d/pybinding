@@ -1,27 +1,24 @@
 #include "system/System.hpp"
-#include "system/Lattice.hpp"
+
 #include "system/Shape.hpp"
 #include "system/Foundation.hpp"
 #include "system/Symmetry.hpp"
 #include "system/SystemModifiers.hpp"
+
 #include "support/format.hpp"
 
 namespace tbm {
 
-int System::find_nearest(const Cartesian& target_position, short target_sublattice) const
-{
-    int nearest_index = 0;
+int System::find_nearest(Cartesian target_position, sub_id target_sublattice) const {
+    auto nearest_index = 0;
     auto min_distance = (positions[0] - target_position).norm();
 
-    // check the distance of every site from the target coordinates
-    for (int i = 1; i < num_sites(); i++) {
-        // only check the target sublattice (if any)
+    for (auto i = 1; i < num_sites(); ++i) {
         if (target_sublattice >= 0 && sublattice[i] != target_sublattice)
-            continue;
-        
-        const auto distance = (positions[i] - target_position).norm();
+            continue; // only check the target sublattice (if any)
+
+        auto const distance = (positions[i] - target_position).norm();
         if (distance < min_distance) {
-            // new minimum has been found, save it
             min_distance = distance;
             nearest_index = i;
         }

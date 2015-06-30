@@ -1,5 +1,6 @@
 #pragma once
 #include "greens/Greens.hpp"
+#include "system/Lattice.hpp"
 #include "support/sparse.hpp"
 
 namespace tbm {
@@ -104,7 +105,7 @@ public: // construction and configuration
 
 public: // calculation
     ArrayXcf calc_greens(int i, int j, ArrayXd energy, float broadening);
-    ArrayXf calc_ldos(ArrayXd energy, float broadening, Cartesian position, int sublattice = -1);
+    ArrayXf calc_ldos(ArrayXd energy, float broadening, Cartesian position, sub_id sublattice = -1);
 
 protected: // required implementation
     virtual std::unique_ptr<GreensStrategy>

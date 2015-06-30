@@ -1,8 +1,12 @@
 #pragma once
-#include "support/dense.hpp"
-#include "support/uref.hpp"
+#include "system/Lattice.hpp"
+
 #include "utils/Chrono.hpp"
 #include "utils/Log.hpp"
+
+#include "support/dense.hpp"
+#include "support/uref.hpp"
+
 #include <memory>
 
 namespace tbm {
@@ -94,7 +98,7 @@ public:
     DenseURef eigenvectors();
 
     ArrayXd calc_dos(ArrayXd energies, double broadening);
-    ArrayXd calc_ldos(double energy, double broadening, int target_sublattice);
+    ArrayXd calc_ldos(double energy, double broadening, sub_id sublattice = -1);
 
 protected:
     /// Create a new SolverStrategy object for this Hamiltonian

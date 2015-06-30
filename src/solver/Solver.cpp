@@ -64,7 +64,7 @@ ArrayXd Solver::calc_dos(ArrayXd target_energies, double broadening) {
     });
 }
 
-ArrayXd Solver::calc_ldos(double target_energy, double broadening, int target_sublattice) {
+ArrayXd Solver::calc_ldos(double target_energy, double broadening, sub_id target_sublattice) {
     auto const& sys = *system();
     auto const system_size = sys.num_sites();
     ArrayXd ldos = ArrayXd::Zero(system_size);

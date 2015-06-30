@@ -3,8 +3,10 @@
 #include "python_support.hpp"
 
 #include "Model.hpp"
-#include "Greens/KPM.hpp"
+#include "system/Lattice.hpp"
+#include "greens/KPM.hpp"
 #include "support/thread.hpp"
+
 using namespace boost::python;
 
 class ComputeKernel {
@@ -16,7 +18,7 @@ public:
 class KPMldos : public ComputeKernel {
 public:
     KPMldos(std::shared_ptr<tbm::KPM> const& kpm,
-            ArrayXd energy, float broadening, Cartesian position, short sublattice = -1)
+            ArrayXd energy, float broadening, Cartesian position, tbm::sub_id sublattice = -1)
         : kpm(kpm), energy(energy), broadening(broadening),
           position(position), sublattice(sublattice) {}
 
@@ -32,7 +34,7 @@ public:
     ArrayXd energy;
     float broadening;
     Cartesian position;
-    short sublattice;
+    tbm::sub_id sublattice;
     ArrayXf ldos;
 };
 

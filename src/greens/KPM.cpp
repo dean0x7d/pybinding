@@ -378,7 +378,7 @@ ArrayXcf KPM::calc_greens(int i, int j, ArrayXd energy, float broadening) {
     return greens_function;
 }
 
-ArrayXf KPM::calc_ldos(ArrayXd energy, float broadening, Cartesian position, int sublattice) {
+ArrayXf KPM::calc_ldos(ArrayXd energy, float broadening, Cartesian position, sub_id sublattice) {
     auto i = model->system()->find_nearest(position, sublattice);
     auto greens_function = calc_greens(i, i, energy, broadening);
 
