@@ -26,7 +26,7 @@ void export_solver() {
 
     class_<FEAST, bases<Solver>, noncopyable>{
         "FEAST", "FEAST eigensolver.",
-        init<const std::shared_ptr<const tbm::Model>&, std::pair<double, double>, int, bool, bool>{
+        init<tbm::Model const&, std::pair<double, double>, int, bool, bool>{
             args("self", "model", "energy_range", "initial_size_guess",
                  "recycle_subspace"_kw=FEAST::defaults.recycle_subspace,
                  "is_verbose"_kw=FEAST::defaults.is_verbose)

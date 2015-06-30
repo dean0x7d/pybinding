@@ -2,7 +2,8 @@
 #include "hamiltonian/Hamiltonian.hpp"
 #include "support/format.hpp"
 #include "utils/Chrono.hpp"
-using namespace tbm;
+
+namespace tbm {
 
 void Model::set_lattice(const std::shared_ptr<Lattice>& new_lattice)
 {
@@ -109,3 +110,5 @@ std::string Model::report() {
     ret += hamiltonian()->report;
     return ret;
 }
+
+} // namespace tbm

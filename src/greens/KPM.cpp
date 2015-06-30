@@ -366,7 +366,7 @@ KPM::create_strategy_for(const std::shared_ptr<const Hamiltonian>& hamiltonian) 
 }
 
 ArrayXcf KPM::calc_greens(int i, int j, ArrayXd energy, float broadening) {
-    auto size = model->hamiltonian()->rows();
+    auto size = model.hamiltonian()->rows();
     if (i < 0 || i > size || j < 0 || j > size)
         throw std::logic_error{"KPM::calc_greens(i,j): invalid value for i or j."};
 
@@ -379,7 +379,7 @@ ArrayXcf KPM::calc_greens(int i, int j, ArrayXd energy, float broadening) {
 }
 
 ArrayXf KPM::calc_ldos(ArrayXd energy, float broadening, Cartesian position, sub_id sublattice) {
-    auto i = model->system()->find_nearest(position, sublattice);
+    auto i = model.system()->find_nearest(position, sublattice);
     auto greens_function = calc_greens(i, i, energy, broadening);
 
     using physics::pi;

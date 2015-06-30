@@ -1,27 +1,20 @@
 #include "solver/Solver.hpp"
-#include "Model.hpp"
 #include "support/physics.hpp"
 using namespace tbm;
 
-void Solver::set_model(const std::shared_ptr<const Model>& new_model) {
-    if (!new_model)
-        throw std::logic_error{"Solver::set_model(): trying to set nullptr."};
-
-    if (model == new_model)
-        return;
-
+void Solver::set_model(Model const& new_model) {
     is_solved = false;
     model = new_model;
     if (strategy) {
         // try to assign a new Hamiltonian to the existing Solver strategy
-        bool success = strategy->set_hamiltonian(model->hamiltonian());
+        bool success = strategy->set_hamiltonian(model.hamiltonian());
         if (!success) // fails if the they have incompatible scalar types
             strategy.reset();
     }
 
     // creates a SolverStrategy with a scalar type suited to the Hamiltonian
     if (!strategy)
-        strategy = create_strategy_for(model->hamiltonian());
+        strategy = create_strategy_for(model.hamiltonian());
 }
 
 void Solver::solve() {
@@ -36,7 +29,7 @@ void Solver::solve() {
 }
 
 std::shared_ptr<const System> Solver::system() const {
-    return model->system();
+    return model.system();
 }
 
 DenseURef Solver::eigenvalues() {

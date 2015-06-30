@@ -101,7 +101,7 @@ public: // construction and configuration
      @param recycle_subspace Reuse previous results as initial data for the solver.
      @param is_verbose Activate FEAST solver info (prints directly to stdout).
      */
-    FEAST(const std::shared_ptr<const Model>& model,
+    FEAST(Model const& model,
           std::pair<double, double> energy_range,
           int initial_size_guess,
           bool recycle_subspace = defaults.recycle_subspace,

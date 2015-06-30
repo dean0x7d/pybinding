@@ -14,7 +14,7 @@ void export_greens() {
 
     class_<KPM, bases<Greens>, noncopyable> {
         "KPM", "Green's function via kernel polynomial method.",
-        init<const std::shared_ptr<const tbm::Model>&, float, std::pair<float, float>>{args(
+        init<tbm::Model const&, float, std::pair<float, float>>{args(
             "self", "model",
             "lambda_value"_kw = KPM::defaults.lambda,
             "energy_range"_kw = std::make_pair(KPM::defaults.min_energy, KPM::defaults.max_energy)

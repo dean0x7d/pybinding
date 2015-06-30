@@ -1,12 +1,14 @@
 #pragma once
-#include "support/dense.hpp"
+#include "Model.hpp"
+
 #include "utils/Chrono.hpp"
 #include "utils/Log.hpp"
+#include "support/dense.hpp"
+
 #include <memory>
 
 namespace tbm {
 
-class Model;
 class Hamiltonian;
 template <typename scalar_t> class HamiltonianT;
 
@@ -67,7 +69,7 @@ public:
     virtual ~Greens() = default;
 
 public:
-    void set_model(const std::shared_ptr<const Model>& new_model);
+    void set_model(Model const& m);
 
     /// Get some information about what happened during the last calculation
     std::string report(bool shortform) const {
@@ -80,7 +82,7 @@ protected:
         create_strategy_for(const std::shared_ptr<const Hamiltonian>&) const = 0;
 
 protected:
-    std::shared_ptr<const Model> model;
+    Model model;
     std::unique_ptr<GreensStrategy> strategy;
     Chrono calculation_timer; ///< last calculation time
 };

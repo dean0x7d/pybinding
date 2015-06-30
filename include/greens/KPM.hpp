@@ -77,7 +77,7 @@ class KPM : public Greens {
 public: // construction and configuration
     static constexpr auto defaults = KPMConfig{};
 
-    KPM(const std::shared_ptr<const Model>& model,
+    KPM(Model const& model,
         float lambda = defaults.lambda,
         std::pair<float, float> energy_range = {defaults.min_energy, defaults.max_energy})
     {

@@ -1,4 +1,5 @@
 #pragma once
+#include "Model.hpp"
 #include "system/Lattice.hpp"
 
 #include "utils/Chrono.hpp"
@@ -11,7 +12,6 @@
 
 namespace tbm {
 
-class Model;
 class System;
 class Hamiltonian;
 template <typename scalar_t> class HamiltonianT;
@@ -82,7 +82,7 @@ public:
     virtual ~Solver() = default;
 
 public:
-    void set_model(const std::shared_ptr<const Model>& new_model);
+    void set_model(Model const& m);
 
     /// Get some information about what happened during the last calculation
     std::string report(bool shortform) const {
@@ -94,6 +94,7 @@ public:
     void solve();
 
     std::shared_ptr<const System> system() const;
+
     DenseURef eigenvalues();
     DenseURef eigenvectors();
 
@@ -107,7 +108,7 @@ protected:
 
 protected:
     bool is_solved = false;
-    std::shared_ptr<const Model> model;
+    Model model;
     std::unique_ptr<SolverStrategy> strategy;
     Chrono calculation_timer; ///< last calculation time
 };
