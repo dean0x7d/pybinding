@@ -10,6 +10,9 @@ class Greens:
     def __init__(self, impl: _pybinding.Greens):
         self.impl = impl
 
+    def report(self, shortform=False):
+        return self.impl.report(shortform)
+
     def calc_ldos(self, energy: np.ndarray, broadening: float, position: tuple, sublattice: int=-1):
         return LDOSpoint(energy, self.impl.calc_ldos(energy, broadening, position, sublattice))
 
