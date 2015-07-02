@@ -82,7 +82,10 @@ def blend_colors(color, bg, factor):
 def colorbar(mappable=None, cax=None, ax=None, powerlimits=(0, 0), **kwargs):
     """Convenient colorbar function"""
     cbar = plt.colorbar(mappable, cax, ax, **with_defaults(kwargs, pad=0.02, aspect=28))
+
     cbar.solids.set_edgecolor("face")  # remove white gaps between segments
+    cbar.solids.set_rasterized(True)   # and reduce pdf output size
+
     if powerlimits and hasattr(cbar.formatter, 'set_powerlimits'):
         cbar.formatter.set_powerlimits(powerlimits)
     cbar.update_ticks()
