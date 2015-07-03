@@ -24,6 +24,8 @@ struct Sublattice {
     float onsite; ///< onsite potential energy
     sub_id alias; ///< in case two sublattices at different positions need to have the same ID
     std::vector<Hopping> hoppings; ///< hoppings from this sublattice
+
+    void add_hopping(Index3D relative_index, sub_id to_sublattice, float hopping_energy);
 };
 
 /**
@@ -36,7 +38,7 @@ public:
     /// Creates a new sublattice at the given position offset and returns the sublattice ID
     sub_id create_sublattice(Cartesian offset, float onsite_potential = 0, sub_id alias = -1);
     /// Use the sublattice ID returned by CreateSublattice() in the from_/to_ sublattice fields 
-    void add_hopping(Index3D const& relative_index, sub_id from_sublattice,
+    void add_hopping(Index3D relative_index, sub_id from_sublattice,
                      sub_id to_sublattice, float hopping_energy);
     
     /// Get the maximum possible number of hoppings from any site of this lattice

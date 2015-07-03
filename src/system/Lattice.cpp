@@ -28,7 +28,7 @@ sub_id Lattice::create_sublattice(Cartesian offset, float onsite_potential, sub_
     return sublattice_id;
 }
 
-void Lattice::add_hopping(Index3D const& relative_index, sub_id from_sub,
+void Lattice::add_hopping(Index3D relative_index, sub_id from_sub,
                           sub_id to_sub, float hop_energy) {
     // sanity checks
     if (from_sub == to_sub && relative_index == Index3D::Zero()) {
@@ -43,8 +43,8 @@ void Lattice::add_hopping(Index3D const& relative_index, sub_id from_sub,
         throw std::logic_error{"The specified sublattice does not exist."};
 
     // the other sublattice has an opposite relative index
-    sublattices[from_sub].hoppings.push_back({relative_index, to_sub, hop_energy});
-    sublattices[to_sub].hoppings.push_back({-relative_index, from_sub, hop_energy});
+    sublattices[from_sub].add_hopping(relative_index, to_sub, hop_energy);
+    sublattices[to_sub].add_hopping(-relative_index, from_sub, hop_energy);
 }
 
 int Lattice::max_hoppings() const {
@@ -56,6 +56,17 @@ int Lattice::max_hoppings() const {
     }
     
     return max_size;
+}
+
+void Sublattice::add_hopping(Index3D relative_index, sub_id to_sub, float hop_energy) {
+    bool already_exists = std::find_if(hoppings.begin(), hoppings.end(), [&](Hopping const& h) {
+        return h.relative_index == relative_index && h.to_sublattice == to_sub;
+    }) != hoppings.end();
+
+    if (already_exists)
+        throw std::logic_error{"The specified hopping already exists."};
+
+    hoppings.push_back({relative_index, to_sub, hop_energy});
 }
 
 } // namespace tbm

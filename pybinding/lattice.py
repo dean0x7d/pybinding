@@ -1,3 +1,5 @@
+from collections import OrderedDict
+
 import numpy as np
 
 import _pybinding
@@ -10,26 +12,26 @@ __all__ = ['Lattice', 'make_lattice', 'square']
 class Lattice(_pybinding.Lattice):
     def __init__(self, v1, v2=None, v3=None):
         super().__init__(*(v for v in [v1, v2, v3] if v is not None))
-        self.ids = dict()
-        self.names = dict()
+        self.ids = OrderedDict()  # sublattice IDs indexed by sublattice name
 
-    def __getitem__(self, name):
+    def __getitem__(self, key):
         """Get sublattice ID from name."""
-        if name in self.ids.values():
-            return name  # an ID was given instead of a name, just pass it through
-
-        if name not in self.ids.keys():
-            raise KeyError("There is no sublattice named '{}'".format(name))
-        return self.ids[name]
+        if isinstance(key, str):
+            if key not in self.ids.keys():
+                raise KeyError("There is no sublattice named '{}'".format(key))
+            return self.ids[key]
+        else:  # an ID was given instead of a name, verify it
+            if key not in self.ids.values():
+                raise KeyError("There is no sublattice with ID = {}".format(key))
+            return key
 
     def add_one_sublattice(self, name, offset, onsite_potential=0.0, alias=None):
-        if name in self.names.values():
+        if name in self.ids.keys():
             raise RuntimeError("Sublattice '{}' already exists".format(name))
 
         alias = self.__getitem__(alias) if alias is not None else -1
         sublattice_id = super()._create_sublattice(offset, onsite_potential, alias)
         self.ids[name] = sublattice_id
-        self.names[sublattice_id] = name
 
         return sublattice_id
 
@@ -78,8 +80,9 @@ class Lattice(_pybinding.Lattice):
                                   fontcolor='white', fontsize='large')
 
         # annotate the sublattices and neighboring cells
+        names = list(self.ids.keys())
         for sublattice in self.sublattices:
-            pltutils.annotate_box(self.names[sublattice.alias], xy=sublattice.offset[:2])
+            pltutils.annotate_box(names[sublattice.alias], xy=sublattice.offset[:2])
             for hop in sublattice.hoppings:
                 if tuple(hop.relative_index[:2]) == (0, 0):
                     continue  # skip the original cell
