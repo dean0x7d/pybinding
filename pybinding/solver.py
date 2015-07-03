@@ -1,3 +1,5 @@
+import time
+
 import numpy as np
 import matplotlib.pyplot as plt
 
@@ -8,7 +10,7 @@ from .system import System
 from .utils import with_defaults
 from .support.pickle import pickleable
 
-__all__ = ['Solver', 'make_feast']
+__all__ = ['Solver', 'make_feast', 'make_arpack']
 
 
 @pickleable(impl='system. eigenvalues eigenvectors')
@@ -74,7 +76,7 @@ class Solver:
         intensity = abs(self.eigenvectors[atom_idx, :])**2
         p0 = intensity.copy()
 
-        # the instensity of each degenerate state is updated to: sum_N / N
+        # the intensity of each degenerate state is updated to: sum_N / N
         states = self.find_degenerate_states(self.eigenvalues)
         for indices in states:
             indices = list(indices)  # convert tuple to list for 1D ndarray indexing
@@ -153,6 +155,55 @@ class Solver:
         plt.xlim(0, len(energy) - 1)
         plt.xlabel('k-space')
         plt.ylabel('E (eV)')
+
+
+class ARPACK:
+    def __init__(self, model, num_eigenvalues, sigma=1e-5, **kwargs):
+        self.model = model
+        self.num_eigenvalues = num_eigenvalues
+        self.sigma = sigma
+        self.kwargs = kwargs
+
+        self.system = model.system.impl
+        self.vals = np.empty(0)
+        self.vecs = np.empty(0)
+        self.compute_time = .0
+
+    @property
+    def eigenvalues(self) -> np.ndarray:
+        self.solve()
+        return self.vals
+
+    @property
+    def eigenvectors(self) -> np.ndarray:
+        self.solve()
+        return self.vecs
+
+    def set_model(self, model):
+        self.model = model
+
+    def solve(self):
+        if len(self.vals):
+            return
+
+        start_time = time.time()
+
+        from scipy.sparse.linalg import eigsh
+        self.vals, self.vecs = eigsh(self.model.hamiltonian, k=self.num_eigenvalues,
+                                     sigma=self.sigma, **self.kwargs)
+        idx = self.vals.argsort()
+        self.vals = self.vals[idx]
+        self.vecs = self.vecs[:, idx]
+
+        self.compute_time = time.time() - start_time
+
+    def report(self, _=False):
+        from .utils import pretty_duration
+        return "Converged in " + pretty_duration(self.compute_time)
+
+
+def make_arpack(model, num_eigenvalues, sigma=1e-5, **kwargs):
+    return Solver(ARPACK(model, num_eigenvalues, sigma, **kwargs))
 
 
 def make_feast(model, energy_range, initial_size_guess, recycle_subspace=False, is_verbose=False):

@@ -3,12 +3,14 @@ import pytest
 import pybinding as pb
 from pybinding.repository import graphene
 
-solvers = ['feast']
+solvers = ['feast', 'arpack']
 models = {
     'graphene-pristine': {'model': [graphene.lattice.monolayer(), pb.shape.rectangle(10)],
+                          'arpack': [30],
                           'feast': [(-0.1, 0.1), 28]},
     'graphene-magnetic_field': {'model': [graphene.lattice.monolayer(), pb.shape.rectangle(6),
                                           pb.magnetic.constant(10)],
+                                'arpack': [30],
                                 'feast': [(-0.1, 0.1), 18]},
 }
 
@@ -21,7 +23,8 @@ def model_ex(request):
 @pytest.fixture(scope='module', params=solvers)
 def solver(request, model_ex):
     model, solver_cfg = model_ex
-    solver = pb.solver.make_feast(model, *solver_cfg[request.param])
+    make_solver = getattr(pb.solver, 'make_' + request.param)
+    solver = make_solver(model, *solver_cfg[request.param])
     solver.solve()
     return solver
 
