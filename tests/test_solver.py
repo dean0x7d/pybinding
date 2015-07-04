@@ -37,6 +37,8 @@ def test_pickle_round_trip(solver, tmpdir):
     assert pytest.fuzzy_equal(solver, from_file)
 
 
-def test_eigenvalues(solver, baseline):
-    expected_eigenvalues = baseline(solver.eigenvalues)
-    assert pytest.fuzzy_equal(solver.eigenvalues, expected_eigenvalues, 1.e-3, 1.e-6)
+def test_eigenvalues(solver, baseline, plot):
+    eig = solver.calc_eigenvalues(map_probability_at=(0, 0))
+    expected = baseline(eig)
+    plot(eig, expected, 'plot_heatmap')
+    assert pytest.fuzzy_equal(eig, expected, 1.e-3, 1.e-6)

@@ -9,7 +9,7 @@ from .utils import with_defaults
 from .system import Positions, plot_sites, plot_hoppings
 from .support.pickle import pickleable
 
-__all__ = ['LDOSpoint', 'SpatialMap']
+__all__ = ['LDOSpoint', 'SpatialMap', 'Eigenvalues']
 
 
 @pickleable
@@ -126,3 +126,57 @@ class SpatialMap:
         pltutils.colorbar(collection, **with_defaults(cbar_props))
         pltutils.despine(trim=True)
         pltutils.add_margin()
+
+
+@pickleable
+class Eigenvalues:
+    def __init__(self, eigenvalues, probability=None):
+        self.values = eigenvalues
+        self.probability = probability
+
+    @property
+    def indices(self):
+        return np.arange(0, self.values.size)
+
+    def _decorate_plot(self, mark_degenerate, number_states):
+        """Common elements for the two eigenvalue plots"""
+        if mark_degenerate:
+            # draw lines between degenerate states
+            from .solver import Solver
+            from matplotlib.collections import LineCollection
+            pairs = ((s[0], s[-1]) for s in Solver.find_degenerate_states(self.values))
+            lines = [[(i, self.values[i]) for i in pair] for pair in pairs]
+            plt.gca().add_collection(LineCollection(lines, color='black', alpha=0.5))
+
+        if number_states:
+            # draw a number next to each state
+            for index, energy in enumerate(self.values):
+                pltutils.annotate_box(index, (index, energy), fontsize='x-small',
+                                      xytext=(0, -10), textcoords='offset points')
+
+        plt.xlabel('state')
+        plt.ylabel('E (eV)')
+        plt.xlim(-1, len(self.values))
+        pltutils.despine(trim=True)
+
+    def plot(self, mark_degenerate=True, show_indices=False, **kwargs):
+        """Standard eigenvalues scatter plot"""
+        plt.scatter(self.indices, self.values, **with_defaults(kwargs, c='#377ec8', s=15, lw=0.1))
+        self._decorate_plot(mark_degenerate, show_indices)
+
+    def plot_heatmap(self, size=(7, 77), mark_degenerate=True, show_indices=False, **kwargs):
+        """Eigenvalues scatter plot with a heatmap indicating probability density"""
+        if self.probability is None:
+            return self.plot(mark_degenerate, show_indices, **kwargs)
+
+        # higher probability states should be drawn above lower ones
+        idx = np.argsort(self.probability)
+        indices, energy, probability = (v[idx] for v in
+                                        (self.indices, self.values, self.probability))
+
+        scatter_point_sizes = size[0] + size[1] * probability / probability.max()
+        plt.scatter(indices, energy, **with_defaults(kwargs, cmap='YlOrRd', lw=0.2, alpha=0.85,
+                                                     c=probability, s=scatter_point_sizes))
+
+        self._decorate_plot(mark_degenerate, show_indices)
+        return self.probability.max()
