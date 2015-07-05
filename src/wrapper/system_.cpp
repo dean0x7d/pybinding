@@ -55,14 +55,15 @@ void export_system() {
     class_<Hopping>{"Hopping"}
     .add_property("relative_index", copy_value(&Hopping::relative_index))
     .def_readonly("to_sublattice", &Hopping::to_sublattice)
-    .def_readonly("energy", &Hopping::energy)
+    .def_readonly("id", &Hopping::id)
+    .def_readonly("is_conjugate", &Hopping::is_conjugate)
     .enable_pickling()
     .def("__getstate__", [](Hopping const& h) {
-        return make_tuple(h.relative_index, h.to_sublattice, h.energy);
+        return make_tuple(h.relative_index, h.to_sublattice, h.id, h.is_conjugate);
     })
     .def("__setstate__", [](Hopping& h, tuple t) {
         h = {extract<decltype(h.relative_index)>(t[0]), extract<decltype(h.to_sublattice)>(t[1]),
-             extract<decltype(h.energy)>(t[2])};
+             extract<decltype(h.id)>(t[2]), extract<decltype(h.is_conjugate)>(t[3])};
     })
     ;
 
@@ -86,16 +87,26 @@ void export_system() {
     class_<Lattice, noncopyable>{
         "Lattice", init<Cartesian, optional<Cartesian, Cartesian>>{args("v1", "v2", "v3")}
     }
-    .def("_create_sublattice", &Lattice::create_sublattice,
+    .def("_add_sublattice", &Lattice::add_sublattice,
          args("self", "offset", "onsite_potential"_kw=.0f, "alias"_kw=-1))
     .def("_add_hopping", &Lattice::add_hopping,
-         args("self", "relative_index", "from_sublattice", "to_sublattice", "hopping_energy"))
+         args("self", "relative_index", "from_sublattice", "to_sublattice", "energy"))
+    .def("_register_hopping_energy", &Lattice::register_hopping_energy, args("self", "energy"))
+    .def("_add_registered_hopping", &Lattice::add_registered_hopping,
+         args("self", "relative_index", "from_sublattice", "to_sublattice", "id"))
     .add_property("vectors", &Lattice::vectors, &Lattice::vectors)
     .add_property("sublattices", &Lattice::sublattices, [](Lattice& l, std::vector<Sublattice> s) {
         l.has_onsite_potential = std::any_of(s.begin(), s.end(), [](Sublattice const& sub) {
             return sub.onsite != 0;
         });
         l.sublattices = std::move(s);
+    })
+    .add_property("hopping_energies", &Lattice::hopping_energies,
+                  [](Lattice& l, std::vector<std::complex<double>> h) {
+        l.has_complex_hopping = std::any_of(h.begin(), h.end(), [](std::complex<double> energy) {
+            return energy.imag() != .0;
+        });
+        l.hopping_energies = std::move(h);
     })
     .def_readwrite("min_neighbors", &Lattice::min_neighbours)
     .enable_pickling()

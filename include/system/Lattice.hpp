@@ -4,8 +4,9 @@
 
 namespace tbm {
 
-/// Sublattice ID data type
+/// Sublattice and hopping ID data types
 using sub_id = std::int8_t;
+using hop_id = std::int8_t;
 
 /**
  Hopping description
@@ -13,7 +14,8 @@ using sub_id = std::int8_t;
 struct Hopping {
     Index3D relative_index; ///< relative index between two unit cells - may be (0, 0, 0)
     sub_id to_sublattice; ///< destination sublattice ID
-    float energy; ///< hopping energy
+    hop_id id; ///< hopping ID which points to the hopping energy -> Lattice::hopping_energies[id]
+    bool is_conjugate; ///< true if this is an automatically added complex conjugate
 };
 
 /**
@@ -21,11 +23,11 @@ struct Hopping {
  */
 struct Sublattice {
     Cartesian offset; ///< position relative to the base lattice location
-    float onsite; ///< onsite potential energy
+    double onsite; ///< onsite potential energy
     sub_id alias; ///< in case two sublattices at different positions need to have the same ID
     std::vector<Hopping> hoppings; ///< hoppings from this sublattice
 
-    void add_hopping(Index3D relative_index, sub_id to_sublattice, float hopping_energy);
+    void add_hopping(Index3D relative_index, sub_id to_sublattice, hop_id id, bool is_conjugate);
 };
 
 /**
@@ -35,12 +37,20 @@ class Lattice {
 public:
     Lattice(Cartesian v1, Cartesian v2 = Cartesian::Zero(), Cartesian v3 = Cartesian::Zero());
 
-    /// Creates a new sublattice at the given position offset and returns the sublattice ID
-    sub_id create_sublattice(Cartesian offset, float onsite_potential = 0, sub_id alias = -1);
-    /// Use the sublattice ID returned by CreateSublattice() in the from_/to_ sublattice fields 
-    void add_hopping(Index3D relative_index, sub_id from_sublattice,
-                     sub_id to_sublattice, float hopping_energy);
-    
+    /// Create a new sublattice and return it's ID
+    sub_id add_sublattice(Cartesian offset, double onsite_potential = .0, sub_id alias = -1);
+
+    /// Connect sites via relative index/sublattices and return an ID for the given hopping energy
+    hop_id add_hopping(Index3D relative_index, sub_id from_sublattice,
+                       sub_id to_sublattice, std::complex<double> energy);
+
+    /// Register just the energy and create an ID, but don't connect any sites
+    hop_id register_hopping_energy(std::complex<double> energy);
+
+    /// Connect sites with already registered hopping ID/energy
+    void add_registered_hopping(Index3D relative_index, sub_id from_sublattice,
+                                sub_id to_sublattice, hop_id id);
+
     /// Get the maximum possible number of hoppings from any site of this lattice
     int max_hoppings() const;
 
@@ -51,9 +61,11 @@ public:
     
 public:
     std::vector<Cartesian> vectors; ///< primitive vectors that define the lattice
-    std::vector<Sublattice> sublattices; ///< all the atoms or orbitals that belong to the unit cell
+    std::vector<Sublattice> sublattices; ///< all the sites that belong to the primitive cell
+    std::vector<std::complex<double>> hopping_energies; ///< unique energies indexed by hop_id
     int min_neighbours = 1; ///< minimum number of neighbours required at each lattice site
     bool has_onsite_potential = false; ///< does at least one sublattice have an onsite potential
+    bool has_complex_hopping = false; ///< is at least one hopping complex
 };
 
 } // end namespace tbm

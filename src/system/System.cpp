@@ -83,8 +83,10 @@ void populate_body(System& system, Foundation& foundation) {
         foundation.for_each_neighbour(site, [&](Site neighbour, Hopping const& hopping) {
             auto const neighbour_index = neighbour.hamiltonian_index();
             // this also makes sure that the neighbour is valid, i.e. 'neighbour_index != -1'
-            if (neighbour_index > index && hopping.energy != 0)
-                matrix_view.insert(neighbour_index, hopping.energy);
+            if (neighbour_index > index) {
+                auto const hop_energy = foundation.lattice.hopping_energies[hopping.id].real();
+                matrix_view.insert(neighbour_index, hop_energy);
+            }
         });
     });
     matrix_view.compress();
@@ -125,7 +127,8 @@ void populate_boundaries(System& system, Foundation& foundation, Symmetry const&
                 if (neighbour.hamiltonian_index() < 0)
                     return; // invalid
 
-                boundary_matrix_view.insert(neighbour.hamiltonian_index(), hop.energy);
+                auto const hop_energy = foundation.lattice.hopping_energies[hop.id].real();
+                boundary_matrix_view.insert(neighbour.hamiltonian_index(), hop_energy);
             });
         });
         boundary_matrix_view.compress();
