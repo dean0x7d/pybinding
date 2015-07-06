@@ -32,17 +32,20 @@ template<typename scalar_t>
 void HamiltonianT<scalar_t>::build_main(System const& system,
                                         HamiltonianModifiers const& modifiers) {
     auto const num_sites = system.num_sites();
+    auto const& lattice = system.lattice;
+
     matrix.resize(num_sites, num_sites);
     // number of hoppings plus 1 (optional) for the on-site potential
-    auto const non_zeros_per_row = system.max_elements_per_site + !modifiers.onsite.empty();
+    auto const non_zeros_per_row = lattice.max_hoppings()
+                                   + (lattice.has_onsite_potential || !modifiers.onsite.empty());
     matrix.reserve(VectorXi::Constant(num_sites, non_zeros_per_row));
     
     // insert onsite potential terms
     auto potential = ArrayX<scalar_t>{};
-    if (system.lattice.has_onsite_potential) {
+    if (lattice.has_onsite_potential) {
         potential.resize(num_sites);
         for (int i = 0; i < num_sites; ++i) {
-            potential[i] = static_cast<scalar_t>(system.lattice[system.sublattices[i]].onsite);
+            potential[i] = static_cast<scalar_t>(lattice[system.sublattices[i]].onsite);
         }
     }
 
@@ -84,7 +87,7 @@ void HamiltonianT<scalar_t>::build_periodic(System const& system,
         // set the size of the matrix
         auto const num_sites = system.num_sites();
         b_matrix.resize(num_sites, num_sites);
-        b_matrix.reserve(VectorXi::Constant(num_sites, system.max_elements_per_site));
+        b_matrix.reserve(VectorXi::Constant(num_sites, system.lattice.max_hoppings()));
 
         modifiers.apply_to_hoppings<scalar_t>(boundary, [&](int i, int j, scalar_t hopping) {
             b_matrix.insert(i, j) = hopping;

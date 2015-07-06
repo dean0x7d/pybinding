@@ -76,7 +76,7 @@ void HamiltonianModifiers::apply_to_hoppings(const S& system, Fn lambda) const {
     */
     auto next_chunk = [&]() {
         auto n = 0;
-        const auto limit = chunks_size - system.max_elements_per_site;
+        const auto limit = chunks_size - system.lattice.max_hoppings();
         for (;row < system.hoppings.rows() && n <= limit; ++row) {
             for (auto it = sparse_row(system.hoppings, row); it; ++it, ++n) {
                 hopping_indices[n] = std::make_tuple(it.row(), it.col());

@@ -57,8 +57,6 @@ void populate_body(System& system, Foundation& foundation) {
     auto const num_valid_sites = foundation.finalize();
 
     // allocate
-    system.max_elements_per_site = foundation.lattice.max_hoppings()
-                                   + foundation.lattice.has_onsite_potential;
     system.positions.resize(num_valid_sites);
     system.sublattices.resize(num_valid_sites);
     system.hoppings.resize(num_valid_sites, num_valid_sites);
@@ -129,7 +127,6 @@ void populate_boundaries(System& system, Foundation& foundation, Symmetry const&
         });
         boundary_matrix_view.compress();
 
-        boundary.max_elements_per_site = foundation.lattice.max_hoppings();
         if (boundary.hoppings.nonZeros() > 0)
             system.boundaries.emplace_back(system);
     }

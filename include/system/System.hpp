@@ -32,7 +32,6 @@ public:
 
         SparseMatrixX<hop_id> hoppings;
         Cartesian shift; ///< shift length (periodic boundary condition)
-        int max_elements_per_site;
     };
 
     System(Lattice const& lattice) : lattice{lattice} {}
@@ -51,8 +50,6 @@ public:
     ArrayX<sub_id> sublattices;
     SparseMatrixX<hop_id> hoppings;
     std::vector<Boundary> boundaries;
-
-    int max_elements_per_site; ///< maximum number of Hamiltonian element at any site
 };
 
 std::unique_ptr<System> build_system(Lattice const&, Shape const&,
