@@ -34,6 +34,17 @@ template<class scalar_t>
 inline std::complex<scalar_t> conjugate(std::complex<scalar_t> value) { return std::conj(value); }
 
 template<class scalar_t>
+inline scalar_t complex_cast(std::complex<double> v) { return v; }
+template<>
+inline std::complex<float> complex_cast(std::complex<double> v) {
+    return {static_cast<float>(v.real()), static_cast<float>(v.imag())};
+}
+template<>
+inline double complex_cast<double>(std::complex<double> v) { return v.real(); }
+template<>
+inline float complex_cast<float>(std::complex<double> v) { return static_cast<float>(v.real()); }
+
+template<class scalar_t>
 inline std::string scalar_name() { return ""; }
 template<> inline std::string scalar_name<float>() { return "float"; }
 template<> inline std::string scalar_name<double>() { return "double"; }

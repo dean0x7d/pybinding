@@ -77,10 +77,11 @@ void HamiltonianModifiers::apply_to_hoppings(const S& system, Fn lambda) const {
     auto next_chunk = [&]() {
         auto n = 0;
         const auto limit = chunks_size - system.max_elements_per_site;
-        for (;row < system.matrix.rows() && n <= limit; ++row) {
-            for (auto it = sparse_row(system.matrix, row); it; ++it, ++n) {
+        for (;row < system.hoppings.rows() && n <= limit; ++row) {
+            for (auto it = sparse_row(system.hoppings, row); it; ++it, ++n) {
                 hopping_indices[n] = std::make_tuple(it.row(), it.col());
-                hopping_values[n] = it.value();
+                auto const& hopping_energy = system.lattice.hopping_energies[it.value()];
+                hopping_values[n] = num::complex_cast<scalar_t>(hopping_energy);
                 std::make_pair(pi[n], pj[n]) = system.get_position_pair(it.row(), it.col());
             }
         }

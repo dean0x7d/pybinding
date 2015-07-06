@@ -29,15 +29,15 @@ class LDOSpoint:
 @pickleable
 class SpatialMap:
     def __init__(self, data: np.ndarray, pos: Positions,
-                 sublattice: np.ndarray, hoppings: csr_matrix):
+                 sublattices: np.ndarray, hoppings: csr_matrix):
         self.data = data  # 1d array of data which corresponds to (x, y, z) coordinates
         self.pos = Positions(*pos)  # make sure it is Positions
-        self.sublattice = sublattice
+        self.sublattices = sublattices
         self.hoppings = hoppings
 
     @classmethod
     def from_system(cls, data, system):
-        return cls(data, system.positions, system.sublattice, system.matrix.tocsr())
+        return cls(data, system.positions, system.sublattices, system.hoppings.tocsr())
 
     def copy(self) -> 'SpatialMap':
         return copy(self)
@@ -50,7 +50,7 @@ class SpatialMap:
 
     def filter(self, idx):
         self.data = self.data[idx]
-        self.sublattice = self.sublattice[idx]
+        self.sublattices = self.sublattices[idx]
         self.pos = Positions(*map(lambda v: v[idx], self.pos))
         self.hoppings = self.hoppings[idx][:, idx]
 

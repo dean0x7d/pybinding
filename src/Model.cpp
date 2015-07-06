@@ -95,7 +95,9 @@ std::shared_ptr<const System> Model::system() const {
 std::shared_ptr<const Hamiltonian> Model::hamiltonian() const {
     if (!_hamiltonian) {
         // create a new Hamiltonian of suitable type
-        if (hamiltonian_modifiers.any_complex() || _symmetry)
+        if (hamiltonian_modifiers.any_complex() ||
+            system()->lattice.has_complex_hopping ||
+            !system()->boundaries.empty())
             _hamiltonian = std::make_shared<HamiltonianT<std::complex<float>>>(*system(), hamiltonian_modifiers, wave_vector);
         else
             _hamiltonian = std::make_shared<HamiltonianT<float>>(*system(), hamiltonian_modifiers, wave_vector);

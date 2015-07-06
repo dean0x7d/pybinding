@@ -20,7 +20,8 @@ object internal_ref(Function f) {
     >{});
 }
 
-template<class Class, class Data, class = cpp14::enable_if_t<!std::is_function<Data>::value>>
+template<class Class, class Data,
+         class = cpp14::enable_if_t<!std::is_member_function_pointer<Data Class::*>::value>>
 object internal_ref(Data Class::* d) {
     return make_getter(d, return_value_policy<
         return_by_value, with_custodian_and_ward_postcall<0, 1>

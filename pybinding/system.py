@@ -11,7 +11,7 @@ from .support.pickle import pickleable
 Positions = namedtuple('Positions', 'x y z')
 
 
-@pickleable(impl='shift matrix.')
+@pickleable(impl='shift hoppings.')
 class Boundary:
     def __init__(self, impl: _pybinding.Boundary):
         self.impl = impl
@@ -21,11 +21,11 @@ class Boundary:
         return self.impl.shift
 
     @property
-    def matrix(self) -> SparseMatrix:
-        return SparseMatrix(self.impl.matrix)
+    def hoppings(self) -> SparseMatrix:
+        return SparseMatrix(self.impl.hoppings)
 
 
-@pickleable(impl='positions sublattice matrix. boundaries[]')
+@pickleable(impl='positions sublattices hoppings. boundaries[]')
 class System:
     def __init__(self, impl: _pybinding.System):
         self.impl = impl
@@ -33,10 +33,6 @@ class System:
     @property
     def num_sites(self) -> int:
         return self.impl.num_sites
-
-    @property
-    def matrix(self) -> SparseMatrix:
-        return SparseMatrix(self.impl.matrix)
 
     @property
     def x(self) -> np.ndarray:
@@ -60,8 +56,12 @@ class System:
         return Positions(self.x, self.y, self.z)
 
     @property
-    def sublattice(self) -> np.ndarray:
-        return self.impl.sublattice
+    def sublattices(self) -> np.ndarray:
+        return self.impl.sublattices
+
+    @property
+    def hoppings(self) -> SparseMatrix:
+        return SparseMatrix(self.impl.hoppings)
 
     @property
     def boundaries(self):
@@ -80,7 +80,7 @@ class System:
                 return np.argmin(distance)
             else:
                 from numpy import ma
-                masked_distance = ma.array(distance, mask=self.sublattice != at_sublattice)
+                masked_distance = ma.array(distance, mask=self.sublattices != at_sublattice)
                 return ma.argmin(masked_distance)
 
     def plot(self, site_radius: float=0.025, site_props: dict=None, hopping_width: float=1,
@@ -111,8 +111,8 @@ class System:
         # position, sublattice and hopping
         pos = self.x, self.y, self.z
         pos = tuple(pos[i] for i in rotate)
-        sub = self.sublattice
-        hop = self.matrix.tocoo()
+        sub = self.sublattices
+        hop = self.hoppings.tocoo()
         site_props = site_props if site_props else {}
         hopping_props = hopping_props if hopping_props else {}
 
@@ -128,7 +128,7 @@ class System:
                 plot_hoppings(ax, pos, hop, hopping_width, shift, blend=0.5, **hopping_props)
 
             # special color for the boundary hoppings
-            b_hop = boundary.matrix.tocoo()
+            b_hop = boundary.hoppings.tocoo()
             kwargs = dict(hopping_props, colors=boundary_color) if boundary_color else hopping_props
             plot_hoppings(ax, pos, b_hop, hopping_width, boundary.shift, boundary=True, **kwargs)
 
@@ -237,16 +237,17 @@ def plot_site_indices(system):
         pltutils.annotate_box(i, xy)
 
 
-def plot_hopping_values(system):
-    pos = np.array(system.positions[:2]).T
+def plot_hopping_values(system, lattice):
+    pos = system.xyz[:, :2]
 
-    for i, j, t in system.matrix.triplets():
-        pltutils.annotate_box(t, (pos[i] + pos[j]) / 2)
+    def get_energy(hopping_id):
+        t = lattice.hopping_energies[hopping_id]
+        return t.real if t.imag == 0 else t
+
+    for i, j, k in system.hoppings.triplets():
+        pltutils.annotate_box(get_energy(k), (pos[i] + pos[j]) / 2)
 
     for boundary in system.boundaries:
-        from pybinding.support.sparse import SparseMatrix
-        hoppings = SparseMatrix(boundary.matrix)
-
-        for i, j, t in hoppings.triplets():
-            pltutils.annotate_box(t, (pos[i] + pos[j] + boundary.shift[:2]) / 2)
-            pltutils.annotate_box(t, (pos[i] + pos[j] - boundary.shift[:2]) / 2)
+        for i, j, k in boundary.hoppings.triplets():
+            pltutils.annotate_box(get_energy(k), (pos[i] + pos[j] + boundary.shift[:2]) / 2)
+            pltutils.annotate_box(get_energy(k), (pos[i] + pos[j] - boundary.shift[:2]) / 2)

@@ -38,7 +38,7 @@ void export_system() {
 
     class_<Boundary>{"Boundary", no_init}
     .add_property("shift", copy_value(&Boundary::shift))
-    .add_property("matrix", sparse_uref(&Boundary::matrix))
+    .add_property("hoppings", sparse_uref(&Boundary::hoppings))
     ;
 
     class_<System>{"System", no_init}
@@ -46,9 +46,9 @@ void export_system() {
          "Find the index of the atom closest to the given coordiantes.")
     .add_property("num_sites", &System::num_sites)
     .add_property("positions", internal_ref(&System::positions))
-    .add_property("sublattice", dense_uref(&System::sublattice))
+    .add_property("sublattices", dense_uref(&System::sublattices))
     .add_property("boundaries", &System::boundaries)
-    .add_property("matrix", sparse_uref(&System::matrix))
+    .add_property("hoppings", sparse_uref(&System::hoppings))
     ;
 
     using tbm::Hopping;

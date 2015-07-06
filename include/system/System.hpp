@@ -15,23 +15,27 @@ class Symmetry;
 class SystemModifiers;
 
 /**
- Stores the positions and base hoppings for all lattice sites.
+ Stores the positions, sublattice and hopping IDs for all lattice sites.
  */
 class System {
 public:
     /// Stores sites that belong to a boundary
     struct Boundary {
-        Boundary(System const& system) : system(system) {}
+        Boundary(System const& system) : system(system), lattice(system.lattice) {}
 
         std::pair<Cartesian, Cartesian> get_position_pair(int i, int j) const {
             return {system.positions[i], system.positions[j] - shift};
         }
 
         System const& system;
-        SparseMatrixX<float> matrix;
+        Lattice const& lattice;
+
+        SparseMatrixX<hop_id> hoppings;
         Cartesian shift; ///< shift length (periodic boundary condition)
         int max_elements_per_site;
     };
+
+    System(Lattice const& lattice) : lattice{lattice} {}
 
     /// Find the index of the site nearest to the given position. Optional: filter by sublattice.
     int find_nearest(Cartesian position, sub_id sublattice = -1) const;
@@ -42,10 +46,12 @@ public:
 
     int num_sites() const { return positions.size(); }
 
-    CartesianArray positions; ///< coordinates of all the lattice sites
-    ArrayX<sub_id> sublattice; ///< sublattice indices of all the sites
-    SparseMatrixX<float> matrix; ///< base hopping information
-    std::vector<Boundary> boundaries; ///< boundary information
+    Lattice lattice;
+    CartesianArray positions;
+    ArrayX<sub_id> sublattices;
+    SparseMatrixX<hop_id> hoppings;
+    std::vector<Boundary> boundaries;
+
     int max_elements_per_site; ///< maximum number of Hamiltonian element at any site
 };
 

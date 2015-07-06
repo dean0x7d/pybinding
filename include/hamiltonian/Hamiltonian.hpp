@@ -34,7 +34,7 @@ class HamiltonianT : public Hamiltonian {
     using SparseMatrix = SparseMatrixX<scalar_t>;
 
 public:
-    HamiltonianT(const System& s, const HamiltonianModifiers& m, const Cartesian& k_vector);
+    HamiltonianT(System const&, HamiltonianModifiers const&, Cartesian k_vector);
     virtual ~HamiltonianT() override;
 
     /// Get a const reference to the matrix.
@@ -46,9 +46,9 @@ public:
     virtual int cols() const override { return matrix.cols(); }
 
 private: // build the Hamiltonian
-    void build_main(const System& s, const HamiltonianModifiers& m);
-    void build_periodic(const System& s, const HamiltonianModifiers& m);
-    void set(const Cartesian& k_vector);
+    void build_main(System const&, HamiltonianModifiers const&);
+    void build_periodic(System const&, HamiltonianModifiers const&);
+    void set(Cartesian k_vector);
 
 private:
     SparseMatrix matrix; ///< the sparse matrix that holds the data
