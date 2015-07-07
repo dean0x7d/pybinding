@@ -1,5 +1,5 @@
 #pragma once
-#include "system/Lattice.hpp"
+#include "system/System.hpp"
 
 #include "support/dense.hpp"
 #include "support/sparse.hpp"
@@ -48,9 +48,15 @@ public:
     /// Do any of the modifiers require complex numbers?
     bool any_complex() const;
     
-    /// Apply hopping modifiers to the given system and pass the results to the lambda function
-    template<class scalar_t, class S, class Fn>
-    void apply_to_hoppings(const S& system, Fn lambda) const;
+    /// Apply onsite modifiers to the given system and pass results to function:
+    ///     lambda(int i, scalar_t onsite)
+    template<class scalar_t, class Fn>
+    void apply_to_onsite(System const& system, Fn lambda) const;
+
+    /// Apply hopping modifiers to the given system (or boundary) and pass results to:
+    ///     lambda(int i, int j, scalar_t hopping)
+    template<class scalar_t, class SystemOrBoundary, class Fn>
+    void apply_to_hoppings(SystemOrBoundary const& system, Fn lambda) const;
 
     void clear();
     
@@ -60,8 +66,36 @@ public:
     std::vector<std::shared_ptr<const HoppingModifier>> hopping;
 };
 
-template<class scalar_t, class S, class Fn>
-void HamiltonianModifiers::apply_to_hoppings(S const& system, Fn lambda) const {
+template<class scalar_t, class Fn>
+void HamiltonianModifiers::apply_to_onsite(System const& system, Fn lambda) const {
+    auto const num_sites = system.num_sites();
+    auto potential = ArrayX<scalar_t>{};
+
+    if (system.lattice.has_onsite_potential) {
+        potential.resize(num_sites);
+        transform(system.sublattices, potential, [&](sub_id id) {
+            return static_cast<scalar_t>(system.lattice[id].onsite);
+        });
+    }
+
+    if (!onsite.empty()) {
+        if (potential.size() == 0)
+            potential.setZero(num_sites);
+
+        for (auto const& modifier : onsite)
+            modifier->apply(potential, system.positions);
+    }
+
+    if (potential.size() > 0) {
+        for (int i = 0; i < num_sites; ++i) {
+            if (potential[i] != scalar_t{0})
+                lambda(i, potential[i]);
+        }
+    }
+}
+
+template<class scalar_t, class SystemOrBoundary, class Fn>
+void HamiltonianModifiers::apply_to_hoppings(SystemOrBoundary const& system, Fn lambda) const {
     /*
      Applying modifiers to each hopping individually would be slow.
      Passing all the values in one call would require a lot of memory.

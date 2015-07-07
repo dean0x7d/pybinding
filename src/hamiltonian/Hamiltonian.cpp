@@ -1,6 +1,5 @@
 #include "hamiltonian/Hamiltonian.hpp"
 #include "hamiltonian/HamiltonianModifiers.hpp"
-#include "system/System.hpp"
 
 #include "utils/Log.hpp"
 #include "utils/Chrono.hpp"
@@ -32,43 +31,21 @@ template<typename scalar_t>
 void HamiltonianT<scalar_t>::build_main(System const& system,
                                         HamiltonianModifiers const& modifiers) {
     auto const num_sites = system.num_sites();
-    auto const& lattice = system.lattice;
-
     matrix.resize(num_sites, num_sites);
-    // number of hoppings plus 1 (optional) for the on-site potential
-    auto const non_zeros_per_row = lattice.max_hoppings()
-                                   + (lattice.has_onsite_potential || !modifiers.onsite.empty());
+
+    auto const non_zeros_per_row = system.lattice.max_hoppings() +
+        (system.lattice.has_onsite_potential || !modifiers.onsite.empty());
     matrix.reserve(VectorXi::Constant(num_sites, non_zeros_per_row));
     
-    // insert onsite potential terms
-    auto potential = ArrayX<scalar_t>{};
-    if (lattice.has_onsite_potential) {
-        potential.resize(num_sites);
-        for (int i = 0; i < num_sites; ++i) {
-            potential[i] = static_cast<scalar_t>(lattice[system.sublattices[i]].onsite);
-        }
-    }
-
-    if (!modifiers.onsite.empty()) {
-        if (potential.size() == 0)
-            potential.setZero(num_sites);
-
-        for (const auto& onsite_modifier : modifiers.onsite)
-            onsite_modifier->apply(potential, system.positions);
-        
-        for (int i = 0; i < num_sites; ++i) {
-            if (potential[i] != scalar_t{0}) // conserve space in the sparse matrix
-                matrix.insert(i, i) = potential[i];
-        }
-    }
+    modifiers.apply_to_onsite<scalar_t>(system, [&](int i, scalar_t onsite) {
+        matrix.insert(i, i) = onsite;
+    });
     
-    // insert hopping terms
     modifiers.apply_to_hoppings<scalar_t>(system, [&](int i, int j, scalar_t hopping) {
         matrix.insert(i, j) = hopping;
         matrix.insert(j, i) = num::conjugate(hopping);
     });
 
-    // remove any extra reserved space from the sparse matrices
     matrix.makeCompressed();
 }
 
