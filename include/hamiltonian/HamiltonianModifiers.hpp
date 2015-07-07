@@ -1,6 +1,9 @@
 #pragma once
+#include "system/Lattice.hpp"
+
 #include "support/dense.hpp"
 #include "support/sparse.hpp"
+
 #include <vector>
 #include <algorithm>
 #include <memory>
@@ -52,53 +55,54 @@ public:
     void clear();
     
 public:
-    static constexpr auto chunks_size = 100000;
     // Keep modifiers as unique elements but insertion order must be preserved (don't use std::set)
     std::vector<std::shared_ptr<const OnsiteModifier>> onsite;
     std::vector<std::shared_ptr<const HoppingModifier>> hopping;
 };
 
 template<class scalar_t, class S, class Fn>
-void HamiltonianModifiers::apply_to_hoppings(const S& system, Fn lambda) const {
-    // from/to hopping indices and values
-    auto hopping_indices = std::vector<std::tuple<int, int>>(chunks_size);
-    ArrayX<scalar_t> hopping_values = ArrayX<scalar_t>::Zero(chunks_size);
-    // current sparse matrix row
-    auto row = 0;
-    // positions of sites i and j
-    auto pi = CartesianArray{chunks_size};
-    auto pj = CartesianArray{chunks_size};
-    
-    /* 
-     Applying modifiers to each hopping individually would require a large number of virtual
-     function calls (slow). Passing all the values in one call would be fast but it would require
-     a lot of memory. To balance memory usage and performance the hoppings are processed in chunks.
+void HamiltonianModifiers::apply_to_hoppings(S const& system, Fn lambda) const {
+    /*
+     Applying modifiers to each hopping individually would be slow.
+     Passing all the values in one call would require a lot of memory.
+     The loop below buffers hoppings to balance performance and memory usage.
     */
-    auto next_chunk = [&]() {
-        auto n = 0;
-        const auto limit = chunks_size - system.lattice.max_hoppings();
-        for (;row < system.hoppings.rows() && n <= limit; ++row) {
-            for (auto it = sparse_row(system.hoppings, row); it; ++it, ++n) {
-                hopping_indices[n] = std::make_tuple(it.row(), it.col());
-                auto const& hopping_energy = system.lattice.hopping_energies[it.value()];
-                hopping_values[n] = num::complex_cast<scalar_t>(hopping_energy);
-                std::make_pair(pi[n], pj[n]) = system.get_position_pair(it.row(), it.col());
+    // TODO: experiment with buffer_size -> currently: hoppings + pos1 + pos2 is about 3MB
+    static constexpr auto buffer_size = 100000;
+    auto hoppings = ArrayX<scalar_t>{buffer_size};
+    auto pos1 = CartesianArray{buffer_size};
+    auto pos2 = CartesianArray{buffer_size};
+
+    auto const& base_hopping_energies = system.lattice.hopping_energies;
+    auto hopping_csr_matrix = sparse::make_loop(system.hoppings);
+
+    hopping_csr_matrix.buffered_for_each(
+        buffer_size,
+        // fill buffer
+        [&](int row, int col, hop_id id, int n) {
+            hoppings[n] = num::complex_cast<scalar_t>(base_hopping_energies[id]);
+            std::make_pair(pos1[n], pos2[n]) = system.get_position_pair(row, col);
+        },
+        // process buffer
+        [&](int start_row, int start_idx, int size) {
+            if (size < buffer_size) {
+                hoppings.conservativeResize(size);
+                pos1.conservativeResize(size);
+                pos2.conservativeResize(size);
             }
+
+            for (auto const& modifier : hopping)
+                modifier->apply(hoppings, pos1, pos2);
+
+            hopping_csr_matrix.slice_for_each(
+                start_row, start_idx, size,
+                [&](int row, int col, hop_id, int n) {
+                    if (hoppings[n] != scalar_t{0})
+                        lambda(row, col, hoppings[n]);
+                }
+            );
         }
-        
-        for (const auto& modifier : hopping)
-            modifier->apply(hopping_values, pi, pj);
-        
-        return n; // final size of this chunk
-    };
-    
-    while (auto size = next_chunk()) {
-        for (int n = 0; n < size; ++n) {
-            int i, j;
-            std::tie(i, j) = hopping_indices[n];
-            lambda(i, j, hopping_values[n]);
-        }
-    }
+    );
 }
 
 } // namespace tbm
