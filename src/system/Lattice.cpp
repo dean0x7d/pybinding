@@ -90,9 +90,9 @@ int Lattice::max_hoppings() const {
 }
 
 void Sublattice::add_hopping(Index3D relative_index, sub_id to_sub, hop_id hop, bool is_conj) {
-    bool already_exists = std::find_if(hoppings.begin(), hoppings.end(), [&](Hopping const& h) {
+    bool already_exists = std::any_of(hoppings.begin(), hoppings.end(), [&](Hopping const& h) {
         return h.relative_index == relative_index && h.to_sublattice == to_sub;
-    }) != hoppings.end();
+    });
 
     if (already_exists)
         throw std::logic_error{"The specified hopping already exists."};
