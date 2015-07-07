@@ -8,40 +8,50 @@ from .support.pickle import pickleable
 __all__ = ['Lattice', 'make_lattice', 'square']
 
 
-@pickleable(props='sublattices min_neighbors')
+@pickleable(props='sublattices hopping_energies min_neighbors')
 class Lattice(_pybinding.Lattice):
     def __init__(self, v1, v2=None, v3=None):
         super().__init__(*(v for v in [v1, v2, v3] if v is not None))
-        self.ids = OrderedDict()  # sublattice IDs indexed by sublattice name
+        self.sublattice_ids = OrderedDict()  # indexed by sublattice name
+        self.hopping_ids = {}  # indexed by hopping name
 
     def __getitem__(self, key):
         """Get sublattice ID from name."""
         if isinstance(key, str):
-            if key not in self.ids.keys():
+            if key not in self.sublattice_ids:
                 raise KeyError("There is no sublattice named '{}'".format(key))
-            return self.ids[key]
+            return self.sublattice_ids[key]
         else:  # an ID was given instead of a name, verify it
-            if key not in self.ids.values():
+            if key not in self.sublattice_ids.values():
                 raise KeyError("There is no sublattice with ID = {}".format(key))
             return key
 
+    def register_hopping_energies(self, mapping: dict):
+        for name, energy in mapping.items():
+            if name in self.hopping_ids:
+                raise KeyError("Hopping '{}' already exists".format(name))
+            self.hopping_ids[name] = super()._register_hopping_energy(energy)
+
     def add_one_sublattice(self, name, offset, onsite_potential=0.0, alias=None):
-        if name in self.ids.keys():
-            raise RuntimeError("Sublattice '{}' already exists".format(name))
+        if name in self.sublattice_ids:
+            raise KeyError("Sublattice '{}' already exists".format(name))
 
         alias = self.__getitem__(alias) if alias is not None else -1
-        sublattice_id = super()._create_sublattice(offset, onsite_potential, alias)
-        self.ids[name] = sublattice_id
-
-        return sublattice_id
+        self.sublattice_ids[name] = super()._add_sublattice(offset, onsite_potential, alias)
 
     def add_sublattices(self, *sublattices):
         for sub in sublattices:
             self.add_one_sublattice(*sub)
 
-    def add_one_hopping(self, relative_index, from_sublattice, to_sublattice, hopping_energy):
-        super()._add_hopping(relative_index, self.__getitem__(from_sublattice),
-                             self.__getitem__(to_sublattice), hopping_energy)
+    def add_one_hopping(self, relative_index, from_sublattice, to_sublattice, energy):
+        from_sub, to_sub = map(self.__getitem__, (from_sublattice, to_sublattice))
+        if energy in self.hopping_ids:
+            super()._add_registered_hopping(relative_index, from_sub, to_sub,
+                                            self.hopping_ids[energy])
+        elif not isinstance(energy, str):
+            super()._add_hopping(relative_index, from_sub, to_sub, energy)
+        else:
+            raise KeyError("There is no hopping named '{}'".format(energy))
 
     def add_hoppings(self, *hoppings):
         for hop in hoppings:
@@ -80,7 +90,7 @@ class Lattice(_pybinding.Lattice):
                                   fontcolor='white', fontsize='large')
 
         # annotate the sublattices and neighboring cells
-        names = list(self.ids.keys())
+        names = list(self.sublattice_ids.keys())
         for sublattice in self.sublattices:
             pltutils.annotate_box(names[sublattice.alias], xy=sublattice.offset[:2])
             for hop in sublattice.hoppings:

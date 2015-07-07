@@ -14,7 +14,7 @@ int System::find_nearest(Cartesian target_position, sub_id target_sublattice) co
     auto min_distance = (positions[0] - target_position).norm();
 
     for (auto i = 1; i < num_sites(); ++i) {
-        if (target_sublattice >= 0 && sublattice[i] != target_sublattice)
+        if (target_sublattice >= 0 && sublattices[i] != target_sublattice)
             continue; // only check the target sublattice (if any)
 
         auto const distance = (positions[i] - target_position).norm();
@@ -30,7 +30,7 @@ int System::find_nearest(Cartesian target_position, sub_id target_sublattice) co
 std::unique_ptr<System> build_system(Lattice const& lattice, Shape const& shape,
                                      SystemModifiers const& system_modifers,
                                      Symmetry const* symmetry) {
-    auto system = cpp14::make_unique<System>();
+    auto system = cpp14::make_unique<System>(lattice);
 
     auto foundation = Foundation{lattice, shape};
     foundation.cut_down_to(shape);
@@ -57,15 +57,12 @@ void populate_body(System& system, Foundation& foundation) {
     auto const num_valid_sites = foundation.finalize();
 
     // allocate
-    system.max_elements_per_site = foundation.lattice.max_hoppings()
-                                   + foundation.lattice.has_onsite_potential;
     system.positions.resize(num_valid_sites);
-    system.sublattice.resize(num_valid_sites);
-    system.matrix.resize(num_valid_sites, num_valid_sites);
+    system.sublattices.resize(num_valid_sites);
+    system.hoppings.resize(num_valid_sites, num_valid_sites);
 
-    auto const reserve_nonzeros = (foundation.lattice.max_hoppings() * num_valid_sites) / 2
-                                  + foundation.lattice.has_onsite_potential * num_valid_sites;
-    auto matrix_view = compressed_inserter(system.matrix, reserve_nonzeros);
+    auto const reserve_nonzeros = (foundation.lattice.max_hoppings() * num_valid_sites) / 2;
+    auto matrix_view = compressed_inserter(system.hoppings, reserve_nonzeros);
 
     // populate
     foundation.for_each_site([&](Site site) {
@@ -74,17 +71,16 @@ void populate_body(System& system, Foundation& foundation) {
             return; // invalid site
 
         system.positions[index] = site.position();
-        system.sublattice[index] = foundation.lattice[site.sublattice].alias;
+        system.sublattices[index] = foundation.lattice[site.sublattice].alias;
 
         matrix_view.start_row(index);
-        if (foundation.lattice.has_onsite_potential)
-            matrix_view.insert(index, foundation.lattice[site.sublattice].onsite);
-
         foundation.for_each_neighbour(site, [&](Site neighbour, Hopping const& hopping) {
             auto const neighbour_index = neighbour.hamiltonian_index();
-            // this also makes sure that the neighbour is valid, i.e. 'neighbour_index != -1'
-            if (neighbour_index > index && hopping.energy != 0)
-                matrix_view.insert(neighbour_index, hopping.energy);
+            if (neighbour_index < 0)
+                return; // invalid
+
+            if (!hopping.is_conjugate) // only make half the matrix, other half is the conjugate
+                matrix_view.insert(neighbour_index, hopping.id);
         });
     });
     matrix_view.compress();
@@ -109,8 +105,8 @@ void populate_boundaries(System& system, Foundation& foundation, Symmetry const&
         }
 
         boundary.shift = translation.shift_lenght;
-        boundary.matrix.resize(num_valid_sites, num_valid_sites);
-        auto boundary_matrix_view = compressed_inserter(boundary.matrix, reserve_nonzeros);
+        boundary.hoppings.resize(num_valid_sites, num_valid_sites);
+        auto boundary_matrix_view = compressed_inserter(boundary.hoppings, reserve_nonzeros);
 
         // loop over all periodic boundary sites
         foundation.for_sites(translation.boundary, [&](Site site) {
@@ -122,16 +118,16 @@ void populate_boundaries(System& system, Foundation& foundation, Symmetry const&
             auto shifted_site = site.shift(translation.shift_index);
             // and see if it has valid neighbours
             foundation.for_each_neighbour(shifted_site, [&](Site neighbour, Hopping const& hop) {
-                if (neighbour.hamiltonian_index() < 0)
+                auto const neighbour_index = neighbour.hamiltonian_index();
+                if (neighbour_index < 0)
                     return; // invalid
 
-                boundary_matrix_view.insert(neighbour.hamiltonian_index(), hop.energy);
+                boundary_matrix_view.insert(neighbour_index, hop.id);
             });
         });
         boundary_matrix_view.compress();
 
-        boundary.max_elements_per_site = foundation.lattice.max_hoppings();
-        if (boundary.matrix.nonZeros() > 0)
+        if (boundary.hoppings.nonZeros() > 0)
             system.boundaries.emplace_back(system);
     }
     system.boundaries.pop_back();

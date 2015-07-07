@@ -43,6 +43,6 @@ def test_system(model, baseline, plot):
 
     idx = system.num_sites // 2
     assert idx == system.find_nearest(system.xyz[idx])
-    assert idx == system.find_nearest(system.xyz[idx], system.sublattice[idx])
+    assert idx == system.find_nearest(system.xyz[idx], system.sublattices[idx])
     assert idx == expected.find_nearest(expected.xyz[idx])
-    assert idx == expected.find_nearest(expected.xyz[idx], expected.sublattice[idx])
+    assert idx == expected.find_nearest(expected.xyz[idx], expected.sublattices[idx])

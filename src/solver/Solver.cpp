@@ -55,6 +55,8 @@ ArrayXd Solver::calc_dos(ArrayXd target_energies, double broadening) {
         auto gaussian = exp(-(energies - E).square() * inverted_broadening);
         return 1 / (sqrt_pi * broadening) * sum(gaussian);
     });
+
+    return dos;
 }
 
 ArrayXd Solver::calc_ldos(double target_energy, double broadening, sub_id target_sublattice) {
@@ -69,7 +71,7 @@ ArrayXd Solver::calc_ldos(double target_energy, double broadening, sub_id target
     auto energies = uref_cast<ArrayXf>(eigenvalues());
     for (int i = 0; i < system_size; i++) {
         // if a target_sublattice is set, only consider those sites
-        if (target_sublattice >= 0 && sys.sublattice[i] != target_sublattice)
+        if (target_sublattice >= 0 && sys.sublattices[i] != target_sublattice)
             continue;
 
         // TODO: also handle <double>

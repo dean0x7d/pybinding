@@ -1,6 +1,9 @@
 #pragma once
+#include "system/System.hpp"
+
 #include "support/dense.hpp"
 #include "support/sparse.hpp"
+
 #include <vector>
 #include <algorithm>
 #include <memory>
@@ -45,59 +48,95 @@ public:
     /// Do any of the modifiers require complex numbers?
     bool any_complex() const;
     
-    /// Apply hopping modifiers to the given system and pass the results to the lambda function
-    template<class scalar_t, class S, class Fn>
-    void apply_to_hoppings(const S& system, Fn lambda) const;
+    /// Apply onsite modifiers to the given system and pass results to function:
+    ///     lambda(int i, scalar_t onsite)
+    template<class scalar_t, class Fn>
+    void apply_to_onsite(System const& system, Fn lambda) const;
+
+    /// Apply hopping modifiers to the given system (or boundary) and pass results to:
+    ///     lambda(int i, int j, scalar_t hopping)
+    template<class scalar_t, class SystemOrBoundary, class Fn>
+    void apply_to_hoppings(SystemOrBoundary const& system, Fn lambda) const;
 
     void clear();
     
 public:
-    static constexpr auto chunks_size = 100000;
     // Keep modifiers as unique elements but insertion order must be preserved (don't use std::set)
     std::vector<std::shared_ptr<const OnsiteModifier>> onsite;
     std::vector<std::shared_ptr<const HoppingModifier>> hopping;
 };
 
-template<class scalar_t, class S, class Fn>
-void HamiltonianModifiers::apply_to_hoppings(const S& system, Fn lambda) const {
-    // from/to hopping indices and values
-    auto hopping_indices = std::vector<std::tuple<int, int>>(chunks_size);
-    ArrayX<scalar_t> hopping_values = ArrayX<scalar_t>::Zero(chunks_size);
-    // current sparse matrix row
-    auto row = 0;
-    // positions of sites i and j
-    auto pi = CartesianArray{chunks_size};
-    auto pj = CartesianArray{chunks_size};
-    
-    /* 
-     Applying modifiers to each hopping individually would require a large number of virtual
-     function calls (slow). Passing all the values in one call would be fast but it would require
-     a lot of memory. To balance memory usage and performance the hoppings are processed in chunks.
-    */
-    auto next_chunk = [&]() {
-        auto n = 0;
-        const auto limit = chunks_size - system.max_elements_per_site;
-        for (;row < system.matrix.rows() && n <= limit; ++row) {
-            for (auto it = sparse_row(system.matrix, row); it; ++it, ++n) {
-                hopping_indices[n] = std::make_tuple(it.row(), it.col());
-                hopping_values[n] = it.value();
-                std::make_pair(pi[n], pj[n]) = system.get_position_pair(it.row(), it.col());
-            }
-        }
-        
-        for (const auto& modifier : hopping)
-            modifier->apply(hopping_values, pi, pj);
-        
-        return n; // final size of this chunk
-    };
-    
-    while (auto size = next_chunk()) {
-        for (int n = 0; n < size; ++n) {
-            int i, j;
-            std::tie(i, j) = hopping_indices[n];
-            lambda(i, j, hopping_values[n]);
+template<class scalar_t, class Fn>
+void HamiltonianModifiers::apply_to_onsite(System const& system, Fn lambda) const {
+    auto const num_sites = system.num_sites();
+    auto potential = ArrayX<scalar_t>{};
+
+    if (system.lattice.has_onsite_potential) {
+        potential.resize(num_sites);
+        transform(system.sublattices, potential, [&](sub_id id) {
+            return static_cast<scalar_t>(system.lattice[id].onsite);
+        });
+    }
+
+    if (!onsite.empty()) {
+        if (potential.size() == 0)
+            potential.setZero(num_sites);
+
+        for (auto const& modifier : onsite)
+            modifier->apply(potential, system.positions);
+    }
+
+    if (potential.size() > 0) {
+        for (int i = 0; i < num_sites; ++i) {
+            if (potential[i] != scalar_t{0})
+                lambda(i, potential[i]);
         }
     }
+}
+
+template<class scalar_t, class SystemOrBoundary, class Fn>
+void HamiltonianModifiers::apply_to_hoppings(SystemOrBoundary const& system, Fn lambda) const {
+    /*
+     Applying modifiers to each hopping individually would be slow.
+     Passing all the values in one call would require a lot of memory.
+     The loop below buffers hoppings to balance performance and memory usage.
+    */
+    // TODO: experiment with buffer_size -> currently: hoppings + pos1 + pos2 is about 3MB
+    static constexpr auto buffer_size = 100000;
+    auto hoppings = ArrayX<scalar_t>{buffer_size};
+    auto pos1 = CartesianArray{buffer_size};
+    auto pos2 = CartesianArray{buffer_size};
+
+    auto const& base_hopping_energies = system.lattice.hopping_energies;
+    auto hopping_csr_matrix = sparse::make_loop(system.hoppings);
+
+    hopping_csr_matrix.buffered_for_each(
+        buffer_size,
+        // fill buffer
+        [&](int row, int col, hop_id id, int n) {
+            hoppings[n] = num::complex_cast<scalar_t>(base_hopping_energies[id]);
+            std::make_pair(pos1[n], pos2[n]) = system.get_position_pair(row, col);
+        },
+        // process buffer
+        [&](int start_row, int start_idx, int size) {
+            if (size < buffer_size) {
+                hoppings.conservativeResize(size);
+                pos1.conservativeResize(size);
+                pos2.conservativeResize(size);
+            }
+
+            for (auto const& modifier : hopping)
+                modifier->apply(hoppings, pos1, pos2);
+
+            hopping_csr_matrix.slice_for_each(
+                start_row, start_idx, size,
+                [&](int row, int col, hop_id, int n) {
+                    if (hoppings[n] != scalar_t{0})
+                        lambda(row, col, hoppings[n]);
+                }
+            );
+        }
+    );
 }
 
 } // namespace tbm

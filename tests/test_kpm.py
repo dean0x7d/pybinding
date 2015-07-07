@@ -6,6 +6,8 @@ from pybinding.repository import graphene
 
 models = {
     'graphene-pristine': [graphene.lattice.monolayer(), pb.shape.rectangle(70)],
+    'graphene-const_potential': [graphene.lattice.monolayer(), pb.shape.rectangle(70),
+                                 pb.electric.constant(0.2)],
     'graphene-magnetic_field': [graphene.lattice.monolayer(), pb.shape.rectangle(70),
                                 pb.magnetic.constant(60)],
 }
