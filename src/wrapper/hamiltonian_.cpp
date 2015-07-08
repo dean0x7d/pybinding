@@ -18,7 +18,10 @@ public:
     
     template<typename Array>
     void apply_in_python(Array& potential, const CartesianArray& position) const {
-        object result = get_override("apply")(potential, position.x, position.y, position.z);
+        object result = get_override("apply")(
+            DenseURef{potential},
+            DenseURef{position.x}, DenseURef{position.y}, DenseURef{position.z}
+        );
         potential = extract<Array>(result);
     }
     
@@ -40,7 +43,11 @@ public:
 
     template<typename Array>
     void apply_in_python(Array& hopping, const CartesianArray& pos1, const CartesianArray& pos2) const {
-        object o = get_override("apply")(hopping, pos1.x, pos1.y, pos1.z, pos2.x, pos2.y, pos2.z);
+        object o = get_override("apply")(
+            DenseURef{hopping},
+            DenseURef{pos1.x}, DenseURef{pos1.y}, DenseURef{pos1.z},
+            DenseURef{pos2.x}, DenseURef{pos2.y}, DenseURef{pos2.z}
+        );
         hopping = extract<Array>(o);
     }
     

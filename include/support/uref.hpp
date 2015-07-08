@@ -2,7 +2,7 @@
 #include "support/dense.hpp"
 #include "support/sparse.hpp"
 
-enum class ScalarType {f, cf, d, cd, i8, i16, i32, u8, u16, u32, none};
+enum class ScalarType {f, cf, d, cd, b, i8, i16, i32, u8, u16, u32, none};
 
 namespace detail {
     template<typename scalar_t> constexpr ScalarType get_type();
@@ -10,6 +10,7 @@ namespace detail {
     template<> constexpr ScalarType get_type<std::complex<float>>() { return ScalarType::cf; }
     template<> constexpr ScalarType get_type<double>() { return ScalarType::d; }
     template<> constexpr ScalarType get_type<std::complex<double>>() { return ScalarType::cd; }
+    template<> constexpr ScalarType get_type<bool>() { return ScalarType::b; }
     template<> constexpr ScalarType get_type<std::int8_t>() { return ScalarType::i8; }
     template<> constexpr ScalarType get_type<std::int16_t>() { return ScalarType::i16; }
     template<> constexpr ScalarType get_type<std::int32_t>() { return ScalarType::i32; }

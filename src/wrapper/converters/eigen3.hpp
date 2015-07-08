@@ -51,6 +51,7 @@ struct denseuref_to_python {
                 case ScalarType::cf: return NPY_CFLOAT;
                 case ScalarType::d: return NPY_DOUBLE;
                 case ScalarType::cd: return NPY_CDOUBLE;
+                case ScalarType::b: return NPY_BOOL;
                 case ScalarType::i8: return NPY_INT8;
                 case ScalarType::i16: return NPY_INT16;
                 case ScalarType::i32: return NPY_INT32;
