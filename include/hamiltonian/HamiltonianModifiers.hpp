@@ -96,47 +96,54 @@ void HamiltonianModifiers::apply_to_onsite(System const& system, Fn lambda) cons
 
 template<class scalar_t, class SystemOrBoundary, class Fn>
 void HamiltonianModifiers::apply_to_hoppings(SystemOrBoundary const& system, Fn lambda) const {
-    /*
-     Applying modifiers to each hopping individually would be slow.
-     Passing all the values in one call would require a lot of memory.
-     The loop below buffers hoppings to balance performance and memory usage.
-    */
-    // TODO: experiment with buffer_size -> currently: hoppings + pos1 + pos2 is about 3MB
-    static constexpr auto buffer_size = 100000;
-    auto hoppings = ArrayX<scalar_t>{buffer_size};
-    auto pos1 = CartesianArray{buffer_size};
-    auto pos2 = CartesianArray{buffer_size};
-
     auto const& base_hopping_energies = system.lattice.hopping_energies;
     auto hopping_csr_matrix = sparse::make_loop(system.hoppings);
 
-    hopping_csr_matrix.buffered_for_each(
-        buffer_size,
-        // fill buffer
-        [&](int row, int col, hop_id id, int n) {
-            hoppings[n] = num::complex_cast<scalar_t>(base_hopping_energies[id]);
-            std::make_pair(pos1[n], pos2[n]) = system.get_position_pair(row, col);
-        },
-        // process buffer
-        [&](int start_row, int start_idx, int size) {
-            if (size < buffer_size) {
-                hoppings.conservativeResize(size);
-                pos1.conservativeResize(size);
-                pos2.conservativeResize(size);
-            }
+    if (hopping.empty()) {
+        // fast path: modifiers don't need to be applied
+        hopping_csr_matrix.for_each([&](int row, int col, hop_id id) {
+            lambda(row, col, num::complex_cast<scalar_t>(base_hopping_energies[id]));
+        });
+    } else {
+        /*
+         Applying modifiers to each hopping individually would be slow.
+         Passing all the values in one call would require a lot of memory.
+         The loop below buffers hoppings to balance performance and memory usage.
+        */
+        // TODO: experiment with buffer_size -> currently: hoppings + pos1 + pos2 is about 3MB
+        static constexpr auto buffer_size = 100000;
+        auto hoppings = ArrayX<scalar_t>{buffer_size};
+        auto pos1 = CartesianArray{buffer_size};
+        auto pos2 = CartesianArray{buffer_size};
 
-            for (auto const& modifier : hopping)
-                modifier->apply(hoppings, pos1, pos2);
-
-            hopping_csr_matrix.slice_for_each(
-                start_row, start_idx, size,
-                [&](int row, int col, hop_id, int n) {
-                    if (hoppings[n] != scalar_t{0})
-                        lambda(row, col, hoppings[n]);
+        hopping_csr_matrix.buffered_for_each(
+            buffer_size,
+            // fill buffer
+            [&](int row, int col, hop_id id, int n) {
+                hoppings[n] = num::complex_cast<scalar_t>(base_hopping_energies[id]);
+                std::make_pair(pos1[n], pos2[n]) = system.get_position_pair(row, col);
+            },
+            // process buffer
+            [&](int start_row, int start_idx, int size) {
+                if (size < buffer_size) {
+                    hoppings.conservativeResize(size);
+                    pos1.conservativeResize(size);
+                    pos2.conservativeResize(size);
                 }
-            );
-        }
-    );
+
+                for (auto const& modifier : hopping)
+                    modifier->apply(hoppings, pos1, pos2);
+
+                hopping_csr_matrix.slice_for_each(
+                    start_row, start_idx, size,
+                    [&](int row, int col, hop_id, int n) {
+                        if (hoppings[n] != scalar_t{0})
+                            lambda(row, col, hoppings[n]);
+                    }
+                );
+            }
+        );
+    }
 }
 
 } // namespace tbm
