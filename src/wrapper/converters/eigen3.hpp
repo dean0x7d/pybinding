@@ -184,8 +184,64 @@ struct numpy_to_eigen3 {
     }
 };
 
+template<class EigenType, int ndim> struct construct_eigen_map;
+
+template<class EigenType>
+struct construct_eigen_map<EigenType, 1> {
+    static void exec(void* storage, typename EigenType::Scalar* data, npy_intp const* shape) {
+        new (storage) Eigen::Map<EigenType>{data, shape[0]};
+    }
+};
+
+template<class EigenType>
+struct construct_eigen_map<EigenType, 2> {
+    static void exec(void* storage, typename EigenType::Scalar* data, npy_intp const* shape) {
+        new (storage) Eigen::Map<EigenType>{data, shape[0], shape[1]};
+    }
+};
+
+template<class EigenType>
+struct numpy_to_eigen3_map {
+    numpy_to_eigen3_map() {
+        bp::converter::registry::insert_rvalue_converter(
+            &convertible, &construct, bp::type_id<Eigen::Map<EigenType>>(), &PyArray_Type
+        );
+    }
+
+    static constexpr auto ndim = EigenType::IsVectorAtCompileTime ? 1 : 2;
+    static constexpr auto ndtype = dtype<typename EigenType::Scalar>::value;
+
+    static void* convertible(PyObject* p) {
+        if (!PyArray_Check(p))
+            return nullptr;
+
+        auto array = (PyArrayObject*)p;
+        if (PyArray_NDIM(array) != ndim || PyArray_TYPE(array) != ndtype)
+            return nullptr;
+        if (EigenType::IsRowMajor && !PyArray_IS_C_CONTIGUOUS(array))
+            return nullptr;
+        if (!EigenType::IsRowMajor && !PyArray_IS_F_CONTIGUOUS(array))
+            return nullptr;
+
+        return p;
+    }
+
+    static void construct(PyObject* p, bp::converter::rvalue_from_python_stage1_data* data) {
+        void* storage = ((bp::converter::rvalue_from_python_storage<EigenType>*)
+            data)->storage.bytes;
+
+        auto array = (PyArrayObject*)p;
+        auto array_data = static_cast<typename EigenType::Scalar*>(PyArray_DATA(array));
+        auto array_shape = PyArray_SHAPE(array);
+
+        construct_eigen_map<EigenType, ndim>::exec(storage, array_data, array_shape);
+        data->convertible = storage;
+    }
+};
+
 template<class EigenType>
 inline void eigen3_numpy_register_type() {
     numpy_to_eigen3<EigenType>{};
+    numpy_to_eigen3_map<EigenType>{};
     bp::to_python_converter<EigenType, eigen3_to_numpy<EigenType>>{};
 }
