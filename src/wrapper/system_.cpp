@@ -3,6 +3,7 @@
 #include "system/Symmetry.hpp"
 #include "system/SystemModifiers.hpp"
 
+#include "converters/eigen3.hpp"
 #include "python_support.hpp"
 
 #include <boost/python/class.hpp>
@@ -15,11 +16,11 @@ using namespace boost::python;
 class PySiteStateModifier : public tbm::SiteStateModifier, public wrapper<tbm::SiteStateModifier> {
 public:
     virtual void apply(ArrayX<bool>& is_valid, const CartesianArray& p) const override {
-        object o = get_override("apply")(
+        object result = get_override("apply")(
             DenseURef{is_valid},
             DenseURef{p.x}, DenseURef{p.y}, DenseURef{p.z}
         );
-        is_valid = extract<ArrayX<bool>>(o);
+        extract_array(is_valid, result);
     }
     void apply_dummy(ArrayX<bool>&, const ArrayXf&, const ArrayXf&, const ArrayXf&) const {}
 };
@@ -27,10 +28,10 @@ public:
 class PyPositionModifier : public tbm::PositionModifier, public wrapper<tbm::PositionModifier> {
 public:
     virtual void apply(CartesianArray& p) const override {
-        tuple o = get_override("apply")(DenseURef{p.x}, DenseURef{p.y}, DenseURef{p.z});
-        p.x = extract<ArrayXf>(o[0]);
-        p.y = extract<ArrayXf>(o[1]);
-        p.z = extract<ArrayXf>(o[2]);
+        tuple result = get_override("apply")(DenseURef{p.x}, DenseURef{p.y}, DenseURef{p.z});
+        extract_array(p.x, result[0]);
+        extract_array(p.y, result[1]);
+        extract_array(p.z, result[2]);
     }
     void apply_dummy(ArrayXf&, ArrayXf&, ArrayXf&) const {}
 };

@@ -2,7 +2,7 @@
 #include "support/uref.hpp"
 
 #include <boost/python/to_python_converter.hpp>
-#include <boost/python/tuple.hpp>
+#include <boost/python/extract.hpp>
 #include <boost/python/cast.hpp>
 
 #define NPY_NO_DEPRECATED_API NPY_1_8_API_VERSION
@@ -244,4 +244,13 @@ inline void eigen3_numpy_register_type() {
     numpy_to_eigen3<EigenType>{};
     numpy_to_eigen3_map<EigenType>{};
     bp::to_python_converter<EigenType, eigen3_to_numpy<EigenType>>{};
+}
+
+template<class EigenType>
+inline void extract_array(EigenType& v, bp::object const& o) {
+    auto map = bp::extract<Eigen::Map<EigenType>>{o};
+    if (map.check())
+        v = map();
+    else
+        v = bp::extract<EigenType>{o}();
 }

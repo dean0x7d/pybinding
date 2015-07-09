@@ -4,6 +4,7 @@
 #include <boost/python/module.hpp>
 #include <boost/python/def.hpp>
 #include <boost/python/class.hpp>
+#include <boost/python/tuple.hpp>
 
 using namespace boost::python;
 
@@ -20,6 +21,7 @@ BOOST_PYTHON_MODULE(_pybinding) {
     eigen3_numpy_register_type<ArrayXf>();
     eigen3_numpy_register_type<ArrayXd>();
     eigen3_numpy_register_type<ArrayXcf>();
+    eigen3_numpy_register_type<ArrayX<bool>>();
     eigen3_numpy_register_type<Cartesian>();
     eigen3_numpy_register_type<Index3D>();
     to_python_converter<DenseURef, denseuref_to_python>{};

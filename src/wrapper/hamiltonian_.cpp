@@ -1,10 +1,13 @@
 #include "hamiltonian/Hamiltonian.hpp"
 #include "hamiltonian/HamiltonianModifiers.hpp"
 
+#include "converters/eigen3.hpp"
+#include "python_support.hpp"
+
 #include <boost/python/class.hpp>
 #include <boost/python/pure_virtual.hpp>
 #include <boost/python/tuple.hpp>
-#include "python_support.hpp"
+
 using namespace boost::python;
 
 class PyOnsite : public tbm::OnsiteModifier, public wrapper<tbm::OnsiteModifier> {
@@ -22,7 +25,7 @@ public:
             DenseURef{potential},
             DenseURef{position.x}, DenseURef{position.y}, DenseURef{position.z}
         );
-        potential = extract<Array>(result);
+        extract_array(potential, result);
     }
     
     virtual void apply(ArrayXf& v, const CartesianArray& p) const final { apply_in_python(v, p); }
@@ -43,12 +46,12 @@ public:
 
     template<typename Array>
     void apply_in_python(Array& hopping, const CartesianArray& pos1, const CartesianArray& pos2) const {
-        object o = get_override("apply")(
+        object result = get_override("apply")(
             DenseURef{hopping},
             DenseURef{pos1.x}, DenseURef{pos1.y}, DenseURef{pos1.z},
             DenseURef{pos2.x}, DenseURef{pos2.y}, DenseURef{pos2.z}
         );
-        hopping = extract<Array>(o);
+        extract_array(hopping, result);
     }
     
     using CA = CartesianArray;
