@@ -106,38 +106,30 @@ struct eigen3_to_numpy {
 /**
  Helper function that will construct an eigen vector or matrix
  */
-template<class EigenType, int ndim, bool const_size> struct construct_eigen;
+template<class EigenType, int ndim, bool fixed_size> struct construct_eigen;
 
 template<class EigenType>
 struct construct_eigen<EigenType, 1, false> {
-    static void exec(void* storage, PyArrayObject* ndarray, npy_intp const* shape) {
-        new (storage) EigenType(shape[0]);
-        auto& v = *static_cast<EigenType*>(storage);
-
-        auto data = static_cast<typename EigenType::Scalar*>(PyArray_DATA(ndarray));
-        std::copy_n(data, v.size(), v.data());
+    static void exec(EigenType* v, typename EigenType::Scalar* data, npy_intp const* shape) {
+        new (v) EigenType(shape[0]);
+        std::copy_n(data, v->size(), v->data());
     }
 };
 
 template<class EigenType>
 struct construct_eigen<EigenType, 2, false> {
-    static void exec(void* storage, PyArrayObject* ndarray, npy_intp const* shape) {
-        new (storage) EigenType(shape[0], shape[1]);
-        auto& v = *static_cast<EigenType*>(storage);
-
-        auto data = static_cast<typename EigenType::Scalar*>(PyArray_DATA(ndarray));
-        std::copy_n(data, v.rows() * v.cols(), v.data());
+    static void exec(EigenType* v, typename EigenType::Scalar* data, npy_intp const* shape) {
+        new (v) EigenType(shape[0], shape[1]);
+        std::copy_n(data, v->rows() * v->cols(), v->data());
     }
 };
 
 template<class EigenType>
 struct construct_eigen<EigenType, 1, true> {
-    static void exec(void* storage, PyArrayObject* ndarray, npy_intp const* shape) {
-        new (storage) EigenType(EigenType::Zero());
-        auto& v = *static_cast<EigenType*>(storage);
-
-        auto data = static_cast<typename EigenType::Scalar*>(PyArray_DATA(ndarray));
-        std::copy_n(data, shape[0], v.data());
+    static void exec(EigenType* v, typename EigenType::Scalar* data, npy_intp const* shape) {
+        new (v) EigenType(EigenType::Zero());
+        auto size = std::min(v->size(), shape[0]);
+        std::copy_n(data, size, v->data());
     }
 };
 
@@ -149,16 +141,18 @@ struct numpy_to_eigen3 {
             &convertible, &construct, bp::type_id<EigenType>(), &PyArray_Type
         );
     }
-    
-    static void* convertible(PyObject* p) {
-        constexpr auto ndim = EigenType::IsVectorAtCompileTime ? 1 : 2;
 
+    static constexpr auto ndim = EigenType::IsVectorAtCompileTime ? 1 : 2;
+    static constexpr auto ndtype = dtype<typename EigenType::Scalar>::value;
+    static constexpr auto fixed_size = EigenType::SizeAtCompileTime > 0;
+
+    static void* convertible(PyObject* p) {
         // try to make an ndarray from the python object
         auto ndarray = bp::handle<PyArrayObject>{bp::allow_null(PyArray_FROMANY(
-            p, dtype<typename EigenType::Scalar>::value, ndim, ndim,
+            p, ndtype, ndim, ndim,
             EigenType::IsRowMajor ? NPY_ARRAY_C_CONTIGUOUS : NPY_ARRAY_F_CONTIGUOUS
         ))};
-        
+
         if (!ndarray)
             return nullptr;
         if (EigenType::IsRowMajor && !PyArray_IS_C_CONTIGUOUS(ndarray.get()))
@@ -168,25 +162,23 @@ struct numpy_to_eigen3 {
 
         return p;
     }
-    
+
     static void construct(PyObject* p, bp::converter::rvalue_from_python_stage1_data* data) {
         // get the pointer to memory where to construct the new eigen3 object
-        void* storage = ((bp::converter::rvalue_from_python_storage<EigenType>*)
-                         data)->storage.bytes;
-     
-        constexpr int ndim = EigenType::IsVectorAtCompileTime ? 1 : 2;
+        auto storage = reinterpret_cast<EigenType*>(
+            ((bp::converter::rvalue_from_python_storage<EigenType>*)data)->storage.bytes
+        );
 
         auto ndarray = bp::handle<PyArrayObject>{PyArray_FROMANY(
-            p, dtype<typename EigenType::Scalar>::value, ndim, ndim,
+            p, ndtype, ndim, ndim,
             EigenType::IsRowMajor ? NPY_ARRAY_C_CONTIGUOUS : NPY_ARRAY_F_CONTIGUOUS
         )};
-        auto shape = PyArray_SHAPE(ndarray.get());
+        auto array_data = static_cast<typename EigenType::Scalar*>(PyArray_DATA(ndarray.get()));
+        auto array_shape = PyArray_SHAPE(ndarray.get());
 
         // in-place construct a new eigen3 object using data from the numpy array
-        construct_eigen<EigenType, ndim, (EigenType::SizeAtCompileTime > 0)>::exec(
-            storage, ndarray.get(), shape
-        );
-        
+        construct_eigen<EigenType, ndim, fixed_size>::exec(storage, array_data, array_shape);
+
         // save the pointer to the eigen3 object for later use by boost.python
         data->convertible = storage;
     }
