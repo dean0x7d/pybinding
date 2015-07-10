@@ -248,7 +248,7 @@ inline void eigen3_numpy_register_type() {
 
 template<class EigenType>
 inline void extract_array(EigenType& v, bp::object const& o) {
-    auto map = bp::extract<Eigen::Map<EigenType>>{o};
+    bp::extract<Eigen::Map<EigenType>> map{o};
     if (map.check())
         v = map();
     else
