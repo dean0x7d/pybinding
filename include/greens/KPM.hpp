@@ -112,7 +112,7 @@ protected: // required implementation
         create_strategy_for(const std::shared_ptr<const Hamiltonian>&) const override;
 
 private:
-    KPMConfig config = defaults;
+    KPMConfig config = {};
 };
     
 } // namespace tbm

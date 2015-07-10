@@ -1,5 +1,4 @@
 #include "solver/FEAST.hpp"
-#include "system/System.hpp"
 
 #include <boost/python/class.hpp>
 #include "python_support.hpp"
@@ -24,12 +23,13 @@ void export_solver() {
 #ifdef TBM_USE_FEAST
     using tbm::FEAST;
 
+    auto const feast_defaults = tbm::FEASTConfig{};
     class_<FEAST, bases<Solver>, noncopyable>{
         "FEAST", "FEAST eigensolver.",
         init<tbm::Model const&, std::pair<double, double>, int, bool, bool>{
             args("self", "model", "energy_range", "initial_size_guess",
-                 "recycle_subspace"_kw=FEAST::defaults.recycle_subspace,
-                 "is_verbose"_kw=FEAST::defaults.is_verbose)
+                 "recycle_subspace"_kw=feast_defaults.recycle_subspace,
+                 "is_verbose"_kw=feast_defaults.is_verbose)
         }
     }
     ;
