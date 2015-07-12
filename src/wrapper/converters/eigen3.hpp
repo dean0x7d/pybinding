@@ -29,8 +29,9 @@ template<> struct dtype<std::uint16_t> { static constexpr auto value = NPY_UINT1
 template<> struct dtype<std::uint32_t> { static constexpr auto value = NPY_UINT32; };
 template<> struct dtype<std::uint64_t> { static constexpr auto value = NPY_UINT64; };
 
-template<>
-struct bp::base_type_traits<PyArrayObject> : std::true_type {};
+namespace boost { namespace python {
+    template<> struct base_type_traits<PyArrayObject> : std::true_type {};
+}}
 
 struct denseuref_to_python {
     static PyObject* convert(const DenseURef& u) {

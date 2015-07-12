@@ -2,6 +2,7 @@
 #include "support/cpp14.hpp"
 #include <string>
 #include <algorithm>
+#include <chrono>
 #include <cctype>
 
 #if defined(_MSC_VER) && _MSC_VER <= 1800 // VS2013 does not have a C99 compliant snprintf
