@@ -1,9 +1,13 @@
 import pytest
 
+import _pybinding
 import pybinding as pb
 from pybinding.repository import graphene
 
-solvers = ['feast', 'arpack']
+solvers = ['arpack']
+if hasattr(_pybinding, 'FEAST'):
+    solvers.append('feast')
+
 models = {
     'graphene-pristine': {'model': [graphene.lattice.monolayer(), pb.shape.rectangle(10)],
                           'arpack': [30],
@@ -41,4 +45,4 @@ def test_eigenvalues(solver, baseline, plot):
     eig = solver.calc_eigenvalues(map_probability_at=(0, 0))
     expected = baseline(eig)
     plot(eig, expected, 'plot_heatmap')
-    assert pytest.fuzzy_equal(eig, expected, 1.e-3, 1.e-6)
+    assert pytest.fuzzy_equal(eig, expected, 2.e-2, 1.e-6)

@@ -39,7 +39,7 @@ def test_system(model, baseline, plot):
     expected = baseline(system)
 
     plot(system, expected, 'plot')
-    assert pytest.fuzzy_equal(system, expected)
+    assert pytest.fuzzy_equal(system, expected, 1.e-4, 1.e-6)
 
     idx = system.num_sites // 2
     assert idx == system.find_nearest(system.xyz[idx])
