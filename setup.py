@@ -2,6 +2,7 @@ from setuptools import setup, find_packages
 from distutils import sysconfig, spawn, dir_util
 from distutils.command.build_py import build_py
 from setuptools.command.develop import develop
+from setuptools.command.egg_info import manifest_maker
 import sys
 import os
 import platform
@@ -39,6 +40,7 @@ def inject_cmake(base_class):
     return ClassWithCMake
 
 
+manifest_maker.template = "setup.manifest"
 setup(
     name='pybinding',
     version='0.6.0',

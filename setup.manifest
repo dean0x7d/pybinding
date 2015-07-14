@@ -7,3 +7,4 @@ recursive-include dependencies/boost_python CMakeLists.txt *.cmake
 recursive-include dependencies/boost_python/include *.hpp
 recursive-include dependencies/boost_python/src *.cpp
 recursive-include tests *.py *.pbz *.npz
+recursive-exclude pybinding *.so
