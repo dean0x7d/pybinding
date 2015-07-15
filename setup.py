@@ -1,43 +1,45 @@
-from setuptools import setup, find_packages
-from distutils import sysconfig, spawn, dir_util
-from distutils.command.build_py import build_py
-from setuptools.command.develop import develop
-from setuptools.command.egg_info import manifest_maker
-import sys
 import os
+import sys
+import shutil
 import platform
+import subprocess
+
+from setuptools import setup, find_packages, Extension
+from setuptools.command.build_ext import build_ext
+from setuptools.command.egg_info import manifest_maker
+
 
 if sys.version_info.major < 3:
     print("Sorry, Python 3 is required")
     sys.exit(-1)
 
 
-def inject_cmake(base_class):
-    def cmake_build():
-        if not spawn.find_executable('cmake'):
+class CMakeExtension(Extension):
+    def __init__(self, name, sourcedir=''):
+        super().__init__(name, sources=[])
+        self.sourcedir = sourcedir
+
+
+class CMakeBuild(build_ext):
+    def run(self):
+        if platform.system() == "Windows":
+            return
+
+        if shutil.which('cmake') is None:
             print("CMake 3.0 or newer is required to build pybinding")
             sys.exit(-1)
 
-        build_dir = os.path.join(os.path.split(__file__)[0], 'build')
-        dir_util.mkpath(build_dir)
-        cwd = os.getcwd()
-        os.chdir(build_dir)
+        for ext in self.extensions:
+            build_dir = os.path.join(os.path.dirname(__file__), 'build', 'cmake')
+            os.makedirs(build_dir, exist_ok=True)
+            cmake_dir = os.path.abspath(ext.sourcedir)
 
-        try:
-            spawn.spawn(['cmake', '..'])
-            spawn.spawn(['make', '-j4'])
-        except spawn.DistutilsExecError:
-            sys.exit(-1)
+            extpath = self.get_ext_fullpath(ext.name)
+            extfulldir = os.path.abspath(os.path.dirname(extpath))
+            cmake_args = ['-DCMAKE_LIBRARY_OUTPUT_DIRECTORY=' + extfulldir]
 
-        os.chdir(cwd)
-
-    class ClassWithCMake(base_class):
-        def run(self):
-            if platform.system() != "Windows":
-                cmake_build()
-            super().run()
-
-    return ClassWithCMake
+            subprocess.check_call(['cmake', cmake_dir] + cmake_args, cwd=build_dir)
+            subprocess.check_call(['make', '-j4'], cwd=build_dir)
 
 
 manifest_maker.template = "setup.manifest"
@@ -65,10 +67,10 @@ setup(
 
     ],
 
-    packages=find_packages(exclude=['boost_python', 'tests*']),
-    package_data=dict(pybinding=['../_pybinding' + sysconfig.get_config_var('EXT_SUFFIX')]),
+    packages=find_packages(exclude=['dependencies', 'test*']),
+    ext_modules=[CMakeExtension('_pybinding')],
     install_requires=['numpy>=1.9.0', 'scipy>=0.15', 'matplotlib>=1.4.3',
                       'py-cpuinfo>=0.1.4', 'progressbar2>=2.7.3', 'pytest>=2.7'],
     zip_safe=False,
-    cmdclass=dict(build_py=inject_cmake(build_py), develop=inject_cmake(develop))
+    cmdclass=dict(build_ext=CMakeBuild)
 )
