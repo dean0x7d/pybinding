@@ -8,7 +8,7 @@ from . import results
 from .system import System
 from .support.pickle import pickleable
 
-__all__ = ['Solver', 'make_feast', 'make_arpack']
+__all__ = ['Solver', 'make_feast', 'make_lapack', 'make_arpack']
 
 
 @pickleable(impl='system. eigenvalues eigenvectors')
@@ -104,17 +104,33 @@ class Solver:
         plt.ylabel('E (eV)')
 
 
-class ARPACK:
-    def __init__(self, model, num_eigenvalues, sigma=1e-5, **kwargs):
-        self.model = model
-        self.num_eigenvalues = num_eigenvalues
-        self.sigma = sigma
-        self.kwargs = kwargs
+class SolverPythonImpl:
+    def __init__(self, solve_func, model, **kwargs):
+        self.solve_func = solve_func
+        self._model = model
 
-        self.system = model.system.impl
+        self.kwargs = kwargs
         self.vals = np.empty(0)
         self.vecs = np.empty(0)
         self.compute_time = .0
+
+    def clear(self):
+        self.vals = np.empty(0)
+        self.vecs = np.empty(0)
+        self.compute_time = .0
+
+    @property
+    def model(self):
+        return self._model
+
+    @model.setter
+    def model(self, model):
+        self.clear()
+        self._model = model
+
+    @property
+    def system(self):
+        return self.model.system.impl
 
     @property
     def eigenvalues(self) -> np.ndarray:
@@ -126,18 +142,13 @@ class ARPACK:
         self.solve()
         return self.vecs
 
-    def set_model(self, model):
-        self.model = model
-
     def solve(self):
         if len(self.vals):
             return
 
         start_time = time.time()
 
-        from scipy.sparse.linalg import eigsh
-        self.vals, self.vecs = eigsh(self.model.hamiltonian, k=self.num_eigenvalues,
-                                     sigma=self.sigma, **self.kwargs)
+        self.vals, self.vecs = self.solve_func(self.model.hamiltonian, **self.kwargs)
         idx = self.vals.argsort()
         self.vals = self.vals[idx]
         self.vecs = self.vecs[:, idx]
@@ -149,8 +160,15 @@ class ARPACK:
         return "Converged in " + pretty_duration(self.compute_time)
 
 
+def make_lapack(model, **kwargs):
+    from scipy.linalg import eigh
+    solver_func = lambda m, **kw: eigh(m.toarray(), **kw)
+    return Solver(SolverPythonImpl(solver_func, model, **kwargs))
+
+
 def make_arpack(model, num_eigenvalues, sigma=1e-5, **kwargs):
-    return Solver(ARPACK(model, num_eigenvalues, sigma, **kwargs))
+    from scipy.sparse.linalg import eigsh
+    return Solver(SolverPythonImpl(eigsh, model, k=num_eigenvalues, sigma=sigma, **kwargs))
 
 
 def make_feast(model, energy_range, initial_size_guess, recycle_subspace=False, is_verbose=False):

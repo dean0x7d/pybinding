@@ -46,3 +46,9 @@ def test_eigenvalues(solver, baseline, plot):
     expected = baseline(eig)
     plot(eig, expected, 'plot_heatmap')
     assert pytest.fuzzy_equal(eig, expected, 2.e-2, 1.e-6)
+
+
+def test_lapack():
+    model = pb.Model(graphene.lattice.monolayer())
+    solver = pb.solver.make_lapack(model)
+    assert pytest.fuzzy_equal(solver.eigenvalues, [-abs(graphene.t), abs(graphene.t)])
