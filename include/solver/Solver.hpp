@@ -82,18 +82,13 @@ public:
     virtual ~Solver() = default;
 
 public:
-    void set_model(Model const& m);
-
-    /// Get some information about what happened during the last calculation
-    std::string report(bool shortform) const {
-        return strategy->report(shortform) + " " + calculation_timer.str();
-    }
-
-public:
-    /// Diagonalize the given Hamiltonian
     void solve();
+    void clear() { is_solved = false; }
+    std::string report(bool shortform) const;
 
-    std::shared_ptr<const System> system() const;
+    void set_model(Model const&);
+    Model const& get_model() const { return model; }
+    std::shared_ptr<System const> system() const { return model.system(); }
 
     DenseURef eigenvalues();
     DenseURef eigenvectors();

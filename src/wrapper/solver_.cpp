@@ -10,14 +10,15 @@ void export_solver() {
     class_<Solver, noncopyable>{
         "Solver", "Abstract base solver", no_init
     }
-    .def("set_model", &Solver::set_model, args("self", "model"))
     .def("solve", &Solver::solve)
+    .def("clear", &Solver::clear)
     .def("report", &Solver::report, args("self", "shortform"_kw=false))
     .def("calc_dos", &Solver::calc_dos, args("self", "energies", "broadening"))
     .def("calc_ldos", &Solver::calc_ldos, args("self", "energy", "broadening", "sublattice"_kw=-1))
+    .add_property("model", internal_ref(&Solver::get_model), &Solver::set_model)
+    .add_property("system", &Solver::system)
     .add_property("eigenvalues", internal_ref(&Solver::eigenvalues))
     .add_property("eigenvectors", internal_ref(&Solver::eigenvectors))
-    .add_property("system", &Solver::system)
     ;
 
 #ifdef TBM_USE_FEAST

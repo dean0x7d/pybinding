@@ -28,10 +28,6 @@ void Solver::solve() {
     is_solved = true;
 }
 
-std::shared_ptr<const System> Solver::system() const {
-    return model.system();
-}
-
 DenseURef Solver::eigenvalues() {
     solve();
     return strategy->eigenvalues();
@@ -87,4 +83,8 @@ ArrayXd Solver::calc_ldos(double target_energy, double broadening, sub_id target
     }
 
     return ldos;
+}
+
+std::string Solver::report(bool shortform) const {
+    return strategy->report(shortform) + " " + calculation_timer.str();
 }

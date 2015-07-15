@@ -8,6 +8,11 @@
 
 namespace boost { namespace python {
 
+template<class Function>
+object copy_value(Function f) {
+    return make_function(f, return_value_policy<return_by_value>());
+}
+
 template<class Class, class Data, class = cpp14::enable_if_t<!std::is_function<Data>::value>>
 object copy_value(Data Class::* d) {
     return make_getter(d, return_value_policy<return_by_value>());

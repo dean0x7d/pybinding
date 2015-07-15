@@ -16,14 +16,22 @@ class Solver:
     def __init__(self, impl: _pybinding.Solver):
         self.impl = impl
 
-    def set_model(self, model):
-        self.impl.set_model(model)
-
     def solve(self):
         self.impl.solve()
 
+    def clear(self):
+        self.impl.clear()
+
     def report(self, shortform=False):
         return self.impl.report(shortform)
+
+    @property
+    def model(self):
+        return self.impl.model
+
+    @model.setter
+    def model(self, model):
+        self.impl.model = model
 
     @property
     def system(self) -> System:
