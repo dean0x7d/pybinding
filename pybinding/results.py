@@ -9,7 +9,7 @@ from .utils import with_defaults
 from .system import Positions, plot_sites, plot_hoppings
 from .support.pickle import pickleable
 
-__all__ = ['LDOSpoint', 'SpatialMap', 'Eigenvalues']
+__all__ = ['LDOSpoint', 'SpatialMap', 'Eigenvalues', 'Bands']
 
 
 @pickleable
@@ -180,3 +180,51 @@ class Eigenvalues:
 
         self._decorate_plot(mark_degenerate, show_indices)
         return self.probability.max()
+
+
+@pickleable
+class Bands:
+    def __init__(self, k_points, k_paths, bands, border_indices):
+        self.k_points = k_points
+        self.k_paths = k_paths
+        self.bands = bands
+        self.border_indices = border_indices
+
+    @staticmethod
+    def _point_names(k_points):
+        def multiple_of_pi_name(value):
+            n = value / np.pi
+            if np.isclose(n, 0):
+                return "0"
+            if np.isclose(n, round(n)):
+                return r"${:.0f}\pi$".format(n) if abs(n) > 1 else r"$\pi$"
+            elif np.isclose(1/n, round(1/n)):
+                inv_n = abs(1 / n)
+                return r"$\pi/{:.0f}$".format(inv_n) if n > 0 else r"$-\pi/{:.0f}$".format(inv_n)
+            else:
+                return "{:.2g}".format(value)
+
+        names = []
+        for k_point in k_points:
+            values = map(multiple_of_pi_name, k_point)
+            fmt = "[{}]" if len(k_point) > 1 else "{}"
+            names.append(fmt.format(', '.join(values)))
+        return names
+
+    def plot(self, names=None):
+        color = pltutils.get_palette('Set1')[1]
+        plt.plot(self.bands, color=color)
+
+        if not names:
+            names = self._point_names(self.k_points)
+        plt.xticks(self.border_indices, names)
+
+        plt.xlim(0, len(self.bands) - 1)
+        plt.xlabel('k-space')
+        plt.ylabel('E (eV)')
+        pltutils.add_margin()
+        pltutils.despine(trim=True)
+
+        for idx in self.border_indices:
+            ymax = plt.gca().transLimits.transform([0, max(self.bands[idx])])[1]
+            plt.axvline(idx, ymax=ymax, color='0.4', ls=':', zorder=-1)

@@ -1,7 +1,6 @@
 import time
 
 import numpy as np
-import matplotlib.pyplot as plt
 
 import _pybinding
 from . import results
@@ -74,6 +73,29 @@ class Solver:
         ldos = self.impl.calc_ldos(energy, broadening, sublattice)
         return results.SpatialMap.from_system(ldos, self.system)
 
+    def calc_bands(self, k0, k1, *ks, step=0.1):
+        k_paths = []
+        bands = []
+        border_indices = [0]
+
+        # list of k0, k1, k2... as ndarrays
+        k_points = [np.atleast_1d(k) for k in (k0, k1) + ks]
+        for k_start, k_end in zip(k_points[:-1], k_points[1:]):
+            num_steps = np.linalg.norm(k_end - k_start) / step
+            # k_path.shape == num_steps, k_space_dimensions
+            k_path = np.array([np.linspace(s, e, num_steps) for s, e in zip(k_start, k_end)]).T
+
+            for k in k_path:
+                # k.shape == k_space_dimensions,
+                self.clear()
+                self.model.set_wave_vector(k)
+                bands += [self.eigenvalues]
+
+            k_paths += [k_path]
+            border_indices += [len(bands) - 1]
+
+        return results.Bands(k_points, np.vstack(k_paths), np.vstack(bands), border_indices)
+
     @staticmethod
     def find_degenerate_states(energies, abs_tolerance=1e-5):
         """Return groups of indices which belong to degenerate states
@@ -88,28 +110,6 @@ class Solver:
         groups = np.split(idx, np.flatnonzero(np.diff(idx) != 1) + 1)
         # groups = [[0], [3, 4], [7]]
         return [list(g) + [g[-1] + 1] for g in groups]
-
-    def plot_bands(self, k0, k1, *ks, step, names=None):
-        ks = [np.array(k) for k in (k0, k1) + ks]
-        energy = []
-        points = [0]
-        for start, end in zip(ks[:-1], ks[1:]):
-            num_steps = max(abs(end - start) / step)
-            k_list = (np.linspace(s, e, num_steps) for s, e in zip(start, end))
-
-            for k in zip(*k_list):
-                self.model.set_wave_vector(k)
-                energy.append(self.eigenvalues)
-            points += [len(energy)-1]
-
-        for point in points[1:-1]:
-            plt.axvline(point, color='black', ls='--')
-        plt.xticks(points, names if names else [])
-
-        plt.plot(energy, color='blue')
-        plt.xlim(0, len(energy) - 1)
-        plt.xlabel('k-space')
-        plt.ylabel('E (eV)')
 
 
 class SolverPythonImpl:

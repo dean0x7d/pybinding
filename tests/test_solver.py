@@ -48,7 +48,18 @@ def test_eigenvalues(solver, baseline, plot):
     assert pytest.fuzzy_equal(eig, expected, 2.e-2, 1.e-6)
 
 
-def test_lapack():
-    model = pb.Model(graphene.lattice.monolayer())
+def test_lapack(baseline, plot):
+    model = pb.Model(graphene.lattice.monolayer(), pb.symmetry.translational())
     solver = pb.solver.make_lapack(model)
-    assert pytest.fuzzy_equal(solver.eigenvalues, [-abs(graphene.t), abs(graphene.t)])
+    assert pytest.fuzzy_equal(solver.eigenvalues, [-3*abs(graphene.t), 3*abs(graphene.t)])
+
+    from math import pi, sqrt
+    g = [0, 0]
+    k1 = [-4*pi / (3*sqrt(3) * graphene.a_cc), 0]
+    m = [0, 2*pi / (3 * graphene.a_cc)]
+    k2 = [2*pi / (3*sqrt(3) * graphene.a_cc), 2*pi / (3 * graphene.a_cc)]
+
+    bands = solver.calc_bands(k1, g, m, k2, step=1)
+    expected = baseline(bands)
+    plot(bands, expected, 'plot', names=['K', r'$\Gamma$', 'M', 'K'])
+    assert pytest.fuzzy_equal(bands, expected, 2.e-2, 1.e-6)
