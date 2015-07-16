@@ -150,8 +150,8 @@ struct numpy_to_eigen3 {
     static void* convertible(PyObject* p) {
         // try to make an ndarray from the python object
         auto ndarray = bp::handle<PyArrayObject>{bp::allow_null(PyArray_FROMANY(
-            p, ndtype, ndim, ndim,
-            EigenType::IsRowMajor ? NPY_ARRAY_C_CONTIGUOUS : NPY_ARRAY_F_CONTIGUOUS
+            p, ndtype, ndim, ndim, NPY_ARRAY_FORCECAST |
+            (EigenType::IsRowMajor ? NPY_ARRAY_C_CONTIGUOUS : NPY_ARRAY_F_CONTIGUOUS)
         ))};
 
         if (!ndarray)
@@ -171,8 +171,8 @@ struct numpy_to_eigen3 {
         );
 
         auto ndarray = bp::handle<PyArrayObject>{PyArray_FROMANY(
-            p, ndtype, ndim, ndim,
-            EigenType::IsRowMajor ? NPY_ARRAY_C_CONTIGUOUS : NPY_ARRAY_F_CONTIGUOUS
+            p, ndtype, ndim, ndim, NPY_ARRAY_FORCECAST |
+            (EigenType::IsRowMajor ? NPY_ARRAY_C_CONTIGUOUS : NPY_ARRAY_F_CONTIGUOUS)
         )};
         auto array_data = static_cast<typename EigenType::Scalar*>(PyArray_DATA(ndarray.get()));
         auto array_shape = PyArray_SHAPE(ndarray.get());
