@@ -81,27 +81,28 @@ class Lattice(_pybinding.Lattice):
 
             plt.arrow(position[0], position[1], *v2d, color='black', alpha=0.8,
                       head_width=vnorm / 12, head_length=vnorm / 5, length_includes_head=True)
-            pltutils.annotate_box(r"$v_{}$".format(i+1), position + v2d / 2,
+            pltutils.annotate_box(r"$v_{}$".format(i+1), position[:2] + v2d / 2,
                                   fontcolor='white', fontsize='large')
 
-    def plot(self, vector_position=(0, 0), **kwargs):
+    def plot(self, vector_position='center', **kwargs):
         # plot the primitive cell and it's neighbors (using a model... kind of meta)
         import pybinding as pb
         model = pb.Model(self, pb.symmetry.translational())
         model.system.plot(boundary_color=None, **kwargs)
 
+        sub_center = sum(s.offset for s in self.sublattices) / len(self.sublattices)
         if vector_position is not None:
-            self.plot_vectors(vector_position)
+            self.plot_vectors(sub_center if vector_position == 'center' else vector_position)
 
         points = [n * v for v in self.vectors for n in (-1, 1)]  # for plot limit detection
         sub_names = list(self.sublattice_ids.keys())
-        mul = 1.25 if any(np.allclose(s.offset[:2], [0, 0]) for s in self.sublattices) else 1
+        overlap = any(np.allclose(sub_center[:2], s.offset[:2]) for s in self.sublattices)
 
-        for sublattice in self.sublattices:
+        for sub in self.sublattices:
             # annotate sublattice names
-            pltutils.annotate_box(sub_names[sublattice.alias], xy=sublattice.offset[:2])
+            pltutils.annotate_box(sub_names[sub.alias], xy=sub.offset[:2])
 
-            for hop in sublattice.hoppings:
+            for hop in sub.hoppings:
                 # annotate neighboring cell indices
                 if tuple(hop.relative_index[:2]) == (0, 0):
                     continue  # skip the original cell
@@ -109,8 +110,9 @@ class Lattice(_pybinding.Lattice):
                 offset = sum(r * v for r, v in zip(hop.relative_index, self.vectors))
                 points += (0.5 * r * v + offset for r, v in zip(hop.relative_index, self.vectors))
 
-                pltutils.annotate_box("{}, {}".format(*hop.relative_index[:2]),
-                                      xy=offset[:2] * mul, bbox=dict(alpha=0.4))
+                mul = 1.2 if overlap else 1  # prevent text from overlapping with site
+                xy = offset[:2] * mul + sub_center[:2]
+                pltutils.annotate_box("{}, {}".format(*hop.relative_index[:2]), xy=xy)
 
         x, y, _ = zip(*points)
         pltutils.set_min_range(abs(max(x) - min(x)), 'x')
