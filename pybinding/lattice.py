@@ -1,8 +1,10 @@
 from collections import OrderedDict
 
 import numpy as np
+import matplotlib.pyplot as plt
 
 import _pybinding
+from . import pltutils
 from .support.pickle import pickleable
 
 __all__ = ['Lattice', 'make_lattice', 'square']
@@ -69,37 +71,46 @@ class Lattice(_pybinding.Lattice):
 
                 self.add_one_hopping(relative_index, from_sub, to_sub, hopping_energy)
 
-    def plot(self, **kwargs):
-        import pybinding as pb
-        import matplotlib.pyplot as plt
-        from . import pltutils
+    def plot_vectors(self, position):
+        """Plot lattice vectors in xy plane"""
+        vnorm = np.average([np.linalg.norm(v) for v in self.vectors])
+        for i, vector in enumerate(self.vectors):
+            v2d = vector[:2]
+            if np.allclose(v2d, [0, 0]):
+                continue  # nonzero only in z dimension, but the plot is 2D
 
-        ax = plt.gca()
-        points = []  # for plot limit detection
+            plt.arrow(position[0], position[1], *v2d, color='black', alpha=0.8,
+                      head_width=vnorm / 12, head_length=vnorm / 5, length_includes_head=True)
+            pltutils.annotate_box(r"$v_{}$".format(i+1), position + v2d / 2,
+                                  fontcolor='white', fontsize='large')
 
+    def plot(self, vector_position=(0, 0), **kwargs):
         # plot the primitive cell and it's neighbors (using a model... kind of meta)
+        import pybinding as pb
         model = pb.Model(self, pb.symmetry.translational())
         model.system.plot(boundary_color=None, **kwargs)
 
-        # plot the lattice vectors
-        for i, vector in enumerate(self.vectors):
-            points += [vector, -vector]
-            ax.arrow(0, 0, *vector[:2], color='black', alpha=0.8,
-                     head_width=0.02, head_length=0.05, length_includes_head=True)
-            pltutils.annotate_box(r"$v_{}$".format(i+1), vector[:2] / 2,
-                                  fontcolor='white', fontsize='large')
+        if vector_position is not None:
+            self.plot_vectors(vector_position)
 
-        # annotate the sublattices and neighboring cells
-        names = list(self.sublattice_ids.keys())
+        points = [n * v for v in self.vectors for n in (-1, 1)]  # for plot limit detection
+        sub_names = list(self.sublattice_ids.keys())
+        mul = 1.25 if any(np.allclose(s.offset[:2], [0, 0]) for s in self.sublattices) else 1
+
         for sublattice in self.sublattices:
-            pltutils.annotate_box(names[sublattice.alias], xy=sublattice.offset[:2])
+            # annotate sublattice names
+            pltutils.annotate_box(sub_names[sublattice.alias], xy=sublattice.offset[:2])
+
             for hop in sublattice.hoppings:
+                # annotate neighboring cell indices
                 if tuple(hop.relative_index[:2]) == (0, 0):
                     continue  # skip the original cell
+
                 offset = sum(r * v for r, v in zip(hop.relative_index, self.vectors))
                 points += (0.5 * r * v + offset for r, v in zip(hop.relative_index, self.vectors))
+
                 pltutils.annotate_box("{}, {}".format(*hop.relative_index[:2]),
-                                      xy=offset[:2] * (1 if len(self.sublattices) != 1 else 1.3))
+                                      xy=offset[:2] * mul, bbox=dict(alpha=0.4))
 
         x, y, _ = zip(*points)
         pltutils.set_min_range(abs(max(x) - min(x)), 'x')
