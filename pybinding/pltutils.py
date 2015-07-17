@@ -168,3 +168,30 @@ def direct_cmap_norm(data, colors, blend=1):
     norm = BoundaryNorm(boundaries, len(boundaries) - 1)
 
     return cmap, norm
+
+
+def align(x, y):
+    """Return text alignment based on (x, y) numbers
+
+    >>> align(1, -1)
+    ('right', 'bottom')
+    >>> align(0, 1)
+    ('center', 'top')
+    >>> align(-1, 0)
+    ('left', 'center')
+    """
+    if np.isclose(x, 0):
+        ha = 'center'
+    elif x > 0:
+        ha = 'right'
+    else:
+        ha = 'left'
+
+    if np.isclose(y, 0):
+        va = 'center'
+    elif y > 0:
+        va = 'top'
+    else:
+        va = 'bottom'
+
+    return ha, va

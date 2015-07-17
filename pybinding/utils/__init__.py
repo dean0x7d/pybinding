@@ -1,3 +1,4 @@
+import numpy as np
 from . import cpuinfo, progressbar
 
 _tic_times = []
@@ -115,3 +116,24 @@ def pretty_duration(seconds: float):
             hours = minutes // 60
             minutes = int(minutes - hours * 60)
             return "{hours:.0f}:{minutes:02}:{seconds:02}".format(**locals())
+
+
+def x_pi(value):
+    """Return str of value in 'multiples of pi' latex representation
+
+    >>> x_pi(6.28) == r"$2\pi$"
+    True
+    >>> x_pi(3) == r"$0.95\pi$"
+    True
+    >>> x_pi(-np.pi) == r"$-\pi$"
+    True
+    >>> x_pi(0) == "0"
+    True
+    """
+    n = value / np.pi
+    if np.isclose(n, 0):
+        return "0"
+    elif np.isclose(abs(n), 1):
+        return r"$\pi$" if n > 0 else r"$-\pi$"
+    else:
+        return r"${:.2g}\pi$".format(n)
