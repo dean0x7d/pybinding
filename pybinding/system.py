@@ -1,6 +1,7 @@
 from collections import namedtuple
 
 import numpy as np
+from scipy.sparse import coo_matrix
 
 import _pybinding
 from . import pltutils
@@ -89,7 +90,7 @@ class System:
         Parameters
         ----------
         site_radius : float
-            radius [data units] of the circle prepresenting a lattice site
+            radius [data units] of the circle representing a lattice site
         site_props : `~matplotlib.collections.Collection` properties
             additional plot options for sites
         hopping_width : float
@@ -128,8 +129,11 @@ class System:
                 plot_hoppings(ax, pos, hop, hopping_width, shift, blend=0.5, **hopping_props)
 
             # special color for the boundary hoppings
+            if boundary_color:
+                kwargs = dict(hopping_props, colors=boundary_color)
+            else:
+                kwargs = hopping_props
             b_hop = boundary.hoppings.tocoo()
-            kwargs = dict(hopping_props, colors=boundary_color) if boundary_color else hopping_props
             plot_hoppings(ax, pos, b_hop, hopping_width, boundary.shift, boundary=True, **kwargs)
 
         pltutils.set_min_range(0.5)
@@ -137,9 +141,28 @@ class System:
         pltutils.add_margin()
 
 
-def plot_hoppings(ax, positions, hoppings, width,
-                  offset=(0, 0, 0), boundary=False, blend=1, **kwargs):
-    if width == 0:
+def plot_hoppings(ax, positions: tuple, hoppings: coo_matrix, width: float,
+                  offset=(0, 0, 0), boundary=False, blend=1.0, **kwargs):
+    """Plot hopping lines between sites
+
+    Parameters
+    ----------
+    positions : tuple
+        Site coordinates in the form of a (x, y, z) tuple of arrays.
+    hoppings : coo_matrix
+        Sparse COO matrix with the hopping data, usually model.system.hoppings.tocoo().
+    width : float
+        Width of the hopping plot lines.
+    offset : tuple
+        Offset of positions.
+    boundary : bool
+        The offset is applied differently at boundaries.
+    blend : float
+        Blend all colors to white (fake alpha): expected values between 0 and 1.
+    kwargs
+        Passed on to matplotlib's LineCollection.
+    """
+    if width == 0 or hoppings.data.size == 0:
         return
 
     kwargs = with_defaults(kwargs, zorder=-1, colors='#666666')
@@ -147,7 +170,8 @@ def plot_hoppings(ax, positions, hoppings, width,
     colors = kwargs.pop('colors')
     if colors == 'default':
         colors = ["#666666", "#1b9e77", "#7570b3", "#e7298a", "#66a61e", "#e6ab02", "#a6761d"]
-    kwargs['cmap'], kwargs['norm'] = pltutils.direct_cmap_norm(hoppings.data, colors, blend)
+    unique_hop_ids = np.arange(hoppings.data.max() + 1)
+    kwargs['cmap'], kwargs['norm'] = pltutils.direct_cmap_norm(unique_hop_ids, colors, blend)
 
     ndims = 3 if ax.name == '3d' else 2
     offset = np.array(offset[:ndims])
@@ -183,7 +207,25 @@ def plot_hoppings(ax, positions, hoppings, width,
     return col
 
 
-def plot_sites(ax, positions, data, radius, offset=(0, 0, 0), blend=1, **kwargs):
+def plot_sites(ax, positions: tuple, data: np.ndarray, radius: np.ndarray,
+               offset=(0, 0, 0), blend=1.0, **kwargs):
+    """Plot circles at site positions
+
+    Parameters
+    ----------
+    positions : tuple
+        Site coordinates in the form of a (x, y, z) tuple of arrays.
+    data : array_like
+        Color data at each site. Should be the same size as (x, y, z).
+    radius : float or array_like
+        Radius [data units] of the circles. Scalar or array with the same size as (x, y, z).
+    offset : tuple
+        Offset of positions.
+    blend : float
+        Blend all colors to white (fake alpha): expected values between 0 and 1.
+    kwargs
+        Passed on to CircleCollection.
+    """
     if np.all(radius == 0):
         return
 
@@ -232,12 +274,13 @@ def plot_sites(ax, positions, data, radius, offset=(0, 0, 0), blend=1, **kwargs)
 
 
 def plot_site_indices(system):
-    # show the Hamiltonian index next to each atom (for debugging)
+    """Show the Hamiltonian index next to each atom (mainly for debugging)"""
     for i, xy in enumerate(zip(system.x, system.y)):
         pltutils.annotate_box(i, xy)
 
 
 def plot_hopping_values(system, lattice):
+    """Show the hopping energy over each hopping line (mainly for debugging)"""
     pos = system.xyz[:, :2]
 
     def get_energy(hopping_id):
