@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 
 import _pybinding
 from . import pltutils
-from .utils import x_pi
+from .utils import x_pi, with_defaults
 from .support.pickle import pickleable
 
 __all__ = ['Lattice', 'make_lattice', 'square']
@@ -138,10 +138,10 @@ class Lattice(_pybinding.Lattice):
             # sort counter-clockwise
             return sorted(unique_vertices, key=lambda v: atan2(v[1], v[0]))
         else:
-            raise RuntimeError("3D brilloun zones are not currently supported")
+            raise RuntimeError("3D Brillouin zones are not currently supported")
 
     @staticmethod
-    def _plot_vectors(vectors, position, name="v", head_width=0.08, head_length=0.2):
+    def _plot_vectors(vectors, position=(0, 0), name="v", head_width=0.08, head_length=0.2):
         vnorm = np.average([np.linalg.norm(v) for v in vectors])
         for i, vector in enumerate(vectors):
             v2d = vector[:2]
@@ -159,62 +159,71 @@ class Lattice(_pybinding.Lattice):
         self._plot_vectors(self.vectors, position)
 
     def plot(self, vector_position='center', **kwargs):
-        # plot the primitive cell and it's neighbors (using a model... kind of meta)
+        """Illustrate the lattice by plotting the primitive cell and its nearest neighbors"""
         import pybinding as pb
+        # reuse model plotting code (kind of meta)
         model = pb.Model(self, pb.symmetry.translational())
         model.system.plot(boundary_color=None, **kwargs)
 
+        # by default, plot the lattice vectors from the center of the unit cell
         sub_center = sum(s.offset for s in self.sublattices) / len(self.sublattices)
         if vector_position is not None:
             self.plot_vectors(sub_center if vector_position == 'center' else vector_position)
 
-        points = [n * v for v in self.vectors for n in (-1, 1)]  # for plot limit detection
+        # annotate sublattice names
         sub_names = list(self.sublattice_ids.keys())
-        overlap = any(np.allclose(sub_center[:2], s.offset[:2]) for s in self.sublattices)
-
         for sub in self.sublattices:
-            # annotate sublattice names
-            pltutils.annotate_box(sub_names[sub.alias], xy=sub.offset[:2])
+            pltutils.annotate_box(sub_names[sub.alias], xy=sub.offset[:2], bbox=dict(lw=0))
 
+        # annotate neighboring cell indices
+        offsets = [(0, 0, 0)]
+        for sub in self.sublattices:
             for hop in sub.hoppings:
-                # annotate neighboring cell indices
                 if tuple(hop.relative_index[:2]) == (0, 0):
                     continue  # skip the original cell
 
+                # offset of the neighboring cell from the original
                 offset = sum(r * v for r, v in zip(hop.relative_index, self.vectors))
-                points += (0.5 * r * v + offset for r, v in zip(hop.relative_index, self.vectors))
+                offsets.append(offset)
 
-                mul = 1.2 if overlap else 1  # prevent text from overlapping with site
-                xy = offset[:2] * mul + sub_center[:2]
-                pltutils.annotate_box("{}, {}".format(*hop.relative_index[:2]), xy=xy)
+                text = "[" + ", ".join(map(str, hop.relative_index[:self.ndim])) + "]"
 
+                # align the text so that it goes away from the original cell
+                ha, va = pltutils.align(*(-offset[:2]))
+                pltutils.annotate_box(text, xy=(sub_center[:2] + offset[:2]) * 1.05,
+                                      ha=ha, va=va, clip_on=True, bbox=dict(lw=0))
+
+        # ensure there is some padding around the lattice
+        points = [n * v + o for n in (-0.5, 0.5) for v in self.vectors for o in offsets]
         x, y, _ = zip(*points)
         pltutils.set_min_range(abs(max(x) - min(x)), 'x')
         pltutils.set_min_range(abs(max(y) - min(y)), 'y')
 
-    def plot_brillouin_zone(self):
-        vertices = self.brillouin_zone()
-        x, y = zip(*vertices)
-        plt.plot(np.append(x, x[0]), np.append(y, y[0]), color=pltutils.get_palette('Set1')[0])
+    def plot_brillouin_zone(self, **kwargs):
+        """Plot the Brillouin zone and reciprocal lattice vectors"""
+        ax = plt.gca()
 
-        self._plot_vectors(self.reciprocal_vectors(), (0, 0), name="b",
-                           head_width=0.05, head_length=0.12)
+        from matplotlib.patches import Polygon
+        vertices = self.brillouin_zone()
+        default_color = pltutils.get_palette("Set1")[0]
+        ax.add_patch(Polygon(vertices, **with_defaults(kwargs, fill=False, color=default_color)))
+
+        self._plot_vectors(self.reciprocal_vectors(), name="b", head_width=0.05, head_length=0.12)
 
         for vertex in vertices:
+            text = "[" + ", ".join(map(x_pi, vertex)) + "]"
+            # align the text so that it goes away from the origin
             ha, va = pltutils.align(*(-vertex))
-            vertex_str = ", ".join(map(x_pi, vertex))
-            pltutils.annotate_box("[{}]".format(vertex_str), xy=vertex * 1.05,
-                                  bbox=dict(lw=0), ha=ha, va=va)
+            pltutils.annotate_box(text, vertex * 1.05, ha=ha, va=va, bbox=dict(lw=0))
 
-        ax = plt.gca()
         ax.set_aspect('equal')
         ax.set_xlabel(r"$k_x (nm^{-1})$")
         ax.set_ylabel(r"$k_y (nm^{-1})$")
 
-        pltutils.set_min_range(abs(max(x) - min(x)) * 1.9, 'x')
-        pltutils.set_min_range(abs(max(y) - min(y)) * 1.9, 'y')
+        x, y = zip(*vertices)
+        pltutils.set_min_range(abs(max(x) - min(x)) * 2, 'x')
+        pltutils.set_min_range(abs(max(y) - min(y)) * 2, 'y')
         pltutils.despine(trim=True)
-        pltutils.add_margin()
 
 
 def make_lattice(vectors, sublattices, hoppings, min_neighbors=1):
