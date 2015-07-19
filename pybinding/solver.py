@@ -164,7 +164,7 @@ class SolverPythonImpl:
         self.compute_time = time.time() - start_time
 
     def report(self, _=False):
-        from .utils import pretty_duration
+        from .utils.time import pretty_duration
         return "Converged in " + pretty_duration(self.compute_time)
 
 
