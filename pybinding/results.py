@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 from scipy.sparse import csr_matrix
 
 from . import pltutils
-from .utils import with_defaults
+from .utils import with_defaults, x_pi
 from .system import Positions, plot_sites, plot_hoppings
 from .support.pickle import pickleable
 
@@ -192,28 +192,16 @@ class Bands:
 
     @staticmethod
     def _point_names(k_points):
-        def multiple_of_pi_name(value):
-            n = value / np.pi
-            if np.isclose(n, 0):
-                return "0"
-            if np.isclose(n, round(n)):
-                return r"${:.0f}\pi$".format(n) if abs(n) > 1 else r"$\pi$"
-            elif np.isclose(1/n, round(1/n)):
-                inv_n = abs(1 / n)
-                return r"$\pi/{:.0f}$".format(inv_n) if n > 0 else r"$-\pi/{:.0f}$".format(inv_n)
-            else:
-                return "{:.2g}".format(value)
-
         names = []
         for k_point in k_points:
-            values = map(multiple_of_pi_name, k_point)
+            values = map(x_pi, k_point)
             fmt = "[{}]" if len(k_point) > 1 else "{}"
             names.append(fmt.format(', '.join(values)))
         return names
 
-    def plot(self, names=None):
-        color = pltutils.get_palette('Set1')[1]
-        plt.plot(self.bands, color=color)
+    def plot(self, names=None, **kwargs):
+        default_color = pltutils.get_palette('Set1')[1]
+        plt.plot(self.bands, **with_defaults(kwargs, color=default_color))
 
         if not names:
             names = self._point_names(self.k_points)
