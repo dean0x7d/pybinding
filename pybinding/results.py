@@ -9,7 +9,30 @@ from .utils import with_defaults, x_pi
 from .system import Positions, plot_sites, plot_hoppings
 from .support.pickle import pickleable
 
-__all__ = ['LDOSpoint', 'SpatialMap', 'Eigenvalues', 'Bands']
+__all__ = ['make_path', 'LDOSpoint', 'SpatialMap', 'Eigenvalues', 'Bands']
+
+
+def make_path(k0, k1, *ks, step=0.1):
+    """Create a path which connects the given k points
+
+    >>> np.allclose(make_path(0, 3, -1, step=1).T, [0, 1, 2, 3, 2, 1, 0, -1])
+    True
+    >>> np.allclose(make_path([0, 0], [2, 3], [-1, 4], step=1.4),
+    ...             [[0, 0], [1, 1.5], [2, 3], [0.5, 3.5], [-1, 4]])
+    True
+    """
+    k_points = [np.atleast_1d(k) for k in (k0, k1) + ks]
+
+    k_paths = []
+    for k_start, k_end in zip(k_points[:-1], k_points[1:]):
+        num_steps = np.linalg.norm(k_end - k_start) // step
+        # k_path.shape == num_steps, k_space_dimensions
+        k_path = np.array([np.linspace(s, e, num_steps, endpoint=False)
+                           for s, e in zip(k_start, k_end)]).T
+        k_paths.append(k_path)
+    k_paths.append(k_points[-1])
+
+    return np.vstack(k_paths)
 
 
 @pickleable
@@ -184,11 +207,10 @@ class Eigenvalues:
 
 @pickleable
 class Bands:
-    def __init__(self, k_points, k_paths, bands, border_indices):
+    def __init__(self, k_points, k_path, bands):
         self.k_points = k_points
-        self.k_paths = k_paths
+        self.k_path = k_path
         self.bands = bands
-        self.border_indices = border_indices
 
     @staticmethod
     def _point_names(k_points):
@@ -203,16 +225,19 @@ class Bands:
         default_color = pltutils.get_palette('Set1')[1]
         plt.plot(self.bands, **with_defaults(kwargs, color=default_color))
 
-        if not names:
-            names = self._point_names(self.k_points)
-        plt.xticks(self.border_indices, names)
-
         plt.xlim(0, len(self.bands) - 1)
         plt.xlabel('k-space')
         plt.ylabel('E (eV)')
         pltutils.add_margin()
         pltutils.despine(trim=True)
 
-        for idx in self.border_indices:
+        border_indices = [idx for idx, k in enumerate(self.k_path)
+                          if any(np.allclose(k, k0) for k0 in self.k_points)]
+
+        if not names:
+            names = self._point_names(self.k_points)
+        plt.xticks(border_indices, names)
+
+        for idx in border_indices:
             ymax = plt.gca().transLimits.transform([0, max(self.bands[idx])])[1]
             plt.axvline(idx, ymax=ymax, color='0.4', ls=':', zorder=-1)

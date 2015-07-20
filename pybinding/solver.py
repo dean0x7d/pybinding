@@ -24,6 +24,10 @@ class Solver:
     def report(self, shortform=False):
         return self.impl.report(shortform)
 
+    def set_wave_vector(self, k):
+        self.clear()
+        self.model.set_wave_vector(k)
+
     @property
     def model(self):
         return self.impl.model
@@ -74,27 +78,15 @@ class Solver:
         return results.SpatialMap.from_system(ldos, self.system)
 
     def calc_bands(self, k0, k1, *ks, step=0.1):
-        k_paths = []
-        bands = []
-        border_indices = [0]
-
-        # list of k0, k1, k2... as ndarrays
         k_points = [np.atleast_1d(k) for k in (k0, k1) + ks]
-        for k_start, k_end in zip(k_points[:-1], k_points[1:]):
-            num_steps = np.linalg.norm(k_end - k_start) / step
-            # k_path.shape == num_steps, k_space_dimensions
-            k_path = np.array([np.linspace(s, e, num_steps) for s, e in zip(k_start, k_end)]).T
+        k_path = results.make_path(*k_points, step=step)
 
-            for k in k_path:
-                # k.shape == k_space_dimensions,
-                self.clear()
-                self.model.set_wave_vector(k)
-                bands += [self.eigenvalues]
+        bands = []
+        for k in k_path:
+            self.set_wave_vector(k)
+            bands.append(self.eigenvalues)
 
-            k_paths += [k_path]
-            border_indices += [len(bands) - 1]
-
-        return results.Bands(k_points, np.vstack(k_paths), np.vstack(bands), border_indices)
+        return results.Bands(k_points, k_path, np.vstack(bands))
 
     @staticmethod
     def find_degenerate_states(energies, abs_tolerance=1e-5):
