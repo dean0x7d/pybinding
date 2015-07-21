@@ -4,8 +4,8 @@ import pybinding as pb
 from pybinding.repository import graphene
 
 models = {
-    'square': [pb.lattice.square(a=0.2, t=1), pb.shape.rectangle(1)],
-    'square-periodic-2d': [pb.lattice.square(a=0.2, t=1), pb.shape.rectangle(2),
+    'square': [pb.lattice.square(d=0.2, t=1), pb.shape.rectangle(1)],
+    'square-periodic-2d': [pb.lattice.square(d=0.2, t=1), pb.shape.rectangle(2),
                            pb.symmetry.translational(v1=0.6, v2=0.6)],
     'graphene-monolayer': [graphene.lattice.monolayer(), graphene.shape.hexagon_ac(1)],
     'graphene-monolayer-alt': [graphene.lattice.monolayer_alt(), pb.shape.rectangle(1.6, 1.4)],
@@ -13,10 +13,11 @@ models = {
     'graphene-monolayer-nn': [graphene.lattice.monolayer_nn(), pb.shape.regular_polygon(6, 0.9)],
     'graphene-monolayer-periodic-1d': [graphene.lattice.monolayer(), pb.shape.primitive(5, 5),
                                        pb.symmetry.translational(v1=0)],
-    'graphene-monolayer-priodic-1d-alt': [graphene.lattice.monolayer_4atom(), pb.shape.rectangle(1),
-                                          pb.symmetry.translational(v2=0.6)],
-    'graphene-monolayer-priodic-2d': [graphene.lattice.monolayer_4atom(), pb.shape.rectangle(1),
-                                      pb.symmetry.translational(v1=0.6, v2=0.6)],
+    'graphene-monolayer-periodic-1d-alt': [graphene.lattice.monolayer_4atom(),
+                                           pb.shape.rectangle(1),
+                                           pb.symmetry.translational(v2=0.6)],
+    'graphene-monolayer-periodic-2d': [graphene.lattice.monolayer_4atom(), pb.shape.rectangle(1),
+                                       pb.symmetry.translational(v1=0.6, v2=0.6)],
     'graphene-bilayer': [graphene.lattice.bilayer(), graphene.shape.hexagon_ac(0.6)],
 }
 

@@ -36,7 +36,7 @@ class Lattice(_pybinding.Lattice):
         return len(self.vectors)
 
     def register_hopping_energies(self, mapping: dict):
-        for name, energy in mapping.items():
+        for name, energy in sorted(mapping.items(), key=lambda item: item[0]):
             if name in self.hopping_ids:
                 raise KeyError("Hopping '{}' already exists".format(name))
             self.hopping_ids[name] = super()._register_hopping_energy(energy)
@@ -254,13 +254,13 @@ def make_lattice(vectors, sublattices, hoppings, min_neighbors=1):
     return lat
 
 
-def square(a=0.2, t=1):
-    lat = Lattice([a, 0], [0, a])
-    lat.add_one_sublattice('s', (0, 0))
+def square(d=0.2, t=-1):
+    lat = Lattice(a1=[d, 0], a2=[0, d])
+    lat.add_one_sublattice('A', [0, 0])
     lat.add_hoppings(
-        [(0,  1), 's', 's', t],
-        [(1,  0), 's', 's', t],
-        [(1,  1), 's', 's', t],
-        [(1, -1), 's', 's', t],
+        ([0,  1], 'A', 'A', t),
+        ([1,  0], 'A', 'A', t),
+        ([1,  1], 'A', 'A', t),
+        ([1, -1], 'A', 'A', t),
     )
     return lat

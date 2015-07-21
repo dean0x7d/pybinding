@@ -5,7 +5,7 @@ from pybinding.repository import graphene
 from pybinding.repository import misc
 
 lattices = {
-    'square': pb.lattice.square(a=0.2, t=1),
+    'square': pb.lattice.square(d=0.2, t=1),
     'graphene-monolayer': graphene.lattice.monolayer(),
     'graphene-monolayer-alt': graphene.lattice.monolayer_alt(),
     'graphene-monolayer-4atom': graphene.lattice.monolayer_4atom(),
