@@ -14,8 +14,9 @@ __all__ = ['Lattice', 'make_lattice', 'square']
 
 @pickleable(props='sublattices hopping_energies min_neighbors')
 class Lattice(_pybinding.Lattice):
-    def __init__(self, v1, v2=None, v3=None):
-        super().__init__(*(v for v in [v1, v2, v3] if v is not None))
+    def __init__(self, a1, a2=None, a3=None):
+        vectors = (np.atleast_1d(v) for v in (a1, a2, a3) if v is not None)
+        super().__init__(*vectors)
         self.sublattice_ids = OrderedDict()  # indexed by sublattice name
         self.hopping_ids = {}  # indexed by hopping name
 
@@ -44,6 +45,7 @@ class Lattice(_pybinding.Lattice):
         if name in self.sublattice_ids:
             raise KeyError("Sublattice '{}' already exists".format(name))
 
+        offset = np.atleast_1d(offset)
         alias = self.__getitem__(alias) if alias is not None else -1
         self.sublattice_ids[name] = super()._add_sublattice(offset, onsite_potential, alias)
 
@@ -52,7 +54,9 @@ class Lattice(_pybinding.Lattice):
             self.add_one_sublattice(*sub)
 
     def add_one_hopping(self, relative_index, from_sublattice, to_sublattice, energy):
+        relative_index = np.atleast_1d(relative_index)
         from_sub, to_sub = map(self.__getitem__, (from_sublattice, to_sublattice))
+
         if energy in self.hopping_ids:
             super()._add_registered_hopping(relative_index, from_sub, to_sub,
                                             self.hopping_ids[energy])
@@ -80,7 +84,7 @@ class Lattice(_pybinding.Lattice):
     def reciprocal_vectors(self) -> list:
         """Calculate reciprocal space lattice vectors
 
-        >>> lat = Lattice(v1=(0, 1), v2=(0.5, 0.5))
+        >>> lat = Lattice(a1=[0, 1], a2=[0.5, 0.5])
         >>> np.allclose(lat.reciprocal_vectors(), [[4*pi, 0, 0], [-2*pi, 2*pi, 0]])
         True
         """
@@ -93,7 +97,7 @@ class Lattice(_pybinding.Lattice):
     def brillouin_zone(self) -> list:
         """Return a list of vertices which form the Brillouin zone (2D only)
 
-        >>> lat = Lattice(v1=(0, 1), v2=(0.5, 0.5))
+        >>> lat = Lattice(a1=[0, 1], a2=[0.5, 0.5])
         >>> np.allclose(lat.brillouin_zone(), [[-2*pi, 0], [0, -2*pi], [2*pi, 0], [0, 2*pi]])
         True
         """
@@ -116,7 +120,7 @@ class Lattice(_pybinding.Lattice):
 
         if self.ndim == 1:
             v1, = self.reciprocal_vectors()
-            return [v1[:2], -v1[:2]]
+            return [v1[0], -v1[0]]
         elif self.ndim == 2:
             # list all combinations of primitive reciprocal vectors
             v1, v2 = self.reciprocal_vectors()
@@ -141,7 +145,7 @@ class Lattice(_pybinding.Lattice):
             raise RuntimeError("3D Brillouin zones are not currently supported")
 
     @staticmethod
-    def _plot_vectors(vectors, position=(0, 0), name="v", head_width=0.08, head_length=0.2):
+    def _plot_vectors(vectors, position=(0, 0), name="a", head_width=0.08, head_length=0.2):
         vnorm = np.average([np.linalg.norm(v) for v in vectors])
         for i, vector in enumerate(vectors):
             v2d = vector[:2]
@@ -202,27 +206,43 @@ class Lattice(_pybinding.Lattice):
     def plot_brillouin_zone(self, **kwargs):
         """Plot the Brillouin zone and reciprocal lattice vectors"""
         ax = plt.gca()
-
-        from matplotlib.patches import Polygon
-        vertices = self.brillouin_zone()
-        default_color = pltutils.get_palette("Set1")[0]
-        ax.add_patch(Polygon(vertices, **with_defaults(kwargs, fill=False, color=default_color)))
-
-        self._plot_vectors(self.reciprocal_vectors(), name="b", head_width=0.05, head_length=0.12)
-
-        for vertex in vertices:
-            text = "[" + ", ".join(map(x_pi, vertex)) + "]"
-            # align the text so that it goes away from the origin
-            ha, va = pltutils.align(*(-vertex))
-            pltutils.annotate_box(text, vertex * 1.05, ha=ha, va=va, bbox=dict(lw=0))
-
         ax.set_aspect('equal')
         ax.set_xlabel(r"$k_x (nm^{-1})$")
-        ax.set_ylabel(r"$k_y (nm^{-1})$")
 
-        x, y = zip(*vertices)
-        pltutils.set_min_range(abs(max(x) - min(x)) * 2, 'x')
-        pltutils.set_min_range(abs(max(y) - min(y)) * 2, 'y')
+        vertices = self.brillouin_zone()
+        default_color = pltutils.get_palette("Set1")[0]
+
+        if self.ndim == 1:
+            x1, x2 = vertices
+            y = x2 / 10
+            plt.plot([x1, x2], [y, y], **with_defaults(kwargs, color=default_color))
+
+            ticks = [x1, 0, x2]
+            plt.xticks(ticks, [x_pi(t) for t in ticks])
+
+            plt.ylim(0, 2 * y)
+            plt.yticks([])
+            ax.spines['left'].set_visible(False)
+        else:
+            from matplotlib.patches import Polygon
+            ax.add_patch(Polygon(
+                vertices, **with_defaults(kwargs, fill=False, color=default_color)
+            ))
+
+            self._plot_vectors(self.reciprocal_vectors(), name="b",
+                               head_width=0.05, head_length=0.12)
+
+            for vertex in vertices:
+                text = "[" + ", ".join(map(x_pi, vertex)) + "]"
+                # align the text so that it goes away from the origin
+                ha, va = pltutils.align(*(-vertex))
+                pltutils.annotate_box(text, vertex * 1.05, ha=ha, va=va, bbox=dict(lw=0))
+
+            x, y = zip(*vertices)
+            pltutils.set_min_range(abs(max(x) - min(x)) * 2, 'x')
+            pltutils.set_min_range(abs(max(y) - min(y)) * 2, 'y')
+            ax.set_ylabel(r"$k_y (nm^{-1})$")
+
         pltutils.despine(trim=True)
 
 
