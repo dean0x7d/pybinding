@@ -52,15 +52,17 @@ class LDOSpoint:
 @pickleable
 class SpatialMap:
     def __init__(self, data: np.ndarray, pos: Positions,
-                 sublattices: np.ndarray, hoppings: csr_matrix):
+                 sublattices: np.ndarray, hoppings: csr_matrix, boundaries: list):
         self.data = data  # 1d array of data which corresponds to (x, y, z) coordinates
         self.pos = Positions(*pos)  # make sure it is Positions
         self.sublattices = sublattices
         self.hoppings = hoppings
+        self.boundaries = boundaries
 
     @classmethod
     def from_system(cls, data, system):
-        return cls(data, system.positions, system.sublattices, system.hoppings.tocsr())
+        return cls(data, system.positions, system.sublattices,
+                   system.hoppings.tocsr(), system.boundaries)
 
     def copy(self) -> 'SpatialMap':
         return copy(self)
@@ -76,6 +78,8 @@ class SpatialMap:
         self.sublattices = self.sublattices[idx]
         self.pos = Positions(*map(lambda v: v[idx], self.pos))
         self.hoppings = self.hoppings[idx][:, idx]
+        for boundary in self.boundaries:
+            boundary.hoppings = boundary.hoppings[idx][:, idx]
 
     def crop(self, x=None, y=None):
         xlim, ylim = x, y
@@ -140,11 +144,20 @@ class SpatialMap:
         ax.set_ylabel('y (nm)')
 
         radius = site_radius[0] + site_radius[1] * self.data / self.data.max()
-        collection = plot_sites(ax, self.pos, self.data, radius,
-                                **with_defaults(site_props, cmap='YlGnBu'))
+        site_props = with_defaults(site_props, cmap='YlGnBu')
+        collection = plot_sites(ax, self.pos, self.data, radius, **site_props)
 
-        plot_hoppings(ax, self.pos, self.hoppings.tocoo(), hopping_width,
-                      **with_defaults(hopping_props, colors='#bbbbbb'))
+        hop = self.hoppings.tocoo()
+        hopping_props = with_defaults(hopping_props, colors='#bbbbbb')
+        plot_hoppings(ax, self.pos, hop, hopping_width, **hopping_props)
+
+        for boundary in self.boundaries:
+            for shift in [boundary.shift, -boundary.shift]:
+                plot_sites(ax, self.pos, self.data, radius, shift, blend=0.5, **site_props)
+                plot_hoppings(ax, self.pos, hop, hopping_width, shift, blend=0.5, **hopping_props)
+
+            plot_hoppings(ax, self.pos, boundary.hoppings.tocoo(), hopping_width,
+                          boundary.shift, boundary=True, **hopping_props)
 
         pltutils.colorbar(collection, **with_defaults(cbar_props))
         pltutils.despine(trim=True)
