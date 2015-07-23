@@ -79,7 +79,7 @@ def blend_colors(color, bg, factor):
     return (1 - factor) * bg + factor * color
 
 
-def colorbar(mappable=None, cax=None, ax=None, powerlimits=(0, 0), **kwargs):
+def colorbar(mappable=None, cax=None, ax=None, powerlimits=(0, 0), label="", **kwargs):
     """Convenient colorbar function"""
     cbar = plt.colorbar(mappable, cax, ax, **with_defaults(kwargs, pad=0.02, aspect=28))
 
@@ -89,6 +89,13 @@ def colorbar(mappable=None, cax=None, ax=None, powerlimits=(0, 0), **kwargs):
     if powerlimits and hasattr(cbar.formatter, 'set_powerlimits'):
         cbar.formatter.set_powerlimits(powerlimits)
     cbar.update_ticks()
+
+    if label:
+        if cbar.formatter.get_offset() or cbar.orientation != 'vertical':
+            cbar.set_label(label)
+        else:
+            cbar.ax.set_xlabel(label)
+            cbar.ax.xaxis.set_label_position('top')
 
     return cbar
 
