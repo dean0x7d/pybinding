@@ -1,4 +1,5 @@
-from copy import copy
+from copy import deepcopy
+from collections import defaultdict
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -9,7 +10,7 @@ from .utils import with_defaults, x_pi
 from .system import Positions, plot_sites, plot_hoppings
 from .support.pickle import pickleable
 
-__all__ = ['make_path', 'LDOSpoint', 'SpatialMap', 'Eigenvalues', 'Bands']
+__all__ = ['make_path', 'LDOSpoint', 'SpatialMap', 'Eigenvalues', 'Bands', 'Sweep']
 
 
 def make_path(k0, k1, *ks, step=0.1):
@@ -65,7 +66,7 @@ class SpatialMap:
                    system.hoppings.tocsr(), system.boundaries)
 
     def copy(self) -> 'SpatialMap':
-        return copy(self)
+        return deepcopy(self)
 
     def save_txt(self, file_name):
         with open(file_name + '.dat', 'w') as file:
@@ -254,3 +255,188 @@ class Bands:
         for idx in border_indices:
             ymax = plt.gca().transLimits.transform([0, max(self.bands[idx])])[1]
             plt.axvline(idx, ymax=ymax, color='0.4', ls=':', zorder=-1)
+
+
+@pickleable
+class Sweep:
+    """2D parameter sweep with 'x' and 'y' 1D array parameters and 'data' 2D array result.
+
+    Attributes
+    ----------
+    x : np.ndarray
+        1D array with x-axis values - usually the primary parameter being swept.
+    y : np.ndarray
+        1D array with y-axis values - usually the secondary parameter.
+    data : np.ndarray
+        2D array with shape == (x.size, y.size) containing the main result data.
+    title : str
+        A title that will be used for the plot.
+    labels : dict
+        Plot axes labels. Has 'x', 'y' and 'data' fields.
+    misc : dict
+        Any additional user defined variables.
+    """
+
+    def __init__(self, x: np.ndarray, y: np.ndarray, data: np.ndarray,
+                 title='', labels=defaultdict(str), **kwargs):
+        self.x = x
+        self.y = y
+        self.data = data
+
+        self.title = title
+        self.labels = labels
+        self.misc = kwargs
+
+    def copy(self) -> 'Sweep':
+        return deepcopy(self)
+
+    @property
+    def plain_labels(self):
+        """Labels dict with latex symbols stripped out."""
+        trans = str.maketrans('', '', '$\\')
+        return {k: v.translate(trans) for k, v in self.labels.items()}
+
+    def xy_grids(self):
+        """Expand x and y into 2D arrays matching data."""
+        xgrid = np.column_stack([self.x] * self.y.size)
+        ygrid = np.row_stack([self.y] * self.x.size)
+        return xgrid, ygrid
+
+    def save_txt(self, file_name):
+        """Save text file with 3 columns: x, y, data."""
+        with open(file_name, 'w') as file:
+            file.write("#{x:>11} {y:>12} {data:>12}\n".format(**self.plain_labels))
+
+            xgrid, ygrid = self.xy_grids()
+            for row in zip(xgrid.flat, ygrid.flat, self.data.flat):
+                values = ("{:12.5e}".format(v) for v in row)
+                file.write(" ".join(values) + "\n")
+
+    def filter(self, idx_x=None, idx_y=None):
+        idx_x = np.ones(self.x.size, dtype=bool) if idx_x is None else idx_x
+        idx_y = np.ones(self.y.size, dtype=bool) if idx_y is None else idx_y
+
+        self.x = self.x[idx_x]
+        self.y = self.y[idx_y]
+        self.data = self.data[np.ix_(idx_x, idx_y)]
+
+    def crop(self, x=None, y=None):
+        """Crop data to limits in the x and/or y axes.
+
+        A call with x=(-1, 2) will leave data only where -1 < x < 2.
+        """
+        xlim, ylim = x, y
+        idx_x = np.logical_and(self.x >= xlim[0], self.x <= xlim[1]) if xlim else None
+        idx_y = np.logical_and(self.y >= ylim[0], self.y <= ylim[1]) if ylim else None
+        self.filter(idx_x, idx_y)
+
+    def mirror(self, axis='x'):
+        """Mirror data in the specified axis. Only makes sense if the axis starts at 0."""
+        if axis == 'x':
+            self.x = np.concatenate((-self.x[::-1], self.x[1:]))
+            self.data = np.vstack((self.data[::-1], self.data[1:]))
+        elif axis == 'y':
+            self.y = np.concatenate((-self.y[::-1], self.y[1:]))
+            self.data = np.hstack((self.data[:, ::-1], self.data[:, 1:]))
+
+    def interpolate(self, multiply=None, size=None, kind='linear'):
+        """Interpolate data using scipy's interp1d.
+
+        Call with multiply=2 to double the size of the x-axis and interpolate data to match.
+        To interpolate in both axes pass a tuple, e.g. multiply=(4, 2).
+
+        multiply : int or tuple of int
+            Number of times the size of the axes should be multiplied.
+        size : int or tuple of int
+            New size of the axes. Zero will leave size unchanged.
+        kind
+            Passed to scipy.interpolate.interp1d.
+        """
+        from scipy.interpolate import interp1d
+        if not multiply and not size:
+            return
+
+        if multiply:
+            mul_x, mul_y = multiply if isinstance(multiply, tuple) else (multiply, 1)
+            size_x = self.x.size * mul_x
+            size_y = self.y.size * mul_y
+        else:
+            size_x, size_y = size if isinstance(size, tuple) else (size, 0)
+
+        if size_x > 0 and size_x != self.x.size:
+            interp_x = interp1d(self.x, self.data, axis=0, kind=kind)
+            self.x = np.linspace(self.x.min(), self.x.max(), size_x, dtype=self.x.dtype)
+            self.data = interp_x(self.x)
+
+        if size_y > 0 and size_y != self.y.size:
+            interp_y = interp1d(self.y, self.data, kind=kind)
+            self.y = np.linspace(self.y.min(), self.y.max(), size_y, dtype=self.x.dtype)
+            self.data = interp_y(self.y)
+
+    def convolve_gaussian(self, sigma, axis='x', extend=10):
+        """Convolve the data with a Gaussian function."""
+        def convolve(v, data0):
+            v0 = v[v.size // 2]
+            gaussian = np.exp(-0.5 * ((v - v0) / sigma)**2)
+            gaussian /= gaussian.sum()
+
+            data = np.concatenate((data0[extend::-1], data0, data0[:-extend:-1]))
+            data = np.convolve(data, gaussian, 'same')
+            return data[extend:-extend]
+
+        if 'x' in axis:
+            for i in range(self.y.size):
+                self.data[:, i] = convolve(self.x, self.data[:, i])
+
+        if 'y' in axis:
+            for i in range(self.x.size):
+                self.data[i, :] = convolve(self.y, self.data[i, :])
+
+    def slice_x(self, x):
+        """Return a slice of data nearest to x and the found values of x."""
+        idx = np.abs(self.x - x).argmin()
+        return self.data[idx, :], self.x[idx]
+
+    def slice_y(self, y):
+        """Return a slice of data nearest to y and the found values of y."""
+        idx = np.abs(self.y - y).argmin()
+        return self.data[:, idx], self.y[idx]
+
+    def plot(self, cbar_props=None, **kwargs):
+        mesh = plt.pcolormesh(self.x, self.y, self.data.T,
+                              **with_defaults(kwargs, cmap='RdYlBu_r'))
+        plt.xlim(self.x.min(), self.x.max())
+        plt.ylim(self.y.min(), self.y.max())
+
+        if cbar_props is not False:
+            pltutils.colorbar(label=self.labels['data'])
+
+        plt.title(self.title)
+        plt.xlabel(self.labels['x'])
+        plt.ylabel(self.labels['y'])
+
+        plt.gca().get_xaxis().tick_bottom()
+        plt.gca().get_yaxis().tick_left()
+
+        return mesh
+
+    def _plot_slice(self, axis, x, y, value, **kwargs):
+        plt.plot(x, y, **kwargs)
+
+        split = self.labels[axis].split(' ', 1)
+        label = split[0]
+        unit = '' if len(split) == 1 else split[1].strip('()')
+        plt.title('{}, {} = {:.2g} {}'.format(self.title, label, value, unit))
+
+        plt.xlim(x.min(), x.max())
+        plt.xlabel(self.labels['x' if axis == 'y' else 'y'])
+        plt.ylabel(self.labels['data'])
+        pltutils.despine()
+
+    def plot_slice_x(self, x, **kwargs):
+        z, value = self.slice_x(x)
+        self._plot_slice('x', self.y, z, value, **kwargs)
+
+    def plot_slice_y(self, y, **kwargs):
+        z, value = self.slice_y(y)
+        self._plot_slice('y', self.x, z, value, **kwargs)
