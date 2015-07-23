@@ -103,10 +103,6 @@ public: // construction and configuration
         config.scaling_tolerance = scaling_tolerance;
     }
 
-public: // calculation
-    ArrayXcf calc_greens(int i, int j, ArrayXd energy, float broadening);
-    ArrayXf calc_ldos(ArrayXd energy, float broadening, Cartesian position, sub_id sublattice = -1);
-
 protected: // required implementation
     virtual std::unique_ptr<GreensStrategy>
         create_strategy_for(const std::shared_ptr<const Hamiltonian>&) const override;

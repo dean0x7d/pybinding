@@ -1,12 +1,12 @@
 #include "greens/KPM.hpp"
-#include "Model.hpp"
 #include "hamiltonian/Hamiltonian.hpp"
-using namespace tbm;
 
 #include "compute/lanczos.hpp"
 #include "compute/kernel_polynomial.hpp"
 #include "support/format.hpp"
 #include "support/physics.hpp"
+
+using namespace tbm;
 
 
 template<typename scalar_t>
@@ -363,25 +363,4 @@ KPM::create_strategy_for(const std::shared_ptr<const Hamiltonian>& hamiltonian) 
         throw std::runtime_error{"KPM: unknown Hamiltonian type."};
     
     return new_greens;
-}
-
-ArrayXcf KPM::calc_greens(int i, int j, ArrayXd energy, float broadening) {
-    auto size = model.hamiltonian()->rows();
-    if (i < 0 || i > size || j < 0 || j > size)
-        throw std::logic_error{"KPM::calc_greens(i,j): invalid value for i or j."};
-
-    // time the calculation
-    calculation_timer.tic();
-    auto greens_function = strategy->calculate(i, j, energy, broadening);
-    calculation_timer.toc();
-
-    return greens_function;
-}
-
-ArrayXf KPM::calc_ldos(ArrayXd energy, float broadening, Cartesian position, sub_id sublattice) {
-    auto i = model.system()->find_nearest(position, sublattice);
-    auto greens_function = calc_greens(i, i, energy, broadening);
-
-    using physics::pi;
-    return -1/pi * greens_function.imag();
 }

@@ -1,6 +1,10 @@
 #include "greens/Greens.hpp"
-#include "Model.hpp"
+#include "hamiltonian/Hamiltonian.hpp"
+
+#include "support/physics.hpp"
+
 using namespace tbm;
+
 
 void Greens::set_model(Model const& new_model) {
     model = new_model;
@@ -14,4 +18,26 @@ void Greens::set_model(Model const& new_model) {
     // creates a Green's strategy with a scalar type suited to the Hamiltonian
     if (!strategy)
         strategy = create_strategy_for(model.hamiltonian());
+}
+
+ArrayXcf Greens::calc_greens(int i, int j, ArrayXd energy, float broadening) {
+    auto const size = model.hamiltonian()->rows();
+    if (i < 0 || i > size || j < 0 || j > size)
+        throw std::logic_error{"KPM::calc_greens(i,j): invalid value for i or j."};
+
+    calculation_timer.tic();
+    auto greens_function = strategy->calculate(i, j, energy, broadening);
+    calculation_timer.toc();
+
+    return greens_function;
+}
+
+ArrayXf Greens::calc_ldos(ArrayXd energy, float broadening,
+                          Cartesian position, sub_id sublattice)
+{
+    auto i = model.system()->find_nearest(position, sublattice);
+    auto greens_function = calc_greens(i, i, energy, broadening);
+
+    using physics::pi;
+    return -1/pi * greens_function.imag();
 }

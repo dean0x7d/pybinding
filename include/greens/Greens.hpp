@@ -76,6 +76,10 @@ public:
         return strategy ? strategy->report(shortform) + " " + calculation_timer.str() : "";
     }
 
+    ArrayXcf calc_greens(int i, int j, ArrayXd energy, float broadening);
+    ArrayXf calc_ldos(ArrayXd energy, float broadening,
+                      Cartesian position, sub_id sublattice = -1);
+
 protected:
     /// Create a new Green's strategy object for the given Hamiltonian
     virtual std::unique_ptr<GreensStrategy>
