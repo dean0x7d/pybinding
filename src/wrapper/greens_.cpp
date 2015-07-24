@@ -9,11 +9,12 @@ void export_greens() {
     using tbm::KPM;
 
     class_<Greens, noncopyable>{"Greens", no_init}
-    .def("set_model", &Greens::set_model, args("self", "model"))
     .def("report", &Greens::report, args("self", "shortform"_kw=false))
     .def("calc_greens", &Greens::calc_greens, args("self", "i", "j", "energy", "broadening"))
     .def("calc_ldos", &Greens::calc_ldos,
          args("self", "energy", "broadening", "position", "sublattice"_kw=-1))
+    .add_property("model", internal_ref(&Greens::get_model), &Greens::set_model)
+    .add_property("system", &Greens::system)
     ;
 
     auto const kpm_defaults = tbm::KPMConfig{};

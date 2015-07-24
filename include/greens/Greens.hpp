@@ -69,7 +69,9 @@ public:
     virtual ~Greens() = default;
 
 public:
-    void set_model(Model const& m);
+    void set_model(Model const&);
+    Model const& get_model() const { return model; }
+    std::shared_ptr<System const> system() const { return model.system(); }
 
     /// Get some information about what happened during the last calculation
     std::string report(bool shortform) const {

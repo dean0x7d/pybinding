@@ -2,6 +2,8 @@ import numpy as np
 
 import _pybinding
 from .results import LDOSpoint
+from .model import Model
+from .system import System
 
 __all__ = ['Greens', 'make_kpm']
 
@@ -9,6 +11,18 @@ __all__ = ['Greens', 'make_kpm']
 class Greens:
     def __init__(self, impl: _pybinding.Greens):
         self.impl = impl
+
+    @property
+    def model(self) -> Model:
+        return self.impl.model
+
+    @model.setter
+    def model(self, model):
+        self.impl.model = model
+
+    @property
+    def system(self) -> System:
+        return System(self.impl.system)
 
     def report(self, shortform=False):
         return self.impl.report(shortform)
