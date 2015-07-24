@@ -1,5 +1,4 @@
 from copy import deepcopy
-from collections import defaultdict
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -278,13 +277,13 @@ class Sweep:
     """
 
     def __init__(self, x: np.ndarray, y: np.ndarray, data: np.ndarray,
-                 title='', labels=defaultdict(str), **kwargs):
-        self.x = x
-        self.y = y
-        self.data = data
+                 title="", labels: dict=None, **kwargs):
+        self.x = np.atleast_1d(x)
+        self.y = np.atleast_1d(y)
+        self.data = np.atleast_2d(data)
 
         self.title = title
-        self.labels = labels
+        self.labels = with_defaults(labels, x="x", y="y", data="data")
         self.misc = kwargs
 
     def copy(self) -> 'Sweep':
