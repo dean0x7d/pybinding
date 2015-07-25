@@ -13,7 +13,7 @@ void export_system();
 void export_solver();
 void export_greens();
 void export_modifiers();
-void export_parallel_sweep();
+void export_parallel();
 
 BOOST_PYTHON_MODULE(_pybinding) {
     // init numpy and register converters
@@ -48,7 +48,7 @@ BOOST_PYTHON_MODULE(_pybinding) {
     export_solver();
     export_greens();
     export_modifiers();
-    export_parallel_sweep();
+    export_parallel();
 
 #ifdef TBM_USE_MKL
     // export some helper functions
