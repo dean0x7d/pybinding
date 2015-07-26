@@ -52,7 +52,7 @@ def _plain_sweep(variables, produce, report, num_threads=num_cores, queue_size=n
     _pybinding.sweep(variables, produce, report, num_threads, queue_size)
 
 
-def _progressbar_sweep(variables, produce, report, fd=sys.stdout, log_file="", **kwargs):
+def _progressbar_sweep(variables, produce, report, pbar_fd=sys.stdout, log_file="", **kwargs):
     """Just like '_pain_sweep' but with a nifty progress bar.
 
     Parameters
@@ -62,7 +62,7 @@ def _progressbar_sweep(variables, produce, report, fd=sys.stdout, log_file="", *
     log_file : str
         Also write all output to a file. The progressbar is always the first line of the file.
     """
-    pbar = progressbar.Range(len(variables), output=fd, file_name=log_file)
+    pbar = progressbar.Range(len(variables), fd=pbar_fd, file_name=log_file)
 
     def _produce(var):
         deferred = produce(var)
@@ -124,13 +124,15 @@ def sweep(variables, produce, report=None, first=None, file="", save_every=10,
     last = len(variables) - 1
     save_at = {(last * p) // 100 for p in np.arange(save_every, 100, save_every)}  # skip zero
     save_at |= {last}  # make sure progress is saved on the last iteration
+    silent = kwargs.pop('silent', False)
 
     def _produce(var):
         deferred = produce(var)
         if result.data.shape == (1, 1):
             result.y = deferred.y
             result.data = np.zeros((len(variables), len(deferred.y)), np.float32)
-            first(deferred)
+            if first:
+                first(deferred)
         return deferred
 
     def save_progress():
@@ -149,12 +151,13 @@ def sweep(variables, produce, report=None, first=None, file="", save_every=10,
             self.count += 1
             result.data[job_id, :] = deferred.result
 
-            print("{step:3}| {name} = {value:.2f}, {message}".format(
-                step=self.count,
-                name=result.plain_labels['x'],
-                value=variables[job_id],
-                message=deferred.report
-            ))
+            if not silent:
+                print("{step:3}| {name} = {value:.2f}, {message}".format(
+                    step=self.count,
+                    name=result.plain_labels['x'],
+                    value=variables[job_id],
+                    message=deferred.report
+                ))
 
             if report:
                 report(deferred, job_id)

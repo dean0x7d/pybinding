@@ -8,7 +8,7 @@ def test_sweep():
     x0 = np.arange(3)
     y0 = np.arange(-1, 2)
     data0 = np.arange(9).reshape((3, 3))
-    sweep = pb.results.Sweep(x0, y0, data0, title="test sweep", misc=dict(b=1, c=2),
+    sweep = pb.results.Sweep(x0, y0, data0, title="test sweep", tags=dict(b=1, c=2),
                              labels=dict(x="$\\alpha$", y=r"$\beta$ (eV)", data=r"$\gamma$"))
 
     assert sweep.plain_labels == dict(x="alpha", y="beta (eV)", data="gamma")
