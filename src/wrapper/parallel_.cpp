@@ -11,23 +11,26 @@ void export_parallel() {
     using tbm::DeferredBase;
     class_<DeferredBase, noncopyable>{"DeferredBase", no_init}
     .def("compute", &DeferredBase::compute)
-    .def("report", &DeferredBase::report)
-    .def("result", &DeferredBase::result_uref)
+    .add_property("report", &DeferredBase::report)
+    .add_property("result", internal_ref(&DeferredBase::result_uref))
     ;
 
     using tbm::Deferred;
     class_<Deferred<ArrayXf>, bases<DeferredBase>>{"DeferredXf", no_init};
 
 
-    def("sweep", [](size_t size, size_t num_threads, size_t queue_size,
-                    object produce, object report)
+    def("sweep", [](object variables, object produce, object report,
+                    size_t num_threads, size_t queue_size)
     {
+        auto size = len(variables);
         GILRelease main_thread_gil_release;
+
         tbm::sweep(
             size, num_threads, queue_size,
-            [&produce](size_t id) {
+            [&produce, &variables](size_t id) {
                 GILEnsure gil_lock;
-                return extract<std::shared_ptr<DeferredBase>>{produce(id)}();
+                object var = variables[id];
+                return extract<std::shared_ptr<DeferredBase>>{produce(var)}();
             },
             [](std::shared_ptr<DeferredBase>& deferred) {
                 // no GIL lock -> computations run in parallel
@@ -40,5 +43,5 @@ void export_parallel() {
                 deferred.reset();
             }
         );
-    }, args("size", "num_threads", "queue_size", "produce", "report"));
+    }, args("variables", "produce", "report", "num_threads", "queue_size"));
 }

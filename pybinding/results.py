@@ -272,19 +272,19 @@ class Sweep:
         A title that will be used for the plot.
     labels : dict
         Plot axes labels. Has 'x', 'y' and 'data' fields.
-    misc : dict
+    tags : dict
         Any additional user defined variables.
     """
 
     def __init__(self, x: np.ndarray, y: np.ndarray, data: np.ndarray,
-                 title="", labels: dict=None, **kwargs):
+                 title="", labels: dict=None, tags: dict=None):
         self.x = np.atleast_1d(x)
         self.y = np.atleast_1d(y)
         self.data = np.atleast_2d(data)
 
         self.title = title
         self.labels = with_defaults(labels, x="x", y="y", data="data")
-        self.misc = kwargs
+        self.tags = tags
 
     def copy(self) -> 'Sweep':
         return deepcopy(self)
