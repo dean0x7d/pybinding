@@ -27,8 +27,14 @@ class Greens:
     def report(self, shortform=False):
         return self.impl.report(shortform)
 
-    def calc_ldos(self, energy: np.ndarray, broadening: float, position: tuple, sublattice: int=-1):
+    def calc_ldos(self, energy: np.ndarray, broadening: float, position: list, sublattice=-1):
         return LDOSpoint(energy, self.impl.calc_ldos(energy, broadening, position, sublattice))
+
+    def deferred_ldos(self, energy: np.ndarray, broadening: float, position: list, sublattice=-1):
+        deferred = self.impl.deferred_ldos(energy, broadening, position, sublattice)
+        deferred.y = energy
+        deferred.model = self.model
+        return deferred
 
 
 def make_kpm(model, lambda_value=4.0, energy_range=(0.0, 0.0)):

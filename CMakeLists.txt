@@ -29,7 +29,7 @@ boost_python_add_module(_pybinding
     src/wrapper/hamiltonian_.cpp
     src/wrapper/main_.cpp
     src/wrapper/model_.cpp
-    src/wrapper/parallel_sweep.cpp
+    src/wrapper/parallel_.cpp
     src/wrapper/solver_.cpp
     src/wrapper/system_.cpp
 )

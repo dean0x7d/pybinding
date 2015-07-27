@@ -4,6 +4,7 @@
 #include "support/physics.hpp"
 
 using namespace tbm;
+using physics::pi;
 
 
 void Greens::set_model(Model const& new_model) {
@@ -38,6 +39,25 @@ ArrayXf Greens::calc_ldos(ArrayXd energy, float broadening,
     auto i = model.system()->find_nearest(position, sublattice);
     auto greens_function = calc_greens(i, i, energy, broadening);
 
-    using physics::pi;
     return -1/pi * greens_function.imag();
+}
+
+Deferred<ArrayXf> Greens::deferred_ldos(ArrayXd energy, float broadening,
+                                        Cartesian position, sub_id sublattice)
+{
+    auto shared_strategy = std::shared_ptr<GreensStrategy>{
+        create_strategy_for(model.hamiltonian())
+    };
+    auto& model = this->model;
+
+    return {
+        [shared_strategy, model, position, sublattice, energy, broadening](ArrayXf& ldos) {
+            auto i = model.system()->find_nearest(position, sublattice);
+            auto greens_function = shared_strategy->calculate(i, i, energy, broadening);
+            ldos = -1/pi * greens_function.imag();
+        },
+        [shared_strategy] {
+            return shared_strategy->report(true);
+        }
+    };
 }

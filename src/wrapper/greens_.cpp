@@ -1,8 +1,12 @@
 #include "greens/KPM.hpp"
 
+#include "python_support.hpp"
+
 #include <boost/python/class.hpp>
 #include <boost/python/tuple.hpp>
+
 using namespace boost::python;
+
 
 void export_greens() {
     using tbm::Greens;
@@ -12,6 +16,8 @@ void export_greens() {
     .def("report", &Greens::report, args("self", "shortform"_kw=false))
     .def("calc_greens", &Greens::calc_greens, args("self", "i", "j", "energy", "broadening"))
     .def("calc_ldos", &Greens::calc_ldos,
+         args("self", "energy", "broadening", "position", "sublattice"_kw=-1))
+    .def("deferred_ldos", &Greens::deferred_ldos,
          args("self", "energy", "broadening", "position", "sublattice"_kw=-1))
     .add_property("model", internal_ref(&Greens::get_model), &Greens::set_model)
     .add_property("system", &Greens::system)

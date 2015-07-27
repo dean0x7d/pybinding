@@ -3,7 +3,9 @@
 
 #include "utils/Chrono.hpp"
 #include "utils/Log.hpp"
+
 #include "support/dense.hpp"
+#include "support/thread.hpp"
 
 #include <memory>
 
@@ -81,6 +83,8 @@ public:
     ArrayXcf calc_greens(int i, int j, ArrayXd energy, float broadening);
     ArrayXf calc_ldos(ArrayXd energy, float broadening,
                       Cartesian position, sub_id sublattice = -1);
+    Deferred<ArrayXf> deferred_ldos(ArrayXd energy, float broadening,
+                                    Cartesian position, sub_id sublattice = -1);
 
 protected:
     /// Create a new Green's strategy object for the given Hamiltonian

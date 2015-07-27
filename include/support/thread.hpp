@@ -1,7 +1,13 @@
 #pragma once
+#include "utils/Chrono.hpp"
+#include "support/uref.hpp"
+
 #include <thread>
 #include <queue>
 #include <condition_variable>
+
+
+namespace tbm {
 
 template<class T>
 class Queue {
@@ -107,3 +113,111 @@ private:
 };
 
 #endif
+
+
+class DeferredBase {
+public:
+    virtual void compute() = 0;
+    virtual std::string report() = 0;
+    virtual DenseURef result_uref() = 0;
+};
+
+template<class Result>
+class Deferred : public DeferredBase {
+    using Compute = std::function<void(Result&)>;
+    using Report = std::function<std::string()>;
+
+public:
+    Deferred(Compute compute, Report report)
+        : _compute(compute), _report(report)
+    {}
+
+    void compute() final {
+        if (is_computed)
+            return;
+
+        timer.tic();
+        _compute(_result);
+        timer.toc();
+        is_computed = true;
+    }
+
+    std::string report() final {
+        return _report() + " " + timer.str();
+    }
+
+    Result result() {
+        compute();
+        return _result;
+    }
+
+    DenseURef result_uref() final {
+        compute();
+        return _result;
+    }
+
+private:
+    Compute _compute;
+    Report _report;
+    Result _result;
+
+    bool is_computed = false;
+    Chrono timer;
+};
+
+
+template<class Produce, class Compute, class Report>
+void sweep(size_t size, size_t num_threads, size_t queue_size,
+           Produce produce, Compute compute, Report report)
+{
+#ifdef TBM_USE_MKL
+    MKLDisableThreading disable_mkl_internal_threading_if{num_threads > 1};
+#endif
+
+    using Value = decltype(produce(size_t{}));
+    struct Job {
+        size_t id;
+        Value value;
+    };
+
+    Queue<Job> work_queue{queue_size > 0 ? queue_size : num_threads};
+    Queue<Job> report_queue{};
+
+    // This thread produces new jobs and adds them to the work queue
+    std::thread production_thread([&] {
+        QueueGuard<Job> guard{work_queue};
+        for (auto id = 0u; id < size; ++id) {
+            work_queue.push({id, produce(id)});
+        }
+    });
+
+    // Multiple threads consume the work queue and add the computed jobs to the report queue
+    auto work_threads = std::vector<std::thread>{num_threads};
+    for (auto& thread : work_threads) {
+        thread = std::thread([&] {
+            QueueGuard<Job> guard{report_queue};
+            while (auto maybe_job = work_queue.pop()) {
+                auto job = maybe_job.get();
+                compute(job.value);
+                report_queue.push(std::move(job));
+            }
+        });
+    }
+
+    // This thread consumes the report queue
+    std::thread report_thread([&] {
+        while (auto maybe_job = report_queue.pop()) {
+            auto job = maybe_job.get();
+            report(std::move(job.value), job.id);
+        }
+    });
+
+    production_thread.join();
+    for (auto& thread : work_threads) {
+        thread.join();
+    }
+    report_thread.join();
+}
+
+} // namespace tbm
+
