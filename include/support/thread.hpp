@@ -124,8 +124,11 @@ public:
 
 template<class Result>
 class Deferred : public DeferredBase {
+    using Compute = std::function<void(Result&)>;
+    using Report = std::function<std::string()>;
+
 public:
-    Deferred(std::function<Result()> compute, std::function<std::string()> report)
+    Deferred(Compute compute, Report report)
         : _compute(compute), _report(report)
     {}
 
@@ -134,7 +137,7 @@ public:
             return;
 
         timer.tic();
-        _result = _compute();
+        _compute(_result);
         timer.toc();
         is_computed = true;
     }
@@ -154,8 +157,8 @@ public:
     }
 
 private:
-    std::function<Result()> _compute;
-    std::function<std::string()> _report;
+    Compute _compute;
+    Report _report;
     Result _result;
 
     bool is_computed = false;
