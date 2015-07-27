@@ -1,8 +1,13 @@
-# linux specific code to set proper dlopen flags (MKL doesn't work otherwise)
+import os
 import sys
 if sys.platform.startswith("linux"):
-    import os
-    sys.setdlopenflags(os.RTLD_NOW | os.RTLD_GLOBAL)
+    # In case the pybinding C++ extension is compiled with MKL, it will not play nice
+    # with sparse.linalg (segfaults). As a workaround, sparse.linalg is imported first
+    # with default dlopenflags.
+    # After that RTLD_GLOBAL must be set for MKL to load properly. It's not possible
+    # to set RTLD_GLOBAL, import _pybinding (with MKL) and then reset to default flags.
+    import scipy.sparse.linalg
+    sys.setdlopenflags(sys.getdlopenflags() | os.RTLD_GLOBAL)
 
 from .model import Model
 from .lattice import Lattice, make_lattice
