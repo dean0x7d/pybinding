@@ -52,7 +52,8 @@ def _plain_sweep(variables, produce, report, num_threads=num_cores, queue_size=n
     _pybinding.sweep(variables, produce, report, num_threads, queue_size)
 
 
-def _progressbar_sweep(variables, produce, report, pbar_fd=sys.stdout, log_file="", **kwargs):
+def _progressbar_sweep(variables, produce, report, first=None,
+                       pbar_fd=sys.stdout, log_file="", **kwargs):
     """Just like '_pain_sweep' but with a nifty progress bar.
 
     Parameters
@@ -66,7 +67,13 @@ def _progressbar_sweep(variables, produce, report, pbar_fd=sys.stdout, log_file=
 
     def _produce(var):
         deferred = produce(var)
-        pbar.update()
+
+        nonlocal first
+        if first:
+            first(deferred)
+            first = None
+            pbar.update()
+
         return deferred
 
     def _report(deferred, job_id):
@@ -126,14 +133,11 @@ def sweep(variables, produce, report=None, first=None, file="", save_every=10,
     save_at |= {last}  # make sure progress is saved on the last iteration
     silent = kwargs.pop('silent', False)
 
-    def _produce(var):
-        deferred = produce(var)
-        if result.data.shape == (1, 1):
-            result.y = deferred.y
-            result.data = np.zeros((len(variables), len(deferred.y)), np.float32)
-            if first:
-                first(deferred)
-        return deferred
+    def _first(deferred):
+        result.y = deferred.y
+        result.data = np.zeros((len(variables), len(deferred.y)), np.float32)
+        if first:
+            first(deferred)
 
     def save_progress():
         if file:
@@ -164,5 +168,5 @@ def sweep(variables, produce, report=None, first=None, file="", save_every=10,
             if self.count - 1 in save_at:
                 save_progress()
 
-    _progressbar_sweep(variables, _produce, Report(), **kwargs)
+    _progressbar_sweep(variables, produce, Report(), _first, **kwargs)
     return result
