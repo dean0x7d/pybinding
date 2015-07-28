@@ -23,12 +23,11 @@ std::tuple<real_t, real_t, int>
     auto precision = precision_percent / 100;
     const auto matrix_size = static_cast<int>(matrix.rows());
 
-    // Starting right vector -> initial value is random, normalized
+    VectorX<scalar_t> left = VectorX<scalar_t>::Zero(matrix_size);
+    VectorX<scalar_t> right_previous = VectorX<scalar_t>::Zero(matrix_size);
+
     VectorX<scalar_t> right = VectorX<scalar_t>::Random(matrix_size);
     right.normalize();
-    // Initial values for right_previous and left are not important
-    VectorX<scalar_t> right_previous{matrix_size};
-    VectorX<scalar_t> left{matrix_size};
 
     // Alpha and beta are the diagonals of the tridiagonal matrix.
     // The final size is not known ahead of time, but it will be small.
