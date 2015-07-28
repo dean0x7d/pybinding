@@ -117,16 +117,16 @@ class SpatialMap:
 
     def plot_pcolor(self, **kwargs):
         x, y, _ = self.pos
-        pcolor = plt.tripcolor(x, y, self.data,
-                               **with_defaults(kwargs, cmap='YlGnBu', shading='gouraud'))
+        kwargs = with_defaults(kwargs, cmap='YlGnBu', shading='gouraud', rasterized=True)
+        pcolor = plt.tripcolor(x, y, self.data, **kwargs)
         self._decorate_plot()
         return pcolor
 
     def plot_contourf(self, num_levels=50, **kwargs):
         levels = np.linspace(self.data.min(), self.data.max(), num=num_levels)
         x, y, _ = self.pos
-        contourf = plt.tricontourf(x, y, self.data,
-                                   **with_defaults(kwargs, cmap='YlGnBu', levels=levels))
+        kwargs = with_defaults(kwargs, cmap='YlGnBu', levels=levels, rasterized=True)
+        contourf = plt.tricontourf(x, y, self.data, **kwargs)
         self._decorate_plot()
         return contourf
 
@@ -402,8 +402,8 @@ class Sweep:
         return self.data[:, idx], self.y[idx]
 
     def plot(self, cbar_props=None, **kwargs):
-        mesh = plt.pcolormesh(self.x, self.y, self.data.T,
-                              **with_defaults(kwargs, cmap='RdYlBu_r'))
+        kwargs = with_defaults(kwargs, cmap='RdYlBu_r', rasterized=True)
+        mesh = plt.pcolormesh(self.x, self.y, self.data.T, **kwargs)
         plt.xlim(self.x.min(), self.x.max())
         plt.ylim(self.y.min(), self.y.max())
 
