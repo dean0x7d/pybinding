@@ -95,7 +95,7 @@ def plot(request):
 
 
 def fuzzy_equal(data, expected, rtol=1e-05, atol=1e-08):
-    """Recusively compares strutures of ndarrays using np.allclose()"""
+    """Recursively compares structures of ndarrays using np.allclose()"""
     tol = rtol, atol
     if isinstance(data, np.ndarray):
         return np.allclose(data, expected, *tol)

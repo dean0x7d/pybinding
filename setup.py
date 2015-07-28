@@ -50,7 +50,7 @@ setup(
     long_description='',
     url='https://github.com/dean0x7d/pybinding',
     license='BSD',
-    keywords='pybinding tigh-binding tighbinding cmt',
+    keywords='pybinding tight-binding physics cmt',
 
     author='Dean Moldovan',
     author_email='dean.moldovan@uantwerpen.be',
