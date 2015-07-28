@@ -140,7 +140,7 @@ def sweep(variables, produce, report=None, first=None, file="", save_every=10,
             result.save(file + ".pbz")
 
         if file and plot:
-            plot(result)
+            plot(result.copy())
             plt.savefig(file + ".png")
             plt.close()
 
