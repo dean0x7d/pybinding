@@ -1,6 +1,9 @@
 import pytest
+
 import numpy as np
 import matplotlib.pyplot as plt
+
+import pybinding as pb
 
 
 def pytest_addoption(parser):
@@ -38,28 +41,19 @@ def _make_file_path(request, directory: str, name: str='', ext: str=''):
 
 @pytest.fixture
 def baseline(request):
+    """Return baseline data for this result. If non exist create it."""
     def get_expected(result, group=''):
-        isarray = isinstance(result, np.ndarray)
-
         name = request.node.name.replace('test_', '')
         if group:
+            # replace 'some[thing]' with 'group[thing]'
             part = name.partition('[')
             name = group + part[1] + part[2]
 
-        ext = '.npz' if isarray else '.pbz'
-        file_path = _make_file_path(request, 'baseline_data', name, ext)
-        file_str = str(file_path)
-
-        if not request.config.getoption("--savebaseline") and file_path.exists():
-            if isarray:
-                return np.load(file_str)['data']
-            else:
-                return result.__class__.from_file(file_str)
+        file = _make_file_path(request, 'baseline_data', name, '.pbz')
+        if not request.config.getoption("--savebaseline") and file.exists():
+            return pb.load(file)
         else:
-            if isarray:
-                np.savez_compressed(file_str, data=result)
-            else:
-                result.save(file_str)
+            pb.save(result, file)
             return result
 
     return get_expected

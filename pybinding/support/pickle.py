@@ -1,19 +1,60 @@
-import pickle
+import os
 import gzip
+import pickle
+import pathlib
 from functools import wraps
 from collections import namedtuple
 
-__all__ = ['pickleable']
+__all__ = ['pickleable', 'save', 'load']
 
 
-def _save(self, file_name):
-    with gzip.open(file_name, 'wb') as file:
-        pickle.dump(self, file, protocol=4)
+def _normalize(file):
+    """Convenience function to support path objects."""
+    if 'Path' in type(file).__name__:
+        return str(file)
+    else:
+        return file
 
 
-def _from_file(_, file_name):
-    with gzip.open(file_name, 'rb') as file:
-        return pickle.load(file)
+def _add_extension(file):
+    if not isinstance(file, str):
+        return file
+
+    path = pathlib.Path(file)
+    if not path.suffix:
+        return str(path.with_suffix('.pbz'))
+    else:
+        return file
+
+
+def save(obj, file, add_pbz_extension=True):
+    """Pickle an object and save it to a compressed file.
+
+    This functions wraps pickle.dump() with a few conveniences:
+     - file may be a str, a pathlib object or a file object created with open()
+     - pickle protocol 4 is used and the data is compressed with gzip
+     - the '.pbz' extension is added if file has none
+    """
+    file = _normalize(file)
+    if add_pbz_extension:
+        file = _add_extension(file)
+
+    with gzip.open(file, 'wb') as f:
+        pickle.dump(obj, f, protocol=4)
+
+
+def load(file):
+    """Load a pickled object from a compressed file.
+
+    This functions wraps pickle.load() with the same conveniences as pb.save().
+    """
+    file = _normalize(file)
+    file_ext = _add_extension(file)
+    if isinstance(file, str) and not os.path.exists(file) and os.path.exists(file_ext):
+        file = file_ext
+
+    with gzip.open(file, 'rb') as f:
+        return pickle.load(f)
 
 
 def _check_version(self, data, version):
@@ -91,6 +132,6 @@ def pickleable(props='', impl='', version: int=0):
             cls.__getstate_manages_dict__ = True  # enables boost_python pickling
 
         return _override_methods(cls, __getstate__=getstate, __setstate__=setstate,
-                                 save=_save, from_file=classmethod(_from_file))
+                                 save=save, from_file=staticmethod(load))
 
     return decorator
