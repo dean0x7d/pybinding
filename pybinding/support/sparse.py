@@ -1,9 +1,9 @@
-import _pybinding
+from .. import _cpp
 from scipy.sparse import csr_matrix
 
 
 class SparseMatrix:
-    def __init__(self, impl: _pybinding.SparseURef):
+    def __init__(self, impl: _cpp.SparseURef):
         self.impl = impl
 
     def __getstate__(self):

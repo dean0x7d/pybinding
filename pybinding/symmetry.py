@@ -1,4 +1,4 @@
-import _pybinding
+from . import _cpp
 
 
 def translational(v1=None, v2=None, v3=None):
@@ -18,4 +18,4 @@ def translational(v1=None, v2=None, v3=None):
     else:
         lengths = 0,
 
-    return _pybinding.Translational(lengths)
+    return _cpp.Translational(lengths)

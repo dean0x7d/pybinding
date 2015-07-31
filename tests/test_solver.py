@@ -1,11 +1,10 @@
 import pytest
 
-import _pybinding
 import pybinding as pb
 from pybinding.repository import graphene
 
 solvers = ['arpack']
-if hasattr(_pybinding, 'FEAST'):
+if hasattr(pb._cpp, 'FEAST'):
     solvers.append('feast')
 
 models = {

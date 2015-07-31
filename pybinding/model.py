@@ -1,12 +1,12 @@
 from scipy.sparse import csr_matrix
 
-import _pybinding
+from . import _cpp
 from .system import System
 from .lattice import Lattice
 from .support.sparse import SparseMatrix
 
 
-class Model(_pybinding.Model):
+class Model(_cpp.Model):
     def __init__(self, *params):
         super().__init__()
         self.add(*params)

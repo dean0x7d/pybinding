@@ -1,6 +1,6 @@
 import inspect
 import numpy as np
-import _pybinding
+from . import _cpp
 
 __all__ = ['site_state', 'site_position', 'onsite_energy', 'hopping_energy']
 
@@ -78,24 +78,24 @@ def _make_modifier_decorator(base_modifier, keywords: str, num_return=1, maybe_c
 
 
 site_state = _make_modifier_decorator(
-    _pybinding.SiteStateModifier,
+    _cpp.SiteStateModifier,
     keywords="state, x, y, z"
 )
 
 site_position = _make_modifier_decorator(
-    _pybinding.PositionModifier,
+    _cpp.PositionModifier,
     keywords="x, y, z",
     num_return=3
 )
 
 onsite_energy = _make_modifier_decorator(
-    _pybinding.OnsiteModifier,
+    _cpp.OnsiteModifier,
     keywords="potential, x, y, z",
     maybe_complex=True
 )
 
 hopping_energy = _make_modifier_decorator(
-    _pybinding.HoppingModifier,
+    _cpp.HoppingModifier,
     keywords="hopping, x1, y1, z1, x2, y2, z2",
     maybe_complex=True
 )

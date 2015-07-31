@@ -3,7 +3,7 @@ import sys
 import numpy as np
 import matplotlib.pyplot as plt
 
-import _pybinding
+from . import _cpp
 from .utils import cpuinfo, progressbar
 from .results import Sweep
 
@@ -49,7 +49,7 @@ def _plain_sweep(variables, produce, report, num_threads=num_cores, queue_size=n
 
     _plain_sweep(np.linspace(0, 1, 50), produce, report)
     """
-    _pybinding.sweep(variables, produce, report, num_threads, queue_size)
+    _cpp.sweep(variables, produce, report, num_threads, queue_size)
 
 
 def _progressbar_sweep(variables, produce, report, first=None,

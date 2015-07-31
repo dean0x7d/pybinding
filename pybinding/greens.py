@@ -1,6 +1,6 @@
 import numpy as np
 
-import _pybinding
+from . import _cpp
 from .results import LDOSpoint
 from .model import Model
 from .system import System
@@ -9,7 +9,7 @@ __all__ = ['Greens', 'make_kpm']
 
 
 class Greens:
-    def __init__(self, impl: _pybinding.Greens):
+    def __init__(self, impl: _cpp.Greens):
         self.impl = impl
 
     @property
@@ -38,4 +38,4 @@ class Greens:
 
 
 def make_kpm(model, lambda_value=4.0, energy_range=(0.0, 0.0)):
-    return Greens(_pybinding.KPM(model, lambda_value, energy_range))
+    return Greens(_cpp.KPM(model, lambda_value, energy_range))

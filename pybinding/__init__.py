@@ -9,6 +9,8 @@ if sys.platform.startswith("linux"):
     import scipy.sparse.linalg
     sys.setdlopenflags(sys.getdlopenflags() | os.RTLD_GLOBAL)
 
+import _pybinding as _cpp
+
 from .model import Model
 from .lattice import Lattice, make_lattice
 from .results import make_path

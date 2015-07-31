@@ -3,7 +3,7 @@ from collections import namedtuple
 import numpy as np
 from scipy.sparse import coo_matrix
 
-import _pybinding
+from . import _cpp
 from . import pltutils
 from .utils import with_defaults
 from .support.sparse import SparseMatrix
@@ -14,7 +14,7 @@ Positions = namedtuple('Positions', 'x y z')
 
 @pickleable(impl='shift hoppings.')
 class Boundary:
-    def __init__(self, impl: _pybinding.Boundary):
+    def __init__(self, impl: _cpp.Boundary):
         self.impl = impl
 
     @property
@@ -28,7 +28,7 @@ class Boundary:
 
 @pickleable(impl='positions sublattices hoppings. boundaries[]')
 class System:
-    def __init__(self, impl: _pybinding.System):
+    def __init__(self, impl: _cpp.System):
         self.impl = impl
 
     @property

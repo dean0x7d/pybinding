@@ -1,7 +1,7 @@
 from cpuinfo import cpuinfo
 _info = cpuinfo.get_cpu_info()
 try:
-    from _pybinding import get_max_threads
+    from ._cpp import get_max_threads
     physical_thread_count = get_max_threads()
     del get_max_threads
 except ImportError:

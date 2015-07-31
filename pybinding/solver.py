@@ -2,7 +2,7 @@ import time
 
 import numpy as np
 
-import _pybinding
+from . import _cpp
 from . import results
 from .system import System
 from .support.pickle import pickleable
@@ -12,7 +12,7 @@ __all__ = ['Solver', 'make_feast', 'make_lapack', 'make_arpack']
 
 @pickleable(impl='system. eigenvalues eigenvectors')
 class Solver:
-    def __init__(self, impl: _pybinding.Solver):
+    def __init__(self, impl: _cpp.Solver):
         self.impl = impl
 
     def solve(self):
@@ -173,7 +173,7 @@ def make_arpack(model, num_eigenvalues, sigma=1e-5, **kwargs):
 
 def make_feast(model, energy_range, initial_size_guess, recycle_subspace=False, is_verbose=False):
     try:
-        return Solver(_pybinding.FEAST(model, energy_range, initial_size_guess,
+        return Solver(_cpp.FEAST(model, energy_range, initial_size_guess,
                                        recycle_subspace, is_verbose))
     except AttributeError:
         raise Exception("The module was compiled without the FEAST solver.\n"

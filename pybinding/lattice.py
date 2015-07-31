@@ -4,7 +4,7 @@ from collections import OrderedDict
 import numpy as np
 import matplotlib.pyplot as plt
 
-import _pybinding
+from . import _cpp
 from . import pltutils
 from .utils import x_pi, with_defaults
 from .support.pickle import pickleable
@@ -13,7 +13,7 @@ __all__ = ['Lattice', 'make_lattice', 'square']
 
 
 @pickleable(props='sublattices hopping_energies min_neighbors')
-class Lattice(_pybinding.Lattice):
+class Lattice(_cpp.Lattice):
     def __init__(self, a1, a2=None, a3=None):
         vectors = (np.atleast_1d(v) for v in (a1, a2, a3) if v is not None)
         super().__init__(*vectors)

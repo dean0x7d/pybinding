@@ -1,14 +1,14 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
-import _pybinding
+from . import _cpp
 from . import pltutils
 from .utils import with_defaults
 
 __all__ = ['Polygon', 'Circle', 'primitive', 'rectangle', 'regular_polygon', 'circle']
 
 
-class Polygon(_pybinding.Polygon):
+class Polygon(_cpp.Polygon):
     """Shape defined by a list of vertices
 
     Parameters
@@ -47,7 +47,7 @@ class Polygon(_pybinding.Polygon):
         pltutils.add_margin()
 
 
-class Circle(_pybinding.Circle):
+class Circle(_cpp.Circle):
     def plot(self, **kwargs):
         plt.gca().add_artist(plt.Circle(tuple(self.center), self.r, fill=False,
                                         **with_defaults(kwargs, color='black')))
@@ -69,7 +69,7 @@ def primitive(v1=None, v2=None, v3=None, nanometers=False):
     """
 
     lengths = tuple((v or 0) for v in (v1, v2, v3))
-    return _pybinding.Primitive(lengths, nanometers)
+    return _cpp.Primitive(lengths, nanometers)
 
 
 def rectangle(x, y=None):
