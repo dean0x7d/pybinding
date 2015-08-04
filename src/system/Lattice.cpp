@@ -43,9 +43,6 @@ hop_id Lattice::add_hopping(Index3D rel_index, sub_id from_sub, sub_id to_sub,
 }
 
 hop_id Lattice::register_hopping_energy(std::complex<double> energy) {
-    if (energy == .0)
-        throw std::logic_error{"Hopping energy must not be zero."};
-
     auto const hopping_id = static_cast<hop_id>(hopping_energies.size());
     if (hopping_id == std::numeric_limits<hop_id>::max())
         throw std::logic_error{"Can't create any more hoppings: " + std::to_string(hopping_id)};

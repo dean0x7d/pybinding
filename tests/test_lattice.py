@@ -58,10 +58,6 @@ def test_add_sublattice(mock_lattice):
 
 def test_add_hopping(mock_lattice):
     with pytest.raises(RuntimeError) as excinfo:
-        mock_lattice.add_one_hopping((0,  1), 'a', 'a', 0)
-    assert "Hopping energy must not be zero" in str(excinfo.value)
-
-    with pytest.raises(RuntimeError) as excinfo:
         mock_lattice.add_one_hopping((0,  0), 'a', 'b', 1)
     assert "hopping already exists" in str(excinfo.value)
 
