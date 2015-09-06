@@ -1,4 +1,8 @@
 #pragma once
+#ifdef _MSC_VER
+# pragma warning(disable: 4579) // in-class static constexpr cannot be used at runtime
+#endif
+
 #include "greens/Greens.hpp"
 #include "system/Lattice.hpp"
 #include "support/sparse.hpp"

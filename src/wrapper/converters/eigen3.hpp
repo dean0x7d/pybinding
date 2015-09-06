@@ -35,9 +35,9 @@ namespace boost { namespace python {
 
 struct denseuref_to_python {
     static PyObject* convert(const DenseURef& u) {
-        int ndim = (u.rows == 1 || u.cols == 1) ? 1 : 2;
+        auto const ndim = (u.rows == 1 || u.cols == 1) ? 1 : 2;
 
-        npy_intp shape[ndim];
+        npy_intp shape[2];
         if (ndim == 1) { // row or column vector
             shape[0] = u.is_row_major ? u.cols : u.rows;
         }
