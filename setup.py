@@ -9,8 +9,12 @@ from setuptools.command.build_ext import build_ext
 from setuptools.command.egg_info import manifest_maker
 
 
-if sys.version_info.major < 3:
-    print("Sorry, Python 3 is required")
+if sys.version_info[:2] < (3, 4):
+    print("Python >= 3.4 is required. It must also be 64-bit.")
+    sys.exit(-1)
+
+if sys.maxsize <= 2**32:
+    print("A 64-bit version of Python >= 3.4 is required")
     sys.exit(-1)
 
 
@@ -22,9 +26,6 @@ class CMakeExtension(Extension):
 
 class CMakeBuild(build_ext):
     def run(self):
-        if platform.system() == "Windows":
-            return
-
         if shutil.which('cmake') is None:
             print("CMake 3.0 or newer is required to build pybinding")
             sys.exit(-1)
@@ -38,8 +39,12 @@ class CMakeBuild(build_ext):
             extfulldir = os.path.abspath(os.path.dirname(extpath))
             cmake_args = ['-DCMAKE_LIBRARY_OUTPUT_DIRECTORY=' + extfulldir]
 
+            if platform.system() == "Windows":
+                cmake_args += ['-DCMAKE_LIBRARY_OUTPUT_DIRECTORY_RELEASE=' + extfulldir]
+                cmake_args += ['-G', 'Visual Studio 14 2015 Win64']
+
             subprocess.check_call(['cmake', cmake_dir] + cmake_args, cwd=build_dir)
-            subprocess.check_call(['make', '-j4'], cwd=build_dir)
+            subprocess.check_call(['cmake', '--build', '.', '--config', 'Release'], cwd=build_dir)
 
 
 manifest_maker.template = "setup.manifest"
