@@ -29,7 +29,8 @@ struct DenseURef {
     DenseURef(const Eigen::DenseBase<Derived>& v)
         : type{::detail::get_type<typename Derived::Scalar>()},
           data(v.derived().data()), is_row_major(Derived::IsRowMajor),
-          rows(v.derived().rows()), cols(v.derived().cols())
+          rows(static_cast<int>(v.derived().rows())),
+          cols(static_cast<int>(v.derived().cols()))
     {}
 };
 

@@ -16,7 +16,9 @@ SymmetrySpec Translational::build_for(const Foundation& foundation) const
             continue; // not periodic
 
         // number of lattice sites in one period length
-        int num_lattice_sites = std::round(length[n] / foundation.lattice.vectors[n].norm());
+        auto num_lattice_sites = static_cast<int>(std::round(
+            length[n] / foundation.lattice.vectors[n].norm()
+        ));
         if (num_lattice_sites == 0)
             num_lattice_sites = 1;
 
@@ -62,10 +64,11 @@ void SymmetrySpec::add_translation(const Index3D& direction, const Lattice& latt
             translation.boundary[n] = right[n];
     }
 
-    // translation shift length
     translation.shift_lenght.setZero();
-    for (std::size_t n = 0; n < lattice.vectors.size(); ++n)
-        translation.shift_lenght += direction[n] * middle[n] * lattice.vectors[n];
+    for (std::size_t n = 0; n < lattice.vectors.size(); ++n) {
+        auto const shift = static_cast<float>(direction[n] * middle[n]);
+        translation.shift_lenght += shift * lattice.vectors[n];
+    }
 
     // translation shift in number of lattice sites
     translation.shift_index = direction.cwiseProduct(middle);

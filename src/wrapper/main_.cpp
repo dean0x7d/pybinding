@@ -17,7 +17,7 @@ void export_parallel();
 
 BOOST_PYTHON_MODULE(_pybinding) {
     // init numpy and register converters
-    import_array1();
+    import_array1(void());
     eigen3_numpy_register_type<ArrayXf>();
     eigen3_numpy_register_type<ArrayXd>();
     eigen3_numpy_register_type<ArrayXcf>();

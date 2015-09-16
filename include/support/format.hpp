@@ -45,7 +45,7 @@ inline std::string str(const std::string& s) { return s; }
 namespace detail {
     inline const char* norm_arg(const std::string& x) { return x.c_str(); }
 
-    template<class T> cpp14::enable_if_t<std::is_integral<T>::value, long> norm_arg(T x) { return x; }
+    template<class T> cpp14::enable_if_t<std::is_integral<T>::value, std::int64_t> norm_arg(T x) { return x; }
     template<class T> cpp14::enable_if_t<std::is_floating_point<T>::value, double> norm_arg(T x) { return x; }
     template<class T> cpp14::enable_if_t<std::is_pointer<T>::value, T> norm_arg(T x) { return x; }
 
@@ -64,12 +64,12 @@ namespace detail {
 
     template<class T>
     inline std::string conversion_specifier(const T* t) { return ".0s" + str(*t); }
-    inline constexpr char conversion_specifier(long) { return 'd'; }
+    inline constexpr char conversion_specifier(std::int64_t) { return 'd'; }
     inline constexpr char conversion_specifier(double) { return 'f'; }
     inline constexpr char conversion_specifier(const char*) { return 's'; }
 
     template<class T> inline bool check_specifier(char) { return false; }
-    template<> inline bool check_specifier<long>(char type) { return type == 'd' || type == 'i'; }
+    template<> inline bool check_specifier<std::int64_t>(char type) { return type == 'd' || type == 'i'; }
     template<> inline bool check_specifier<double>(char type) { return type == 'f' || type == 'g' || type == 'e'; }
     template<> inline bool check_specifier<const char*>(char type) { return type == 's'; }
 

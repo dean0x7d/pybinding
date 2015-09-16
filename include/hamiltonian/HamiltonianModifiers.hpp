@@ -74,7 +74,8 @@ void HamiltonianModifiers::apply_to_onsite(System const& system, Fn lambda) cons
     if (system.lattice.has_onsite_potential) {
         potential.resize(num_sites);
         transform(system.sublattices, potential, [&](sub_id id) {
-            return static_cast<scalar_t>(system.lattice[id].onsite);
+            using real_t = num::get_real_t<scalar_t>;
+            return static_cast<real_t>(system.lattice[id].onsite);
         });
     }
 

@@ -101,8 +101,8 @@ int KPMStrategy<scalar_t>::scale_and_reorder_hamiltonian(int target_index, int t
             }
 
             // This may be a new index, map it
-            if (reorder_map[it.col()] == -1) {
-                reorder_map[it.col()] = index_queue.size();
+            if (reorder_map[it.col()] < 0) {
+                reorder_map[it.col()] = static_cast<int>(index_queue.size());
                 index_queue.push_back(it.col());
             }
 
@@ -121,7 +121,7 @@ int KPMStrategy<scalar_t>::scale_and_reorder_hamiltonian(int target_index, int t
 
         // Store the system size for the next KPM iteration
         if (h2_row == reordered_steps.back() - 1)
-            reordered_steps.push_back(index_queue.size());
+            reordered_steps.push_back(static_cast<int>(index_queue.size()));
     } // end main loop
 
     h2_matrix.makeCompressed();
@@ -237,7 +237,7 @@ ArrayX<scalar_t> KPMStrategy<scalar_t>::calculate_moments(int i, int j) const
     };
 
     for (int n = 0; n < num_moments; ++n)
-        moments[n] *= lorentz_kernel(n);
+        moments[n] *= lorentz_kernel(static_cast<real_t>(n));
 
     return moments;
 };
@@ -250,7 +250,7 @@ auto KPMStrategy<scalar_t>::calculate_greens(const ArrayX<real_t>& energy,
     // Note that this integer array has real type values
     ArrayX<real_t> ns{moments.size()};
     for (int n = 0; n < ns.size(); ++n)
-        ns[n] = n;
+        ns[n] = static_cast<real_t>(n);
 
     // Green's is a function of energy
     ArrayX<complex_t> greens{energy.size()};

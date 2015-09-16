@@ -29,7 +29,7 @@ Foundation::Foundation(const Lattice& lattice, const Shape& shape)
     // the foundation is a Bravais lattice
     Cartesian width = Cartesian::Zero();
     for (std::size_t i = 0; i < lattice.vectors.size(); ++i)
-        width += (size[i] - 1) * lattice.vectors[i];
+        width += static_cast<float>(size[i] - 1) * lattice.vectors[i];
     origin = shape.center() - width / 2;
 
     // The total number of site states also includes the sublattices
@@ -79,7 +79,7 @@ Cartesian Foundation::calculate_position(const Site& site) const
     Cartesian position = origin;
     // + unit cell position (Bravais lattice)
     for (std::size_t i = 0; i < lattice.vectors.size(); ++i) {
-        position += site.index[i] * lattice.vectors[i];
+        position += static_cast<float>(site.index[i]) * lattice.vectors[i];
     }
     // + sublattice offset
     position += lattice[site.sublattice].offset;

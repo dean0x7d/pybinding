@@ -10,13 +10,13 @@
 namespace tbm {
 
 struct KPMConfig {
-    float lambda = 4.0; ///< controls the accuracy of the kernel polynomial method
-    float min_energy = 0.0; ///< lowest eigenvalue of the Hamiltonian
-    float max_energy = 0.0; ///< highest eigenvalue of the Hamiltonian
+    float lambda = 4.0f; ///< controls the accuracy of the kernel polynomial method
+    float min_energy = 0.0f; ///< lowest eigenvalue of the Hamiltonian
+    float max_energy = 0.0f; ///< highest eigenvalue of the Hamiltonian
 
     bool use_reordering = true; ///< Hamiltonian reordering optimization
-    float lanczos_precision = 0.002; ///< how precise should the min/max energy estimation be
-    float scaling_tolerance = 0.01; ///< the eigenvalue bounds are not precise
+    float lanczos_precision = 0.002f; ///< how precise should the min/max energy estimation be
+    float scaling_tolerance = 0.01f; ///< the eigenvalue bounds are not precise
 };
 
 /**

@@ -34,13 +34,14 @@ boost_python_add_module(_pybinding
     src/wrapper/system_.cpp
 )
 
-target_include_directories(_pybinding
-    PUBLIC include
-    PRIVATE ${NUMPY_INCLUDE_DIRS}
-    PRIVATE ${EIGEN3_INCLUDE_DIR}
-)
+target_include_directories(_pybinding PUBLIC include)
+target_include_directories(_pybinding SYSTEM
+                           PUBLIC ${EIGEN3_INCLUDE_DIR}
+                           PRIVATE ${NUMPY_INCLUDE_DIRS})
 
-target_compile_options(_pybinding PUBLIC -std=c++11)
+if(NOT WIN32)
+    target_compile_options(_pybinding PUBLIC -std=c++11)
+endif()
 
 if(${CMAKE_CXX_COMPILER_ID} STREQUAL Clang)
 elseif(${CMAKE_CXX_COMPILER_ID} STREQUAL GNU)
@@ -53,6 +54,12 @@ elseif(${CMAKE_CXX_COMPILER_ID} STREQUAL Intel)
         target_link_libraries(_pybinding PRIVATE -mkl=parallel)
     endif()
 elseif(${CMAKE_CXX_COMPILER_ID} STREQUAL MSVC)
+endif()
+
+if(WIN32)
+    target_compile_options(_pybinding PRIVATE /W3)
+else()
+    target_compile_options(_pybinding PRIVATE -Wall -Wextra)
 endif()
 
 if(NOT CMAKE_LIBRARY_OUTPUT_DIRECTORY)

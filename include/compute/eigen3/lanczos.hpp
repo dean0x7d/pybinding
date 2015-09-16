@@ -57,7 +57,7 @@ inline ArrayX<scalar_t> tridiagonal_eigenvalues(const DenseBase<Derived>& alpha,
     ArrayX<scalar_t> temp = beta;
 
     auto start = 0;
-    auto end = eigenvalues.size() - 1;
+    auto end = static_cast<int>(eigenvalues.size()) - 1;
     auto iter = 0;
     constexpr auto max_iterations = 30;
 

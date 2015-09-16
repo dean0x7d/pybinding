@@ -58,10 +58,10 @@ bool Circle::contains(const Cartesian& point) const {
 std::vector<Cartesian> Circle::bounding_vectors() const {
     std::vector<Cartesian> bounding_vectors;
 
-    bounding_vectors.emplace_back(0, 2*radius, 0);
-    bounding_vectors.emplace_back(2*radius, 0, 0);
-    bounding_vectors.emplace_back(0, -2*radius, 0);
-    bounding_vectors.emplace_back(-2*radius, 0 , 0);
+    bounding_vectors.emplace_back(.0f, 2*radius, .0f);
+    bounding_vectors.emplace_back(2*radius, .0f, .0f);
+    bounding_vectors.emplace_back(.0f, -2*radius, .0f);
+    bounding_vectors.emplace_back(-2*radius, .0f , .0f);
 
     return bounding_vectors;
 }
@@ -77,7 +77,7 @@ bool Polygon::contains(const Cartesian& point) const {
         const auto& y1 = y[i]; const auto& y2 = y[j];
 
         // we shoot the ray along the x direction
-        if (y1 > point.y() == y2 > point.y())
+        if ((y1 > point.y()) == (y2 > point.y()))
             continue; // the ray does not intersect this side of the polygon
         
         // the slope of this side
@@ -106,7 +106,7 @@ std::vector<Cartesian> Polygon::bounding_vectors() const {
 
     // loop over all sides of the polygon
     for (int i = 0, j = (int)x.size()-1; i < x.size(); j = i++) {
-        bounding_vectors.emplace_back(x[i] - x[j], y[i] - y[j], 0);
+        bounding_vectors.emplace_back(x[i] - x[j], y[i] - y[j], .0f);
     }
 
     return bounding_vectors;

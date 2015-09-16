@@ -38,7 +38,7 @@ DenseURef Solver::eigenvectors() {
     return strategy->eigenvectors();
 }
 
-ArrayXd Solver::calc_dos(ArrayXd target_energies, double broadening) {
+ArrayXd Solver::calc_dos(ArrayXf target_energies, float broadening) {
     ArrayXd dos(target_energies.size());
 
     // TODO: also handle <double>
@@ -47,7 +47,7 @@ ArrayXd Solver::calc_dos(ArrayXd target_energies, double broadening) {
     auto const sqrt_pi = sqrt(physics::pi);
 
     // calculate DOS(E) = 1/(sqrt(pi)*G) * sum(exp((En-E)^2 / G^2))
-    transform(target_energies, dos, [&](const double E) {
+    transform(target_energies, dos, [&](const float E) {
         auto gaussian = exp(-(energies - E).square() * inverted_broadening);
         return 1 / (sqrt_pi * broadening) * sum(gaussian);
     });
@@ -55,7 +55,7 @@ ArrayXd Solver::calc_dos(ArrayXd target_energies, double broadening) {
     return dos;
 }
 
-ArrayXd Solver::calc_ldos(double target_energy, double broadening, sub_id target_sublattice) {
+ArrayXd Solver::calc_ldos(float target_energy, float broadening, sub_id target_sublattice) {
     auto const& sys = *system();
     auto const system_size = sys.num_sites();
     ArrayXd ldos = ArrayXd::Zero(system_size);
