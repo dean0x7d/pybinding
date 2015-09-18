@@ -182,14 +182,25 @@ std::string format(std::string fmt, Ts&&... ts) {
     return fmt;
 }
 
-inline std::string with_suffix(int number) {
-    // number to string with SI suffix, e.g.: 14226 -> 14.2k, 5395984 -> 5.4M
-    if (number >= 1000000)
-        return format("{:.1f}M", number / 1000000.0);
-    else if (number > 1000)
-        return format("{:.1f}k", number / 1000.0);
-    else
-        return std::to_string(number);
+/**
+ Convert number to string with SI suffix, e.g.: 14226 -> 14.2k, 5395984 -> 5.39M
+ */
+inline std::string with_suffix(double number) {
+    struct Pair {
+        double value;
+        char const* suffix;
+    };
+    static constexpr Pair mapping[] = {{1e9, "G"}, {1e6, "M"}, {1e3, "k"}};
+
+    auto const result = [&]{
+        for (auto const& bucket : mapping) {
+            if (number > bucket.value)
+                return Pair{number / bucket.value, bucket.suffix};
+        }
+        return Pair{number, ""};
+    }();
+
+    return format("{value:.3g}{suffix}", result.value, result.suffix);
 }
 
 } // namespace fmt

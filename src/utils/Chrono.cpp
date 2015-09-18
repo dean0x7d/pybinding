@@ -2,9 +2,10 @@
 #include "support/format.hpp"
 using namespace std::chrono;
 
-std::string Chrono::str() const
-{
+std::string Chrono::str() const {
     using fmt::format;
+    using std::chrono::seconds;
+
     auto ret = std::string{};
 
     if (elapsed < milliseconds{1}) {
@@ -42,8 +43,7 @@ std::string Chrono::str() const
     return ret;
 }
 
-Chrono& Chrono::print(std::string msg)
-{
+Chrono& Chrono::print(std::string msg) {
     if (!msg.empty())
         msg += ": ";
 

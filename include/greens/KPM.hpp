@@ -75,6 +75,9 @@ public:
             return H2.rows(); // constant in the middle
     }
 
+    /// The unoptimized compute area is H2.nonZeros() * num_moments
+    double optimized_area(int num_moments) const;
+
 public:
     SparseMatrixX<scalar_t> H2; ///< the optimized matrix
     IndexPair original_idx = {-1, -1}; ///< indices from the original `H` matrix
@@ -95,10 +98,11 @@ class Stats {
 public:
     std::string report(bool shortform) const;
 
-    template<class scalar_t>
-    void reordering(OptimizedHamiltonian<scalar_t> oh, int num_moments, Chrono const& time);
     void lanczos(double min_energy, double max_energy, int loops, Chrono const& time);
-    void kpm(int num_moments, Chrono const& time);
+    template<class scalar_t>
+    void reordering(OptimizedHamiltonian<scalar_t> const& oh, int num_moments, Chrono const& time);
+    template<class scalar_t>
+    void kpm(OptimizedHamiltonian<scalar_t> const& oh, int num_moments, Chrono const& time);
     void greens(Chrono const& time);
 
 private:

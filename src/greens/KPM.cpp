@@ -154,6 +154,18 @@ void OptimizedHamiltonian<scalar_t>::create_reordered(SparseMatrixX<scalar_t> co
     original_idx = idx;
 }
 
+template<class scalar_t>
+double OptimizedHamiltonian<scalar_t>::optimized_area(int num_moments) const {
+    auto area = .0;
+    for (auto n = 0; n < num_moments; ++n) {
+        auto const max_row = get_optimized_size(n, num_moments);
+        auto const num_nonzeros = H2.outerIndexPtr()[max_row];
+        area += num_nonzeros;
+    }
+
+    return area;
+}
+
 
 template<class scalar_t>
 ArrayXcf Strategy<scalar_t>::calculate(int i, int j, ArrayXf energy, float broadening) {
@@ -182,7 +194,7 @@ ArrayXcf Strategy<scalar_t>::calculate(int i, int j, ArrayXf energy, float broad
     timer.tic();
     auto moments = calculate_moments(optimized_hamiltonian, num_moments);
     apply_lorentz_kernel(moments, config.lambda);
-    stats.kpm(num_moments, timer.toc());
+    stats.kpm(optimized_hamiltonian, num_moments, timer.toc());
 
     // Final Green's function (fast)
     timer.tic();
@@ -294,37 +306,32 @@ void Stats::lanczos(double min_energy, double max_energy, int loops, Chrono cons
 }
 
 template<class scalar_t>
-void Stats::reordering(OptimizedHamiltonian<scalar_t> oh, int num_moments, Chrono const& time) {
-    auto const reordered_steps_size = static_cast<int>(oh.optimized_sizes.size());
-    bool used_full_system = reordered_steps_size < num_moments / 2;
-    int limit = !used_full_system ? num_moments / 2 : reordered_steps_size;
+void Stats::reordering(OptimizedHamiltonian<scalar_t> const& oh, int num_moments, Chrono const& time) {
+    auto const nnz = static_cast<double>(oh.H2.nonZeros());
+    auto const full_area = nnz * num_moments;
+    auto const optimized_area = oh.optimized_area(num_moments);
+    auto const removed_percent = 100 * (full_area - optimized_area) / full_area;
 
-    double removed_steps = 0;
-    for (int i = 5; i < limit; i++)
-        removed_steps += oh.H2.rows() - oh.optimized_sizes[i];
-    removed_steps *= 2; // steps are removed at the start *and* end
+    bool const used_full_system = static_cast<int>(oh.optimized_sizes.size()) < num_moments / 2;
+    auto const not_efficient = !used_full_system ? "*" : "";
 
-    // Percent of total steps
-    removed_steps /= oh.H2.rows() * static_cast<double>(num_moments);
-    removed_steps *= 100;
-
-    std::string reordered_steps_str = fmt::with_suffix(reordered_steps_size);
-    if (!used_full_system)
-        reordered_steps_str += '*';
-
-    append(fmt::format("R: {reordered_steps}, {removed_percent:.0f}%",
-                       reordered_steps_str, removed_steps),
-           fmt::format("Reordering optimization applied to {reordered_steps} moments "
-                       "and removed {removed_percent:.0f}% of the workload",
-                       reordered_steps_str, removed_steps),
+    append(fmt::format("R: {removed_percent:.0f}%{not_efficient}",
+                       removed_percent, not_efficient),
+           fmt::format("The reordering optimization was able to remove "
+                       "{removed_percent:.0f}%{not_efficient} of the workload",
+                       removed_percent, not_efficient),
            time);
 }
 
-void Stats::kpm(int num_moments, Chrono const& time) {
+template<class scalar_t>
+void Stats::kpm(OptimizedHamiltonian<scalar_t> const& oh, int num_moments, Chrono const& time) {
     auto const moments_with_suffix = fmt::with_suffix(num_moments);
-    append(fmt::format("K: {num_moments}", moments_with_suffix),
-           fmt::format("Kernel Polynomial Method calculated {num_moments} moments",
-                       moments_with_suffix),
+    auto const operations_per_second = oh.optimized_area(num_moments) / time.seconds();
+    auto const ops_with_suffix = fmt::with_suffix(operations_per_second);
+
+    append(fmt::format("K: {num_moments} @ {ops}ops", moments_with_suffix, ops_with_suffix),
+           fmt::format("KPM calculated {num_moments} moments at {ops} operations per second",
+                       moments_with_suffix, ops_with_suffix),
            time);
 }
 

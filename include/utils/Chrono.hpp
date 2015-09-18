@@ -23,6 +23,10 @@ public:
         tic(); lambda(); toc();
         return *this;
     }
+
+    double seconds() const {
+        return 1e-9 * static_cast<double>(elapsed.count());
+    }
     
     std::string str() const;
     Chrono& print(std::string msg = "");
