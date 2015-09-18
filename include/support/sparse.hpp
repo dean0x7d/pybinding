@@ -107,6 +107,15 @@ public:
         process_buffer(previous_outer, previous_idx, n);
     }
 
+    /// Iterate over all elements in a single row (or column) at the 'outer' index:
+    ///     lambda(index_t inner, scalar_t value)
+    template<class F>
+    void for_each_in_row(index_t outer, F lambda) const {
+        for (auto idx = indptr[outer]; idx < indptr[outer + 1]; ++idx) {
+            lambda(indices[idx], data[idx]);
+        }
+    }
+
     /// Start iteration from some position given by 'outer' and 'data' indices
     /// and loop for 'slice_size' iterations:
     ///     lambda(index_t outer, index_t inner, scalar_t value, int current_iteration)

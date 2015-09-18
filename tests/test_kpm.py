@@ -16,12 +16,18 @@ models = {
 @pytest.fixture(scope='module', ids=list(models.keys()), params=models.values())
 def kpm(request):
     model = pb.Model(*request.param)
-    return pb.greens.make_kpm(model)
+    return pb.greens.make_kpm(model), pb.greens.make_kpm(model, use_reordering=False)
 
 
 def test_ldos(kpm, baseline, plot):
-    result = kpm.calc_ldos(energy=np.linspace(-0.6, 0.6, 200), broadening=0.03, position=(0, 0))
-    expected = baseline(result)
+    params = dict(energy=np.linspace(-0.6, 0.6, 200), broadening=0.03, position=(0, 0))
 
-    plot(result, expected, 'plot')
-    assert pytest.fuzzy_equal(result, expected, rtol=1e-3, atol=1e-6)
+    result_reordered = kpm[0].calc_ldos(**params)
+    expected = baseline(result_reordered)
+
+    plot(result_reordered, expected, 'plot')
+    assert pytest.fuzzy_equal(result_reordered, expected, rtol=1e-3, atol=1e-6)
+
+    # test 'use_reordering=False' against the same baseline data
+    result_unordered = kpm[1].calc_ldos(**params)
+    assert pytest.fuzzy_equal(result_unordered, expected, rtol=1e-3, atol=1e-6)

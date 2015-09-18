@@ -4,107 +4,178 @@
 #endif
 
 #include "greens/Greens.hpp"
-#include "system/Lattice.hpp"
 #include "support/sparse.hpp"
 
-namespace tbm {
+namespace tbm { namespace kpm {
 
-struct KPMConfig {
+struct Config {
     float lambda = 4.0f; ///< controls the accuracy of the kernel polynomial method
     float min_energy = 0.0f; ///< lowest eigenvalue of the Hamiltonian
     float max_energy = 0.0f; ///< highest eigenvalue of the Hamiltonian
 
     bool use_reordering = true; ///< Hamiltonian reordering optimization
     float lanczos_precision = 0.002f; ///< how precise should the min/max energy estimation be
-    float scaling_tolerance = 0.01f; ///< the eigenvalue bounds are not precise
 };
 
 /**
- Kernel polynomial method for calculating Green's function.
+ Computes and stores the energy bounds (min and max energy)
+ of the Hamiltonian and KPM scaling parameters `a` and `b`
  */
-template<typename scalar_t>
-class KPMStrategy : public GreensStrategyT<scalar_t> {
+template<class scalar_t>
+class Bounds {
+    using real_t = num::get_real_t<scalar_t>;
+    static constexpr auto scaling_tolerance = 0.01f; ///< the eigenvalue bounds are not precise
+
+public:
+    // Compute the bounds of Hamiltonian `H` using the Lanczos procedure
+    void compute(SparseMatrixX<scalar_t> const& H, real_t lanczos_tolerance);
+    // Set the bounds manually
+    void set(real_t min_energy, real_t max_energy);
+
+public:
+    real_t a = 0;
+    real_t b = 0;
+
+    int lanczos_loops = 0;
+    real_t min_energy, max_energy;
+};
+
+/**
+ Stores a scaled Hamiltonian `(H - b)/a` which limits it to (-1, 1) boundaries required for KPM.
+ In addition, two optimisations are applied:
+
+ 1) The matrix is multiplied by 2. This benefits most calculations (e.g. `x = 2*H*x - y`),
+    because the 2x multiplication is done only once, but it will need to be divided by 2
+    when the original element values are needed (very rarely).
+
+ 2) Reorder the elements so that the index pair (i, j) is at the start of the matrix.
+    This produces the `optimized_sizes` vector which may be used to reduce calculation
+    time by skipping sparse matrix-vector multiplication of zero values.
+ */
+template<class scalar_t>
+class OptimizedHamiltonian {
+    using real_t = num::get_real_t<scalar_t>;
+    struct IndexPair { int i, j; };
+
+public:
+    // Create the optimized Hamiltonian from `H` targeting index pair `idx`
+    void create(SparseMatrixX<scalar_t> const& H, IndexPair idx,
+                Bounds<scalar_t> bounds, bool use_reordering);
+
+    /// Return the optimized system size for KPM moment number `n` out of total `num_moments`
+    int get_optimized_size(int n, int num_moments) const {
+        auto const max_n = static_cast<int>(optimized_sizes.size());
+        auto const reverse_n = num_moments - n; // the last reverse_n will be 1 (intentional)
+
+        if (n < max_n && n < reverse_n)
+            return optimized_sizes[n]; // size grows at the beginning
+        else if (reverse_n < max_n)
+            return optimized_sizes[reverse_n]; // size shrinks at the tail end
+        else
+            return H2.rows(); // constant in the middle
+    }
+
+public:
+    SparseMatrixX<scalar_t> H2; ///< the optimized matrix
+    IndexPair original_idx = {-1, -1}; ///< indices from the original `H` matrix
+    IndexPair optimized_idx = {-1, -1}; ///< reordered indices in the `H2` matrix
+    std::vector<int> optimized_sizes; ///< optimal matrix size "steps" for the KPM calculation
+
+private:
+    /// Fill H2 with scaled Hamiltonian: H2 = (H - I*b) * (2/a)
+    void create_scaled(SparseMatrixX<scalar_t> const& H, IndexPair idx, Bounds<scalar_t> b);
+    /// Scale and reorder the Hamiltonian so that idx is at the start of the H2 matrix
+    void create_reordered(SparseMatrixX<scalar_t> const& H, IndexPair idx, Bounds<scalar_t> b);
+};
+
+/**
+ Stats of the KPM calculation
+ */
+class Stats {
+public:
+    std::string report(bool shortform) const;
+
+    template<class scalar_t>
+    void reordering(OptimizedHamiltonian<scalar_t> oh, int num_moments, Chrono const& time);
+    void lanczos(double min_energy, double max_energy, int loops, Chrono const& time);
+    void kpm(int num_moments, Chrono const& time);
+    void greens(Chrono const& time);
+
+private:
+    void append(std::string short_str, std::string long_str, Chrono const& time);
+
+private:
+    char const* short_line = "{message:s} ({time}) ";
+    char const* long_line = "- {message:-80s} | {time}\n";
+    std::string short_report;
+    std::string long_report;
+};
+
+/**
+ Kernel polynomial method for calculating Green's function
+ */
+template<class scalar_t>
+class Strategy : public GreensStrategyT<scalar_t> {
     using real_t = num::get_real_t<scalar_t>;
     using complex_t = num::get_complex_t<scalar_t>;
-    using SparseMatrix = SparseMatrixX<scalar_t>;
-    
+
 public:
-    explicit KPMStrategy(const KPMConfig& config) : config(config) {}
+    explicit Strategy(const Config& config) : config(config) {}
 
 protected: // required implementation
     virtual void hamiltonian_changed() override;
-    virtual ArrayXcf calculate(int i, int j, ArrayXd energy, float broadening) override;
+    virtual ArrayXcf calculate(int i, int j, ArrayXf energy, float broadening) override;
     virtual std::string report(bool shortform) const override;
     
 private:
-    /// @return (a, b) scaling parameters calculated from min_energy and max_energy
-    std::tuple<real_t, real_t> scaling_params() const;
-    
-    /// Fill h2_matrix with scaled Hamiltonian: h2 = (H - I*b) * (2/a)
-    void scale_hamiltonian();
-
-    /**
-     Like scale_hamiltonian, but also reorder the elements so that the target_index is at the start,
-     and all neighbours directly following. This produces the reordered_steps vector which may be
-     used to reduce calculation time by skipping sparse matrix-vector multiplication of zero values.
-
-     @return New value of the index passed as translate_index.
-     */
-    int scale_and_reorder_hamiltonian(int target_index, int translate_index = 0);
-
-    /// calculate the KPM Green's function moments
-    ArrayX<scalar_t> calculate_moments(int i, int j) const;
-
-    static ArrayX<complex_t> calculate_greens(const ArrayX<real_t>& energy,
-                                              const ArrayX<scalar_t>& moments);
+    /// Calculate the KPM Green's function moments
+    static ArrayX<scalar_t> calculate_moments(OptimizedHamiltonian<scalar_t> const& oh,
+                                              int num_moments);
+    /// Put the kernel in *Kernel* polynomial method
+    static void apply_lorentz_kernel(ArrayX<scalar_t>& moments, float lambda);
+    /// Calculate the final Green's function for `energy` using the KPM `moments`
+    static ArrayX<complex_t> calculate_greens(ArrayX<real_t> const& energy,
+                                              ArrayX<scalar_t> const& moments);
 
 private:
-    KPMConfig config;
-    SparseMatrix h2_matrix; ///< scaled Hamiltonian matrix
+    Config const config;
+    Bounds<scalar_t> bounds;
+    OptimizedHamiltonian<scalar_t> optimized_hamiltonian;
 
-    // work variables
-    int num_moments; ///< number of moments to use for the Green's function calculation
-    std::vector<int> reordered_steps; ///< optimal matrix size "steps" for the KPM calculation
-
-    // reporting
-    int lanczos_loops = 0; ///< how many loops did it take for the Lanczos calculation to converge
-    Chrono lanczos_timer, reordering_timer, moments_timer, greens_timer;
+    Stats stats;
 
 protected: // declare used inherited members (template class requirement)
     using GreensStrategyT<scalar_t>::hamiltonian;
 };
+
+} // namespace tbm::kpm
 
 /**
  Concrete Greens for creating KPM objects.
  */
 class KPM : public Greens {
 public: // construction and configuration
-    static constexpr auto defaults = KPMConfig{};
+    using Config = kpm::Config;
+    static constexpr auto defaults = Config{};
 
     KPM(Model const& model,
         float lambda = defaults.lambda,
-        std::pair<float, float> energy_range = {defaults.min_energy, defaults.max_energy})
+        std::pair<float, float> energy_range = {defaults.min_energy, defaults.max_energy},
+        bool use_reordering = defaults.use_reordering,
+        float lanczos_precision = defaults.lanczos_precision)
     {
         if (energy_range.first > energy_range.second)
             throw std::invalid_argument{"KPM: Invalid energy range specified (min > max)."};
         if (lambda <= 0)
             throw std::invalid_argument{"KPM: Lambda must be positive."};
 
-        set_model(model);
-
         config.lambda = lambda;
         config.min_energy = energy_range.first;
         config.max_energy = energy_range.second;
-    }
-
-    /// Set the advanced options of KPM
-    void advanced(bool use_reordering = defaults.use_reordering,
-                  float lanczos_precision = defaults.lanczos_precision,
-                  float scaling_tolerance = defaults.scaling_tolerance)
-    {
         config.use_reordering = use_reordering;
         config.lanczos_precision = lanczos_precision;
-        config.scaling_tolerance = scaling_tolerance;
+
+        set_model(model);
     }
 
 protected: // required implementation
@@ -112,7 +183,7 @@ protected: // required implementation
         create_strategy_for(const std::shared_ptr<const Hamiltonian>&) const override;
 
 private:
-    KPMConfig config = {};
+    Config config = {};
 };
     
 } // namespace tbm

@@ -25,7 +25,7 @@ public:
     /// @return false if the given Hamiltonian is the wrong scalar type for this GreensStrategy
     virtual bool set_hamiltonian(const std::shared_ptr<const Hamiltonian>& hamiltonian) = 0;
     /// Return the Green's function at (i,j) for the given energy range
-    virtual ArrayXcf calculate(int i, int j, ArrayXd energy, float broadening) = 0;
+    virtual ArrayXcf calculate(int i, int j, ArrayXf energy, float broadening) = 0;
     /// Get some information about what happened during the last calculation
     virtual std::string report(bool shortform) const = 0;
 };
@@ -80,10 +80,10 @@ public:
         return strategy ? strategy->report(shortform) + " " + calculation_timer.str() : "";
     }
 
-    ArrayXcf calc_greens(int i, int j, ArrayXd energy, float broadening);
-    ArrayXf calc_ldos(ArrayXd energy, float broadening,
+    ArrayXcf calc_greens(int i, int j, ArrayXf energy, float broadening);
+    ArrayXf calc_ldos(ArrayXf energy, float broadening,
                       Cartesian position, sub_id sublattice = -1);
-    Deferred<ArrayXf> deferred_ldos(ArrayXd energy, float broadening,
+    Deferred<ArrayXf> deferred_ldos(ArrayXf energy, float broadening,
                                     Cartesian position, sub_id sublattice = -1);
 
 protected:

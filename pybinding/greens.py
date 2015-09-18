@@ -37,5 +37,6 @@ class Greens:
         return deferred
 
 
-def make_kpm(model, lambda_value=4.0, energy_range=(0.0, 0.0)):
-    return Greens(_cpp.KPM(model, lambda_value, energy_range))
+def make_kpm(model, lambda_value=4.0, energy_range=(0.0, 0.0),
+             use_reordering=True, lanczos_precision=0.002):
+    return Greens(_cpp.KPM(model, lambda_value, energy_range, use_reordering, lanczos_precision))

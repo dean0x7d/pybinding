@@ -21,7 +21,7 @@ void Greens::set_model(Model const& new_model) {
         strategy = create_strategy_for(model.hamiltonian());
 }
 
-ArrayXcf Greens::calc_greens(int i, int j, ArrayXd energy, float broadening) {
+ArrayXcf Greens::calc_greens(int i, int j, ArrayXf energy, float broadening) {
     auto const size = model.hamiltonian()->rows();
     if (i < 0 || i > size || j < 0 || j > size)
         throw std::logic_error{"KPM::calc_greens(i,j): invalid value for i or j."};
@@ -33,7 +33,7 @@ ArrayXcf Greens::calc_greens(int i, int j, ArrayXd energy, float broadening) {
     return greens_function;
 }
 
-ArrayXf Greens::calc_ldos(ArrayXd energy, float broadening,
+ArrayXf Greens::calc_ldos(ArrayXf energy, float broadening,
                           Cartesian position, sub_id sublattice)
 {
     auto i = model.system()->find_nearest(position, sublattice);
@@ -42,7 +42,7 @@ ArrayXf Greens::calc_ldos(ArrayXd energy, float broadening,
     return -1/pi * greens_function.imag();
 }
 
-Deferred<ArrayXf> Greens::deferred_ldos(ArrayXd energy, float broadening,
+Deferred<ArrayXf> Greens::deferred_ldos(ArrayXf energy, float broadening,
                                         Cartesian position, sub_id sublattice)
 {
     auto shared_strategy = std::shared_ptr<GreensStrategy>{

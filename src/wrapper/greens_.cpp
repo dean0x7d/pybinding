@@ -23,20 +23,16 @@ void export_greens() {
     .add_property("system", &Greens::system)
     ;
 
-    auto const kpm_defaults = tbm::KPMConfig{};
+    auto const kpm_defaults = tbm::KPM::Config{};
     class_<KPM, bases<Greens>, noncopyable> {
         "KPM", "Green's function via kernel polynomial method.",
-        init<tbm::Model const&, float, std::pair<float, float>>{args(
+        init<tbm::Model const&, float, std::pair<float, float>, bool, float>{args(
             "self", "model",
             "lambda_value"_kw = kpm_defaults.lambda,
-            "energy_range"_kw = make_tuple(kpm_defaults.min_energy, kpm_defaults.max_energy)
+            "energy_range"_kw = make_tuple(kpm_defaults.min_energy, kpm_defaults.max_energy),
+            "use_reordering"_kw = kpm_defaults.use_reordering,
+            "lanczos_precision"_kw = kpm_defaults.lanczos_precision
         )}
     }
-    .def("advanced", &KPM::advanced, args(
-        "self",
-        "use_reordering"_kw = kpm_defaults.use_reordering,
-        "lanczos_precision"_kw = kpm_defaults.lanczos_precision,
-        "scaling_tolerance"_kw = kpm_defaults.scaling_tolerance
-    ))
     ;
 }
