@@ -3,7 +3,7 @@ project(pybinding)
 
 # Python 3.x is required, 3.4 recommended
 set(PYTHON_VERSION 3)
-add_subdirectory(dependencies/boost_python)
+add_subdirectory(dependencies/boost_python EXCLUDE_FROM_ALL)
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/cmake")
 find_package(NumPy REQUIRED)
@@ -64,6 +64,11 @@ endif()
 
 if(NOT CMAKE_LIBRARY_OUTPUT_DIRECTORY)
     set_target_properties(_pybinding PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${CMAKE_CURRENT_LIST_DIR})
+    foreach(config ${CMAKE_CONFIGURATION_TYPES})
+        string(TOUPPER ${config} config)
+        set_target_properties(_pybinding PROPERTIES 
+                              LIBRARY_OUTPUT_DIRECTORY_${config} ${CMAKE_CURRENT_LIST_DIR})
+    endforeach()
 endif()
 
 if(NOT CMAKE_BUILD_TYPE)
