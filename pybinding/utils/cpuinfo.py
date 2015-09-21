@@ -1,9 +1,8 @@
 from cpuinfo import cpuinfo
 _info = cpuinfo.get_cpu_info()
 try:
-    from ._cpp import get_max_threads
-    physical_thread_count = get_max_threads()
-    del get_max_threads
+    from .. import _cpp
+    physical_thread_count = _cpp.get_max_threads()
 except ImportError:
     physical_thread_count = _info['count']
 
