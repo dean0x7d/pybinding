@@ -39,7 +39,7 @@ public:
     virtual Cartesian length_for(const Lattice& lattice) const override;
 
 protected:
-    virtual std::vector<Cartesian> bounding_vectors() const { return {}; }
+    virtual std::vector<Cartesian> bounding_vectors() const override { return {}; }
 
 private:
     Cartesian length;
