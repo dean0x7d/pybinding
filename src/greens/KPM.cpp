@@ -104,7 +104,8 @@ void OptimizedHamiltonian<scalar_t>::create_reordered(SparseMatrixX<scalar_t> co
     reorder_map[target_index] = 0;
 
     // As the reordered matrix is filled, the optimal size for the first few KPM steps is recorded
-    optimized_sizes.push_back(1); // initial size is always 1
+    optimized_sizes.push_back(0);
+    optimized_sizes.push_back(1);
 
     // Fill the reordered matrix row by row
     auto H_view = sparse::make_loop(H);
@@ -146,6 +147,7 @@ void OptimizedHamiltonian<scalar_t>::create_reordered(SparseMatrixX<scalar_t> co
             optimized_sizes.push_back(static_cast<int>(index_queue.size()));
     }
 
+    optimized_sizes.pop_back(); // the last two elements are duplicates
     optimized_sizes.shrink_to_fit();
     H2.makeCompressed();
 
@@ -187,12 +189,18 @@ ArrayXcf Strategy<scalar_t>::calculate(int i, int j, ArrayXf energy, float broad
 
     // Scale and optimize Hamiltonian (fast)
     timer.tic();
-    optimized_hamiltonian.create(hamiltonian->get_matrix(), {i, j}, bounds, config.use_reordering);
+    optimized_hamiltonian.create(hamiltonian->get_matrix(), {i, j}, bounds,
+                                 /*use_reordering*/config.optimization_level >= 1);
     stats.reordering(optimized_hamiltonian, num_moments, timer.toc());
 
     // Calculate KPM moments (slow)
     timer.tic();
-    auto moments = calculate_moments(optimized_hamiltonian, num_moments);
+    auto moments = [&] {
+        if (config.optimization_level < 2)
+            return calculate_moments(optimized_hamiltonian, num_moments);
+        else
+            return calculate_moments2(optimized_hamiltonian, num_moments);
+    }();
     apply_lorentz_kernel(moments, config.lambda);
     stats.kpm(optimized_hamiltonian, num_moments, timer.toc());
 
@@ -210,35 +218,76 @@ ArrayX<scalar_t> Strategy<scalar_t>::calculate_moments(OptimizedHamiltonian<scal
     auto const i = oh.optimized_idx.i;
     auto const j = oh.optimized_idx.j;
 
-    VectorX<scalar_t> right = VectorX<scalar_t>::Zero(oh.H2.rows());
-    right[j] = 1; // all zeros except for position `j`
+    VectorX<scalar_t> r0 = VectorX<scalar_t>::Zero(oh.H2.rows());
+    r0[j] = 1; // all zeros except for position `j`
     
     // -> left[i] = 1; <- optimized out
     // This vector is constant (and simple) so we don't actually need it. Its dot product
-    // with the right vector may be simplified -> see the last line of the loop below.
+    // with the r0 vector may be simplified -> see the last line of the loop below.
 
-    // -> right_next = H * right; <- optimized thanks to `right[j] = 1`
+    // -> r1 = H * r0; <- optimized thanks to `r0[j] = 1`
     // Note: H2.col(j) == H2.row(j).conjugate(), but the second is row-major friendly
-    VectorX<scalar_t> right_next = oh.H2.row(j).conjugate();
-    right_next *= real_t{0.5}; // because H == 0.5*H2
+    VectorX<scalar_t> r1 = oh.H2.row(j).conjugate();
+    r1 *= real_t{0.5}; // because H == 0.5*H2
 
     ArrayX<scalar_t> moments{num_moments};
-    moments[0] = right[i] * real_t{0.5}; // 0.5 is special for moments[0] (not related to H2)
-    moments[1] = right_next[i];
-    
-    // Each iteration does: right_next = 2*H*right_next - right
+    moments[0] = r0[i] * real_t{0.5}; // 0.5 is special for moments[0] (not related to H2)
+    moments[1] = r1[i];
+
     for (auto n = 2; n < num_moments; ++n) {
         auto const optimized_size = oh.get_optimized_size(n, num_moments);
 
-        // -> right = H2*right_next - right; <- optimized compute kernel
-        compute::kpm_kernel(optimized_size, oh.H2, right_next, right);
+        // -> r0 = H2*r1 - r0; <- optimized compute kernel
+        compute::kpm_kernel(0, optimized_size, oh.H2, r1, r0);
 
-        // right_next gets the primary result of this iteration
-        // right gets the value old value right_next (it will be needed in the next iteration)
-        right_next.swap(right);
+        // r1 gets the primary result of this iteration
+        // r0 gets the value old value r1 (it will be needed in the next iteration)
+        r1.swap(r0);
 
-        // -> moments[n] = left.dot(right_next); <- optimized thanks to constant `left[i] = 1`
-        moments[n] = right_next[i];
+        // -> moments[n] = left.dot(r1); <- optimized thanks to constant `left[i] = 1`
+        moments[n] = r1[i];
+    }
+
+    return moments;
+}
+
+template<class scalar_t>
+ArrayX<scalar_t> Strategy<scalar_t>::calculate_moments2(OptimizedHamiltonian<scalar_t> const& oh,
+                                                        int num_moments) {
+    auto const i = oh.optimized_idx.i;
+    auto const j = oh.optimized_idx.j;
+
+    VectorX<scalar_t> r0 = VectorX<scalar_t>::Zero(oh.H2.rows());
+    r0[j] = 1;
+
+    VectorX<scalar_t> r1 = oh.H2.row(j).conjugate();
+    r1 *= real_t{0.5};
+
+    ArrayX<scalar_t> moments{num_moments};
+    moments[0] = r0[i] * real_t{0.5};
+    moments[1] = r1[i];
+
+    // Interleave moments `n` and `n + 1` for better data locality
+    for (auto n = 2; n < num_moments; n += 2) {
+        auto const max_m1 = oh.get_optimized_size_index(n, num_moments);
+        auto const max_m2 = oh.get_optimized_size_index(n + 1, num_moments);
+
+        auto p0 = 0;
+        auto p1 = 0;
+        for (auto m = 1; m <= max_m1; ++m) {
+            auto const p2 = oh.optimized_sizes[m];
+            compute::kpm_kernel(p1, p2, oh.H2, r1, r0);
+            compute::kpm_kernel(p0, p1, oh.H2, r0, r1);
+
+            p0 = p1;
+            p1 = p2;
+        }
+        // Tail end in case `max_m2 >= max_m1`
+        compute::kpm_kernel(p0, oh.optimized_sizes[max_m2], oh.H2, r0, r1);
+
+        moments[n] = r0[i];
+        if (n + 1 < num_moments)
+            moments[n + 1] = r1[i];
     }
 
     return moments;

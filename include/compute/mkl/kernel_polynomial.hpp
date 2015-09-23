@@ -3,64 +3,59 @@
 #include "support/sparse.hpp"
 
 namespace compute {
+
+namespace detail {
+    template<class scalar_t> struct mkl_typemap;
+    template<> struct mkl_typemap<float> { using type = float; };
+    template<> struct mkl_typemap<double> { using type = double; };
+    template<> struct mkl_typemap<std::complex<float>> { using type = MKL_Complex8; };
+    template<> struct mkl_typemap<std::complex<double>> { using type = MKL_Complex16; };
+}
+
+/// Get the corresponding MKL C API type from the C++ type `scalar_t`
+template<class scalar_t>
+using mkl_t = typename detail::mkl_typemap<scalar_t>::type;
+
+/// Get the MKL csrmv (sparse matrix vector multiplication) function for the C++ type `scalar_t`
+template<class scalar_t> struct mkl_xcsrmv;
+template<> struct mkl_xcsrmv<float> { static constexpr auto call = mkl_scsrmv; };
+template<> struct mkl_xcsrmv<double> { static constexpr auto call = mkl_dcsrmv; };
+template<> struct mkl_xcsrmv<std::complex<float>> { static constexpr auto call = mkl_ccsrmv; };
+template<> struct mkl_xcsrmv<std::complex<double>> { static constexpr auto call = mkl_zcsrmv; };
+
 /**
  KPM computation kernel implemented via MKL functions
  */
-template<typename scalar_t>
-inline void kpm_kernel(const int size, const SparseMatrixX<scalar_t>& matrix,
-                       const VectorX<scalar_t>& x, VectorX<scalar_t>& y);
+template<class scalar_t>
+inline void kpm_kernel(int start, int end, SparseMatrixX<scalar_t> const& matrix,
+                       VectorX<scalar_t> const& x, VectorX<scalar_t>& y) {
+    if (end <= start)
+        return;
 
-template<>
-inline void kpm_kernel<float>(const int size, const SparseMatrixXf& matrix,
-                              const VectorXf& x, VectorXf& y)
-{
-    const char transa = 'n'; // specifies normal (non-transposed) matrix-vector multiplication
-    const char metdescra[8] = "GLNC"; // G - general matrix, C - zero-based indexing, LN - ignored
-    const float alpha = 1;
-    const float beta = -1;
+    char const transa = 'n'; // specifies normal (non-transposed) matrix-vector multiplication
+    char const metdescra[8] = "GLNC"; // G - general matrix, C - zero-based indexing, LN - ignored
+    scalar_t const alpha = 1;
+    scalar_t const beta = -1;
 
-    mkl_scsrmv(
+    auto const size = end - start;
+    auto const start_idx = matrix.outerIndexPtr()[start];
+
+    using mkl_scalar_t = mkl_t<scalar_t>;
+    mkl_xcsrmv<scalar_t>::call(
         &transa,
         &size, &size,
-        &alpha,
+        reinterpret_cast<mkl_scalar_t const*>(&alpha),
         metdescra,
         // input matrix
-        matrix.valuePtr(),
-        matrix.innerIndexPtr(),
-        matrix.outerIndexPtr(),
-        matrix.outerIndexPtr() + 1,
+        reinterpret_cast<mkl_scalar_t const*>(matrix.valuePtr()) + start_idx,
+        matrix.innerIndexPtr() + start_idx,
+        matrix.outerIndexPtr() + start,
+        matrix.outerIndexPtr() + 1 + start,
         // input vector
-        x.data(),
-        &beta,
+        reinterpret_cast<mkl_scalar_t const*>(x.data()),
+        reinterpret_cast<mkl_scalar_t const*>(&beta),
         // output vector
-        y.data()
-    );
-}
-
-template<>
-inline void kpm_kernel<std::complex<float>>(const int size, const SparseMatrixXcf& matrix,
-                                            const VectorXcf& x, VectorXcf& y)
-{
-    const char transa = 'n'; // specifies normal (non-transposed) matrix-vector multiplication
-    const char metdescra[8] = "GLNC"; // G - general matrix, C - zero-based indexing, LN - ignored
-    const MKL_Complex8 alpha{1, 0};
-    const MKL_Complex8 beta{-1, 0};
-
-    mkl_ccsrmv(
-        &transa,
-        &size, &size,
-        &alpha,
-        metdescra,
-        // input matrix - cast from complex<float>* to MKL_Complex8*
-        reinterpret_cast<const MKL_Complex8*>(matrix.valuePtr()),
-        matrix.innerIndexPtr(),
-        matrix.outerIndexPtr(),
-        matrix.outerIndexPtr() + 1,
-        // input vector
-        reinterpret_cast<const MKL_Complex8*>(x.data()),
-        &beta,
-        // output vector
-        reinterpret_cast<MKL_Complex8*>(y.data())
+        reinterpret_cast<mkl_scalar_t*>(y.data()) + start
     );
 }
 

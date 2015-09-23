@@ -13,7 +13,7 @@ struct Config {
     float min_energy = 0.0f; ///< lowest eigenvalue of the Hamiltonian
     float max_energy = 0.0f; ///< highest eigenvalue of the Hamiltonian
 
-    bool use_reordering = true; ///< Hamiltonian reordering optimization
+    int optimization_level = 2; ///< 0 to 2, higher levels apply more complex optimizations
     float lanczos_precision = 0.002f; ///< how precise should the min/max energy estimation be
 };
 
@@ -58,21 +58,34 @@ class OptimizedHamiltonian {
     struct IndexPair { int i, j; };
 
 public:
-    // Create the optimized Hamiltonian from `H` targeting index pair `idx`
+    /// Create the optimized Hamiltonian from `H` targeting index pair `idx`
     void create(SparseMatrixX<scalar_t> const& H, IndexPair idx,
                 Bounds<scalar_t> bounds, bool use_reordering);
 
+    /// Return an index into `optimized_sizes`, indicating the optimal system size
+    /// for the calculation of KPM moment number `n` out of total `num_moments`
+    int get_optimized_size_index(int n, int num_moments) const {
+        assert(!optimized_sizes.empty());
+
+        auto const max_size = std::min(
+            static_cast<int>(optimized_sizes.size()) - 2,
+            num_moments / 2
+        );
+
+        if (n < max_size)
+            return n + 1; // size grows in the beginning
+        else if (n > num_moments - max_size - 1)
+            return num_moments - n; // reverse `n + 1` -> shrinking near the end
+        else
+            return max_size + 1; // constant in the middle
+    }
+
     /// Return the optimized system size for KPM moment number `n` out of total `num_moments`
     int get_optimized_size(int n, int num_moments) const {
-        auto const max_n = static_cast<int>(optimized_sizes.size());
-        auto const reverse_n = num_moments - n; // the last reverse_n will be 1 (intentional)
-
-        if (n < max_n && n < reverse_n)
-            return optimized_sizes[n]; // size grows at the beginning
-        else if (reverse_n < max_n)
-            return optimized_sizes[reverse_n]; // size shrinks at the tail end
+        if (!optimized_sizes.empty())
+            return optimized_sizes[get_optimized_size_index(n, num_moments)];
         else
-            return H2.rows(); // constant in the middle
+            return H2.rows();
     }
 
     /// The unoptimized compute area is H2.nonZeros() * num_moments
@@ -135,6 +148,9 @@ private:
     /// Calculate the KPM Green's function moments
     static ArrayX<scalar_t> calculate_moments(OptimizedHamiltonian<scalar_t> const& oh,
                                               int num_moments);
+    /// Optimized `calculate_moments`: lower memory bandwidth requirements
+    static ArrayX<scalar_t> calculate_moments2(OptimizedHamiltonian<scalar_t> const& oh,
+                                               int num_moments);
     /// Put the kernel in *Kernel* polynomial method
     static void apply_lorentz_kernel(ArrayX<scalar_t>& moments, float lambda);
     /// Calculate the final Green's function for `energy` using the KPM `moments`
@@ -165,7 +181,7 @@ public: // construction and configuration
     KPM(Model const& model,
         float lambda = defaults.lambda,
         std::pair<float, float> energy_range = {defaults.min_energy, defaults.max_energy},
-        bool use_reordering = defaults.use_reordering,
+        int optimization_level = defaults.optimization_level,
         float lanczos_precision = defaults.lanczos_precision)
     {
         if (energy_range.first > energy_range.second)
@@ -176,7 +192,7 @@ public: // construction and configuration
         config.lambda = lambda;
         config.min_energy = energy_range.first;
         config.max_energy = energy_range.second;
-        config.use_reordering = use_reordering;
+        config.optimization_level = optimization_level;
         config.lanczos_precision = lanczos_precision;
 
         set_model(model);
