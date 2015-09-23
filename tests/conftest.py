@@ -62,13 +62,17 @@ def baseline(request):
 @pytest.yield_fixture
 def plot(request):
     class Gather:
+        data = []
+
         def __call__(self, result, expected, method, *args, **kwargs):
-            self.__dict__.update(**locals())
+            self.data.append(locals().copy())
 
         def plot(self, what):
-            d = self.__dict__
-            if what in d:
+            for d in self.data:
                 getattr(d[what], d['method'])(*d['args'], **d['kwargs'])
+
+            plt.title(what)
+            pb.pltutils.legend()
 
     gather = Gather()
     yield gather
@@ -77,11 +81,9 @@ def plot(request):
         plt.figure(figsize=(6, 3))
         plt.subplot(121)
         gather.plot('result')
-        plt.title("result")
 
         plt.subplot(122)
         gather.plot('expected')
-        plt.title("expected")
 
         file_path = _make_file_path(request, 'plots', ext='.png')
         plt.savefig(str(file_path))
