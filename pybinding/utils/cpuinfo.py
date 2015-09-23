@@ -3,7 +3,7 @@ _info = cpuinfo.get_cpu_info()
 try:
     from .. import _cpp
     physical_thread_count = _cpp.get_max_threads()
-except ImportError:
+except AttributeError:
     physical_thread_count = _info['count']
 
 
