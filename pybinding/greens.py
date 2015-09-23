@@ -38,5 +38,6 @@ class Greens:
 
 
 def make_kpm(model, lambda_value=4.0, energy_range=(0.0, 0.0),
-             use_reordering=True, lanczos_precision=0.002):
-    return Greens(_cpp.KPM(model, lambda_value, energy_range, use_reordering, lanczos_precision))
+             optimization_level=2, lanczos_precision=0.002):
+    return Greens(_cpp.KPM(model, lambda_value, energy_range,
+                           optimization_level, lanczos_precision))
