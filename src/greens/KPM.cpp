@@ -231,7 +231,7 @@ ArrayX<scalar_t> Strategy<scalar_t>::calculate_moments(OptimizedHamiltonian<scal
         auto const optimized_size = oh.get_optimized_size(n, num_moments);
 
         // -> right = H2*right_next - right; <- optimized compute kernel
-        compute::kpm_kernel(optimized_size, oh.H2, right_next, right);
+        compute::kpm_kernel(0, optimized_size, oh.H2, r1, r0);
 
         // right_next gets the primary result of this iteration
         // right gets the value old value right_next (it will be needed in the next iteration)
