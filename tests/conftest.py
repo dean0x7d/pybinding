@@ -62,7 +62,8 @@ def baseline(request):
 @pytest.yield_fixture
 def plot(request):
     class Gather:
-        data = []
+        def __init__(self):
+            self.data = []
 
         def __call__(self, result, expected, method, *args, **kwargs):
             self.data.append(locals().copy())
