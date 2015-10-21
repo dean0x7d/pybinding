@@ -89,7 +89,7 @@ def _progressbar_sweep(variables, produce, report, first=None,
 
 
 def sweep(variables, produce, report=None, first=None, file="", save_every=10,
-          plot=lambda r: r.plot(), title="", labels: dict=None, tags: dict=None, **kwargs):
+          plot=lambda r: r.plot(), labels: dict=None, tags: dict=None, **kwargs):
     """Do a multi-threaded parameter sweep and return a 'Sweep' result.
 
     Runs over a list of 'variables' and gives each one to a 'produce' function which returns
@@ -126,7 +126,7 @@ def sweep(variables, produce, report=None, first=None, file="", save_every=10,
 
     result = sweep(np.linspace(0, 1, 50), produce)
     """
-    result = Sweep(variables, 0, 0, title, labels, tags)
+    result = Sweep(variables, 0, 0, labels, tags)
 
     last = len(variables) - 1
     save_at = {(last * p) // 100 for p in np.arange(save_every, 100, save_every)}  # skip zero

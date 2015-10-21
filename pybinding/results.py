@@ -271,19 +271,18 @@ class Sweep:
     title : str
         A title that will be used for the plot.
     labels : dict
-        Plot axes labels. Has 'x', 'y' and 'data' fields.
+        Plot labels: 'title', 'x', 'y' and 'data'.
     tags : dict
         Any additional user defined variables.
     """
 
     def __init__(self, x: np.ndarray, y: np.ndarray, data: np.ndarray,
-                 title="", labels: dict=None, tags: dict=None):
+                 labels: dict=None, tags: dict=None):
         self.x = np.atleast_1d(x)
         self.y = np.atleast_1d(y)
         self.data = np.atleast_2d(data)
 
-        self.title = title
-        self.labels = with_defaults(labels, x="x", y="y", data="data")
+        self.labels = with_defaults(labels, title="", x="x", y="y", data="data")
         self.tags = tags
 
     def copy(self) -> 'Sweep':
@@ -410,7 +409,7 @@ class Sweep:
         if cbar_props is not False:
             pltutils.colorbar(label=self.labels['data'])
 
-        plt.title(self.title)
+        plt.title(self.labels['title'])
         plt.xlabel(self.labels['x'])
         plt.ylabel(self.labels['y'])
 
@@ -425,7 +424,7 @@ class Sweep:
         split = self.labels[axis].split(' ', 1)
         label = split[0]
         unit = '' if len(split) == 1 else split[1].strip('()')
-        plt.title('{}, {} = {:.2g} {}'.format(self.title, label, value, unit))
+        plt.title('{}, {} = {:.2g} {}'.format(self.labels['title'], label, value, unit))
 
         plt.xlim(x.min(), x.max())
         plt.xlabel(self.labels['x' if axis == 'y' else 'y'])

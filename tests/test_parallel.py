@@ -20,8 +20,7 @@ def test_sweep(baseline, plot):
         variables=np.linspace(0, 0.1, 10),
         produce=produce,
         pbar_fd=None, silent=True,
-        title="test sweep",
-        labels=dict(x="V (eV)", y="E (eV)", data="LDOS")
+        labels=dict(title="test sweep", x="V (eV)", y="E (eV)", data="LDOS")
     )
 
     expected = baseline(result)
