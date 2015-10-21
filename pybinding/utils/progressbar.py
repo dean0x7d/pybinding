@@ -12,15 +12,15 @@ class CustomETA(Timer):
 
 
 class Range(ProgressBar):
-    def __init__(self, maxval, file_name="", fd=sys.stdout, custom_widgets=None, term_width=80):
+    def __init__(self, maxval, filename="", fd=sys.stdout, custom_widgets=None, term_width=80):
         default_widgets = ['Progress ', Percentage(), ' ', Bar('/', '[', ']'),
                            Timer(' Elapsed: %s /'), CustomETA(' ETA: %s')]
 
         super().__init__(widgets=custom_widgets if custom_widgets else default_widgets,
                          maxval=maxval, term_width=term_width, fd=fd, redirect_stdout=True)
 
-        if file_name:
-            self._file = open(file_name, 'w+')
+        if filename:
+            self._file = open(filename, 'w+')
         else:
             self._file = None
 

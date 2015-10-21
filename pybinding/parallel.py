@@ -53,17 +53,17 @@ def _plain_sweep(variables, produce, report, num_threads=num_cores, queue_size=n
 
 
 def _progressbar_sweep(variables, produce, report, first=None,
-                       pbar_fd=sys.stdout, log_file="", **kwargs):
+                       pbar_fd=sys.stdout, logname="", **kwargs):
     """Just like '_pain_sweep' but with a nifty progress bar.
 
     Parameters
     ----------
     fd : {sys.stdout, sys.stderr, None}
         Output stream. The progress bar is always the last line of output.
-    log_file : str
+    logname : str
         Also write all output to a file. The progressbar is always the first line of the file.
     """
-    pbar = progressbar.Range(len(variables), fd=pbar_fd, file_name=log_file)
+    pbar = progressbar.Range(len(variables), fd=pbar_fd, filename=logname)
 
     def _produce(var):
         deferred = produce(var)
@@ -88,7 +88,7 @@ def _progressbar_sweep(variables, produce, report, first=None,
     pbar.finish()
 
 
-def sweep(variables, produce, report=None, first=None, file="", save_every=10,
+def sweep(variables, produce, report=None, first=None, filename="", save_every=10,
           plot=lambda r: r.plot(), labels: dict=None, tags: dict=None, **kwargs):
     """Do a multi-threaded parameter sweep and return a 'Sweep' result.
 
@@ -107,7 +107,7 @@ def sweep(variables, produce, report=None, first=None, file="", save_every=10,
         original location of this result in 'variables'.
     first : callable(deferred)
         Called only once after the first job is produced. May be used for printing information.
-    file : str
+    filename : str
         The name of the file (without an extension) where the computed data will be saved ('.pbz')
         and plotted ('.png') in regular intervals during execution.
     save_every : float
@@ -140,12 +140,12 @@ def sweep(variables, produce, report=None, first=None, file="", save_every=10,
             first(deferred)
 
     def save_progress():
-        if file:
-            result.save(file + ".pbz")
+        if filename:
+            result.save(filename + ".pbz")
 
-        if file and plot:
+        if filename and plot:
             plot(result.copy())
-            plt.savefig(file + ".png")
+            plt.savefig(filename + ".png")
             plt.close()
 
     class Report:
