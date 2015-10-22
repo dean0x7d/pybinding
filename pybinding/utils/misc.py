@@ -1,3 +1,5 @@
+from functools import wraps
+
 import numpy as np
 
 
@@ -45,3 +47,40 @@ def x_pi(value):
         return r"$\pi$" if n > 0 else r"$-\pi$"
     else:
         return r"${:.2g}\pi$".format(n)
+
+
+def decorator_decorator(decorator_wrapper):
+    """A decorator decorator which allows it to be used with or without arguments
+
+    Parameters
+    ----------
+    decorator_wrapper : Callable[[Any], Callable]
+
+    Examples
+    --------
+    >>> @decorator_decorator
+    ... def decorator_wrapper(optional="default"):
+    ...     def actual_decorator(func):
+    ...         return lambda x: func(x, optional)
+    ...     return actual_decorator
+
+    >>> @decorator_wrapper("hello")
+    ... def foo(x, y):
+    ...     print(x, y)
+    >>> foo(1)
+    1 hello
+
+    >>> @decorator_wrapper
+    ... def bar(x, y):
+    ...     print(x, y)
+    >>> bar(2)
+    2 default
+    """
+    @wraps(decorator_wrapper)
+    def new_wrapper(*args, **kwargs):
+        if len(args) == 1 and not kwargs and (isinstance(args[0], type) or callable(args[0])):
+            return decorator_wrapper()(args[0])
+        else:
+            return lambda cls_or_func: decorator_wrapper(*args, **kwargs)(cls_or_func)
+
+    return new_wrapper

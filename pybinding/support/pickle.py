@@ -1,9 +1,10 @@
-import os
 import gzip
-import pickle
+import os
 import pathlib
-from functools import wraps
+import pickle
 from collections import namedtuple
+
+from ..utils import decorator_decorator
 
 __all__ = ['pickleable', 'save', 'load']
 
@@ -72,19 +73,7 @@ def _override_methods(cls, **kwargs):
     return cls
 
 
-def _decorator(dec):
-    """A decorator decorator which enables use with or without arguments"""
-    @wraps(dec)
-    def new_dec(*args, **kwargs):
-        if len(args) == 1 and len(kwargs) == 0 and isinstance(args[0], type):
-            return dec()(args[0])
-        else:
-            return lambda cls: dec(*args, **kwargs)(cls)
-
-    return new_dec
-
-
-@_decorator
+@decorator_decorator
 def pickleable(props='', impl='', version: int=0):
     props = props.split()
 
