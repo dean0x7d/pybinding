@@ -13,8 +13,17 @@ __all__ = ['make_path', 'LDOSpoint', 'SpatialMap', 'Eigenvalues', 'Bands', 'Swee
 
 
 def make_path(k0, k1, *ks, step=0.1):
-    """Create a path which connects the given k points
+    """Create a path which connects the given k points.
 
+    Parameters
+    ----------
+    k0, k1, *ks
+        Points in k-space to connect.
+    step : float
+        Length in k-space between two samples.
+
+    Examples
+    --------
     >>> np.allclose(make_path(0, 3, -1, step=1).T, [0, 1, 2, 3, 2, 1, 0, -1])
     True
     >>> np.allclose(make_path([0, 0], [2, 3], [-1, 4], step=1.4),
@@ -196,12 +205,34 @@ class Eigenvalues:
         pltutils.despine(trim=True)
 
     def plot(self, mark_degenerate=True, show_indices=False, **kwargs):
-        """Standard eigenvalues scatter plot"""
+        """Standard eigenvalues scatter plot
+
+        Parameters
+        ----------
+        mark_degenerate : bool
+            Plot a line which connects degenerate states.
+        show_indices : bool
+            Plot index number next to all states.
+        **kwargs
+            Forwarded to plt.scatter().
+        """
         plt.scatter(self.indices, self.values, **with_defaults(kwargs, c='#377ec8', s=15, lw=0.1))
         self._decorate_plot(mark_degenerate, show_indices)
 
     def plot_heatmap(self, size=(7, 77), mark_degenerate=True, show_indices=False, **kwargs):
-        """Eigenvalues scatter plot with a heatmap indicating probability density"""
+        """Eigenvalues scatter plot with a heatmap indicating probability density
+
+        Parameters
+        ----------
+        size : Tuple[int, int]
+            Min and max scatter dot size.
+        mark_degenerate : bool
+            Plot a line which connects degenerate states.
+        show_indices : bool
+            Plot index number next to all states.
+        **kwargs
+            Forwarded to plt.scatter().
+        """
         if self.probability is None:
             return self.plot(mark_degenerate, show_indices, **kwargs)
 
@@ -268,8 +299,6 @@ class Sweep:
         1D array with y-axis values - usually the secondary parameter.
     data : np.ndarray
         2D array with shape == (x.size, y.size) containing the main result data.
-    title : str
-        A title that will be used for the plot.
     labels : dict
         Plot labels: 'title', 'x', 'y' and 'data'.
     tags : dict
@@ -300,9 +329,14 @@ class Sweep:
         ygrid = np.row_stack([self.y] * self.x.size)
         return xgrid, ygrid
 
-    def save_txt(self, file_name):
-        """Save text file with 3 columns: x, y, data."""
-        with open(file_name, 'w') as file:
+    def save_txt(self, filename):
+        """Save text file with 3 columns: x, y, data.
+
+        Parameters
+        ----------
+        filename : str
+        """
+        with open(filename, 'w') as file:
             file.write("#{x:>11} {y:>12} {data:>12}\n".format(**self.plain_labels))
 
             xgrid, ygrid = self.xy_grids()
@@ -322,6 +356,11 @@ class Sweep:
         """Crop data to limits in the x and/or y axes.
 
         A call with x=(-1, 2) will leave data only where -1 < x < 2.
+
+        Parameters
+        ----------
+        x, y : Tuple[float, float]
+            Min and max data limit.
         """
         xlim, ylim = x, y
         idx_x = np.logical_and(self.x >= xlim[0], self.x <= xlim[1]) if xlim else None
@@ -329,7 +368,12 @@ class Sweep:
         self.filter(idx_x, idx_y)
 
     def mirror(self, axis='x'):
-        """Mirror data in the specified axis. Only makes sense if the axis starts at 0."""
+        """Mirror data in the specified axis. Only makes sense if the axis starts at 0.
+
+        Parameters
+        ----------
+        axis : 'x' or 'y'
+        """
         if axis == 'x':
             self.x = np.concatenate((-self.x[::-1], self.x[1:]))
             self.data = np.vstack((self.data[::-1], self.data[1:]))
@@ -343,6 +387,8 @@ class Sweep:
         Call with multiply=2 to double the size of the x-axis and interpolate data to match.
         To interpolate in both axes pass a tuple, e.g. multiply=(4, 2).
 
+        Parameters
+        ----------
         multiply : int or tuple of int
             Number of times the size of the axes should be multiplied.
         size : int or tuple of int
@@ -371,13 +417,21 @@ class Sweep:
             self.y = np.linspace(self.y.min(), self.y.max(), size_y, dtype=self.x.dtype)
             self.data = interp_y(self.y)
 
-    def convolve_gaussian(self, sigma, axis='x', extend=10):
-        """Convolve the data with a Gaussian function."""
+    def convolve_gaussian(self, sigma, axis='x'):
+        """Convolve the data with a Gaussian function.
+
+        Parameters
+        ----------
+        sigma : float
+            Gaussian broadening.
+        axis : 'x' or 'y'
+        """
         def convolve(v, data0):
             v0 = v[v.size // 2]
             gaussian = np.exp(-0.5 * ((v - v0) / sigma)**2)
             gaussian /= gaussian.sum()
 
+            extend = 10  # TODO: rethink this
             data = np.concatenate((data0[extend::-1], data0, data0[:-extend:-1]))
             data = np.convolve(data, gaussian, 'same')
             return data[extend:-extend]
@@ -391,12 +445,22 @@ class Sweep:
                 self.data[i, :] = convolve(self.y, self.data[i, :])
 
     def slice_x(self, x):
-        """Return a slice of data nearest to x and the found values of x."""
+        """Return a slice of data nearest to x and the found values of x.
+
+        Parameters
+        ----------
+        x : float
+        """
         idx = np.abs(self.x - x).argmin()
         return self.data[idx, :], self.x[idx]
 
     def slice_y(self, y):
-        """Return a slice of data nearest to y and the found values of y."""
+        """Return a slice of data nearest to y and the found values of y.
+
+        Parameters
+        ----------
+        y : float
+        """
         idx = np.abs(self.y - y).argmin()
         return self.data[:, idx], self.y[idx]
 
