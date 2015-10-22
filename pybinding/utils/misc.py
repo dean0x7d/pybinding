@@ -4,10 +4,17 @@ import numpy as np
 
 
 def to_tuple(o):
-    if isinstance(o, (tuple, list)):
+    try:
         return tuple(o)
-    else:
-        return o,
+    except TypeError:
+        return (o,) if o is not None else ()
+
+
+def to_list(o):
+    try:
+        return list(o)
+    except TypeError:
+        return [o] if o is not None else []
 
 
 def with_defaults(options: dict, defaults_dict: dict=None, **defaults_kwargs):
