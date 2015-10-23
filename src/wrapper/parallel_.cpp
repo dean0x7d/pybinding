@@ -19,17 +19,17 @@ void export_parallel() {
     class_<Deferred<ArrayXf>, bases<DeferredBase>>{"DeferredXf", no_init};
 
 
-    def("sweep", [](object variables, object produce, object report,
-                    size_t num_threads, size_t queue_size)
+    def("parallel_for", [](object sequence, object produce, object retire,
+                           std::size_t num_threads, std::size_t queue_size)
     {
-        auto size = len(variables);
+        auto const size = len(sequence);
         GILRelease main_thread_gil_release;
 
-        tbm::sweep(
+        tbm::parallel_for(
             size, num_threads, queue_size,
-            [&produce, &variables](size_t id) {
+            [&produce, &sequence](size_t id) {
                 GILEnsure gil_lock;
-                object var = variables[id];
+                object var = sequence[id];
                 return extract<std::shared_ptr<DeferredBase>>{produce(var)}();
             },
             [](std::shared_ptr<DeferredBase>& deferred) {
@@ -37,11 +37,11 @@ void export_parallel() {
                 // but no Python code may be called here
                 deferred->compute();
             },
-            [&report](std::shared_ptr<DeferredBase> deferred, size_t id) {
+            [&retire](std::shared_ptr<DeferredBase> deferred, size_t id) {
                 GILEnsure gil_lock;
-                report(deferred, id);
+                retire(deferred, id);
                 deferred.reset();
             }
         );
-    }, args("variables", "produce", "report", "num_threads", "queue_size"));
+    }, args("sequence", "produce", "retire", "num_threads", "queue_size"));
 }

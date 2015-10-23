@@ -166,9 +166,9 @@ private:
 };
 
 
-template<class Produce, class Compute, class Report>
-void sweep(size_t size, size_t num_threads, size_t queue_size,
-           Produce produce, Compute compute, Report report)
+template<class Produce, class Compute, class Retire>
+void parallel_for(size_t size, size_t num_threads, size_t queue_size,
+                  Produce produce, Compute compute, Retire retire)
 {
 #ifdef TBM_USE_MKL
     MKLDisableThreading disable_mkl_internal_threading_if{num_threads > 1};
@@ -181,7 +181,7 @@ void sweep(size_t size, size_t num_threads, size_t queue_size,
     };
 
     Queue<Job> work_queue{queue_size > 0 ? queue_size : num_threads};
-    Queue<Job> report_queue{};
+    Queue<Job> retirement_queue{};
 
     // This thread produces new jobs and adds them to the work queue
     std::thread production_thread([&] {
@@ -191,24 +191,25 @@ void sweep(size_t size, size_t num_threads, size_t queue_size,
         }
     });
 
-    // Multiple threads consume the work queue and add the computed jobs to the report queue
+    // Multiple compute threads consume the work queue
+    // and send the completed jobs to the retirement queue
     auto work_threads = std::vector<std::thread>{num_threads};
     for (auto& thread : work_threads) {
         thread = std::thread([&] {
-            QueueGuard<Job> guard{report_queue};
+            QueueGuard<Job> guard{retirement_queue};
             while (auto maybe_job = work_queue.pop()) {
                 auto job = maybe_job.get();
                 compute(job.value);
-                report_queue.push(std::move(job));
+                retirement_queue.push(std::move(job));
             }
         });
     }
 
-    // This thread consumes the report queue
+    // This thread consumes the retirement queue
     std::thread report_thread([&] {
-        while (auto maybe_job = report_queue.pop()) {
+        while (auto maybe_job = retirement_queue.pop()) {
             auto job = maybe_job.get();
-            report(std::move(job.value), job.id);
+            retire(std::move(job.value), job.id);
         }
     });
 

@@ -32,7 +32,6 @@ class Greens:
 
     def deferred_ldos(self, energy: np.ndarray, broadening: float, position: list, sublattice=-1):
         deferred = self.impl.deferred_ldos(energy, broadening, position, sublattice)
-        deferred.y = energy
         deferred.model = self.model
         return deferred
 
