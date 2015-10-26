@@ -10,7 +10,7 @@ import matplotlib.pyplot as plt
 from pybinding.support.inspect import get_call_signature
 from . import _cpp
 from .utils import cpuinfo, progressbar, decorator_decorator
-from .results import Sweep
+from .results import Sweep, NDSweep
 
 __all__ = ['num_cores', 'parallel_for', 'parallelize', 'sweep']
 
@@ -336,6 +336,38 @@ def sweep(factory, plot=lambda r: r.plot(), labels=None, tags=None, silent=False
         result = prototype.copy()
         result.data = np.vstack(v if v is not None else zero for v in data)
         return result
+
+    if silent:
+        factory.hooks.status.clear()
+    if plot:
+        factory.hooks.plot.append(plot)
+
+    return parallel_for(factory, make_result)
+
+
+def ndsweep(factory, plot=None, silent=False):
+    """Do a multi-threaded n-dimensional parameter sweep.
+
+    Parameters
+    ----------
+    factory : Factory
+        Factory function created with the `parallelize` decorator.
+    plot : callable
+        Plotting functions which takes a `NDSweep` result as its only argument.
+    silent : bool
+        Don't print status messages.
+
+    Returns
+    -------
+    NDSweep
+    """
+    energy = factory.fixtures['energy']
+    variables = factory.variables + (energy,)
+    zero = np.zeros_like(energy, np.float32)
+
+    def make_result(data):
+        sweep_data = np.vstack(v if v is not None else zero for v in data)
+        return NDSweep(variables, sweep_data)
 
     if silent:
         factory.hooks.status.clear()

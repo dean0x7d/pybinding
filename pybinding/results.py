@@ -502,3 +502,23 @@ class Sweep:
     def plot_slice_y(self, y, **kwargs):
         z, value = self.slice_y(y)
         self._plot_slice('y', self.x, z, value, **kwargs)
+
+
+@pickleable
+class NDSweep:
+    """ND parameter sweep.
+
+    Attributes
+    ----------
+    variables : tuple of array_like
+        The parameters being swept.
+    data : np.ndarray
+        Main result array with `shape == [len(v) for v in variables]`.
+    """
+
+    def __init__(self, variables: tuple, data: np.ndarray):
+        self.variables = variables
+        self.data = np.reshape(data, [len(v) for v in variables])
+
+    def copy(self) -> 'NDSweep':
+        return deepcopy(self)
