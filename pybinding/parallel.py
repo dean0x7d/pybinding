@@ -125,6 +125,8 @@ class Config:
     def make_filename(callsig):
         invalid_chars = " /.,"
         filename = "".join("{:.1s}{}".format(k, v) for k, v in callsig.named_args.items())
+        if not filename:
+            filename = "data"
         return "".join(c for c in filename if c not in invalid_chars)
 
 
