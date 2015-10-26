@@ -12,7 +12,7 @@ from . import _cpp
 from .utils import cpuinfo, progressbar, decorator_decorator
 from .results import Sweep, NDSweep
 
-__all__ = ['num_cores', 'parallel_for', 'parallelize', 'sweep']
+__all__ = ['num_cores', 'parallel_for', 'parallelize', 'sweep', 'ndsweep']
 
 num_cores = cpuinfo.physical_core_count()
 
@@ -148,15 +148,20 @@ class DefaultStatus:
 
 
 class Factory:
-    """Produces `Deferred` jobs for `ParallelFor`.
+    """Produces `Deferred` jobs for `ParallelFor`
 
     Attributes
     ----------
-    variables : tuple of list
+    variables : tuple of array_like
+        Parameters which change while iterating.
     fixtures : dict
-    produce : callable
-    config : Config
+        Constant parameters.
     sequence : list
+        Product of `variables`. The loop will iterate over its values.
+    produce : callable
+        Takes a value from `sequence` and returns a `Deferred` compute object.
+    config : Config
+    hooks : Hooks
     """
     def __init__(self, variables, fixtures, produce, config):
         self.variables = variables
@@ -271,12 +276,24 @@ class ParallelFor:
 
 
 def parallel_for(factory, make_result=None):
+    """Multi-threaded loop feed by the `factory` function
+
+    Parameters
+    ----------
+    factory : Factory
+        Factory function created with the `parallelize` decorator.
+    make_result : callable
+        Creates the final result from raw data.
+        This result is also the final return value of `parallel_for`.
+    """
     return ParallelFor(factory, make_result)()
 
 
 @decorator_decorator
 def parallelize(callsig=None, num_threads=num_cores, queue_size=num_cores, **kwargs):
-    """
+    """Create a factory function for `parallel_for`
+
+    The decorated function must return a `Deferred` compute kernel.
 
     Parameters
     ----------
@@ -314,7 +331,7 @@ def parallelize(callsig=None, num_threads=num_cores, queue_size=num_cores, **kwa
 
 
 def sweep(factory, plot=lambda r: r.plot(), labels=None, tags=None, silent=False):
-    """Do a multi-threaded parameter sweep and return a `Sweep` result.
+    """Do a multi-threaded parameter sweep
 
     Parameters
     ----------
@@ -326,6 +343,10 @@ def sweep(factory, plot=lambda r: r.plot(), labels=None, tags=None, silent=False
         Forwarded to `Sweep` object.
     silent : bool
         Don't print status messages.
+
+    Returns
+    -------
+    Sweep
     """
     x = factory.variables[0]
     energy = factory.fixtures['energy']
@@ -344,7 +365,7 @@ def sweep(factory, plot=lambda r: r.plot(), labels=None, tags=None, silent=False
 
 
 def ndsweep(factory, plot=None, silent=False):
-    """Do a multi-threaded n-dimensional parameter sweep.
+    """Do a multi-threaded n-dimensional parameter sweep
 
     Parameters
     ----------
