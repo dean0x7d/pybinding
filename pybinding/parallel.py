@@ -329,13 +329,11 @@ def sweep(factory, plot=lambda r: r.plot(), labels=None, tags=None, silent=False
     """
     x = factory.variables[0]
     energy = factory.fixtures['energy']
-    prototype = Sweep(x, energy, 0, labels, tags)
-    zero = np.zeros_like(energy)
+    zero = np.zeros_like(energy, np.float32)
 
     def make_result(data):
-        result = prototype.copy()
-        result.data = np.vstack(v if v is not None else zero for v in data)
-        return result
+        sweep_data = np.vstack(v if v is not None else zero for v in data)
+        return Sweep(x, energy, sweep_data, labels, tags)
 
     if silent:
         factory.hooks.status.clear()
