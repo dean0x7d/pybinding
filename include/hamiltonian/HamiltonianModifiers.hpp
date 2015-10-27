@@ -13,9 +13,9 @@ namespace tbm {
 /**
 Abstract base class for onsite potential.
 */
-class OnsiteModifier {
+class OnsiteModifierImpl {
 public:
-    virtual ~OnsiteModifier() = default;
+    virtual ~OnsiteModifierImpl() = default;
     virtual bool is_complex() const { return false; }
 
     /// Get the value of the potential at the given coordinates.
@@ -28,9 +28,9 @@ public:
 /**
 Abstract base class for hopping energy modifiers.
 */
-class HoppingModifier {
+class HoppingModifierImpl {
 public:
-    virtual ~HoppingModifier() = default;
+    virtual ~HoppingModifierImpl() = default;
     virtual bool is_complex() const { return false; }
 
     virtual void apply(ArrayXf& hopping, const CartesianArray& p1, const CartesianArray& p2) const = 0;
@@ -39,11 +39,13 @@ public:
     virtual void apply(ArrayXcd& hopping, const CartesianArray& p1, const CartesianArray& p2) const = 0;
 };
 
+using OnsiteModifier = std::shared_ptr<OnsiteModifierImpl const>;
+using HoppingModifier = std::shared_ptr<HoppingModifierImpl const>;
 
 class HamiltonianModifiers {
 public:
-    bool add_unique(const std::shared_ptr<const OnsiteModifier>& m);
-    bool add_unique(const std::shared_ptr<const HoppingModifier>& m);
+    bool add_unique(OnsiteModifier const& m);
+    bool add_unique(HoppingModifier const& m);
 
     /// Do any of the modifiers require complex numbers?
     bool any_complex() const;
@@ -62,8 +64,8 @@ public:
     
 public:
     // Keep modifiers as unique elements but insertion order must be preserved (don't use std::set)
-    std::vector<std::shared_ptr<const OnsiteModifier>> onsite;
-    std::vector<std::shared_ptr<const HoppingModifier>> hopping;
+    std::vector<OnsiteModifier> onsite;
+    std::vector<HoppingModifier> hopping;
 };
 
 template<class scalar_t, class Fn>

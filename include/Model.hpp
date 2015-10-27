@@ -21,10 +21,10 @@ public: // set parameters
     void set_symmetry(const std::shared_ptr<Symmetry>& symmetry);
 
     /// (Optional)
-    void add_site_state_modifier(const std::shared_ptr<SiteStateModifier>& m);
-    void add_position_modifier(const std::shared_ptr<PositionModifier>& m);
-    void add_onsite_modifier(const std::shared_ptr<OnsiteModifier>& m);
-    void add_hopping_modifier(const std::shared_ptr<HoppingModifier>& m);
+    void add_site_state_modifier(SiteStateModifier const& m);
+    void add_position_modifier(PositionModifier const& m);
+    void add_onsite_modifier(OnsiteModifier const& m);
+    void add_hopping_modifier(HoppingModifier const& m);
 
     /// (Required for periodic systems)
     void set_wave_vector(const Cartesian& k);

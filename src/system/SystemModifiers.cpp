@@ -1,7 +1,7 @@
 #include "system/SystemModifiers.hpp"
 using namespace tbm;
 
-bool SystemModifiers::add_unique(const std::shared_ptr<const SiteStateModifier>& m) {
+bool SystemModifiers::add_unique(SiteStateModifier const& m) {
     if (std::find(state.begin(), state.end(), m) == state.end()) {
         state.push_back(m);
         return true;
@@ -9,7 +9,7 @@ bool SystemModifiers::add_unique(const std::shared_ptr<const SiteStateModifier>&
     return false;
 }
 
-bool SystemModifiers::add_unique(const std::shared_ptr<const PositionModifier>& m) {
+bool SystemModifiers::add_unique(PositionModifier const& m) {
     if (std::find(position.begin(), position.end(), m) == position.end()) {
         position.push_back(m);
         return true;

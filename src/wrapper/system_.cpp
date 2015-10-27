@@ -13,7 +13,8 @@
 using namespace boost::python;
 
 
-class PySiteStateModifier : public tbm::SiteStateModifier, public wrapper<tbm::SiteStateModifier> {
+class PySiteStateModifier : public tbm::SiteStateModifierImpl,
+                            public wrapper<tbm::SiteStateModifierImpl> {
 public:
     virtual void apply(ArrayX<bool>& is_valid, const CartesianArray& p) const override {
         object result = get_override("apply")(
@@ -25,7 +26,8 @@ public:
     void apply_dummy(ArrayX<bool>&, const ArrayXf&, const ArrayXf&, const ArrayXf&) const {}
 };
 
-class PyPositionModifier : public tbm::PositionModifier, public wrapper<tbm::PositionModifier> {
+class PyPositionModifier : public tbm::PositionModifierImpl,
+                           public wrapper<tbm::PositionModifierImpl> {
 public:
     virtual void apply(CartesianArray& p) const override {
         tuple result = get_override("apply")(DenseURef{p.x}, DenseURef{p.y}, DenseURef{p.z});

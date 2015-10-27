@@ -10,13 +10,14 @@
 
 using namespace boost::python;
 
-class PyOnsite : public tbm::OnsiteModifier, public wrapper<tbm::OnsiteModifier> {
+class PyOnsite : public tbm::OnsiteModifierImpl,
+                 public wrapper<tbm::OnsiteModifierImpl> {
 public:
     virtual bool is_complex() const final {
         if (auto f = get_override("is_complex")) {
             return f();
         }
-        return tbm::OnsiteModifier::is_complex();
+        return tbm::OnsiteModifierImpl::is_complex();
     }
     
     template<typename Array>
@@ -35,13 +36,14 @@ public:
     void apply_dummy(ArrayXf&, const ArrayXf&, const ArrayXf&, const ArrayXf&) const {}
 };
 
-class PyHopping : public tbm::HoppingModifier, public wrapper<tbm::HoppingModifier> {
+class PyHopping : public tbm::HoppingModifierImpl,
+                  public wrapper<tbm::HoppingModifierImpl> {
 public:
     virtual bool is_complex() const final {
         if (auto f = get_override("is_complex")) {
             return f();
         }
-        return tbm::HoppingModifier::is_complex();
+        return tbm::HoppingModifierImpl::is_complex();
     }
 
     template<typename Array>

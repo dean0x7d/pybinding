@@ -46,30 +46,26 @@ void Model::set_symmetry(const std::shared_ptr<Symmetry>& new_symmetry)
     }
 }
 
-void Model::add_site_state_modifier(const std::shared_ptr<SiteStateModifier>& m)
-{
+void Model::add_site_state_modifier(SiteStateModifier const& m) {
     if (system_modifiers.add_unique(m)) {
         _system.reset();
         _hamiltonian.reset();
     }
 }
 
-void Model::add_position_modifier(const std::shared_ptr<PositionModifier>& m)
-{
+void Model::add_position_modifier(PositionModifier const& m) {
     if (system_modifiers.add_unique(m)) {
         _system.reset();
         _hamiltonian.reset();
     }
 }
 
-void Model::add_onsite_modifier(const std::shared_ptr<OnsiteModifier>& m)
-{
+void Model::add_onsite_modifier(OnsiteModifier const& m) {
     if (hamiltonian_modifiers.add_unique(m))
         _hamiltonian.reset();
 }
 
-void Model::add_hopping_modifier(const std::shared_ptr<HoppingModifier>& m)
-{
+void Model::add_hopping_modifier(HoppingModifier const& m) {
     if (hamiltonian_modifiers.add_unique(m))
         _hamiltonian.reset();
 }
