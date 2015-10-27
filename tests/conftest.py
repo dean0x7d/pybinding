@@ -13,14 +13,17 @@ def pytest_addoption(parser):
                      help="Save a new baseline for all tests.")
 
 
-# noinspection PyUnusedLocal
-@pytest.mark.tryfirst
-def pytest_runtest_makereport(item, call, __multicall__):
-    """This allows fixtures to access test reports"""
-    # adds reports for 'setup', 'call', 'teardown' with 'rep_' prefix
-    rep = __multicall__.execute()
-    setattr(item, 'rep_' + rep.when, rep)
-    return rep
+@pytest.hookimpl(hookwrapper=True)
+def pytest_runtest_makereport(item):
+    """Allows fixtures to access test reports
+
+    Adds test reports `rep_setup`, `rep_call`, `rep_teardown` to `request.node`.
+    Required by the `plot` fixture to determine if a test failed.
+    """
+    outcome = yield
+    report = outcome.get_result()
+    setattr(item, "rep_" + report.when, report)
+    return report
 
 
 def _make_file_path(request, directory: str, name: str='', ext: str=''):
