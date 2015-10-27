@@ -122,7 +122,7 @@ private:
     void append(std::string short_str, std::string long_str, Chrono const& time);
 
 private:
-    char const* short_line = "{message:s} ({time}) ";
+    char const* short_line = "{message:s} [{time}] ";
     char const* long_line = "- {message:-80s} | {time}\n";
     std::string short_report;
     std::string long_report;

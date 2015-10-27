@@ -346,7 +346,7 @@ std::string Stats::report(bool shortform) const {
 }
 
 void Stats::lanczos(double min_energy, double max_energy, int loops, Chrono const& time) {
-    append(fmt::format("L: {min_energy:.2f}, {max_energy:.2f}, {loops}",
+    append(fmt::format("{min_energy:.2f}, {max_energy:.2f}, {loops}",
                        min_energy, max_energy, loops),
            fmt::format("Spectrum bounds found ({min_energy:.2f}, {max_energy:.2f} eV) "
                        "using Lanczos procedure with {loops} loops",
@@ -364,7 +364,7 @@ void Stats::reordering(OptimizedHamiltonian<scalar_t> const& oh, int num_moments
     bool const used_full_system = static_cast<int>(oh.optimized_sizes.size()) < num_moments / 2;
     auto const not_efficient = !used_full_system ? "*" : "";
 
-    append(fmt::format("R: {removed_percent:.0f}%{not_efficient}",
+    append(fmt::format("{removed_percent:.0f}%{not_efficient}",
                        removed_percent, not_efficient),
            fmt::format("The reordering optimization was able to remove "
                        "{removed_percent:.0f}%{not_efficient} of the workload",
@@ -378,14 +378,15 @@ void Stats::kpm(OptimizedHamiltonian<scalar_t> const& oh, int num_moments, Chron
     auto const operations_per_second = oh.optimized_area(num_moments) / time.seconds();
     auto const ops_with_suffix = fmt::with_suffix(operations_per_second);
 
-    append(fmt::format("K: {num_moments} @ {ops}ops", moments_with_suffix, ops_with_suffix),
+    append(fmt::format("{num_moments} @ {ops}ops", moments_with_suffix, ops_with_suffix),
            fmt::format("KPM calculated {num_moments} moments at {ops} operations per second",
                        moments_with_suffix, ops_with_suffix),
            time);
 }
 
 void Stats::greens(Chrono const& time) {
-    append("G:", "Green's function calculated", time);
+    auto str = std::string{"Green's function calculated"};
+    long_report += fmt::format(long_line, str, time);
 }
 
 void Stats::append(std::string short_str, std::string long_str, Chrono const& time) {
