@@ -42,6 +42,30 @@ def test_decorator():
     assert "must not return complex" in str(excinfo.value)
 
 
+@pb.modifier.site_state
+def global_mod(state):
+    return np.ones_like(state)
+
+
+def test_callsig():
+    assert "global_mod()" == str(global_mod)
+    assert "global_mod()" == repr(global_mod)
+
+    @pb.modifier.site_state
+    def local_mod(state):
+        return np.ones_like(state)
+    assert "test_callsig()" == str(local_mod)
+    assert "test_callsig()" == repr(local_mod)
+
+    def wrapped_mod(a, b):
+        @pb.modifier.site_state
+        def actual_mod(state):
+            return np.ones_like(state) * a * b
+        return actual_mod
+    assert "wrapped_mod(a=1, b=8)" == str(wrapped_mod(1, 8))
+    assert "test_callsig.<locals>.wrapped_mod(a=1, b=8)" == repr(wrapped_mod(1, 8))
+
+
 def test_cast():
     @pb.modifier.onsite_energy
     def complex_in_real_out(potential):

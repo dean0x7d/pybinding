@@ -17,13 +17,13 @@ def coulomb(beta, r_const=.0, offset=(0, 0, 0)):
     """
     from .constants import hbar, vf
     # beta is dimensionless -> multiply hbar*vF makes it [eV * nm]
-    beta *= hbar * vf
+    scaled_beta = beta * hbar * vf
 
     @modifier.onsite_energy
     def pot(potential, x, y, z):
         x0, y0, z0 = offset
         r = _np.sqrt((x-x0)**2 + (y-y0)**2 + (z-z0)**2)
         r[r < r_const] = r_const
-        return potential - beta / r
+        return potential - scaled_beta / r
 
     return pot

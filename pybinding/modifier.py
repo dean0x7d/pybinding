@@ -1,6 +1,8 @@
 import inspect
 import numpy as np
+
 from . import _cpp
+from .support.inspect import get_call_signature
 
 __all__ = ['site_state', 'site_position', 'onsite_energy', 'hopping_energy']
 
@@ -47,6 +49,17 @@ def _make_modifier_decorator(base_modifier, keywords: str, num_return=1, maybe_c
 
         class Modifier(base_modifier):
             argnames = inspect.getargspec(func)[0]
+            try:
+                callsig = get_call_signature(up=2)
+            except IndexError:
+                callsig = get_call_signature(up=0)
+                callsig.function = func
+
+            def __str__(self):
+                return str(self.callsig)
+
+            def __repr__(self):
+                return repr(self.callsig)
 
             def __call__(self, *args, **kwargs):
                 return func(*args, **kwargs)
