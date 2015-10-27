@@ -57,12 +57,14 @@ def _make_modifier_decorator(base_modifier, keywords: str, num_return=1, maybe_c
                               if name in self.argnames}
                 ret = func(**named_args)
 
-                try:
-                    cast = lambda v: v.astype(args[0].dtype, casting='same_kind', copy=False)
+                def cast_dtype(v):
+                    return v.astype(args[0].dtype, casting='same_kind', copy=False)
+
+                try:  # cast output array to same element type as the input
                     if isinstance(ret, tuple):
-                        return tuple(map(cast, ret))
+                        return tuple(map(cast_dtype, ret))
                     else:
-                        return cast(ret)
+                        return cast_dtype(ret)
                 except TypeError:
                     return ret
 
