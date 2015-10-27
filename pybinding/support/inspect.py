@@ -22,7 +22,7 @@ class CallSignature:
             ordered.update(x)
         return ordered
 
-    def format_args(self, func):
+    def _format_args(self, func):
         """Apply `func` to each argument value and return the formatted string"""
         if self.args:
             positional = [func(v) for k, v in self.positional.items()]
@@ -36,10 +36,10 @@ class CallSignature:
         return ", ".join(positional + args + keywords_only + kwargs)
 
     def __str__(self):
-        return "{}({})".format(self.function.__name__, self.format_args(str))
+        return "{}({})".format(self.function.__name__, self._format_args(str))
 
     def __repr__(self):
-        return "{}({})".format(self.function.__qualname__, self.format_args(repr))
+        return "{}({})".format(self.function.__qualname__, self._format_args(repr))
 
 
 def _find_callable(name, frame):
@@ -62,8 +62,15 @@ def _find_callable(name, frame):
 
 
 def get_call_signature(up=0):
-    """Return a CallSignature of the function called at `up` number of stack frames
+    """Return a CallSignature of the function currently being executed or `up` a few frames
 
+    Parameters
+    ----------
+    up : int, optional
+        Selects which call frame to inspect: number of frames up from the current one.
+
+    Examples
+    --------
     >>> # noinspection PyUnusedLocal
     ... def hello(a, b=8, *args, target=1, **kwargs):
     ...    # noinspection PyUnusedLocal
@@ -90,22 +97,25 @@ def get_call_signature(up=0):
     outer.<locals>.inner(y=2)
     """
     stack = inspect.stack()
-    if up + 2 >= len(stack):
+    try:
+        frame, _, _, func_name, *_ = stack[up + 1]
+    except:
         raise IndexError("Stack frame out of range")
 
-    frame, _, _, func_name, *_ = stack[up + 1]
-    _, args_name, kwargs_name, frame_locals = inspect.getargvalues(frame)
+    if func_name == '<module>':
+        raise IndexError("Can't inspect a module")
 
+    _, args_name, kwargs_name, frame_locals = inspect.getargvalues(frame)
     function = _find_callable(func_name, frame)
-    sig = inspect.signature(function)
+    params = inspect.signature(function).parameters
 
     positional = OrderedDict([(name, frame_locals[name])
-                              for name, param in sig.parameters.items()
+                              for name, param in params.items()
                               if param.kind == param.POSITIONAL_OR_KEYWORD])
     args = frame_locals.get(args_name, ())
 
     keyword_only = OrderedDict([(name, frame_locals[name])
-                                for name, param in sig.parameters.items()
+                                for name, param in params.items()
                                 if param.kind == param.KEYWORD_ONLY])
     kwargs = frame_locals.get(kwargs_name, {})
 
