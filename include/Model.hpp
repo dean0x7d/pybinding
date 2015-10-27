@@ -33,7 +33,12 @@ public: // get parameters
     std::shared_ptr<const Lattice> lattice() const { return _lattice; }
     std::shared_ptr<const Shape> shape() const { return _shape; }
     std::shared_ptr<const Symmetry> symmetry() const { return _symmetry; }
-    
+
+    std::vector<SiteStateModifier> state_modifiers() const { return system_modifiers.state; }
+    std::vector<PositionModifier> position_modifiers() const { return system_modifiers.position; }
+    std::vector<OnsiteModifier> onsite_modifiers() const { return hamiltonian_modifiers.onsite; }
+    std::vector<HoppingModifier> hopping_modifiers() const { return hamiltonian_modifiers.hopping; }
+
 public: // get results
     std::shared_ptr<const System> system() const;
     std::shared_ptr<const Hamiltonian> hamiltonian() const;

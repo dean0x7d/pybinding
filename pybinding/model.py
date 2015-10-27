@@ -33,3 +33,8 @@ class Model(_cpp.Model):
     @property
     def lattice(self) -> Lattice:
         return super().lattice
+
+    @property
+    def modifiers(self) -> list:
+        return (self.state_modifiers + self.position_modifiers +
+                self.onsite_modifiers + self.hopping_modifiers)
