@@ -201,7 +201,7 @@ class ParallelFor:
         self.save_at = self.config.make_save_set(size)
 
         logname = self.config.filename + ".log" if self.config.filename else ""
-        self.pbar = progressbar.Range(size, fd=self.config.pbar_fd, filename=logname)
+        self.pbar = progressbar.ProgressBar(size, stream=self.config.pbar_fd, filename=logname)
 
         if self.config.num_threads == 1:
             self.loop = _sequential_for
@@ -223,7 +223,7 @@ class ParallelFor:
         if not self.called_first:
             self._first(deferred)
             self.called_first = True
-            self.pbar.update()  # refreshes the output stream
+            self.pbar.refresh()
 
         return deferred
 
@@ -234,7 +234,7 @@ class ParallelFor:
     def _retire(self, deferred, idx):
         self.data[idx] = copy(deferred.result)
 
-        count = self.pbar.currval + 1
+        count = self.pbar.value + 1
         self._status(deferred.report, idx, count)
         self.pbar += 1  # also refreshes output stream
 
@@ -268,12 +268,9 @@ class ParallelFor:
             print(err)
 
     def __call__(self):
-        self.pbar.start()
         self.called_first = False
-
-        self.loop(self.factory.sequence, self._produce, self._retire)
-
-        self.pbar.finish()
+        with self.pbar:
+            self.loop(self.factory.sequence, self._produce, self._retire)
         return self.result
 
 

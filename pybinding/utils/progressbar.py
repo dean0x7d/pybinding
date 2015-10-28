@@ -1,97 +1,218 @@
-from progressbar import *
+import datetime
+import io
+import os
+import sys
 
 
-class CustomETA(Timer):
-    def update(self, pbar):
-        if pbar.currval == 0:
-            return self.format % '--:--:--'
+def percentage(template="{:3.0%}"):
+    def widget(pbar):
+        return template.format(pbar.percent)
+    return widget
+
+
+def bar(marker='/', left='[', right=']', fill=' '):
+    def widget(pbar, width):
+        width -= len(left) + len(right)
+        marked = marker * int(pbar.percent * width)
+        return "{}{}{}".format(left, marked.ljust(width, fill), right)
+    return widget
+
+
+def elapsed(template="Elapsed: {}"):
+    def widget(pbar):
+        return template.format(datetime.timedelta(seconds=int(pbar.elapsed_seconds)))
+    return widget
+
+
+def eta(template="ETA: {}"):
+    def widget(pbar):
+        if pbar.value == 0:
+            return "--:--:--"
         else:
-            elapsed = pbar.seconds_elapsed
-            eta = elapsed * pbar.maxval / pbar.currval - elapsed
-            return self.format % self.format_time(eta)
+            remaining = pbar.elapsed_seconds * (1 / pbar.percent - 1)
+            return template.format(datetime.timedelta(seconds=int(remaining)))
+    return widget
 
 
-class Range(ProgressBar):
-    def __init__(self, maxval, filename="", fd=sys.stdout, custom_widgets=None, term_width=80):
-        default_widgets = ['Progress ', Percentage(), ' ', Bar('/', '[', ']'),
-                           Timer(' Elapsed: %s /'), CustomETA(' ETA: %s')]
+class StdCapture:
+    def __init__(self, stream_name='stdout'):
+        self.stream_name = stream_name
+        self._old_stream = getattr(sys, stream_name)
 
-        super().__init__(widgets=custom_widgets if custom_widgets else default_widgets,
-                         maxval=maxval, term_width=term_width, fd=fd, redirect_stdout=True)
+    def start(self):
+        self._old_stream = getattr(sys, self.stream_name)
+        setattr(sys, self.stream_name, io.StringIO())
 
+    def get(self):
+        output = getattr(sys, self.stream_name).getvalue()
+        self._old_stream.write(output)
+        self._old_stream.flush()
+        setattr(sys, self.stream_name, io.StringIO())
+        return output
+
+    def stop(self):
+        setattr(sys, self.stream_name, self._old_stream)
+
+
+class StreamOutput:
+    def __init__(self, stream):
+        self.stream = stream
+
+    def start(self, width):
+        pass
+
+    def clear_pbar(self):
+        self.stream.write('\r')
+
+    def write(self, line):
+        pass
+
+    def write_pbar(self, line):
+        self.stream.write('\r' + line)
+        self.stream.flush()
+
+    def stop(self):
+        pass
+
+
+class FileOutput:
+    def __init__(self, filename):
+        self.file = open(filename, 'w')
+
+    def start(self, width):
+        self.file.seek(0, 0)
+        self.file.write(' ' * width + '\n')
+        self.file.flush()
+        self.file.seek(0, os.SEEK_END)
+
+    def clear_pbar(self):
+        pass
+
+    def write(self, line):
+        self.file.write(line)
+
+    def write_pbar(self, line):
+        self.file.seek(0, 0)
+        self.file.write(line + '\n')
+        self.file.flush()
+        self.file.seek(0, os.SEEK_END)
+
+    def stop(self):
+        self.file.close()
+
+
+class ProgressBar:
+    def __init__(self, size, widgets=None, width=80, stream=sys.stdout, filename=""):
+        self.size = size
+        if widgets:
+            self.widgets = widgets
+        else:
+            self.widgets = self.default_widgets()
+
+        self.width = width
+        self.outputs = []
+        if stream:
+            self.outputs.append(StreamOutput(stream))
         if filename:
-            self._file = open(filename, 'w+')
-        else:
-            self._file = None
+            self.outputs.append(FileOutput(filename))
 
-    def update(self, value=None):
-        """ Update stdout and file """
-        from io import StringIO
+        self.captures = [StdCapture('stdout'), StdCapture('stderr')]
 
-        if value is not None and value is not UnknownLength:
-            if (self.maxval is not UnknownLength
-                    and not 0 <= value <= self.maxval
-                    and not value < self.currval):
+        self.value = 0
+        self.running = False
+        self.start_time = datetime.datetime.now()
+        self.last_update_time = self.start_time
 
-                raise ValueError('Value out of range')
+    @staticmethod
+    def default_widgets():
+        return ['Progress ', percentage(), ' ', bar(), ' ', elapsed(), ' / ', eta()]
 
-            self.currval = value
+    @property
+    def percent(self):
+        return self.value / self.size
 
-        if self.start_time is None:
+    @property
+    def elapsed_seconds(self):
+        return (self.last_update_time - self.start_time).total_seconds()
+
+    def __enter__(self):
+        return self.start()
+
+    def __exit__(self, *_):
+        self.stop()
+
+    def __iadd__(self, value):
+        self.update(self.value + value)
+        return self
+
+    def _make_line(self):
+        def format_fixed_size(widget):
+            try:
+                return widget(self)
+            except TypeError:
+                return widget
+
+        semi_formatted_widgets = [format_fixed_size(w) for w in self.widgets]
+        num_remaining = sum(callable(w) for w in semi_formatted_widgets)
+        width_formatted = sum(len(w) if not callable(w) else 0 for w in semi_formatted_widgets)
+        width_remaining = self.width - width_formatted
+
+        def format_variable_size(widget):
+            if callable(widget):
+                return widget(self, int(width_remaining / num_remaining))
+            else:
+                return widget
+
+        formatted_widgets = (format_variable_size(w) for w in semi_formatted_widgets)
+        return "".join(formatted_widgets).ljust(self.width)
+
+    def start(self):
+        self.running = True
+
+        for capture in self.captures:
+            capture.start()
+        for output in self.outputs:
+            output.start(self.width)
+
+        self.start_time = datetime.datetime.now()
+        self.update(0)
+
+    def update(self, value):
+        if not self.running:
             self.start()
-            self.update(value)
-        if not self._need_update():
+
+        self.value = value
+        self.last_update_time = datetime.datetime.now()
+        self.refresh()
+
+    def refresh(self):
+        for output in self.outputs:
+            output.clear_pbar()
+
+        lines = [c.get() for c in self.captures]
+        for output in self.outputs:
+            for line in lines:
+                output.write(line)
+
+        for output in self.outputs:
+            output.write_pbar(self._make_line())
+
+    def stop(self):
+        if not self.running:
             return
 
-        if self.redirect_stderr and sys.stderr.tell():
-            if self.fd:
-                self.fd.write('\r' + ' ' * self.term_width + '\r')
-            last_line = sys.stderr.getvalue()
-            self._stderr.write(last_line)
-            self._stderr.flush()
-            sys.stderr = StringIO()
-            if self._file:  # write stderr to file
-                self._file.write(last_line)
+        self.refresh()
 
-        if self.redirect_stdout and sys.stdout.tell():
-            if self.fd:
-                self.fd.write('\r' + ' ' * self.term_width + '\r')
-            last_line = sys.stdout.getvalue()
-            self._stdout.write(last_line)
-            self._stdout.flush()
-            sys.stdout = StringIO()
-            if self._file:  # write stdout to file
-                self._file.write(last_line)
+        for capture in self.captures:
+            capture.stop()
+        for output in self.outputs:
+            output.stop()
 
-        now = time.time()
-        self.seconds_elapsed = now - self.start_time
-        self.next_update = self.currval + self.update_interval
-        if self.fd:
-            self.fd.write('\r' + self._format_line())
-
-        # write progress to file
-        if self._file:
-            self._file.seek(0, 0)
-            self._file.write(' ' * self.term_width)
-            self._file.seek(0, 0)
-            self._file.write(self._format_line() + '\n')
-            self._file.flush()
-            self._file.seek(0, os.SEEK_END)
-
-        self.last_update_time = now
+        self.running = False
 
     def finish(self):
-        self.finished = True
-        self.update(self.maxval)
-        if self.fd:
-            self.fd.write('\n')
-        if self.signal_set:
-            signal.signal(signal.SIGWINCH, signal.SIG_DFL)
+        if not self.running:
+            return
 
-        if self.redirect_stderr:
-            self._stderr.write(sys.stderr.getvalue())
-            sys.stderr = self._stderr
-
-        if self.redirect_stdout:
-            self._stdout.write(sys.stdout.getvalue())
-            sys.stdout = self._stdout
+        self.update(self.size)
+        self.stop()
