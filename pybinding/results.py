@@ -45,6 +45,27 @@ def make_path(k0, k1, *ks, step=0.1):
 
 
 @pickleable
+class DOS:
+    """Density of states
+
+    Attributes
+    ----------
+    energy : array_like
+    dos : array_like
+    """
+    def __init__(self, energy, dos):
+        self.energy = energy
+        self.dos = dos
+
+    def plot(self, **kwargs):
+        plt.plot(self.energy, self.dos, **kwargs)
+        plt.xlim(self.energy.min(), self.energy.max())
+        plt.ylabel('DOS')
+        plt.xlabel('E (eV)')
+        pltutils.despine()
+
+
+@pickleable
 class LDOSpoint:
     def __init__(self, energy, ldos):
         self.energy = energy

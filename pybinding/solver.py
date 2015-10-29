@@ -1,4 +1,5 @@
 import time
+import math
 
 import numpy as np
 
@@ -71,7 +72,29 @@ class Solver:
         return results.SpatialMap.from_system(probability, self.system)
 
     def calc_dos(self, energies, broadening) -> np.ndarray:
-        return self.impl.calc_dos(energies, broadening)
+        """Calculate the density of states as a function of energy
+
+        Calculates the following, where E is `energies` and c is `broadening`
+            DOS(E) = 1 / (c * sqrt(2pi)) * sum(exp(-0.5 * (eigenvalues - E)^2 / c^2))
+
+        Parameters
+        ----------
+        energies : array_like
+            Values for which the DOS is calculated.
+        broadening : float
+            Controls the width of the Gaussian broadening applied to the DOS.
+
+        Returns
+        -------
+        results.DOS
+        """
+        if hasattr(self.impl, 'calc_dos'):
+            return results.DOS(energies, self.impl.calc_dos(energies, broadening))
+        else:
+            scale = 1 / (broadening * math.sqrt(2 * math.pi))
+            delta = self.eigenvalues[:, np.newaxis] - energies
+            dos = scale * np.sum(np.exp(-0.5 * delta**2 / broadening**2), axis=0)
+            return results.DOS(energies, dos)
 
     def calc_ldos(self, energy, broadening, sublattice=-1):
         ldos = self.impl.calc_ldos(energy, broadening, sublattice)

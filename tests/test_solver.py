@@ -1,7 +1,9 @@
 import pytest
 
+import numpy as np
 import pybinding as pb
 from pybinding.repository import graphene
+
 
 solvers = ['arpack']
 if hasattr(pb._cpp, 'FEAST'):
@@ -45,6 +47,13 @@ def test_eigenvalues(solver, baseline, plot):
     expected = baseline(eig)
     plot(eig, expected, 'plot_heatmap')
     assert pytest.fuzzy_equal(eig, expected, 2.e-2, 1.e-6)
+
+
+def test_dos(solver, baseline, plot):
+    dos = solver.calc_dos(np.linspace(0, 0.1, 15), 0.01)
+    expected = baseline(dos)
+    plot(dos, expected, 'plot')
+    assert pytest.fuzzy_equal(dos, expected)
 
 
 def test_lapack(baseline, plot):

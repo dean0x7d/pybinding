@@ -42,14 +42,14 @@ ArrayXd Solver::calc_dos(ArrayXf target_energies, float broadening) {
     ArrayXd dos(target_energies.size());
 
     // TODO: also handle <double>
-    auto energies = uref_cast<ArrayXf>(eigenvalues());
-    auto const inverted_broadening = 1 / (broadening*broadening);
-    auto const sqrt_pi = sqrt(physics::pi);
+    auto En = uref_cast<ArrayXf>(eigenvalues());
+    auto const scale = 1 / (broadening * sqrt(2 * physics::pi));
+    auto const constant = -0.5f / pow(broadening, 2);
 
-    // calculate DOS(E) = 1/(sqrt(pi)*G) * sum(exp((En-E)^2 / G^2))
-    transform(target_energies, dos, [&](const float E) {
-        auto gaussian = exp(-(energies - E).square() * inverted_broadening);
-        return 1 / (sqrt_pi * broadening) * sum(gaussian);
+    // DOS(E) = 1 / (broadening * sqrt(2pi)) * sum(exp(-0.5 * (En-E)^2 / broadening^2))
+    transform(target_energies, dos, [&](float E) {
+        auto gaussian = exp((En - E).square() * constant);
+        return scale * sum(gaussian);
     });
 
     return dos;
