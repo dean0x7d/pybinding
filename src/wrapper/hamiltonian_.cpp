@@ -23,7 +23,7 @@ public:
         return tbm::OnsiteModifierImpl::is_complex();
     }
     
-    template<typename Array>
+    template<class Array>
     void apply_(Array& potential, CA p, SA s) const {
         object result = get_override("apply")(
             DenseURef{potential}, DenseURef{p.x}, DenseURef{p.y}, DenseURef{p.z}, DenseURef{s}
@@ -50,7 +50,7 @@ public:
         return tbm::HoppingModifierImpl::is_complex();
     }
 
-    template<typename Array>
+    template<class Array>
     void apply_(Array& hopping, HA id, CA p1, CA p2) const {
         object result = get_override("apply")(
             DenseURef{hopping}, DenseURef{id},

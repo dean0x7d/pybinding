@@ -5,7 +5,7 @@
 namespace compute {
 
 namespace detail {
-    template<typename real_t>
+    template<class real_t>
     static void tridiagonal_qr_step(real_t* diag, real_t* subdiag, int start, int end) {
         auto td = (diag[end-1] - diag[end]) * real_t(0.5);
         auto e = subdiag[end-1];
@@ -49,7 +49,7 @@ namespace detail {
     }
 }
 
-template<class Derived, typename scalar_t = typename Derived::Scalar>
+template<class Derived, class scalar_t = typename Derived::Scalar>
 inline ArrayX<scalar_t> tridiagonal_eigenvalues(const DenseBase<Derived>& alpha,
                                                 const DenseBase<Derived>& beta)
 {

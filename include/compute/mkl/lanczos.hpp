@@ -3,7 +3,7 @@
 
 namespace compute {
 
-template<class Derived, typename scalar_t = typename Derived::Scalar>
+template<class Derived, class scalar_t = typename Derived::Scalar>
 inline ArrayX<scalar_t> tridiagonal_eigenvalues(const DenseBase<Derived>& alpha,
                                                 const DenseBase<Derived>& beta)
 {

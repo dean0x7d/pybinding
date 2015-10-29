@@ -12,7 +12,7 @@
 namespace tbm {
 
 class Hamiltonian;
-template <typename scalar_t> class HamiltonianT;
+template <class scalar_t> class HamiltonianT;
 
 /**
  Abstract base class for Green's function strategy.
@@ -34,7 +34,7 @@ public:
 /**
  Abstract base with type specialization.
  */
-template<typename scalar_t>
+template<class scalar_t>
 class GreensStrategyT : public GreensStrategy {
 public:
     virtual ~GreensStrategyT() { Log::d("~GreensStrategy<" + num::scalar_name<scalar_t>() + ">()"); }

@@ -5,7 +5,7 @@
 enum class ScalarType {f, cf, d, cd, b, i8, i16, i32, u8, u16, u32, none};
 
 namespace detail {
-    template<typename scalar_t> constexpr ScalarType get_type();
+    template<class scalar_t> constexpr ScalarType get_type();
     template<> constexpr ScalarType get_type<float>() { return ScalarType::f; }
     template<> constexpr ScalarType get_type<std::complex<float>>() { return ScalarType::cf; }
     template<> constexpr ScalarType get_type<double>() { return ScalarType::d; }

@@ -14,7 +14,7 @@ namespace tbm {
 
 class System;
 class Hamiltonian;
-template <typename scalar_t> class HamiltonianT;
+template <class scalar_t> class HamiltonianT;
 
 /**
  Abstract base class for an eigensolver
@@ -37,7 +37,7 @@ public:
 /**
  Abstract base with scalar type specialization
  */
-template<typename scalar_t>
+template<class scalar_t>
 class SolverStrategyT : public SolverStrategy {
     using real_t = num::get_real_t<scalar_t>;
 

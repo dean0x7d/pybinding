@@ -16,7 +16,7 @@ namespace compute {
  Use the Lanczos algorithm to find the min and max eigenvalues at given precision (%)
  @return (min, max, iteration_count)
 */
-template<typename scalar_t, typename real_t = num::get_real_t<scalar_t>>
+template<class scalar_t, class real_t = num::get_real_t<scalar_t>>
 std::tuple<real_t, real_t, int>
     minmax_eigenvalues(const SparseMatrixX<scalar_t>& matrix, real_t precision_percent)
 {

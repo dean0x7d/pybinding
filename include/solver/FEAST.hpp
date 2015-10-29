@@ -31,7 +31,7 @@ struct FEASTConfig {
 /**
  Implementation of the FEASTStrategy eigensolver.
  */
-template<typename scalar_t>
+template<class scalar_t>
 class FEASTStrategy : public SolverStrategyT<scalar_t> {
     using real_t = num::get_real_t<scalar_t>;
     using complex_t = num::get_complex_t<scalar_t>;

@@ -10,13 +10,13 @@
 using namespace tbm;
 using physics::i1;
 
-template<typename scalar_t>
+template<class scalar_t>
 HamiltonianT<scalar_t>::~HamiltonianT()
 {
     Log::d("~Hamiltonian<" + num::scalar_name<scalar_t>() + ">()");
 }
 
-template<typename scalar_t>
+template<class scalar_t>
 HamiltonianT<scalar_t>::HamiltonianT(System const& system, HamiltonianModifiers const& modifiers,
                                      Cartesian k_vector) {
     auto build_time = Chrono{};
@@ -35,7 +35,7 @@ void HamiltonianT<scalar_t>::throw_if_invalid(SparseMatrix const& m) {
                                  "Check the lattice and/or modifier functions."};
 }
 
-template<typename scalar_t>
+template<class scalar_t>
 void HamiltonianT<scalar_t>::build_main(System const& system,
                                         HamiltonianModifiers const& modifiers) {
     auto const num_sites = system.num_sites();
@@ -58,7 +58,7 @@ void HamiltonianT<scalar_t>::build_main(System const& system,
     throw_if_invalid(matrix);
 }
 
-template<typename scalar_t>
+template<class scalar_t>
 void HamiltonianT<scalar_t>::build_periodic(System const& system,
                                             HamiltonianModifiers const& modifiers) {
     auto const num_boundaries = static_cast<int>(system.boundaries.size());
@@ -84,14 +84,14 @@ void HamiltonianT<scalar_t>::build_periodic(System const& system,
     }
 }
 
-template<typename scalar_t, class... Args>
+template<class scalar_t, class... Args>
 cpp14::enable_if_t<!num::is_complex<scalar_t>(), void>
 set_helper(Args...)
 {
     // pass - a real Hamiltonian can't have periodic boundary conditions
 }
 
-template<typename scalar_t, class SparseMatrix, class M, class L>
+template<class scalar_t, class SparseMatrix, class M, class L>
 cpp14::enable_if_t<num::is_complex<scalar_t>(), void>
 set_helper(SparseMatrix& matrix, const M& boundary_matrices, const L& lengths, Cartesian k)
 {
@@ -103,7 +103,7 @@ set_helper(SparseMatrix& matrix, const M& boundary_matrices, const L& lengths, C
     }
 }
 
-template<typename scalar_t>
+template<class scalar_t>
 void HamiltonianT<scalar_t>::set(Cartesian k_vector)
 {
     set_helper<scalar_t>(matrix, boundary_matrices, boundary_lengths, k_vector);

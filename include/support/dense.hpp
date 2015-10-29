@@ -74,12 +74,12 @@ inline auto sum(const DenseBase<Derived>& v) -> decltype(v.sum()) {
     return v.sum();
 }
 
-template<class DerivedIn, class DerivedOut, typename Fn>
+template<class DerivedIn, class DerivedOut, class Fn>
 inline void transform(const DenseBase<DerivedIn>& in, DenseBase<DerivedOut>& out, Fn func) {
     std::transform(begin(in), end(in), begin(out), func);
 }
 
-template<class DerivedIn1, class DerivedIn2, class DerivedOut, typename Fn>
+template<class DerivedIn1, class DerivedIn2, class DerivedOut, class Fn>
 inline void transform(const DenseBase<DerivedIn1>& in1, const DenseBase<DerivedIn2>& in2,
                       DenseBase<DerivedOut>& out, Fn func) {
     std::transform(begin(in1), end(in1), begin(in2), begin(out), func);
@@ -108,7 +108,7 @@ public:
 
     int size() const { return static_cast<int>(x.size()); }
 
-    template<typename Fn>
+    template<class Fn>
     void for_each(Fn lambda) {
         lambda(x); lambda(y); lambda(z);
     }

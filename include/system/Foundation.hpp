@@ -31,14 +31,14 @@ public:
     int finalize();
 
     /// Loop over all sites in the foundation
-    template<typename Fn>
+    template<class Fn>
     void for_each_site(Fn lambda);
     /// Loop only over sites with the specified indices.
     /// A negative index will result in a loop over all indices in that direction.
-    template<typename Fn>
+    template<class Fn>
     void for_sites(const Index3D& indices, Fn lambda);
     /// Loop over all neighbours of a site
-    template<typename Fn>
+    template<class Fn>
     void for_each_neighbour(const Site& site, Fn lambda);
     
 public:
@@ -83,7 +83,7 @@ inline Site Foundation::make_site(Index3D index, int sublattice) {
     return {this, index, sublattice, i};
 }
 
-template<typename Fn>
+template<class Fn>
 void Foundation::for_each_site(Fn lambda) {
     // loop over all indices: lattice sites (a, b, c) + sublattices (n)
     int i = 0;
@@ -98,7 +98,7 @@ void Foundation::for_each_site(Fn lambda) {
     } // for a
 }
 
-template<typename Fn>
+template<class Fn>
 void Foundation::for_sites(const Index3D& indices, Fn lambda) {
     constexpr auto dims = 3;
     std::array<std::pair<int, int>, dims> arr;
@@ -121,7 +121,7 @@ void Foundation::for_sites(const Index3D& indices, Fn lambda) {
     } // for a
 }
 
-template<typename Fn>
+template<class Fn>
 void Foundation::for_each_neighbour(const Site& site, Fn lambda) {
     // loop over all hoppings from this site's sublattice
     for (const auto& hopping : lattice[site.sublattice].hoppings) {

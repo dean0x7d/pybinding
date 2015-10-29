@@ -5,7 +5,7 @@
 # include "support/format.hpp"
 using namespace tbm;
 
-template<typename scalar_t>
+template<class scalar_t>
 void FEASTStrategy<scalar_t>::solve() {
     // size of the matrix
     config.system_size = hamiltonian->get_matrix().rows();
@@ -65,7 +65,7 @@ void FEASTStrategy<scalar_t>::solve() {
         info.refinement_loops += info.recycle_warning_loops;
 }
 
-template<typename scalar_t>
+template<class scalar_t>
 std::string FEASTStrategy<scalar_t>::report(bool is_shortform) const {
     using fmt::format;
     std::string report;
@@ -99,7 +99,7 @@ void FEASTStrategy<scalar_t>::hamiltonian_changed() {
         force_clear();
 }
 
-template<typename scalar_t>
+template<class scalar_t>
 void FEASTStrategy<scalar_t>::force_clear()
 {
     _eigenvalues.resize(0);
@@ -107,7 +107,7 @@ void FEASTStrategy<scalar_t>::force_clear()
     residual.resize(0);
 }
 
-template<typename scalar_t>
+template<class scalar_t>
 void FEASTStrategy<scalar_t>::init_feast()
 {
     feastinit(fpm);
@@ -124,7 +124,7 @@ void FEASTStrategy<scalar_t>::init_feast()
     fpm[6] = config.sp_stop_criteria;
 }
 
-template<typename scalar_t>
+template<class scalar_t>
 void FEASTStrategy<scalar_t>::init_pardiso()
 {
     fpm[63] = 0; // disabled
@@ -167,7 +167,7 @@ void FEASTStrategy<scalar_t>::init_pardiso()
     // 63 // _reserved
 }
 
-template<typename scalar_t>
+template<class scalar_t>
 void FEASTStrategy<scalar_t>::call_feast()
 {
     init_feast();
@@ -193,7 +193,7 @@ void FEASTStrategy<scalar_t>::call_feast()
     call_feast_impl();
 }
 
-template<typename scalar_t>
+template<class scalar_t>
 void FEASTStrategy<scalar_t>::call_feast_impl()
 {
     

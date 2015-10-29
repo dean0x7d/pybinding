@@ -2,7 +2,7 @@
 #include "support/config.hpp"
 #include <Eigen/SparseCore>
 
-template <typename scalar_t>
+template <class scalar_t>
 using SparseMatrixX = Eigen::SparseMatrix<scalar_t, Eigen::RowMajor, int>;
 
 using SparseMatrixXf = SparseMatrixX<float>;
@@ -10,7 +10,7 @@ using SparseMatrixXcf = SparseMatrixX<std::complex<float>>;
 using SparseMatrixXd = SparseMatrixX<double>;
 using SparseMatrixXcd = SparseMatrixX<std::complex<double>>;
 
-template<typename scalar_t>
+template<class scalar_t>
 class CompressedInserter {
 public:
     CompressedInserter(SparseMatrixX<scalar_t>& mat, int size)
@@ -46,7 +46,7 @@ private:
     SparseMatrixX<scalar_t>& matrix;
 };
 
-template<typename scalar_t>
+template<class scalar_t>
 inline CompressedInserter<scalar_t> compressed_inserter(SparseMatrixX<scalar_t>& mat, int size) {
     return {mat, size};
 }

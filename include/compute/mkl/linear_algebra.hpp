@@ -6,7 +6,7 @@ namespace compute {
 /**
  dot product
 */
-template<typename scalar_t>
+template<class scalar_t>
 inline scalar_t dot_product(const VectorX<scalar_t>& x, const VectorX<scalar_t>& y);
 
 template<>
@@ -25,7 +25,7 @@ inline std::complex<float> dot_product<std::complex<float>>(const VectorXcf& x, 
 /**
  axpy: y = a*x + y
 */
-template<typename scalar_t>
+template<class scalar_t>
 inline void axpy(const scalar_t a, const VectorX<scalar_t>& x, VectorX<scalar_t>& y);
 
 template<>
@@ -41,7 +41,7 @@ inline void axpy<std::complex<float>>(const std::complex<float> a, const VectorX
 /**
  csrgemv: compressed sparse row, general matrix vector multiplication
 */
-template<typename scalar_t>
+template<class scalar_t>
 inline void matrix_vector_mul(const SparseMatrixX<scalar_t>& matrix,
                               const VectorX<scalar_t>& x_vector, VectorX<scalar_t>& result_vector);
 

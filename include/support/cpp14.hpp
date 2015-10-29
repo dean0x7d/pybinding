@@ -5,7 +5,7 @@
 // helper functions for use until C++14 brings this into std
 namespace cpp14 {
 
-template<typename T, typename... Args>
+template<class T, class... Args>
 std::unique_ptr<T> make_unique(Args&&... args) {
     return std::unique_ptr<T>(new T(std::forward<Args>(args)...));
 }

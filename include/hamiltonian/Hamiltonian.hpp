@@ -27,7 +27,7 @@ public:
 
 
 /// Concrete hamiltonian with a specific scalar type.
-template<typename scalar_t>
+template<class scalar_t>
 class HamiltonianT : public Hamiltonian {
     using real_t = num::get_real_t<scalar_t>;
     using complex_t = num::get_complex_t<scalar_t>;
