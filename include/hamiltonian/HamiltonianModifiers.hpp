@@ -122,7 +122,12 @@ void HamiltonianModifiers::apply_to_hoppings(SystemOrBoundary const& system, Fn 
          The loop below buffers hoppings to balance performance and memory usage.
         */
         // TODO: experiment with buffer_size -> currently: hoppings + pos1 + pos2 is about 3MB
-        static constexpr auto buffer_size = 100000;
+        auto const buffer_size = [&]{
+            constexpr auto max_buffer_size = 100000;
+            auto const max_hoppings = system.hoppings.nonZeros();
+            return std::min(max_hoppings, max_buffer_size);
+        }();
+
         auto hoppings = ArrayX<scalar_t>{buffer_size};
         auto pos1 = CartesianArray{buffer_size};
         auto pos2 = CartesianArray{buffer_size};
