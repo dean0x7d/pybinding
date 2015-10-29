@@ -42,9 +42,9 @@ def test_decorator():
         pb.modifier.onsite_energy(lambda x: np.zeros(x.size / 2))
     assert "must return the same shape" in str(excinfo.value)
 
-    pb.modifier.onsite_energy(lambda potential: np.ones_like(potential, dtype=np.complex128))
+    pb.modifier.hopping_energy(lambda hopping: np.ones_like(hopping, dtype=np.complex128))
     with pytest.raises(RuntimeError) as excinfo:
-        pb.modifier.site_state(lambda state: np.ones_like(state, dtype=np.complex128))
+        pb.modifier.onsite_energy(lambda potential: np.ones_like(potential, dtype=np.complex128))
     assert "must not return complex" in str(excinfo.value)
 
 
@@ -73,17 +73,17 @@ def test_callsig():
 
 
 def test_cast():
-    @pb.modifier.onsite_energy
-    def complex_in_real_out(potential):
-        return np.ones_like(potential, dtype=np.float64)
+    @pb.modifier.hopping_energy
+    def complex_in_real_out(hopping):
+        return np.ones_like(hopping, dtype=np.float64)
 
     assert np.isrealobj(complex_in_real_out(complex_one))
     assert np.iscomplexobj(complex_in_real_out.apply(complex_one, zero, zero, zero))
     assert not complex_in_real_out.is_complex()
 
-    @pb.modifier.onsite_energy
-    def real_in_complex_out(potential):
-        return np.ones_like(potential, dtype=np.complex128)
+    @pb.modifier.hopping_energy
+    def real_in_complex_out(hopping):
+        return np.ones_like(hopping, dtype=np.complex128)
 
     assert np.iscomplexobj(real_in_complex_out(complex_one))
     assert np.iscomplexobj(real_in_complex_out.apply(complex_one, zero, zero, zero))
