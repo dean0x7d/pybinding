@@ -39,6 +39,9 @@ public:
 
 class PyHopping : public tbm::HoppingModifierImpl,
                   public wrapper<tbm::HoppingModifierImpl> {
+    using CA = CartesianArray const&;
+    using HA = ArrayX<tbm::hop_id> const&;
+
 public:
     virtual bool is_complex() const final {
         if (auto f = get_override("is_complex")) {
@@ -48,22 +51,19 @@ public:
     }
 
     template<typename Array>
-    void apply_in_python(Array& hopping, const CartesianArray& pos1, const CartesianArray& pos2) const {
+    void apply_(Array& hopping, HA id, CA p1, CA p2) const {
         object result = get_override("apply")(
-            DenseURef{hopping},
-            DenseURef{pos1.x}, DenseURef{pos1.y}, DenseURef{pos1.z},
-            DenseURef{pos2.x}, DenseURef{pos2.y}, DenseURef{pos2.z}
+            DenseURef{hopping}, DenseURef{id},
+            DenseURef{p1.x}, DenseURef{p1.y}, DenseURef{p1.z},
+            DenseURef{p2.x}, DenseURef{p2.y}, DenseURef{p2.z}
         );
         extract_array(hopping, result);
     }
     
-    using CA = CartesianArray;
-    void apply(ArrayXf& h, const CA& p1, const CA& p2) const final { apply_in_python(h, p1, p2); }
-    void apply(ArrayXcf& h, const CA& p1, const CA& p2) const final { apply_in_python(h, p1, p2); }
-    void apply(ArrayXd& h, const CA& p1, const CA& p2) const final { apply_in_python(h, p1, p2); }
-    void apply(ArrayXcd& h, const CA& p1, const CA& p2) const final { apply_in_python(h, p1, p2); }
-    void apply_dummy(ArrayXf&, const ArrayXf&, const ArrayXf&, const ArrayXf&,
-                     const ArrayXf&, const ArrayXf&, const ArrayXf&) const {}
+    virtual void apply(ArrayXf& h, HA id, CA p1, CA p2) const final { apply_(h, id, p1, p2); }
+    virtual void apply(ArrayXd& h, HA id, CA p1, CA p2) const final { apply_(h, id, p1, p2); }
+    virtual void apply(ArrayXcf& h, HA id, CA p1, CA p2) const final { apply_(h, id, p1, p2); }
+    virtual void apply(ArrayXcd& h, HA id, CA p1, CA p2) const final { apply_(h, id, p1, p2); }
 };
 
 void export_modifiers() {
@@ -73,9 +73,6 @@ void export_modifiers() {
     .def_readonly("report", &Hamiltonian::report)
     ;
 
-    class_<PyHopping, noncopyable>{"HoppingModifier"}
-    .def("is_complex", &PyHopping::is_complex)
-    .def("apply", pure_virtual(&PyHopping::apply_dummy), args("self", "hopping", "x1", "y1", "z1", "x2", "y2", "z2"))
-    ;
     class_<PyOnsite, noncopyable>{"OnsiteModifier"};
+    class_<PyHopping, noncopyable>{"HoppingModifier"};
 }

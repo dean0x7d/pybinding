@@ -163,4 +163,22 @@ def test_hopping_energy():
     def mod(hopping):
         return hopping * 2
     assert np.all(2 == mod(one))
-    assert np.all(2 == mod.apply(one, zero, zero, zero, zero, zero, zero))
+    assert np.all(2 == mod.apply(one, zero, zero, zero, zero, zero, zero, zero))
+
+    capture = []
+
+    @pb.modifier.hopping_energy
+    def check_args(hopping, hop_id, x1, y1, z1, x2, y2, z2):
+        capture[:] = (v.copy() for v in (hopping, hop_id, x1, y1, z1, x2, y2, z2))
+        return hopping
+
+    build_model(check_args)
+    hopping, hop_id, x1, y1, z1, x2, y2, z2 = capture
+    assert np.allclose(hopping, graphene.t)
+    assert np.allclose(hop_id, 0)
+    assert np.allclose(x1, 0)
+    assert np.allclose(y1, -graphene.a_cc / 2)
+    assert np.allclose(z1, 0)
+    assert np.allclose(x2, 0)
+    assert np.allclose(y2, graphene.a_cc / 2)
+    assert np.allclose(z2, 0)

@@ -111,6 +111,6 @@ onsite_energy = _make_modifier_decorator(
 
 hopping_energy = _make_modifier_decorator(
     _cpp.HoppingModifier,
-    keywords="hopping, x1, y1, z1, x2, y2, z2",
+    keywords="hopping, hop_id, x1, y1, z1, x2, y2, z2",
     maybe_complex=True
 )

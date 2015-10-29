@@ -37,10 +37,14 @@ public:
     virtual ~HoppingModifierImpl() = default;
     virtual bool is_complex() const { return false; }
 
-    virtual void apply(ArrayXf& hopping, const CartesianArray& p1, const CartesianArray& p2) const = 0;
-    virtual void apply(ArrayXd& hopping, const CartesianArray& p1, const CartesianArray& p2) const = 0;
-    virtual void apply(ArrayXcf& hopping, const CartesianArray& p1, const CartesianArray& p2) const = 0;
-    virtual void apply(ArrayXcd& hopping, const CartesianArray& p1, const CartesianArray& p2) const = 0;
+    virtual void apply(ArrayXf& hopping, ArrayX<hop_id> const& hop_id,
+                       CartesianArray const& pos1, CartesianArray const& pos2) const = 0;
+    virtual void apply(ArrayXd& hopping, ArrayX<hop_id> const& hop_id,
+                       CartesianArray const& pos1, CartesianArray const& pos2) const = 0;
+    virtual void apply(ArrayXcf& hopping, ArrayX<hop_id> const& hop_id,
+                       CartesianArray const& pos1, CartesianArray const& pos2) const = 0;
+    virtual void apply(ArrayXcd& hopping, ArrayX<hop_id> const& hop_id,
+                       CartesianArray const& pos1, CartesianArray const& pos2) const = 0;
 };
 
 using OnsiteModifier = std::shared_ptr<OnsiteModifierImpl const>;
@@ -123,12 +127,17 @@ void HamiltonianModifiers::apply_to_hoppings(SystemOrBoundary const& system, Fn 
         auto pos1 = CartesianArray{buffer_size};
         auto pos2 = CartesianArray{buffer_size};
 
+        // TODO: Hopping IDs can be mapped directly from the matrix, thus removing the need for
+        //       this temporary buffer. However `apply()` needs to accept an array map.
+        auto hop_ids = ArrayX<hop_id>{buffer_size};
+
         hopping_csr_matrix.buffered_for_each(
             buffer_size,
             // fill buffer
             [&](int row, int col, hop_id id, int n) {
                 hoppings[n] = num::complex_cast<scalar_t>(base_hopping_energies[id]);
                 std::make_pair(pos1[n], pos2[n]) = system.get_position_pair(row, col);
+                hop_ids[n] = id;
             },
             // process buffer
             [&](int start_row, int start_idx, int size) {
@@ -136,10 +145,11 @@ void HamiltonianModifiers::apply_to_hoppings(SystemOrBoundary const& system, Fn 
                     hoppings.conservativeResize(size);
                     pos1.conservativeResize(size);
                     pos2.conservativeResize(size);
+                    hop_ids.conservativeResize(size);
                 }
 
                 for (auto const& modifier : hopping)
-                    modifier->apply(hoppings, pos1, pos2);
+                    modifier->apply(hoppings, hop_ids, pos1, pos2);
 
                 hopping_csr_matrix.slice_for_each(
                     start_row, start_idx, size,
