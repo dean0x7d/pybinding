@@ -50,6 +50,9 @@ private: // build the Hamiltonian
     void build_periodic(System const&, HamiltonianModifiers const&);
     void set(Cartesian k_vector);
 
+    /// Check that all the values in the matrix are finite
+    static void throw_if_invalid(SparseMatrix const& m);
+
 private:
     SparseMatrix matrix; ///< the sparse matrix that holds the data
     std::vector<SparseMatrix> boundary_matrices;

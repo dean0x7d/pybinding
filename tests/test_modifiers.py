@@ -182,3 +182,21 @@ def test_hopping_energy():
     assert np.allclose(x2, 0)
     assert np.allclose(y2, graphene.a_cc / 2)
     assert np.allclose(z2, 0)
+
+
+def test_invalid_return():
+    @pb.modifier.onsite_energy
+    def mod_inf(potential):
+        return np.ones_like(potential) * np.inf
+
+    with pytest.raises(RuntimeError) as excinfo:
+        build_model(mod_inf)
+    assert "NaN or INF" in str(excinfo.value)
+
+    @pb.modifier.onsite_energy
+    def mod_nan(potential):
+        return np.ones_like(potential) * np.NaN
+
+    with pytest.raises(RuntimeError) as excinfo:
+        build_model(mod_nan)
+    assert "NaN or INF" in str(excinfo.value)

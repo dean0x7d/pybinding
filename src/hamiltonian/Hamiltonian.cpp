@@ -27,6 +27,14 @@ HamiltonianT<scalar_t>::HamiltonianT(System const& system, HamiltonianModifiers 
                          fmt::with_suffix(non_zeros()), build_time.toc());
 }
 
+template<class scalar_t>
+void HamiltonianT<scalar_t>::throw_if_invalid(SparseMatrix const& m) {
+    Eigen::Map<ArrayX<scalar_t> const> data{m.valuePtr(), m.nonZeros()};
+    if (!data.allFinite())
+        throw std::runtime_error{"The Hamiltonian contains invalid values: NaN or INF.\n"
+                                 "Check the lattice and/or modifier functions."};
+}
+
 template<typename scalar_t>
 void HamiltonianT<scalar_t>::build_main(System const& system,
                                         HamiltonianModifiers const& modifiers) {
@@ -47,6 +55,7 @@ void HamiltonianT<scalar_t>::build_main(System const& system,
     });
 
     matrix.makeCompressed();
+    throw_if_invalid(matrix);
 }
 
 template<typename scalar_t>
@@ -69,8 +78,9 @@ void HamiltonianT<scalar_t>::build_periodic(System const& system,
         modifiers.apply_to_hoppings<scalar_t>(boundary, [&](int i, int j, scalar_t hopping) {
             b_matrix.insert(i, j) = hopping;
         });
-        
+
         b_matrix.makeCompressed();
+        throw_if_invalid(b_matrix);
     }
 }
 
