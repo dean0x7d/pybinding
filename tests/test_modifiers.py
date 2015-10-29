@@ -140,7 +140,22 @@ def test_onsite():
     def mod(potential):
         return potential + 2
     assert np.all(2 == mod(zero))
-    assert np.all(2 == mod.apply(zero, zero, zero, zero))
+    assert np.all(2 == mod.apply(zero, zero, zero, zero, one))
+
+    capture = []
+
+    @pb.modifier.onsite_energy
+    def check_args(potential, x, y, z, sub):
+        capture[:] = (v.copy() for v in (potential, x, y, z, sub))
+        return potential
+
+    build_model(check_args)
+    potential, x, y, z, sub = capture
+    assert np.allclose(potential, [0, 0])
+    assert np.allclose(x, [0, 0])
+    assert np.allclose(y, [-graphene.a_cc / 2, graphene.a_cc / 2])
+    assert np.allclose(z, [0, 0])
+    assert np.allclose(sub, [0, 1])
 
 
 def test_hopping_energy():

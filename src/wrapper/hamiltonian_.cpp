@@ -12,6 +12,9 @@ using namespace boost::python;
 
 class PyOnsite : public tbm::OnsiteModifierImpl,
                  public wrapper<tbm::OnsiteModifierImpl> {
+    using CA = CartesianArray const&;
+    using SA = ArrayX<tbm::sub_id> const&;
+
 public:
     virtual bool is_complex() const final {
         if (auto f = get_override("is_complex")) {
@@ -21,19 +24,17 @@ public:
     }
     
     template<typename Array>
-    void apply_in_python(Array& potential, const CartesianArray& position) const {
+    void apply_(Array& potential, CA p, SA s) const {
         object result = get_override("apply")(
-            DenseURef{potential},
-            DenseURef{position.x}, DenseURef{position.y}, DenseURef{position.z}
+            DenseURef{potential}, DenseURef{p.x}, DenseURef{p.y}, DenseURef{p.z}, DenseURef{s}
         );
         extract_array(potential, result);
     }
     
-    virtual void apply(ArrayXf& v, const CartesianArray& p) const final { apply_in_python(v, p); }
-    virtual void apply(ArrayXcf& v, const CartesianArray& p) const final { apply_in_python(v, p); }
-    virtual void apply(ArrayXd& v, const CartesianArray& p) const final { apply_in_python(v, p); }
-    virtual void apply(ArrayXcd& v, const CartesianArray& p) const final { apply_in_python(v, p); }
-    void apply_dummy(ArrayXf&, const ArrayXf&, const ArrayXf&, const ArrayXf&) const {}
+    virtual void apply(ArrayXf& v, CA p, SA s) const final {apply_(v, p, s); }
+    virtual void apply(ArrayXcf& v, CA p, SA s) const final {apply_(v, p, s); }
+    virtual void apply(ArrayXd& v, CA p, SA s) const final {apply_(v, p, s); }
+    virtual void apply(ArrayXcd& v, CA p, SA s) const final {apply_(v, p, s); }
 };
 
 class PyHopping : public tbm::HoppingModifierImpl,
@@ -65,22 +66,16 @@ public:
                      const ArrayXf&, const ArrayXf&, const ArrayXf&) const {}
 };
 
-void export_modifiers()
-{
+void export_modifiers() {
     using tbm::Hamiltonian;
-
     class_<Hamiltonian, noncopyable>{"Hamiltonian", no_init}
     .add_property("matrix", internal_ref(&Hamiltonian::matrix_union))
     .def_readonly("report", &Hamiltonian::report)
     ;
 
-    class_<PyOnsite, noncopyable>{"OnsiteModifier"}
-    .def("is_complex", &PyOnsite::is_complex)
-    .def("apply", pure_virtual(&PyOnsite::apply_dummy), args("self", "potential", "x", "y", "z"))
-    ;
-    
     class_<PyHopping, noncopyable>{"HoppingModifier"}
     .def("is_complex", &PyHopping::is_complex)
     .def("apply", pure_virtual(&PyHopping::apply_dummy), args("self", "hopping", "x1", "y1", "z1", "x2", "y2", "z2"))
     ;
+    class_<PyOnsite, noncopyable>{"OnsiteModifier"};
 }

@@ -105,7 +105,7 @@ site_position = _make_modifier_decorator(
 
 onsite_energy = _make_modifier_decorator(
     _cpp.OnsiteModifier,
-    keywords="potential, x, y, z",
+    keywords="potential, x, y, z, sub",
     maybe_complex=True
 )
 

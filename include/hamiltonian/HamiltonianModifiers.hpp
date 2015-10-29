@@ -19,10 +19,14 @@ public:
     virtual bool is_complex() const { return false; }
 
     /// Get the value of the potential at the given coordinates.
-    virtual void apply(ArrayXf& potential, const CartesianArray& position) const = 0;
-    virtual void apply(ArrayXcf& potential, const CartesianArray& position) const = 0;
-    virtual void apply(ArrayXd& potential, const CartesianArray& position) const = 0;
-    virtual void apply(ArrayXcd& potential, const CartesianArray& position) const = 0;
+    virtual void apply(ArrayXf& potential, CartesianArray const& position,
+                       ArrayX<sub_id> const& sublattices) const = 0;
+    virtual void apply(ArrayXcf& potential, CartesianArray const& position,
+                       ArrayX<sub_id> const& sublattices) const = 0;
+    virtual void apply(ArrayXd& potential, CartesianArray const& position,
+                       ArrayX<sub_id> const& sublattices) const = 0;
+    virtual void apply(ArrayXcd& potential, CartesianArray const& position,
+                       ArrayX<sub_id> const& sublattices) const = 0;
 };
 
 /**
@@ -86,7 +90,7 @@ void HamiltonianModifiers::apply_to_onsite(System const& system, Fn lambda) cons
             potential.setZero(num_sites);
 
         for (auto const& modifier : onsite)
-            modifier->apply(potential, system.positions);
+            modifier->apply(potential, system.positions, system.sublattices);
     }
 
     if (potential.size() > 0) {
