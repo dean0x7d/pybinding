@@ -2,10 +2,16 @@ import pytest
 
 import numpy as np
 import pybinding as pb
+from pybinding.repository import graphene
 
 
 one, zero = np.ones(1), np.zeros(1)
 complex_one = np.ones(1, dtype=np.complex64)
+
+
+def build_model(*params):
+    model = pb.Model(graphene.lattice.monolayer(), *params)
+    model.report()
 
 
 def test_decorator():
@@ -89,7 +95,22 @@ def test_site_state():
     def mod(state):
         return np.ones_like(state)
     assert np.all(mod(zero))
-    assert np.all(mod.apply(zero, one, one, one))
+    assert np.all(mod.apply(zero, one, one, one, one))
+
+    capture = []
+
+    @pb.modifier.site_state
+    def check_args(state, x, y, z, sub):
+        capture[:] = (v.copy() for v in (state, x, y, z, sub))
+        return state
+
+    build_model(check_args)
+    state, x, y, z, sub = capture
+    assert np.all(state == [True, True])
+    assert np.allclose(x, [0, 0])
+    assert np.allclose(y, [-graphene.a_cc / 2, graphene.a_cc / 2])
+    assert np.allclose(z, [0, 0])
+    assert np.allclose(sub, [0, 1])
 
 
 def test_site_position():
@@ -97,7 +118,21 @@ def test_site_position():
     def mod(x, y, z):
         return x + 1, y + 1, z + 1
     assert (one,) * 3 == mod(zero, zero, zero)
-    assert (one,) * 3 == mod.apply(zero, zero, zero)
+    assert (one,) * 3 == mod.apply(zero, zero, zero, one)
+
+    capture = []
+
+    @pb.modifier.site_position
+    def check_args(x, y, z, sub):
+        capture[:] = (v.copy() for v in (x, y, z, sub))
+        return x, y, z
+
+    build_model(check_args)
+    x, y, z, sub = capture
+    assert np.allclose(x, [0, 0])
+    assert np.allclose(y, [-graphene.a_cc / 2, graphene.a_cc / 2])
+    assert np.allclose(z, [0, 0])
+    assert np.allclose(sub, [0, 1])
 
 
 def test_onsite():

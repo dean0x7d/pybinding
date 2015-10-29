@@ -1,5 +1,8 @@
 #pragma once
+#include "system/Lattice.hpp"
+
 #include "support/dense.hpp"
+
 #include <vector>
 #include <algorithm>
 #include <memory>
@@ -11,7 +14,8 @@ public:
     virtual ~SiteStateModifierImpl() = default;
     
     /// Modify the state (valid or invalid) of sites at the given coordinates
-    virtual void apply(ArrayX<bool>& site_state, const CartesianArray& positions) const = 0;
+    virtual void apply(ArrayX<bool>& site_state, CartesianArray const& positions,
+                       ArrayX<sub_id> const& sublattices) const = 0;
 };
 
 class PositionModifierImpl {
@@ -19,7 +23,7 @@ public:
     virtual ~PositionModifierImpl() = default;
 
     /// Modify the positions system sites
-    virtual void apply(CartesianArray& positions) const = 0;
+    virtual void apply(CartesianArray& positions, ArrayX<sub_id> const& sublattices) const = 0;
 };
 
 using SiteStateModifier = std::shared_ptr<SiteStateModifierImpl const>;

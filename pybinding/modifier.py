@@ -94,12 +94,12 @@ def _make_modifier_decorator(base_modifier, keywords: str, num_return=1, maybe_c
 
 site_state = _make_modifier_decorator(
     _cpp.SiteStateModifier,
-    keywords="state, x, y, z"
+    keywords="state, x, y, z, sub"
 )
 
 site_position = _make_modifier_decorator(
     _cpp.PositionModifier,
-    keywords="x, y, z",
+    keywords="x, y, z, sub",
     num_return=3
 )
 

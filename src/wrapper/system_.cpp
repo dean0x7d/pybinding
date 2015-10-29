@@ -16,26 +16,28 @@ using namespace boost::python;
 class PySiteStateModifier : public tbm::SiteStateModifierImpl,
                             public wrapper<tbm::SiteStateModifierImpl> {
 public:
-    virtual void apply(ArrayX<bool>& is_valid, const CartesianArray& p) const override {
+    virtual void apply(ArrayX<bool>& is_valid, CartesianArray const& p,
+                       ArrayX<tbm::sub_id> const& s) const override {
         object result = get_override("apply")(
             DenseURef{is_valid},
-            DenseURef{p.x}, DenseURef{p.y}, DenseURef{p.z}
+            DenseURef{p.x}, DenseURef{p.y}, DenseURef{p.z},
+            DenseURef{s}
         );
         extract_array(is_valid, result);
     }
-    void apply_dummy(ArrayX<bool>&, const ArrayXf&, const ArrayXf&, const ArrayXf&) const {}
 };
 
 class PyPositionModifier : public tbm::PositionModifierImpl,
                            public wrapper<tbm::PositionModifierImpl> {
 public:
-    virtual void apply(CartesianArray& p) const override {
-        tuple result = get_override("apply")(DenseURef{p.x}, DenseURef{p.y}, DenseURef{p.z});
+    virtual void apply(CartesianArray& p, ArrayX<tbm::sub_id> const& s) const override {
+        tuple result = get_override("apply")(
+            DenseURef{p.x}, DenseURef{p.y}, DenseURef{p.z}, DenseURef{s}
+        );
         extract_array(p.x, result[0]);
         extract_array(p.y, result[1]);
         extract_array(p.z, result[2]);
     }
-    void apply_dummy(ArrayXf&, ArrayXf&, ArrayXf&) const {}
 };
 
 void export_system() {
@@ -157,10 +159,6 @@ void export_system() {
         init<Cartesian> {(arg("self"), "length")}
     };
 
-    class_<PySiteStateModifier, noncopyable>{"SiteStateModifier"}
-    .def("apply", pure_virtual(&PySiteStateModifier::apply_dummy), args("self", "site_state", "x", "y", "z"))
-    ;
-    class_<PyPositionModifier, noncopyable>{"PositionModifier"}
-    .def("apply", pure_virtual(&PyPositionModifier::apply_dummy), args("self", "x", "y", "z"))
-    ;
+    class_<PySiteStateModifier, noncopyable>{"SiteStateModifier"};
+    class_<PyPositionModifier, noncopyable>{"PositionModifier"};
 }

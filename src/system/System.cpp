@@ -37,10 +37,15 @@ std::unique_ptr<System> build_system(Lattice const& lattice, Shape const& shape,
     if (symmetry)
         foundation.cut_down_to(*symmetry);
 
+    ArrayX<sub_id> sublattices{foundation.num_sites};
+    foundation.for_each_site([&](Site site) {
+        sublattices[site.i] = site.sublattice;
+    });
+
     for (auto const& site_state_modifier : system_modifers.state)
-        site_state_modifier->apply(foundation.is_valid, foundation.positions);
+        site_state_modifier->apply(foundation.is_valid, foundation.positions, sublattices);
     for (auto const position_modifier : system_modifers.position)
-        position_modifier->apply(foundation.positions);
+        position_modifier->apply(foundation.positions, sublattices);
 
     populate_body(*system, foundation);
     if (symmetry)
