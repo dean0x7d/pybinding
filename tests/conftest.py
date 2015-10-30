@@ -2,6 +2,7 @@ import pytest
 
 import numpy as np
 import matplotlib.pyplot as plt
+from scipy.sparse import csr_matrix
 
 import pybinding as pb
 
@@ -99,6 +100,9 @@ def fuzzy_equal(data, expected, rtol=1e-05, atol=1e-08):
     tol = rtol, atol
     if isinstance(data, np.ndarray):
         return np.allclose(data, expected, *tol)
+    if isinstance(data, csr_matrix):
+        return all(fuzzy_equal(getattr(data, s), getattr(expected, s), *tol)
+                   for s in ['shape', 'data', 'indices', 'indptr'])
     if isinstance(data, (tuple, list)):
         return (len(data) == len(expected) and
                 all(fuzzy_equal(a, b, *tol) for a, b in zip(data, expected)))
