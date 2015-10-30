@@ -113,12 +113,13 @@ class SpatialMap:
 
     def crop(self, x=None, y=None):
         xlim, ylim = x, y
-        x, y, _ = self.pos
-        idx = np.ones(x.size, dtype=bool)
+        idx = np.ones(self.pos.x.size, dtype=bool)
         if xlim:
-            idx = np.logical_and(idx, x >= xlim[0], x <= xlim[1])
+            idx = np.logical_and(idx, self.pos.x >= xlim[0])
+            idx = np.logical_and(idx, self.pos.x < xlim[1])
         if ylim:
-            idx = np.logical_and(idx, y >= ylim[0], y <= ylim[1])
+            idx = np.logical_and(idx, self.pos.y >= ylim[0])
+            idx = np.logical_and(idx, self.pos.y < ylim[1])
         self.filter(idx)
 
     def clip(self, v_min, v_max):
