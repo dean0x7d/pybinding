@@ -69,7 +69,7 @@ class Solver:
         probability = abs(self.eigenvectors[:, indices]) ** 2
         if probability.ndim > 1:
             probability = np.sum(probability, axis=1)
-        return results.SpatialMap.from_system(probability, self.system)
+        return results.StructureMap.from_system(probability, self.system)
 
     def calc_dos(self, energies, broadening) -> np.ndarray:
         """Calculate the density of states as a function of energy

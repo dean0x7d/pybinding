@@ -2,6 +2,12 @@ import pytest
 
 import numpy as np
 import pybinding as pb
+from pybinding.repository import graphene
+
+
+@pytest.fixture(scope='module')
+def model():
+    return pb.Model(graphene.lattice.monolayer(), pb.shape.rectangle(1))
 
 
 def test_sweep():
@@ -33,3 +39,34 @@ def test_sweep():
     assert np.all(s == [3, 4, 5]) and x == 1
     s, y = sweep.slice_y(0.4)
     assert np.all(s == [1, 4, 7]) and y == 0
+
+
+def test_spatial_map(model):
+    system = model.system
+    zeros = np.zeros_like(system.positions.x)
+
+    spatial_map = pb.results.SpatialMap.from_system(zeros, system)
+
+    assert system.positions.x.data == spatial_map.pos.x.data
+    assert system.positions.y.data == spatial_map.pos.y.data
+    assert system.positions.z.data == spatial_map.pos.z.data
+    assert system.sublattices.data == spatial_map.sub.data
+
+    tmp = spatial_map.copy()
+    tmp.filter(tmp.sub == 0)
+    assert len(spatial_map.pos.x) == 2 * len(tmp.pos.x)
+
+    tmp = spatial_map.copy()
+    tmp.crop(x=(0, 0.2), y=(0, 0.2))
+    assert len(tmp.pos.x) == 1
+
+
+def test_structure_map(model):
+    system = model.system
+    zeros = np.zeros_like(system.positions.x)
+
+    spatial_map = pb.results.SpatialMap.from_system(zeros, system)
+    structure_map = pb.results.StructureMap.from_system(zeros, system)
+
+    assert pytest.fuzzy_equal(spatial_map, structure_map.spatial_map)
+

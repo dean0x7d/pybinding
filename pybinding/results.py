@@ -9,7 +9,7 @@ from .utils import with_defaults, x_pi
 from .system import Positions, plot_sites, plot_hoppings
 from .support.pickle import pickleable
 
-__all__ = ['make_path', 'LDOSpoint', 'SpatialMap', 'Eigenvalues', 'Bands', 'Sweep']
+__all__ = ['make_path', 'LDOSpoint', 'StructureMap', 'Eigenvalues', 'Bands', 'Sweep']
 
 
 def make_path(k0, k1, *ks, step=0.1):
@@ -81,18 +81,25 @@ class LDOSpoint:
 
 @pickleable
 class SpatialMap:
-    def __init__(self, data: np.ndarray, pos: Positions,
-                 sublattices: np.ndarray, hoppings: csr_matrix, boundaries: list):
-        self.data = data  # 1d array of data which corresponds to (x, y, z) coordinates
-        self.pos = Positions(*pos)  # make sure it is Positions
-        self.sublattices = sublattices
-        self.hoppings = hoppings
-        self.boundaries = boundaries
+    """Represents some spatially dependent property: data mapped to site positions
+
+    Attributes
+    ----------
+    data : np.ndarray
+        1d array of values which correspond to (x, y, z) coordinates.
+    pos : Positions or tuple of np.ndarray
+        Lattice site positions. Named tuple with x, y, z fields, each a 1d array.
+    sub : np.ndarray
+        Sublattice ID for each position.
+    """
+    def __init__(self, data: np.ndarray, positions: Positions, sublattices: np.ndarray):
+        self.data = data
+        self.pos = Positions(*positions)  # maybe convert from tuple
+        self.sub = sublattices
 
     @classmethod
     def from_system(cls, data, system):
-        return cls(data, system.positions, system.sublattices,
-                   system.hoppings.tocsr(), system.boundaries)
+        return cls(data, system.positions, system.sublattices)
 
     def copy(self) -> 'SpatialMap':
         return deepcopy(self)
@@ -104,28 +111,48 @@ class SpatialMap:
                 file.write(("{:13.5e}" * 3 + '\n').format(x, y, d))
 
     def filter(self, idx):
-        self.data = self.data[idx]
-        self.sublattices = self.sublattices[idx]
-        self.pos = Positions(*map(lambda v: v[idx], self.pos))
-        self.hoppings = self.hoppings[idx][:, idx]
-        for boundary in self.boundaries:
-            boundary.hoppings = boundary.hoppings[idx][:, idx]
+        """Leave only the sites indicated by `idx`
 
-    def crop(self, x=None, y=None):
-        xlim, ylim = x, y
+        Parameters
+        ----------
+        idx : array_like
+            Same rules as numpy indexing.
+        """
+        self.data = self.data[idx]
+        self.pos = Positions(*map(lambda v: v[idx], self.pos))
+        self.sub = self.sub[idx]
+
+    def crop(self, **limits):
+        """Leave only the sites which are within the given limits
+
+        Parameters
+        ----------
+        **limits
+            Attribute names and corresponding limits.
+
+        Example
+        -------
+        Leave only the data where -10 <= x < 10 and 2 <= y < 4:
+        s.crop(x=(-10, 10), y=(2, 4))
+        """
         idx = np.ones(self.pos.x.size, dtype=bool)
-        if xlim:
-            idx = np.logical_and(idx, self.pos.x >= xlim[0])
-            idx = np.logical_and(idx, self.pos.x < xlim[1])
-        if ylim:
-            idx = np.logical_and(idx, self.pos.y >= ylim[0])
-            idx = np.logical_and(idx, self.pos.y < ylim[1])
+        attrib = {'x': self.pos.x, 'y': self.pos.y, 'z': self.pos.z,
+                  'sub': self.sub, 'data': self.data}
+        for key, limit in limits.items():
+            if key not in attrib:
+                raise AttributeError("'{}' not found in SpatialMap".format(key))
+
+            v = attrib[key]
+            idx = np.logical_and(idx, v >= limit[0])
+            idx = np.logical_and(idx, v < limit[1])
+
         self.filter(idx)
 
     def clip(self, v_min, v_max):
         self.data = np.clip(self.data, v_min, v_max)
 
     def convolve(self, sigma=0.25):
+        # TODO: slow and only works in the xy-plane
         x, y, _ = self.pos
         r = np.sqrt(x**2 + y**2)
 
@@ -166,6 +193,43 @@ class SpatialMap:
         contour = plt.tricontour(x, y, self.data, **kwargs)
         self._decorate_plot()
         return contour
+
+
+@pickleable
+class StructureMap(SpatialMap):
+    """A `SpatialMap` that also includes hoppings between sites
+
+    Attributes
+    ----------
+    hoppings : scipy.csr_matrix
+        Sparse matrix of hopping IDs. See `System.hoppings`.
+    boundaries : list of scipy.csr_matrix
+        Boundary hoppings. See 'System.boundaries`.
+    """
+    def __init__(self, data: np.ndarray, positions: Positions, sublattices: np.ndarray,
+                 hoppings: csr_matrix, boundaries: list):
+        super().__init__(data, positions, sublattices)
+        self.hoppings = hoppings
+        self.boundaries = boundaries
+
+    @classmethod
+    def from_system(cls, data, system):
+        return cls(data, system.positions, system.sublattices,
+                   system.hoppings.tocsr(), system.boundaries)
+
+    def copy(self) -> 'StructureMap':
+        return deepcopy(self)
+
+    @property
+    def spatial_map(self) -> SpatialMap:
+        """Just the SpatialMap subset without hoppings"""
+        return SpatialMap(self.data, self.pos, self.sub)
+
+    def filter(self, idx):
+        super().filter(idx)
+        self.hoppings = self.hoppings[idx][:, idx]
+        for boundary in self.boundaries:
+            boundary.hoppings = boundary.hoppings[idx][:, idx]
 
     def plot_structure(self, site_radius=(0.03, 0.05), site_props: dict=None, hopping_width=1,
                        hopping_props: dict=None, cbar_props: dict=None):
