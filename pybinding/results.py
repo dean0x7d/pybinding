@@ -245,9 +245,17 @@ class StructureMap(SpatialMap):
         ax.set_xlabel('x (nm)')
         ax.set_ylabel('y (nm)')
 
-        radius = site_radius[0] + site_radius[1] * self.data / self.data.max()
+        def radius(data):
+            positive_data = data - data.min()
+            maximum = positive_data.max()
+            if not np.allclose(maximum, 0):
+                delta = site_radius[1] - site_radius[0]
+                return site_radius[0] + delta * positive_data / maximum
+            else:
+                return site_radius[1]
+
         site_props = with_defaults(site_props, cmap='YlGnBu')
-        collection = plot_sites(ax, self.pos, self.data, radius, **site_props)
+        collection = plot_sites(ax, self.pos, self.data, radius(self.data), **site_props)
 
         hop = self.hoppings.tocoo()
         hopping_props = with_defaults(hopping_props, colors='#bbbbbb')
