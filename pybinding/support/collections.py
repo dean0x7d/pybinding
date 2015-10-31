@@ -1,33 +1,30 @@
 import numpy as np
-from matplotlib.collections import PatchCollection, allow_rasterization
+from matplotlib.collections import Collection, allow_rasterization
 
 
-class CircleCollection(PatchCollection):
-    """
-    Custom circle collection
+# noinspection PyAbstractClass
+class CircleCollection(Collection):
+    """Custom circle collection
 
-    The default matplotlib CircleCollection creates circles based on their
+    The default matplotlib `CircleCollection` creates circles based on their
     area in screen units. This class uses the radius in data units. It behaves
-    like a much faster version of a PatchCollection of Circles.
+    like a much faster version of a `PatchCollection` of `Circle`.
+    The implementation is similar to `EllipseCollection`.
     """
     def __init__(self, radius, **kwargs):
-        super().__init__([], **kwargs)
+        super().__init__(**kwargs)
         from matplotlib import path, transforms
         self.radius = np.atleast_1d(radius)
         self._paths = [path.Path.unit_circle()]
         self.set_transform(transforms.IdentityTransform())
+        self._transforms = np.empty((0, 3, 3))
 
     def _set_transforms(self):
-        from matplotlib import transforms
-
+        ax = self.axes
         self._transforms = np.zeros((self.radius.size, 3, 3))
-        self._transforms[:, 0, 0] = self.radius
-        self._transforms[:, 1, 1] = self.radius
+        self._transforms[:, 0, 0] = self.radius * ax.bbox.width / ax.viewLim.width
+        self._transforms[:, 1, 1] = self.radius * ax.bbox.height / ax.viewLim.height
         self._transforms[:, 2, 2] = 1
-
-        m = self.axes.transData.get_affine().get_matrix().copy()
-        m[:2, 2:] = 0
-        self.set_transform(transforms.Affine2D(m))
 
     @allow_rasterization
     def draw(self, renderer):

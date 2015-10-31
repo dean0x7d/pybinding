@@ -74,7 +74,7 @@ setup(
 
     packages=find_packages(exclude=['dependencies', 'test*']),
     ext_modules=[CMakeExtension('_pybinding')],
-    install_requires=['numpy>=1.9.0', 'scipy>=0.15', 'matplotlib>=1.4.3',
+    install_requires=['numpy>=1.9.0', 'scipy>=0.15', 'matplotlib>=1.5.0',
                       'py-cpuinfo>=0.1.4', 'pytest>=2.8'],
     zip_safe=False,
     cmdclass=dict(build_ext=CMakeBuild)
