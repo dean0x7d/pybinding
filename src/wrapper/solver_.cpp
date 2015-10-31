@@ -14,7 +14,7 @@ void export_solver() {
     .def("clear", &Solver::clear)
     .def("report", &Solver::report, args("self", "shortform"_kw=false))
     .def("calc_dos", &Solver::calc_dos, args("self", "energies", "broadening"))
-    .def("calc_ldos", &Solver::calc_ldos, args("self", "energy", "broadening", "sublattice"_kw=-1))
+    .def("calc_spatial_ldos", &Solver::calc_spatial_ldos, args("self", "energy", "broadening"))
     .add_property("model", internal_ref(&Solver::get_model), &Solver::set_model)
     .add_property("system", &Solver::system)
     .add_property("eigenvalues", internal_ref(&Solver::eigenvalues))

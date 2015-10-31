@@ -94,7 +94,7 @@ public:
     DenseURef eigenvectors();
 
     ArrayXd calc_dos(ArrayXf energies, float broadening);
-    ArrayXd calc_ldos(float energy, float broadening, sub_id sublattice = -1);
+    ArrayXd calc_spatial_ldos(float energy, float broadening);
 
 protected:
     /// Create a new SolverStrategy object for this Hamiltonian

@@ -56,6 +56,18 @@ def test_dos(solver, baseline, plot):
     assert pytest.fuzzy_equal(dos, expected)
 
 
+def test_spatial_ldos(solver, baseline, plot):
+    ldos_map = solver.calc_spatial_ldos(energy=0, broadening=0.01)
+
+    x_max = solver.system.x.max()
+    y_max = solver.system.y.max()
+    ldos_map.crop(x=(x_max - 1, x_max + 1), y=(y_max - 1, y_max + 1))
+
+    expected = baseline(ldos_map)
+    plot(ldos_map, expected, 'plot_structure')
+    assert pytest.fuzzy_equal(ldos_map, expected)
+
+
 def test_lapack(baseline, plot):
     model = pb.Model(graphene.lattice.monolayer(), pb.symmetry.translational())
     solver = pb.solver.make_lapack(model)

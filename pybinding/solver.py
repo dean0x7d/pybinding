@@ -96,9 +96,32 @@ class Solver:
             dos = scale * np.sum(np.exp(-0.5 * delta**2 / broadening**2), axis=0)
             return results.DOS(energies, dos)
 
-    def calc_ldos(self, energy, broadening, sublattice=-1):
-        ldos = self.impl.calc_ldos(energy, broadening, sublattice)
-        return results.SpatialMap.from_system(ldos, self.system)
+    def calc_spatial_ldos(self, energy, broadening):
+        """Calculate the spatial local density of states at the given energy
+
+        Calculates the following, where E is `energy`, c is `broadening`
+            LDOS(r) = 1 / (c * sqrt(2pi)) * sum(|psi(r)|^2 * exp(-0.5 * (eigenvalues - E)^2 / c^2))
+
+        Parameters
+        ----------
+        energy : float
+            The energy value for which the spatial LDOS is calculated.
+        broadening : float
+            Controls the width of the Gaussian broadening applied to the DOS.
+
+        Returns
+        -------
+        results.StructureMap
+        """
+        if hasattr(self.impl, 'calc_spatial_ldos'):
+            ldos = self.impl.calc_spatial_ldos(energy, broadening)
+        else:
+            scale = 1 / (broadening * math.sqrt(2 * math.pi))
+            gaussian = np.exp(-0.5 * (self.eigenvalues - energy)**2 / broadening**2)
+            psi2 = np.abs(self.eigenvectors)**2
+            ldos = scale * np.sum(psi2 * gaussian, axis=1)
+
+        return results.StructureMap.from_system(ldos, self.system)
 
     def calc_bands(self, k0, k1, *ks, step=0.1):
         k_points = [np.atleast_1d(k) for k in (k0, k1) + ks]

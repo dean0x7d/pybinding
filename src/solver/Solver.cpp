@@ -55,31 +55,29 @@ ArrayXd Solver::calc_dos(ArrayXf target_energies, float broadening) {
     return dos;
 }
 
-ArrayXd Solver::calc_ldos(float target_energy, float broadening, sub_id target_sublattice) {
+ArrayXd Solver::calc_spatial_ldos(float target_energy, float broadening) {
     auto const& sys = *system();
     auto const system_size = sys.num_sites();
     ArrayXd ldos = ArrayXd::Zero(system_size);
 
-    auto const inverted_broadening = 1 / (broadening * broadening);
-    auto const sqrt_pi = sqrt(physics::pi);
+    auto const scale = 1 / (broadening * sqrt(2 * physics::pi));
+    auto const constant = -0.5f / pow(broadening, 2);
 
     // TODO: also handle <double>
-    auto energies = uref_cast<ArrayXf>(eigenvalues());
-    for (int i = 0; i < system_size; i++) {
-        // if a target_sublattice is set, only consider those sites
-        if (target_sublattice >= 0 && sys.sublattices[i] != target_sublattice)
-            continue;
+    auto En = uref_cast<ArrayXf>(eigenvalues());
 
+    // DOS(r) = 1 / (b * sqrt(2pi)) * sum(|psi(r)|^2 * exp(-0.5 * (En-E)^2 / b^2))
+    for (int i = 0; i < system_size; i++) {
         // TODO: also handle <double>
-        auto probability_slice = [&]() -> ArrayXf {
+        auto psi2 = [&]() -> ArrayXf {
             if (eigenvectors().type == ScalarType::f)
                 return uref_cast<ArrayXXf>(eigenvectors()).row(i).abs2();
             else
                 return uref_cast<ArrayXXcf>(eigenvectors()).row(i).abs2();
         }();
 
-        auto gaussian = exp(-(energies - target_energy).square() * inverted_broadening);
-        ldos[i] = 1 / (sqrt_pi * broadening) * sum(probability_slice * gaussian);
+        auto gaussian = exp((En - target_energy).square() * constant);
+        ldos[i] = scale * sum(psi2 * gaussian);
     }
 
     return ldos;
