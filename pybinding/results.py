@@ -225,11 +225,18 @@ class StructureMap(SpatialMap):
         """Just the SpatialMap subset without hoppings"""
         return SpatialMap(self.data, self.pos, self.sub)
 
+    @staticmethod
+    def _filter_csr_matrix(csr, idx):
+        """Indexing must preserve all data, even zeros"""
+        plus_one = csr_matrix((csr.data + 1, csr.indices, csr.indptr), csr.shape)
+        plus_one = plus_one[idx][:, idx]
+        return csr_matrix((plus_one.data - 1, plus_one.indices, plus_one.indptr), plus_one.shape)
+
     def filter(self, idx):
         super().filter(idx)
-        self.hoppings = self.hoppings[idx][:, idx]
+        self.hoppings = self._filter_csr_matrix(self.hoppings, idx)
         for boundary in self.boundaries:
-            boundary.hoppings = boundary.hoppings[idx][:, idx]
+            boundary.hoppings = self._filter_csr_matrix(boundary.hoppings, idx)
 
     def plot_structure(self, site_radius=(0.03, 0.05), site_props: dict=None, hopping_width=1,
                        hopping_props: dict=None, cbar_props: dict=None):

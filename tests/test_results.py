@@ -70,3 +70,7 @@ def test_structure_map(model):
 
     assert pytest.fuzzy_equal(spatial_map, structure_map.spatial_map)
 
+    tmp = structure_map.copy()
+    tmp.filter(tmp.pos.x < 0.05)
+    assert structure_map.hoppings.nnz == 41
+    assert tmp.hoppings.nnz == 21
