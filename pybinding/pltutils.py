@@ -1,5 +1,6 @@
 import numpy as np
 import matplotlib as mpl
+import matplotlib.style as mpl_style
 import matplotlib.pyplot as plt
 
 from .utils import with_defaults
@@ -205,3 +206,52 @@ def align(x, y):
         va = 'bottom'
 
     return ha, va
+
+
+def _make_style():
+    nearly_black = '0.15'
+    linewidth = 0.6
+    dpi = 160
+    palette = list(get_palette('Set1'))
+    palette[5] = list(get_palette('Set2'))[5]
+
+    defaults = mpl_style.library['classic']
+    style = {
+        'lines.solid_capstyle': 'round',  # [projecting] butt|round|projecting
+        'font.size': 7.0,  # [12.0]
+        'text.color': nearly_black,  # [black]
+        'mathtext.default': 'regular',  # [it] the default font to use for math.
+        'axes.edgecolor': nearly_black,  # [black] axes edge color
+        'axes.linewidth': linewidth,  # [1.0] edge linewidth
+        'axes.labelcolor': nearly_black,  # [black]
+        'axes.unicode_minus': False,  # [True] use unicode for the minus symbol
+        'axes.prop_cycle': plt.cycler('color', palette),  # ['bgrcmyk']
+        'patch.facecolor': palette[1],  # [b]
+        'xtick.major.size': 2.5,  # [4] major tick size in points
+        'xtick.minor.size': 1.0,  # [2] minor tick size in points
+        'xtick.major.width': linewidth,  # [0.5] major tick width in points
+        'xtick.color': nearly_black,  # [black] color of the tick labels
+        'ytick.major.size': 2.5,  # [4] major tick size in points
+        'ytick.minor.size': 1.0,  # [2] minor tick size in points
+        'ytick.major.width': linewidth,  # [0.5] major tick width in points
+        'ytick.color': nearly_black,  # [black] color of the tick labels
+        'legend.fancybox': True,  # [False] Use a rounded box for the legend
+        'legend.numpoints': 1,  # [2] the number of points in the legend line
+        'legend.fontsize': 'medium',  # ['large']
+        'legend.framealpha': 0.9,  # [None] opacity of of legend frame
+        'figure.figsize': (3.4, 2.8),  # [(8, 6) inch] (3.4, 2.8) inch == (8.6, 7.1) cm
+        'figure.dpi': dpi,  # [80] figure dots per inch
+        'figure.facecolor': 'white',  # [0.75] figure facecolor
+        'savefig.dpi': dpi,  # [100] figure dots per inch
+        'savefig.bbox': 'tight',  # ['standard']
+        'savefig.pad_inches': 0.04,  # [0.1] padding to be used when bbox is set to 'tight'
+    }
+
+    return with_defaults(style, defaults)
+
+
+pb_style = _make_style()
+
+
+def use_style(style=pb_style):
+    mpl_style.use(style)
