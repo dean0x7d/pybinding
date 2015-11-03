@@ -50,22 +50,27 @@ def test_eigenvalues(solver, baseline, plot):
 
 
 def test_dos(solver, baseline, plot):
-    dos = solver.calc_dos(np.linspace(0, 0.1, 15), 0.01)
-    expected = baseline(dos)
-    plot(dos, expected, 'plot')
-    assert pytest.fuzzy_equal(dos, expected)
+    energy = np.linspace(0, 0.075, 15)
+    result = solver.calc_dos(energy, 0.01)
+
+    expected = pb.results.DOS(energy, baseline(result.dos))
+    plot(result, expected, 'plot')
+
+    assert pytest.fuzzy_equal(result, expected, rtol=1e-2, atol=1e-5)
 
 
 def test_spatial_ldos(solver, baseline, plot):
-    ldos_map = solver.calc_spatial_ldos(energy=0, broadening=0.01)
+    ldos_map = solver.calc_spatial_ldos(energy=0.05, broadening=0.01)
 
     x_max = solver.system.x.max()
     y_max = solver.system.y.max()
     ldos_map.crop(x=(x_max - 1, x_max + 1), y=(y_max - 1, y_max + 1))
 
-    expected = baseline(ldos_map)
+    expected = ldos_map.copy()
+    expected.data = baseline(ldos_map.data)
     plot(ldos_map, expected, 'plot_structure')
-    assert pytest.fuzzy_equal(ldos_map, expected)
+
+    assert pytest.fuzzy_equal(ldos_map, expected, rtol=1e-3, atol=1e-5)
 
 
 def test_lapack(baseline, plot):
