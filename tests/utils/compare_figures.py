@@ -1,5 +1,7 @@
+import os
 import shutil
 import tempfile
+from contextlib import suppress
 
 import matplotlib as mpl
 import matplotlib.style
@@ -14,7 +16,6 @@ from .path import path_from_fixture
 
 def _remove_text(figure):
     from matplotlib import ticker
-    from contextlib import suppress
 
     figure.suptitle("")
     for ax in figure.get_axes():
@@ -89,17 +90,16 @@ class CompareFigure:
 
             if baseline.exists():
                 try:
-                    failed = compare_images(baseline_filename, actual_filename,
-                                            self.tol, in_decorator=True)
+                    data = compare_images(baseline_filename, actual_filename,
+                                          self.tol, in_decorator=True)
                 except ValueError as exc:
                     if 'could not be broadcast' not in str(exc):
                         raise
                     else:
-                        failed = dict(actual=actual_filename, expected=baseline_filename)
+                        data = dict(actual=actual_filename, expected=baseline_filename)
 
-                if failed:
-                    self.report(failed)
-                self.passed = not failed
+                self.passed = data is None
+                self.report(data)
             else:
                 shutil.copyfile(actual_filename, baseline_filename)
                 self.passed = True
@@ -112,7 +112,18 @@ class CompareFigure:
             path = path_from_fixture(self.request, prefix="failed", variant=variant, ext=self.ext)
             return str(path)
 
-        shutil.copyfile(fail_data['actual'], reportfile("_actual"))
-        shutil.copyfile(fail_data['expected'], reportfile("_baseline"))
-        if 'diff' in fail_data:
-            shutil.copyfile(fail_data['diff'], reportfile("_diff"))
+        def delete(variant):
+            filename = reportfile(variant)
+            if os.path.exists(filename):
+                with suppress(OSError):
+                    os.remove(filename)
+
+        if fail_data:
+            shutil.copyfile(fail_data['actual'], reportfile("_actual"))
+            shutil.copyfile(fail_data['expected'], reportfile("_baseline"))
+            if 'diff' in fail_data:
+                shutil.copyfile(fail_data['diff'], reportfile("_diff"))
+        else:
+            delete("_actual")
+            delete("_baseline")
+            delete("_diff")

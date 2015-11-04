@@ -2,6 +2,8 @@ import pytest
 from .utils.path import path_from_fixture
 from .utils.compare_figures import CompareFigure
 
+from contextlib import suppress
+
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy.sparse import csr_matrix
@@ -71,6 +73,7 @@ def plot_if_fails(request):
     gather = Gather()
     yield gather
 
+    figure_path = path_from_fixture(request, prefix='failed', ext='.png')
     if request.config.getoption("--alwaysplot") or request.node.rep_call.failed:
         plt.figure(figsize=(6, 3))
         plt.subplot(121)
@@ -79,9 +82,11 @@ def plot_if_fails(request):
         plt.subplot(122)
         gather.plot('expected')
 
-        file_path = path_from_fixture(request, prefix='failed', ext='.png')
-        plt.savefig(str(file_path))
+        plt.savefig(str(figure_path))
         plt.close()
+    elif figure_path.exists():
+        with suppress(OSError):
+            figure_path.unlink()
 
 
 def fuzzy_equal(data, expected, rtol=1e-05, atol=1e-08):
