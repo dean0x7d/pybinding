@@ -1,4 +1,5 @@
 import pytest
+from .utils.path import path_from_fixture
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -27,33 +28,13 @@ def pytest_runtest_makereport(item):
     return report
 
 
-def _make_file_path(request, directory: str, name: str='', ext: str=''):
-    basedir = request.fspath.join('..').join(directory)
-    if not basedir.exists():
-        basedir.mkdir()
-
-    module = request.module.__name__.split('.')[-1].replace('test_', '')
-    subdir = basedir.join(module)
-    if not subdir.exists():
-        subdir.mkdir()
-
-    if not name:
-        name = request.node.name.replace('test_', '')
-
-    return subdir.join(name + ext)
-
-
 @pytest.fixture
 def baseline(request):
     """Return baseline data for this result. If non exist create it."""
     def get_expected(result, group=''):
-        name = request.node.name.replace('test_', '')
-        if group:
-            # replace 'some[thing]' with 'group[thing]'
-            part = name.partition('[')
-            name = group + part[1] + part[2]
+        file = path_from_fixture(request, prefix='baseline_data', ext='.pbz',
+                                 override_group=group)
 
-        file = _make_file_path(request, 'baseline_data', name, '.pbz')
         if not request.config.getoption("--savebaseline") and file.exists():
             return pb.load(file)
         else:
@@ -90,7 +71,7 @@ def plot(request):
         plt.subplot(122)
         gather.plot('expected')
 
-        file_path = _make_file_path(request, 'failed', ext='.png')
+        file_path = path_from_fixture(request, prefix='failed', ext='.png')
         plt.savefig(str(file_path))
         plt.close()
 
