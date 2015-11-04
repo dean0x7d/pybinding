@@ -90,7 +90,7 @@ def plot(request):
         plt.subplot(122)
         gather.plot('expected')
 
-        file_path = _make_file_path(request, 'plots', ext='.png')
+        file_path = _make_file_path(request, 'failed', ext='.png')
         plt.savefig(str(file_path))
         plt.close()
 
