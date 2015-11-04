@@ -269,7 +269,8 @@ class StructureMap(SpatialMap):
             plot_hoppings(ax, self.pos, boundary.hoppings.tocoo(), hopping_width,
                           boundary.shift, boundary=True, **hopping_props)
 
-        pltutils.colorbar(collection, **with_defaults(cbar_props))
+        if cbar_props is not False:
+            pltutils.colorbar(collection, **with_defaults(cbar_props))
         pltutils.despine(trim=True)
         pltutils.add_margin()
 

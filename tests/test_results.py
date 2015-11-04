@@ -74,3 +74,14 @@ def test_structure_map(model):
     tmp.filter(tmp.pos.x < 0.05)
     assert structure_map.hoppings.nnz == 41
     assert tmp.hoppings.nnz == 21
+
+
+def test_structure_map_plot(compare_figure):
+    model = pb.Model(graphene.lattice.monolayer(), pb.shape.rectangle(0.8))
+    system = model.system
+    data = np.arange(system.num_sites)
+    structure_map = pb.results.StructureMap.from_system(data, system)
+
+    with compare_figure() as chk:
+        structure_map.plot_structure(site_radius=(0.03, 0.05), cbar_props=False)
+    assert chk.passed
