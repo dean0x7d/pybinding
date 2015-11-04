@@ -99,7 +99,7 @@ void OptimizedHamiltonian<scalar_t>::create_reordered(SparseMatrixX<scalar_t> co
     index_queue.push_back(target_index); // starting from the given index
 
     // Map from original matrix indices to reordered matrix indices
-    auto reorder_map = std::vector<int>(system_size, -1);
+    auto reorder_map = std::vector<int>(static_cast<std::size_t>(system_size), -1);
     // The point of the reordering is to have the target become index number 0
     reorder_map[target_index] = 0;
 
