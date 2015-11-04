@@ -20,7 +20,7 @@ def pytest_runtest_makereport(item):
     """Allows fixtures to access test reports
 
     Adds test reports `rep_setup`, `rep_call`, `rep_teardown` to `request.node`.
-    Required by the `plot` fixture to determine if a test failed.
+    Required by the `plot_if_fails` fixture to determine if a test failed.
     """
     outcome = yield
     report = outcome.get_result()
@@ -45,7 +45,8 @@ def baseline(request):
 
 
 @pytest.yield_fixture
-def plot(request):
+def plot_if_fails(request):
+    """This fixture will plot the actual and expected data if the test fails"""
     class Gather:
         def __init__(self):
             self.data = []

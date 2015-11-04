@@ -42,24 +42,24 @@ def test_pickle_round_trip(solver, tmpdir):
     assert pytest.fuzzy_equal(solver, from_file)
 
 
-def test_eigenvalues(solver, baseline, plot):
+def test_eigenvalues(solver, baseline, plot_if_fails):
     eig = solver.calc_eigenvalues(map_probability_at=(0, 0))
     expected = baseline(eig)
-    plot(eig, expected, 'plot_heatmap')
+    plot_if_fails(eig, expected, 'plot_heatmap')
     assert pytest.fuzzy_equal(eig, expected, 2.e-2, 1.e-6)
 
 
-def test_dos(solver, baseline, plot):
+def test_dos(solver, baseline, plot_if_fails):
     energy = np.linspace(0, 0.075, 15)
     result = solver.calc_dos(energy, 0.01)
 
     expected = pb.results.DOS(energy, baseline(result.dos))
-    plot(result, expected, 'plot')
+    plot_if_fails(result, expected, 'plot')
 
     assert pytest.fuzzy_equal(result, expected, rtol=1e-2, atol=1e-5)
 
 
-def test_spatial_ldos(solver, baseline, plot):
+def test_spatial_ldos(solver, baseline, plot_if_fails):
     ldos_map = solver.calc_spatial_ldos(energy=0.05, broadening=0.01)
 
     x_max = solver.system.x.max()
@@ -68,12 +68,12 @@ def test_spatial_ldos(solver, baseline, plot):
 
     expected = ldos_map.copy()
     expected.data = baseline(ldos_map.data)
-    plot(ldos_map, expected, 'plot_structure')
+    plot_if_fails(ldos_map, expected, 'plot_structure')
 
     assert pytest.fuzzy_equal(ldos_map, expected, rtol=1e-3, atol=1e-5)
 
 
-def test_lapack(baseline, plot):
+def test_lapack(baseline, plot_if_fails):
     model = pb.Model(graphene.lattice.monolayer(), pb.symmetry.translational())
     solver = pb.solver.make_lapack(model)
     assert pytest.fuzzy_equal(solver.eigenvalues, [-3*abs(graphene.t), 3*abs(graphene.t)])
@@ -86,5 +86,5 @@ def test_lapack(baseline, plot):
 
     bands = solver.calc_bands(k1, g, m, k2, step=1)
     expected = baseline(bands)
-    plot(bands, expected, 'plot', names=['K', r'$\Gamma$', 'M', 'K'])
+    plot_if_fails(bands, expected, 'plot', names=['K', r'$\Gamma$', 'M', 'K'])
     assert pytest.fuzzy_equal(bands, expected, 2.e-2, 1.e-6)

@@ -97,9 +97,9 @@ def test_pickle_round_trip(lattice, tmpdir):
     assert pytest.fuzzy_equal(lattice, from_file)
 
 
-def test_expected(lattice, baseline, plot):
+def test_expected(lattice, baseline, plot_if_fails):
     expected = baseline(lattice)
-    plot(lattice, expected, 'plot')
+    plot_if_fails(lattice, expected, 'plot')
     assert pytest.fuzzy_equal(lattice, expected)
 
 

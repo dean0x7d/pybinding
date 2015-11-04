@@ -35,11 +35,11 @@ def test_pickle_round_trip(model, tmpdir):
     assert pytest.fuzzy_equal(model.system, from_file)
 
 
-def test_system(model, baseline, plot):
+def test_system(model, baseline, plot_if_fails):
     system = model.system
     expected = baseline(system)
 
-    plot(system, expected, 'plot')
+    plot_if_fails(system, expected, 'plot')
     assert pytest.fuzzy_equal(system, expected, 1.e-4, 1.e-6)
 
     idx = system.num_sites // 2

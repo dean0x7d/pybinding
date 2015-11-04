@@ -11,7 +11,7 @@ def silence_parallel_output(factory):
     factory.config.filename = None
 
 
-def test_sweep(baseline, plot):
+def test_sweep(baseline, plot_if_fails):
     @pb.parallelize(v=np.linspace(0, 0.1, 10))
     def factory(v, energy=np.linspace(0, 0.1, 10)):
         model = pb.Model(
@@ -28,7 +28,7 @@ def test_sweep(baseline, plot):
     result = pb.parallel.sweep(factory, labels=labels)
 
     expected = baseline(result)
-    plot(result, expected, 'plot')
+    plot_if_fails(result, expected, 'plot')
     assert pytest.fuzzy_equal(result, expected, rtol=1e-3, atol=1e-6)
 
 
