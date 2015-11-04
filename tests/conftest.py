@@ -1,5 +1,6 @@
 import pytest
 from .utils.path import path_from_fixture
+from .utils.compare_figures import CompareFigure
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -42,6 +43,12 @@ def baseline(request):
             return result
 
     return get_expected
+
+
+@pytest.fixture
+def compare_figure(request):
+    """Compare a figure to a baseline image"""
+    return CompareFigure(request)
 
 
 @pytest.yield_fixture

@@ -1,0 +1,118 @@
+import shutil
+import tempfile
+
+import matplotlib as mpl
+import matplotlib.style
+import matplotlib.units
+import matplotlib.pyplot as plt
+from matplotlib.testing.compare import compare_images
+
+import pybinding.pltutils as pltutils
+
+from .path import path_from_fixture
+
+
+def _remove_text(figure):
+    from matplotlib import ticker
+    from contextlib import suppress
+
+    figure.suptitle("")
+    for ax in figure.get_axes():
+        ax.set_title("")
+        ax.set_xlabel("")
+        ax.set_ylabel("")
+        ax.xaxis.set_major_formatter(ticker.NullFormatter())
+        ax.xaxis.set_minor_formatter(ticker.NullFormatter())
+        ax.yaxis.set_major_formatter(ticker.NullFormatter())
+        ax.yaxis.set_minor_formatter(ticker.NullFormatter())
+        with suppress(AttributeError):
+            ax.zaxis.set_major_formatter(ticker.NullFormatter())
+            ax.zaxis.set_minor_formatter(ticker.NullFormatter())
+
+
+class CompareFigure:
+    def __init__(self, request):
+        self.request = request
+        self.passed = False
+
+        self._original_rc = {}
+        self._original_units_registry = {}
+
+    def __call__(self, ext='.png', tol=10, remove_text=True, savefig_kwargs=None):
+        self.ext = ext
+        self.tol = tol
+        self.remove_text = remove_text
+        self.savefig_kwargs = savefig_kwargs or {}
+        return self
+
+    def _enter_style(self, style=pltutils.pb_style):
+        self._original_rc = mpl.rcParams.copy()
+        self._original_units_registry = matplotlib.units.registry.copy()
+
+        matplotlib.style.use(style)
+        mpl.use('Agg', warn=False)
+        mpl.rcParams['font.family'] = "Bitstream Vera Sans"
+        mpl.rcParams['text.hinting'] = False
+        mpl.rcParams['text.hinting_factor'] = 8
+
+        # Clear the font caches so the text hinting changes take effect.
+        from matplotlib.backends import backend_agg, backend_pdf, backend_svg
+        # noinspection PyProtectedMember
+        backend_agg.RendererAgg._fontd.clear()
+        backend_pdf.RendererPdf.truetype_font_cache.clear()
+        backend_svg.RendererSVG.fontd.clear()
+
+    def _exit_style(self):
+        mpl.rcParams.clear()
+        mpl.rcParams.update(self._original_rc)
+        matplotlib.units.registry.clear()
+        matplotlib.units.registry.update(self._original_units_registry)
+
+    def __enter__(self):
+        self._enter_style()
+        self.fig = plt.figure()
+        return self
+
+    def __exit__(self, exception, *_):
+        if exception:
+            return
+
+        if self.remove_text:
+            _remove_text(self.fig)
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            actual_filename = str(path_from_fixture(self.request, prefix=tmpdir, ext=self.ext))
+            plt.savefig(actual_filename, **self.savefig_kwargs)
+
+            baseline = path_from_fixture(self.request, prefix='baseline_plots', ext=self.ext)
+            baseline_filename = str(baseline)
+
+            if baseline.exists():
+                try:
+                    failed = compare_images(baseline_filename, actual_filename,
+                                            self.tol, in_decorator=True)
+                except ValueError as exc:
+                    if 'could not be broadcast' not in str(exc):
+                        raise
+                    else:
+                        failed = dict(actual=actual_filename, expected=baseline_filename)
+
+                if failed:
+                    self.report(failed)
+                self.passed = not failed
+            else:
+                shutil.copyfile(actual_filename, baseline_filename)
+                self.passed = True
+
+        plt.close()
+        self._exit_style()
+
+    def report(self, fail_data):
+        def reportfile(variant):
+            path = path_from_fixture(self.request, prefix="failed", variant=variant, ext=self.ext)
+            return str(path)
+
+        shutil.copyfile(fail_data['actual'], reportfile("_actual"))
+        shutil.copyfile(fail_data['expected'], reportfile("_baseline"))
+        if 'diff' in fail_data:
+            shutil.copyfile(fail_data['diff'], reportfile("_diff"))
