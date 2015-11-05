@@ -17,12 +17,13 @@ if (NOT EIGEN3_FOUND)
     # try to download it, if it isn't already
     set(dependencies_dir "${CMAKE_CURRENT_SOURCE_DIR}/dependencies")
     set(EIGEN3_INCLUDE_DIR ${dependencies_dir}/eigen3)
+    set(EIGEN3_VERSION ${Eigen3orDownload_FIND_VERSION})
 
     if(NOT EXISTS ${EIGEN3_INCLUDE_DIR})
         message(STATUS "Downloading Eigen3...")
         set(tmp_dir "${dependencies_dir}/tmp")
         set(tar_file "${tmp_dir}/eigen.tar.gz")
-        file(DOWNLOAD "https://bitbucket.org/eigen/eigen/get/${Eigen3orDownload_FIND_VERSION}.tar.gz"
+        file(DOWNLOAD "https://bitbucket.org/eigen/eigen/get/${EIGEN3_VERSION}.tar.gz"
              ${tar_file})
 
         # extract downloaded tar file
@@ -34,11 +35,9 @@ if (NOT EIGEN3_FOUND)
         if(NOT EXISTS ${ex_dir})
             set(EIGEN3_INCLUDE_DIR "EIGEN3_INCLUDE_DIR-NOTFOUND")
             if(Eigen3orDownload_FIND_REQUIRED)
-                message(FATAL_ERROR "Could not find or download Eigen3 ${Eigen3orDownload_FIND_VERSION}")
+                message(FATAL_ERROR "Could not find or download Eigen3 ${EIGEN3_VERSION}")
             endif()
         else()
-            set(EIGEN3_VERSION ${Eigen3orDownload_FIND_VERSION})
-
             # rename to a nicer dir
             file(RENAME ${ex_dir} ${EIGEN3_INCLUDE_DIR})
             # delete everything except the headers and signature file
