@@ -56,7 +56,7 @@ def test_dos(solver, baseline, plot_if_fails):
     expected = pb.results.DOS(energy, baseline(result.dos))
     plot_if_fails(result, expected, 'plot')
 
-    assert pytest.fuzzy_equal(result, expected, rtol=1e-2, atol=1e-5)
+    assert pytest.fuzzy_equal(result, expected, rtol=2e-2, atol=1e-5)
 
 
 def test_spatial_ldos(solver, baseline, plot_if_fails):
