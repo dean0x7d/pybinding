@@ -1,7 +1,7 @@
 #include "hamiltonian/Hamiltonian.hpp"
 #include "hamiltonian/HamiltonianModifiers.hpp"
 
-#include "converters/eigen3.hpp"
+#include "eigen3_converters.hpp"
 #include "python_support.hpp"
 
 #include <boost/python/class.hpp>
