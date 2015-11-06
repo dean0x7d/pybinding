@@ -1,8 +1,9 @@
 #pragma once
 #include "support/config.hpp"
-#include "solver/Solver.hpp"
 
 #ifdef TBM_USE_FEAST
+#include "solver/Solver.hpp"
+
 namespace tbm {
 
 struct FEASTConfig {
@@ -126,4 +127,10 @@ private:
 };
 
 } // namespace tbm
+#else
+namespace tbm {
+    struct _SuppressFEASThasNoSymbolsWarning {
+        _SuppressFEASThasNoSymbolsWarning();
+    };
+}
 #endif // TBM_USE_FEAST
