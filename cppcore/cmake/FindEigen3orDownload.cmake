@@ -15,7 +15,7 @@ endif()
 
 if (NOT EIGEN3_FOUND)
     # try to download it, if it isn't already
-    set(dependencies_dir "${CMAKE_CURRENT_SOURCE_DIR}/dependencies")
+    set(dependencies_dir "${CMAKE_CURRENT_SOURCE_DIR}/deps")
     set(EIGEN3_INCLUDE_DIR ${dependencies_dir}/eigen3)
     set(EIGEN3_VERSION ${Eigen3orDownload_FIND_VERSION})
 

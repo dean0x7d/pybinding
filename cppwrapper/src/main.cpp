@@ -1,4 +1,4 @@
-#include "converters/eigen3.hpp"
+#include "eigen3_converters.hpp"
 #include "python_support.hpp"
 
 #include <boost/python/module.hpp>

@@ -1,3 +1,4 @@
+#include "solver/Solver.hpp"
 #include "solver/FEAST.hpp"
 
 #include <boost/python/class.hpp>

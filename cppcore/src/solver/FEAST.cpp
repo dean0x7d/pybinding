@@ -298,4 +298,6 @@ std::unique_ptr<SolverStrategy>FEAST::create_strategy_for(
     return new_solver;
 }
 
+#else // TBM_USE_FEAST
+tbm::_SuppressFEASThasNoSymbolsWarning::_SuppressFEASThasNoSymbolsWarning() {}
 #endif // TBM_USE_FEAST

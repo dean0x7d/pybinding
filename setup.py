@@ -37,11 +37,12 @@ class CMakeBuild(build_ext):
 
             extpath = self.get_ext_fullpath(ext.name)
             extfulldir = os.path.abspath(os.path.dirname(extpath))
-            cmake_args = ['-DCMAKE_LIBRARY_OUTPUT_DIRECTORY=' + extfulldir]
+            cmake_args = ['-DCMAKE_LIBRARY_OUTPUT_DIRECTORY=' + extfulldir,
+                          '-DPYTHON_EXECUTABLE=' + sys.executable]
 
             if platform.system() == "Windows":
-                cmake_args += ['-DCMAKE_LIBRARY_OUTPUT_DIRECTORY_RELEASE=' + extfulldir]
-                cmake_args += ['-G', 'Visual Studio 14 2015 Win64']
+                cmake_args += ['-DCMAKE_LIBRARY_OUTPUT_DIRECTORY_RELEASE=' + extfulldir,
+                               '-G', 'Visual Studio 14 2015 Win64']
 
             subprocess.check_call(['cmake', cmake_dir] + cmake_args, cwd=build_dir)
             subprocess.check_call(['cmake', '--build', '.', '--config', 'Release'], cwd=build_dir)
@@ -72,7 +73,7 @@ setup(
 
     ],
 
-    packages=find_packages(exclude=['dependencies', 'test*']),
+    packages=find_packages(exclude=['cppcore', 'cppwrapper', 'test*']),
     ext_modules=[CMakeExtension('_pybinding')],
     install_requires=['numpy>=1.9.0', 'scipy>=0.15', 'matplotlib>=1.5.0',
                       'py-cpuinfo>=0.1.4', 'pytest>=2.8'],
