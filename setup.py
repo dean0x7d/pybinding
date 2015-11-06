@@ -37,7 +37,8 @@ class CMakeBuild(build_ext):
 
             extpath = self.get_ext_fullpath(ext.name)
             extfulldir = os.path.abspath(os.path.dirname(extpath))
-            cmake_args = ['-DCMAKE_LIBRARY_OUTPUT_DIRECTORY=' + extfulldir]
+            cmake_args = ['-DCMAKE_LIBRARY_OUTPUT_DIRECTORY=' + extfulldir,
+                          '-DPYTHON_EXECUTABLE=' + sys.executable]
 
             if platform.system() == "Windows":
                 cmake_args += ['-DCMAKE_LIBRARY_OUTPUT_DIRECTORY_RELEASE=' + extfulldir,
