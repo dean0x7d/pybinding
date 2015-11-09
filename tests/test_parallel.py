@@ -20,7 +20,7 @@ def test_sweep(baseline, plot_if_fails):
             pb.electric.constant(v)
         )
 
-        kpm = pb.greens.make_kpm(model)
+        kpm = pb.greens.kpm(model)
         return kpm.deferred_ldos(energy, broadening=0.1, position=[0, 0])
 
     silence_parallel_output(factory)
@@ -42,7 +42,7 @@ def test_ndsweep(baseline):
             pb.electric.constant(v2)
         )
 
-        kpm = pb.greens.make_kpm(model)
+        kpm = pb.greens.kpm(model)
         return kpm.deferred_ldos(energy, broadening=0.1, position=[0, 0])
 
     silence_parallel_output(factory)

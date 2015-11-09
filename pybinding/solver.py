@@ -8,7 +8,7 @@ from . import results
 from .system import System
 from .support.pickle import pickleable
 
-__all__ = ['Solver', 'make_feast', 'make_lapack', 'make_arpack']
+__all__ = ['Solver', 'feast', 'lapack', 'arpack']
 
 
 @pickleable(impl='system. eigenvalues eigenvectors')
@@ -206,18 +206,18 @@ class SolverPythonImpl:
         return "Converged in " + pretty_duration(self.compute_time)
 
 
-def make_lapack(model, **kwargs):
+def lapack(model, **kwargs):
     from scipy.linalg import eigh
     solver_func = lambda m, **kw: eigh(m.toarray(), **kw)
     return Solver(SolverPythonImpl(solver_func, model, **kwargs))
 
 
-def make_arpack(model, num_eigenvalues, sigma=1e-5, **kwargs):
+def arpack(model, num_eigenvalues, sigma=1e-5, **kwargs):
     from scipy.sparse.linalg import eigsh
     return Solver(SolverPythonImpl(eigsh, model, k=num_eigenvalues, sigma=sigma, **kwargs))
 
 
-def make_feast(model, energy_range, initial_size_guess, recycle_subspace=False, is_verbose=False):
+def feast(model, energy_range, initial_size_guess, recycle_subspace=False, is_verbose=False):
     try:
         return Solver(_cpp.FEAST(model, energy_range, initial_size_guess,
                                        recycle_subspace, is_verbose))

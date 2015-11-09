@@ -17,7 +17,7 @@ models = {
 @pytest.fixture(scope='module', ids=list(models.keys()), params=models.values())
 def kpm(request):
     model = pb.Model(*request.param)
-    return [pb.greens.make_kpm(model, optimization_level=i) for i in range(3)]
+    return [pb.greens.kpm(model, optimization_level=i) for i in range(3)]
 
 
 def test_ldos(kpm, baseline, plot_if_fails):

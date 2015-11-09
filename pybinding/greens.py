@@ -5,7 +5,7 @@ from .results import LDOSpoint
 from .model import Model
 from .system import System
 
-__all__ = ['Greens', 'make_kpm']
+__all__ = ['Greens', 'kpm']
 
 
 class Greens:
@@ -36,7 +36,7 @@ class Greens:
         return deferred
 
 
-def make_kpm(model, lambda_value=4.0, energy_range=(0.0, 0.0),
-             optimization_level=2, lanczos_precision=0.002):
+def kpm(model, lambda_value=4.0, energy_range=(0.0, 0.0),
+        optimization_level=2, lanczos_precision=0.002):
     return Greens(_cpp.KPM(model, lambda_value, energy_range,
                            optimization_level, lanczos_precision))

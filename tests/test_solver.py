@@ -28,7 +28,7 @@ def model_ex(request):
 @pytest.fixture(scope='module', params=solvers)
 def solver(request, model_ex):
     model, solver_cfg = model_ex
-    make_solver = getattr(pb.solver, 'make_' + request.param)
+    make_solver = getattr(pb.solver, request.param)
     solver = make_solver(model, *solver_cfg[request.param])
     solver.solve()
     return solver
@@ -75,7 +75,7 @@ def test_spatial_ldos(solver, baseline, plot_if_fails):
 
 def test_lapack(baseline, plot_if_fails):
     model = pb.Model(graphene.lattice.monolayer(), pb.symmetry.translational())
-    solver = pb.solver.make_lapack(model)
+    solver = pb.solver.lapack(model)
     assert pytest.fuzzy_equal(solver.eigenvalues, [-3*abs(graphene.t), 3*abs(graphene.t)])
 
     from math import pi, sqrt
