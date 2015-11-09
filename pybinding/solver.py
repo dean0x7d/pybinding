@@ -207,8 +207,10 @@ class SolverPythonImpl:
 
 
 def lapack(model, **kwargs):
-    from scipy.linalg import eigh
-    solver_func = lambda m, **kw: eigh(m.toarray(), **kw)
+    def solver_func(hamiltonian, **kw):
+        from scipy.linalg import eigh
+        return eigh(hamiltonian.toarray(), **kw)
+
     return Solver(SolverPythonImpl(solver_func, model, **kwargs))
 
 
@@ -219,8 +221,9 @@ def arpack(model, num_eigenvalues, sigma=1e-5, **kwargs):
 
 def feast(model, energy_range, initial_size_guess, recycle_subspace=False, is_verbose=False):
     try:
+        # noinspection PyUnresolvedReferences
         return Solver(_cpp.FEAST(model, energy_range, initial_size_guess,
-                                       recycle_subspace, is_verbose))
+                                 recycle_subspace, is_verbose))
     except AttributeError:
         raise Exception("The module was compiled without the FEAST solver.\n"
                         "Use a different solver or recompile the module with FEAST.")
