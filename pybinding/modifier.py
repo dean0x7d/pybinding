@@ -9,7 +9,7 @@ __all__ = ['site_state', 'site_position', 'onsite_energy', 'hopping_energy']
 
 def _check_modifier_spec(func, keywords):
     """Make sure the arguments are specified correctly"""
-    argnames = inspect.getargspec(func)[0]
+    argnames = inspect.signature(func).parameters.keys()
     unexpected = ", ".join([name for name in argnames if name not in keywords])
     if unexpected:
         expected = ", ".join(keywords)
@@ -48,7 +48,7 @@ def _make_modifier_decorator(base_modifier, keywords: str, num_return=1, maybe_c
         _check_modifier_spec(func, keywords)
 
         class Modifier(base_modifier):
-            argnames = inspect.getargspec(func)[0]
+            argnames = tuple(inspect.signature(func).parameters.keys())
             try:
                 callsig = get_call_signature(up=2)
             except IndexError:
