@@ -1,3 +1,17 @@
+"""Eigensolvers for pybinding models
+
+The `Solver` class is the main interface for dealing with eigenvalue problems. It
+is made to work specifically with pybinding's `Model` objects, but it may use any
+eigensolver algorithm under the hood.
+
+A few different algorithms are provided out of the box: the `lapack`, `arpack` and
+`feast` functions return concrete `Solver` implementation using the LAPACK, ARPACK
+and FEAST algorithms, respectively.
+
+The `Solver` may easily be extended with new eigensolver algorithms. All that is
+required is a function which takes a Hamiltonian matrix and returns the computed
+eigenvalues and eigenvectors. See `_SolverPythonImpl` for example.
+"""
 import time
 import math
 
@@ -5,6 +19,7 @@ import numpy as np
 
 from . import _cpp
 from . import results
+from .model import Model
 from .system import System
 from .support.pickle import pickleable
 
@@ -13,24 +28,19 @@ __all__ = ['Solver', 'feast', 'lapack', 'arpack']
 
 @pickleable(impl='system. eigenvalues eigenvectors')
 class Solver:
+    """Computes the eigenvalues and eigenvectors of a Hamiltonian matrix
+
+    This the common interface for various eigensolver implementations. It should
+    not be created directly, but via the specific functions: `lapack`, `arpack`
+    and `feast`. Those functions will set up their specific solver strategy and
+    return a properly configured `Solver` object.
+    """
     def __init__(self, impl: _cpp.Solver):
         self.impl = impl
 
-    def solve(self):
-        self.impl.solve()
-
-    def clear(self):
-        self.impl.clear()
-
-    def report(self, shortform=False):
-        return self.impl.report(shortform)
-
-    def set_wave_vector(self, k):
-        self.clear()
-        self.model.set_wave_vector(k)
-
     @property
-    def model(self):
+    def model(self) -> Model:
+        """The tight-binding model attached to this solver"""
         return self.impl.model
 
     @model.setter
@@ -39,17 +49,76 @@ class Solver:
 
     @property
     def system(self) -> System:
+        """The tight-binding system attached to this solver (shortcut for Solver.model.system)"""
         return System(self.impl.system)
 
     @property
     def eigenvalues(self) -> np.ndarray:
+        """1D array of computed energy states"""
         return self.impl.eigenvalues
 
     @property
     def eigenvectors(self) -> np.ndarray:
+        """2D array where each column represents a wave function
+
+        eigenvectors.shape == (system.num_sites, eigenvalues.size)
+        """
         return self.impl.eigenvectors
 
+    def solve(self):
+        """Explicitly solve the eigenvalue problem right now
+
+        This method is usually not needed because the main result properties,
+        `eigenvalues` and `eigenvectors`, will call this implicitly the first
+        time they are accessed. However, since the `solve()` routine may be
+        computationally expensive, it is useful to have the ability to call it
+        ahead of time as needed.
+        """
+        self.impl.solve()
+
+    def clear(self):
+        """Clear the computed results and start over"""
+        self.impl.clear()
+
+    def report(self, shortform=False) -> str:
+        """Return a report of the last `solve()` computation
+
+        Parameters
+        ----------
+        shortform : bool, optional
+            Return a short one line version of the report
+        """
+        return self.impl.report(shortform)
+
+    def set_wave_vector(self, k):
+        """Set the wave vector for periodic models
+
+        Parameters
+        ----------
+        k : array_like
+            Wave vector in reciprocal space.
+        """
+        self.clear()
+        self.model.set_wave_vector(k)
+
     def calc_eigenvalues(self, map_probability_at=None):
+        """Return an `Eigenvalues` result object with an optional probability colormap
+
+        While the `eigenvalues` property returns the raw values array, this method
+        returns a result object with more data. In addition to the energy states,
+        this result may show a colormap of the probability density for each state
+        at a single position.
+
+        Parameters
+        ----------
+        map_probability_at : array_like, optional
+            Cartesian position where the probability density of each energy state
+            should be calculated.
+
+        Returns
+        -------
+        results.Eigenvalues
+        """
         if not map_probability_at:
             return results.Eigenvalues(self.eigenvalues)
         else:
@@ -62,11 +131,30 @@ class Solver:
 
             return results.Eigenvalues(self.eigenvalues, probability)
 
-    def calc_probability(self, indices, reduce=1e-5):
-        if reduce and np.isscalar(indices):
-            indices = np.flatnonzero(abs(self.eigenvalues[indices] - self.eigenvalues) < reduce)
+    def calc_probability(self, index, reduce=1e-5):
+        """Calculate the spatial probability density
 
-        probability = abs(self.eigenvectors[:, indices]) ** 2
+        Calculates the following at every position r
+            P(r) = |psi(r)|^2
+
+        Parameters
+        ----------
+        index : int or array_like
+            Index of the desired eigenstate. If an array of indices is given, the
+            probability will be calculated at each one and a sum will be returned.
+        reduce : float, optional
+            Reduce degenerate states by summing their probabilities. Neighboring
+            states are considered degenerate if their energy is difference is lower
+            than the value of `reduce`. This is disabled by passing `reduce=0`.
+
+        Returns
+        -------
+        results.StructureMap
+        """
+        if reduce and np.isscalar(index):
+            index = np.flatnonzero(abs(self.eigenvalues[index] - self.eigenvalues) < reduce)
+
+        probability = abs(self.eigenvectors[:, index]) ** 2
         if probability.ndim > 1:
             probability = np.sum(probability, axis=1)
         return results.StructureMap.from_system(probability, self.system)
@@ -124,6 +212,21 @@ class Solver:
         return results.StructureMap.from_system(ldos, self.system)
 
     def calc_bands(self, k0, k1, *ks, step=0.1):
+        """Calculate the band structure on a path in reciprocal space
+
+        Parameters
+        ----------
+        k0, k1, *ks : array_like
+            Points in reciprocal space which form the path for the band calculation.
+            At least two points are required.
+        step : float, optional
+            Calculation step length in reciprocal space units. Lower `step` values
+            will return more detailed results.
+
+        Returns
+        -------
+        results.Bands
+        """
         k_points = [np.atleast_1d(k) for k in (k0, k1) + ks]
         k_path = results.make_path(*k_points, step=step)
 
@@ -138,19 +241,29 @@ class Solver:
     def find_degenerate_states(energies, abs_tolerance=1e-5):
         """Return groups of indices which belong to degenerate states
 
+        Parameters
+        ----------
+        energies : array_like
+        abs_tolerance : float, optional
+
+        Example
+        -------
         >>> energies = np.array([0.1, 0.1, 0.2, 0.5, 0.5, 0.5, 0.7, 0.8, 0.8])
         >>> Solver.find_degenerate_states(energies)
         [[0, 1], [3, 4, 5], [7, 8]]
         """
-        # see doctest for example arg and return
         idx = np.flatnonzero(abs(np.diff(energies)) < abs_tolerance)
-        # idx = [1, 0, 0, 1, 1, 0, 0, 1]
+        # from doctest example: idx = [1, 0, 0, 1, 1, 0, 0, 1]
         groups = np.split(idx, np.flatnonzero(np.diff(idx) != 1) + 1)
-        # groups = [[0], [3, 4], [7]]
+        # from doctest example: groups = [[0], [3, 4], [7]]
         return [list(g) + [g[-1] + 1] for g in groups]
 
 
-class SolverPythonImpl:
+class _SolverPythonImpl:
+    """Python eigensolver implementation
+
+    This is intended to make use of scipy's LAPACK and ARPACK solvers.
+    """
     def __init__(self, solve_func, model, **kwargs):
         self.solve_func = solve_func
         self._model = model
@@ -207,19 +320,88 @@ class SolverPythonImpl:
 
 
 def lapack(model, **kwargs):
+    """LAPACK `Solver` implementation for dense matrices
+
+    This solver is intended for small models which are best represented by
+    dense matrices. Always solves for all the eigenvalues and eigenvectors.
+    Internally this solver uses the `scipy.linalg.eigh` function for dense
+    Hermitian matrices.
+
+    Parameters
+    ----------
+    model : Model
+        Model which will provide the Hamiltonian matrix.
+    **kwargs
+        Advanced arguments -> forwarded to `scipy.linalg.eigh`.
+
+    Returns
+    -------
+    Solver
+    """
     def solver_func(hamiltonian, **kw):
         from scipy.linalg import eigh
         return eigh(hamiltonian.toarray(), **kw)
 
-    return Solver(SolverPythonImpl(solver_func, model, **kwargs))
+    return Solver(_SolverPythonImpl(solver_func, model, **kwargs))
 
 
 def arpack(model, num_eigenvalues, sigma=1e-5, **kwargs):
+    """ARPACK `Solver` implementation for sparse matrices
+
+    This solver is intended for large models with sparse Hamiltonian matrices.
+    It only computes a small targeted subset of eigenvalues and eigenvectors.
+    Internally this solver uses the `scipy.sparse.linalg.eigsh` function for
+    sparse Hermitian matrices.
+
+    Parameters
+    ----------
+    model : Model
+        Model which will provide the Hamiltonian matrix.
+    num_eigenvalues : int
+        The desired number of eigenvalues and eigenvectors. This number must be smaller
+        than the size of the matrix, preferably much smaller for optimal performance.
+        The computed eigenvalues are the ones closest to `sigma`.
+    sigma : float, optional
+        Look for eigenvalues near `sigma`.
+    **kwargs
+        Advanced arguments -> forwarded to `scipy.sparse.linalg.eigsh`.
+
+    Returns
+    -------
+    Solver
+    """
     from scipy.sparse.linalg import eigsh
-    return Solver(SolverPythonImpl(eigsh, model, k=num_eigenvalues, sigma=sigma, **kwargs))
+    return Solver(_SolverPythonImpl(eigsh, model, k=num_eigenvalues, sigma=sigma, **kwargs))
 
 
 def feast(model, energy_range, initial_size_guess, recycle_subspace=False, is_verbose=False):
+    """FEAST `Solver` implementation for sparse matrices
+
+    This solver is only available if the C++ extension module was compiled with FEAST.
+
+    Parameters
+    ----------
+    model : Model
+        Model which will provide the Hamiltonian matrix.
+    energy_range : tuple of float
+        The lowest and highest eigenvalue between which to compute the solutions.
+    initial_size_guess : int
+        Initial user guess for number of eigenvalues which will be found in the given
+        `energy_range`. This value may be completely wrong - the solver will auto-correct
+        as needed. However, for optimal performance the estimate should be as close to
+        1.5 * actual_size as possible.
+    recycle_subspace : bool, optional
+        Reuse previously computed values as a starting point for the next computation.
+        This improves performance when subsequent computations differ only slightly, as
+        is the case for the band structure of periodic systems where the results change
+        gradually as a function of the wave vector. It may hurt performance otherwise.
+    is_verbose : bool, optional
+        Show the raw output from the FEAST routine.
+
+    Returns
+    -------
+    Solver
+    """
     try:
         # noinspection PyUnresolvedReferences
         return Solver(_cpp.FEAST(model, energy_range, initial_size_guess,
