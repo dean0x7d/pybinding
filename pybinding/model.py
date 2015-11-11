@@ -1,6 +1,8 @@
+import numpy as np
 from scipy.sparse import csr_matrix
 
 from . import _cpp
+from . import results
 from .system import System
 from .lattice import Lattice
 from .support.sparse import SparseMatrix
@@ -38,3 +40,9 @@ class Model(_cpp.Model):
     def modifiers(self) -> list:
         return (self.state_modifiers + self.position_modifiers +
                 self.onsite_modifiers + self.hopping_modifiers)
+
+    @property
+    def onsite_map(self) -> results.StructureMap:
+        """`StructureMap` of the onsite energy"""
+        onsite_energy = np.real(self.hamiltonian.tocsr().diagonal())
+        return results.StructureMap.from_system(onsite_energy, self.system)
