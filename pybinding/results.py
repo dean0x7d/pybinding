@@ -245,7 +245,7 @@ class StructureMap(SpatialMap):
         ax.set_xlabel('x (nm)')
         ax.set_ylabel('y (nm)')
 
-        def radius(data):
+        def to_radius(data):
             positive_data = data - data.min()
             maximum = positive_data.max()
             if not np.allclose(maximum, 0):
@@ -254,8 +254,9 @@ class StructureMap(SpatialMap):
             else:
                 return site_radius[1]
 
+        radius = to_radius(self.data)
         site_props = with_defaults(site_props, cmap='YlGnBu')
-        collection = plot_sites(ax, self.pos, self.data, radius(self.data), **site_props)
+        collection = plot_sites(ax, self.pos, self.data, radius, **site_props)
 
         hop = self.hoppings.tocoo()
         hopping_props = with_defaults(hopping_props, colors='#bbbbbb')
@@ -263,11 +264,11 @@ class StructureMap(SpatialMap):
 
         for boundary in self.boundaries:
             for shift in [boundary.shift, -boundary.shift]:
-                plot_sites(ax, self.pos, self.data, radius, shift, blend=0.5, **site_props)
-                plot_hoppings(ax, self.pos, hop, hopping_width, shift, blend=0.5, **hopping_props)
+                plot_sites(ax, self.pos, self.data, radius, shift, alpha=0.5, **site_props)
+                plot_hoppings(ax, self.pos, hop, hopping_width, shift, alpha=0.5, **hopping_props)
 
             plot_hoppings(ax, self.pos, boundary.hoppings.tocoo(), hopping_width,
-                          boundary.shift, boundary=True, **hopping_props)
+                          boundary.shift, boundary=True, alpha=0.5, **hopping_props)
 
         if cbar_props is not False:
             pltutils.colorbar(collection, **with_defaults(cbar_props))
