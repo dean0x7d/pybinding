@@ -45,6 +45,26 @@ class Greens:
         """
         return self.impl.report(shortform)
 
+    def __call__(self, i, j, energy, broadening):
+        """Calculate Green's function of a single Hamiltonian element
+
+        Parameters
+        ----------
+        i, j : int
+            Hamiltonian indices.
+        energy : ndarray
+            Energy value array.
+        broadening : float
+            Width, in energy, of the smallest detail which can be resolved.
+            Lower values result in longer calculation time.
+
+        Returns
+        -------
+        ndarray
+            Array of the same size as the input `energy`.
+        """
+        return self.impl.calc_greens(i, j, energy, broadening)
+
     def calc_ldos(self, energy, broadening, position, sublattice=-1):
         """Calculate the local density of states as a function of energy
 
