@@ -43,10 +43,7 @@ class Model(_cpp.Model):
             parameters are expanded automatically, so `M.add(p0, [p1, p2])`
             is equivalent to `M.add(p0, p1, p2)`.
         """
-        for param in params:
-            if param is None:
-                continue
-
+        for param in filter(None, params):
             if isinstance(param, (tuple, list)):
                 self.add(*param)
             else:
