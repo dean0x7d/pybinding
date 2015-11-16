@@ -77,7 +77,7 @@ def test_add_hopping(mock_lattice):
 
     with pytest.raises(RuntimeError) as excinfo:
         mock_lattice.add_one_hopping((0, 0), 'a', 'a', 1)
-    assert "Don't define onsite potential here" in str(excinfo.value)
+    assert "Don't define onsite energy here" in str(excinfo.value)
 
     with pytest.raises(KeyError) as excinfo:
         mock_lattice.add_one_hopping((0, 0), 'c', 'a', 1)

@@ -81,7 +81,7 @@ void HamiltonianModifiers::apply_to_onsite(System const& system, Fn lambda) cons
     auto const num_sites = system.num_sites();
     auto potential = ArrayX<scalar_t>{};
 
-    if (system.lattice.has_onsite_potential) {
+    if (system.lattice.has_onsite_energy) {
         potential.resize(num_sites);
         transform(system.sublattices, potential, [&](sub_id id) {
             using real_t = num::get_real_t<scalar_t>;

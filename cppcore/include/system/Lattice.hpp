@@ -23,7 +23,7 @@ struct Hopping {
  */
 struct Sublattice {
     Cartesian offset; ///< position relative to the base lattice location
-    double onsite; ///< onsite potential energy
+    double onsite; ///< onsite energy
     sub_id alias; ///< in case two sublattices at different positions need to have the same ID
     std::vector<Hopping> hoppings; ///< hoppings from this sublattice
 
@@ -38,7 +38,7 @@ public:
     Lattice(Cartesian v1, Cartesian v2 = Cartesian::Zero(), Cartesian v3 = Cartesian::Zero());
 
     /// Create a new sublattice and return it's ID
-    sub_id add_sublattice(Cartesian offset, double onsite_potential = .0, sub_id alias = -1);
+    sub_id add_sublattice(Cartesian offset, double onsite_energy = .0, sub_id alias = -1);
 
     /// Connect sites via relative index/sublattices and return an ID for the given hopping energy
     hop_id add_hopping(Index3D relative_index, sub_id from_sublattice,
@@ -64,7 +64,7 @@ public:
     std::vector<Sublattice> sublattices; ///< all the sites that belong to the primitive cell
     std::vector<std::complex<double>> hopping_energies; ///< unique energies indexed by hop_id
     int min_neighbours = 1; ///< minimum number of neighbours required at each lattice site
-    bool has_onsite_potential = false; ///< does at least one sublattice have an onsite potential
+    bool has_onsite_energy = false; ///< does at least one sublattice have non-zero onsite energy
     bool has_complex_hopping = false; ///< is at least one hopping complex
 };
 

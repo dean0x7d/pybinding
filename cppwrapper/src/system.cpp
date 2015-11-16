@@ -104,7 +104,7 @@ void export_system() {
          args("self", "relative_index", "from_sublattice", "to_sublattice", "id"))
     .add_property("vectors", &Lattice::vectors, &Lattice::vectors)
     .add_property("sublattices", &Lattice::sublattices, [](Lattice& l, std::vector<Sublattice> s) {
-        l.has_onsite_potential = std::any_of(s.begin(), s.end(), [](Sublattice const& sub) {
+        l.has_onsite_energy = std::any_of(s.begin(), s.end(), [](Sublattice const& sub) {
             return sub.onsite != 0;
         });
         l.sublattices = std::move(s);

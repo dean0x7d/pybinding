@@ -42,7 +42,7 @@ void HamiltonianT<scalar_t>::build_main(System const& system,
     matrix.resize(num_sites, num_sites);
 
     auto const non_zeros_per_row = system.lattice.max_hoppings() +
-        (system.lattice.has_onsite_potential || !modifiers.onsite.empty());
+        (system.lattice.has_onsite_energy || !modifiers.onsite.empty());
     matrix.reserve(VectorXi::Constant(num_sites, non_zeros_per_row));
     
     modifiers.apply_to_onsite<scalar_t>(system, [&](int i, scalar_t onsite) {
