@@ -56,6 +56,20 @@ def test_add_sublattice(mock_lattice):
     assert "Cannot create more sublattices" in str(excinfo.value)
 
 
+def test_add_sublattice_alias(mock_lattice):
+    c_position = [0, 9]
+    mock_lattice.add_one_sublattice('c', c_position, alias='a')
+    model = pb.Model(mock_lattice)
+    c_index = model.system.find_nearest(c_position)
+
+    assert mock_lattice['c'] != mock_lattice['a']
+    assert model.system.sublattices[c_index] == mock_lattice['a']
+
+    with pytest.raises(KeyError) as excinfo:
+        mock_lattice.add_one_sublattice('d', [0, 0], alias='bad_name')
+    assert "There is no sublattice named 'bad_name'" in str(excinfo.value)
+
+
 def test_add_hopping(mock_lattice):
     with pytest.raises(RuntimeError) as excinfo:
         mock_lattice.add_one_hopping((0,  0), 'a', 'b', 1)
