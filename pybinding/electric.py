@@ -1,10 +1,10 @@
-from . import modifier
+import pybinding as pb
 
 __all__ = ['constant']
 
 
 def constant(value):
-    @modifier.onsite_energy
+    @pb.onsite_energy_modifier
     def const_onsite(potential):
         return potential + value
 

@@ -15,40 +15,40 @@ def build_model(*params):
 
 
 def test_decorator():
-    pb.modifier.onsite_energy(lambda potential: potential)
+    pb.onsite_energy_modifier(lambda potential: potential)
     with pytest.raises(RuntimeError) as excinfo:
-        pb.modifier.onsite_energy(lambda this_is_unexpected: None)
+        pb.onsite_energy_modifier(lambda this_is_unexpected: None)
     assert "Unexpected argument" in str(excinfo.value)
 
     with pytest.raises(RuntimeError) as excinfo:
-        pb.modifier.onsite_energy(lambda potential, x, y, z, w: None)
+        pb.onsite_energy_modifier(lambda potential, x, y, z, w: None)
     assert "Unexpected argument" in str(excinfo.value)
 
-    pb.modifier.onsite_energy(lambda potential: potential + 1)
+    pb.onsite_energy_modifier(lambda potential: potential + 1)
     with pytest.raises(RuntimeError) as excinfo:
-        pb.modifier.onsite_energy(lambda: 1)
+        pb.onsite_energy_modifier(lambda: 1)
     assert "Modifier must return numpy.ndarray" in str(excinfo.value)
 
-    pb.modifier.site_position(lambda x, y, z: (x, y, z))
+    pb.site_position_modifier(lambda x, y, z: (x, y, z))
     with pytest.raises(RuntimeError) as excinfo:
-        pb.modifier.site_position(lambda x, y, z: (x, y))
+        pb.site_position_modifier(lambda x, y, z: (x, y))
     assert "expected to return 3 ndarray(s), but got 2" in str(excinfo.value)
 
     with pytest.raises(RuntimeError) as excinfo:
-        pb.modifier.onsite_energy(lambda: (one, one))
+        pb.onsite_energy_modifier(lambda: (one, one))
     assert "expected to return 1 ndarray(s), but got 2" in str(excinfo.value)
 
     with pytest.raises(RuntimeError) as excinfo:
-        pb.modifier.onsite_energy(lambda x: np.zeros(x.size / 2))
+        pb.onsite_energy_modifier(lambda x: np.zeros(x.size / 2))
     assert "must return the same shape" in str(excinfo.value)
 
-    pb.modifier.hopping_energy(lambda hopping: np.ones_like(hopping, dtype=np.complex128))
+    pb.hopping_energy_modifier(lambda hopping: np.ones_like(hopping, dtype=np.complex128))
     with pytest.raises(RuntimeError) as excinfo:
-        pb.modifier.onsite_energy(lambda potential: np.ones_like(potential, dtype=np.complex128))
+        pb.onsite_energy_modifier(lambda potential: np.ones_like(potential, dtype=np.complex128))
     assert "must not return complex" in str(excinfo.value)
 
 
-@pb.modifier.site_state
+@pb.site_state_modifier
 def global_mod(state):
     return np.ones_like(state)
 
@@ -57,14 +57,14 @@ def test_callsig():
     assert "global_mod()" == str(global_mod)
     assert "global_mod()" == repr(global_mod)
 
-    @pb.modifier.site_state
+    @pb.site_state_modifier
     def local_mod(state):
         return np.ones_like(state)
     assert "test_callsig()" == str(local_mod)
     assert "test_callsig()" == repr(local_mod)
 
     def wrapped_mod(a, b):
-        @pb.modifier.site_state
+        @pb.site_state_modifier
         def actual_mod(state):
             return np.ones_like(state) * a * b
         return actual_mod
@@ -73,7 +73,7 @@ def test_callsig():
 
 
 def test_cast():
-    @pb.modifier.hopping_energy
+    @pb.hopping_energy_modifier
     def complex_in_real_out(hopping):
         return np.ones_like(hopping, dtype=np.float64)
 
@@ -81,7 +81,7 @@ def test_cast():
     assert np.iscomplexobj(complex_in_real_out.apply(complex_one, zero, zero, zero))
     assert not complex_in_real_out.is_complex()
 
-    @pb.modifier.hopping_energy
+    @pb.hopping_energy_modifier
     def real_in_complex_out(hopping):
         return np.ones_like(hopping, dtype=np.complex128)
 
@@ -91,7 +91,7 @@ def test_cast():
 
 
 def test_site_state():
-    @pb.modifier.site_state
+    @pb.site_state_modifier
     def mod(state):
         return np.ones_like(state)
     assert np.all(mod(zero))
@@ -99,7 +99,7 @@ def test_site_state():
 
     capture = []
 
-    @pb.modifier.site_state
+    @pb.site_state_modifier
     def check_args(state, x, y, z, sub):
         capture[:] = (v.copy() for v in (state, x, y, z, sub))
         return state
@@ -114,7 +114,7 @@ def test_site_state():
 
 
 def test_site_position():
-    @pb.modifier.site_position
+    @pb.site_position_modifier
     def mod(x, y, z):
         return x + 1, y + 1, z + 1
     assert (one,) * 3 == mod(zero, zero, zero)
@@ -122,7 +122,7 @@ def test_site_position():
 
     capture = []
 
-    @pb.modifier.site_position
+    @pb.site_position_modifier
     def check_args(x, y, z, sub):
         capture[:] = (v.copy() for v in (x, y, z, sub))
         return x, y, z
@@ -136,7 +136,7 @@ def test_site_position():
 
 
 def test_onsite():
-    @pb.modifier.onsite_energy
+    @pb.onsite_energy_modifier
     def mod(potential):
         return potential + 2
     assert np.all(2 == mod(zero))
@@ -144,7 +144,7 @@ def test_onsite():
 
     capture = []
 
-    @pb.modifier.onsite_energy
+    @pb.onsite_energy_modifier
     def check_args(potential, x, y, z, sub):
         capture[:] = (v.copy() for v in (potential, x, y, z, sub))
         return potential
@@ -159,7 +159,7 @@ def test_onsite():
 
 
 def test_hopping_energy():
-    @pb.modifier.hopping_energy
+    @pb.hopping_energy_modifier
     def mod(hopping):
         return hopping * 2
     assert np.all(2 == mod(one))
@@ -167,7 +167,7 @@ def test_hopping_energy():
 
     capture = []
 
-    @pb.modifier.hopping_energy
+    @pb.hopping_energy_modifier
     def check_args(hopping, hop_id, x1, y1, z1, x2, y2, z2):
         capture[:] = (v.copy() for v in (hopping, hop_id, x1, y1, z1, x2, y2, z2))
         return hopping
@@ -186,7 +186,7 @@ def test_hopping_energy():
 
 # Disabled for now. It doesn't work when the 'fast math' compiler flag is set.
 def dont_test_invalid_return():
-    @pb.modifier.onsite_energy
+    @pb.onsite_energy_modifier
     def mod_inf(potential):
         return np.ones_like(potential) * np.inf
 
@@ -194,7 +194,7 @@ def dont_test_invalid_return():
         build_model(mod_inf)
     assert "NaN or INF" in str(excinfo.value)
 
-    @pb.modifier.onsite_energy
+    @pb.onsite_energy_modifier
     def mod_nan(potential):
         return np.ones_like(potential) * np.NaN
 

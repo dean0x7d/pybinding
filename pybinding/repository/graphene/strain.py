@@ -1,9 +1,9 @@
 import numpy as _np
-from pybinding import modifier
+import pybinding as pb
 from .constants import a_cc, beta, hbar
 
 
-@modifier.hopping_energy
+@pb.hopping_energy_modifier
 def strained_hopping(hopping, x1, y1, z1, x2, y2, z2):
     l = _np.sqrt((x1-x2)**2 + (y1-y2)**2 + (z1-z2)**2)
     w = l / a_cc - 1
@@ -14,7 +14,7 @@ def gaussian_bump(h0, r_limit):
     import math
     b = r_limit * math.sqrt(2) / 3.5
 
-    @modifier.site_position
+    @pb.site_position_modifier
     def displacement(x, y, z):
         r2 = x**2 + y**2
         r = _np.sqrt(r2)
@@ -34,7 +34,7 @@ def triaxial(magnetic_field):
     c = field_to_strain(magnetic_field)
     zigzag_direction = False
 
-    @modifier.site_position
+    @pb.site_position_modifier
     def displacement(x, y, z):
         if not zigzag_direction:
             ux = 2*c * x*y

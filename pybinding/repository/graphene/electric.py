@@ -1,5 +1,5 @@
 import numpy as _np
-from pybinding import modifier
+import pybinding as pb
 
 
 def coulomb(beta, r_const=.0, offset=(0, 0, 0)):
@@ -19,7 +19,7 @@ def coulomb(beta, r_const=.0, offset=(0, 0, 0)):
     # beta is dimensionless -> multiply hbar*vF makes it [eV * nm]
     scaled_beta = beta * hbar * vf
 
-    @modifier.onsite_energy
+    @pb.onsite_energy_modifier
     def pot(potential, x, y, z):
         x0, y0, z0 = offset
         r = _np.sqrt((x-x0)**2 + (y-y0)**2 + (z-z0)**2)

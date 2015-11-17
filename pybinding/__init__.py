@@ -13,9 +13,10 @@ import _pybinding as _cpp
 
 from .model import Model
 from .lattice import Lattice, make_lattice
+from .modifier import *
 from .results import make_path
 from .support.pickle import save, load
 from .parallel import parallel_for, parallelize
 
-from . import (constants, electric, greens, lattice, magnetic, model, modifier,
+from . import (constants, electric, greens, lattice, magnetic, model,
                parallel, pltutils, results, shape, solver, symmetry, system)

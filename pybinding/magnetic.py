@@ -1,5 +1,5 @@
 import numpy as _np
-from pybinding import modifier
+import pybinding as pb
 
 __all__ = ['constant']
 
@@ -9,7 +9,7 @@ def constant(magnetic_field):
     scale = 1e-18  # both the vector potential and coordinates are in [nm] -> scale to [m]
     const = scale * 2 * pi / phi0
 
-    @modifier.hopping_energy
+    @pb.hopping_energy_modifier
     def hop(hopping, x1, y1, x2, y2):
         # vector potential
         ax = magnetic_field * (y1 + y2) / 2

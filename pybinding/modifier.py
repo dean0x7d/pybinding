@@ -4,7 +4,8 @@ import numpy as np
 from . import _cpp
 from .support.inspect import get_call_signature
 
-__all__ = ['site_state', 'site_position', 'onsite_energy', 'hopping_energy']
+__all__ = ['site_state_modifier', 'site_position_modifier',
+           'onsite_energy_modifier', 'hopping_energy_modifier']
 
 
 def _check_modifier_spec(func, keywords):
@@ -88,18 +89,18 @@ def _make_modifier(func, base_modifier, keywords: str, num_return=1, maybe_compl
     return modifier
 
 
-def site_state(func):
+def site_state_modifier(func):
     return _make_modifier(func, _cpp.SiteStateModifier, keywords="state, x, y, z, sub")
 
 
-def site_position(func):
+def site_position_modifier(func):
     return _make_modifier(func, _cpp.PositionModifier, keywords="x, y, z, sub", num_return=3)
 
 
-def onsite_energy(func):
+def onsite_energy_modifier(func):
     return _make_modifier(func, _cpp.OnsiteModifier, keywords="potential, x, y, z, sub")
 
 
-def hopping_energy(func):
+def hopping_energy_modifier(func):
     return _make_modifier(func, _cpp.HoppingModifier, maybe_complex=True,
                           keywords="hopping, hop_id, x1, y1, z1, x2, y2, z2")
