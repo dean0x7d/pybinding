@@ -10,7 +10,7 @@ models = {
     'graphene-const_potential': [graphene.lattice.monolayer(), pb.shape.rectangle(30),
                                  pb.electric.constant(0.5)],
     'graphene-magnetic_field': [graphene.lattice.monolayer(), pb.shape.rectangle(30),
-                                pb.magnetic.constant(800)],
+                                graphene.constant_magnetic_field(800)],
 }
 
 

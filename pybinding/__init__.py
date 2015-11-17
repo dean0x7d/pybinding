@@ -18,5 +18,5 @@ from .results import make_path
 from .support.pickle import save, load
 from .parallel import parallel_for, parallelize
 
-from . import (constants, electric, greens, lattice, magnetic, model,
+from . import (constants, electric, greens, lattice, model,
                parallel, pltutils, results, shape, solver, symmetry, system)

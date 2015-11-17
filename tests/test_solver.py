@@ -14,7 +14,7 @@ models = {
                           'arpack': [30],
                           'feast': [(-0.1, 0.1), 28]},
     'graphene-magnetic_field': {'model': [graphene.lattice.monolayer(), pb.shape.rectangle(6),
-                                          pb.magnetic.constant(10)],
+                                          graphene.constant_magnetic_field(10)],
                                 'arpack': [30],
                                 'feast': [(-0.1, 0.1), 18]},
 }
