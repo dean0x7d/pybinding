@@ -9,7 +9,7 @@ from . import pltutils
 from .utils import x_pi, with_defaults
 from .support.pickle import pickleable
 
-__all__ = ['Lattice', 'make_lattice', 'square']
+__all__ = ['Lattice', 'make_lattice']
 
 
 @pickleable(props='sublattices hopping_energies min_neighbors')
@@ -387,16 +387,4 @@ def make_lattice(vectors, sublattices, hoppings, min_neighbors=1):
     lat.add_sublattices(*sublattices)
     lat.add_hoppings(*hoppings)
     lat.min_neighbors = min_neighbors
-    return lat
-
-
-def square(d=0.2, t=-1):
-    lat = Lattice(a1=[d, 0], a2=[0, d])
-    lat.add_one_sublattice('A', [0, 0])
-    lat.add_hoppings(
-        ([0,  1], 'A', 'A', t),
-        ([1,  0], 'A', 'A', t),
-        ([1,  1], 'A', 'A', t),
-        ([1, -1], 'A', 'A', t),
-    )
     return lat

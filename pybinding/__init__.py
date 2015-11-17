@@ -12,11 +12,11 @@ if sys.platform.startswith("linux"):
 import _pybinding as _cpp
 
 from .model import Model
-from .lattice import Lattice, make_lattice
+from .lattice import *
 from .modifier import *
 from .results import make_path
 from .support.pickle import save, load
 from .parallel import parallel_for, parallelize
 
-from . import (constants, greens, lattice, model,
+from . import (constants, greens, model,
                parallel, pltutils, results, shape, solver, symmetry, system)

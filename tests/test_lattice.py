@@ -1,11 +1,11 @@
 import pytest
 
 import pybinding as pb
-from pybinding.repository import graphene
+from pybinding.repository import graphene, examples
 from pybinding.repository import misc
 
 lattices = {
-    'square': pb.lattice.square(d=0.2, t=1),
+    'square': examples.square_lattice(d=0.2, t=1),
     'graphene-monolayer': graphene.lattice.monolayer(),
     'graphene-monolayer-alt': graphene.lattice.monolayer_alt(),
     'graphene-monolayer-4atom': graphene.lattice.monolayer_4atom(),
