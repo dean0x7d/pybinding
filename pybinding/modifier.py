@@ -41,75 +41,65 @@ def _check_modifier_return(modifier, keywords: list, num_return: int, maybe_comp
         raise RuntimeError("This modifier must not return complex values")
 
 
-def _make_modifier_decorator(base_modifier, keywords: str, num_return=1, maybe_complex=False):
+def _make_modifier(func, base_modifier, keywords: str, num_return=1, maybe_complex=False):
     keywords = [word.strip(",") for word in keywords.split()]
+    _check_modifier_spec(func, keywords)
 
-    def decorator(func):
-        _check_modifier_spec(func, keywords)
+    class Modifier(base_modifier):
+        argnames = tuple(inspect.signature(func).parameters.keys())
+        try:
+            callsig = get_call_signature(up=3)
+        except IndexError:
+            callsig = get_call_signature(up=0)
+            callsig.function = func
 
-        class Modifier(base_modifier):
-            argnames = tuple(inspect.signature(func).parameters.keys())
-            try:
-                callsig = get_call_signature(up=2)
-            except IndexError:
-                callsig = get_call_signature(up=0)
-                callsig.function = func
+        def __str__(self):
+            return str(self.callsig)
 
-            def __str__(self):
-                return str(self.callsig)
+        def __repr__(self):
+            return repr(self.callsig)
 
-            def __repr__(self):
-                return repr(self.callsig)
+        def __call__(self, *args, **kwargs):
+            return func(*args, **kwargs)
 
-            def __call__(self, *args, **kwargs):
-                return func(*args, **kwargs)
+        def apply(self, *args):
+            # only pass the requested arguments to func
+            named_args = {name: value for name, value in zip(keywords, args)
+                          if name in self.argnames}
+            ret = func(**named_args)
 
-            def apply(self, *args):
-                # only pass the requested arguments to func
-                named_args = {name: value for name, value in zip(keywords, args)
-                              if name in self.argnames}
-                ret = func(**named_args)
+            def cast_dtype(v):
+                return v.astype(args[0].dtype, casting='same_kind', copy=False)
 
-                def cast_dtype(v):
-                    return v.astype(args[0].dtype, casting='same_kind', copy=False)
+            try:  # cast output array to same element type as the input
+                if isinstance(ret, tuple):
+                    return tuple(map(cast_dtype, ret))
+                else:
+                    return cast_dtype(ret)
+            except TypeError:
+                return ret
 
-                try:  # cast output array to same element type as the input
-                    if isinstance(ret, tuple):
-                        return tuple(map(cast_dtype, ret))
-                    else:
-                        return cast_dtype(ret)
-                except TypeError:
-                    return ret
+        def is_complex(self):
+            ret = self.apply(np.ones(1), *(np.zeros(1) for _ in keywords[1:]))
+            return np.iscomplexobj(ret)
 
-            def is_complex(self):
-                ret = self.apply(np.ones(1), *(np.zeros(1) for _ in keywords[1:]))
-                return np.iscomplexobj(ret)
-
-        modifier = Modifier()
-        _check_modifier_return(modifier, keywords, num_return, maybe_complex)
-        return modifier
-
-    return decorator
+    modifier = Modifier()
+    _check_modifier_return(modifier, keywords, num_return, maybe_complex)
+    return modifier
 
 
-site_state = _make_modifier_decorator(
-    _cpp.SiteStateModifier,
-    keywords="state, x, y, z, sub"
-)
+def site_state(func):
+    return _make_modifier(func, _cpp.SiteStateModifier, keywords="state, x, y, z, sub")
 
-site_position = _make_modifier_decorator(
-    _cpp.PositionModifier,
-    keywords="x, y, z, sub",
-    num_return=3
-)
 
-onsite_energy = _make_modifier_decorator(
-    _cpp.OnsiteModifier,
-    keywords="potential, x, y, z, sub",
-)
+def site_position(func):
+    return _make_modifier(func, _cpp.PositionModifier, keywords="x, y, z, sub", num_return=3)
 
-hopping_energy = _make_modifier_decorator(
-    _cpp.HoppingModifier,
-    keywords="hopping, hop_id, x1, y1, z1, x2, y2, z2",
-    maybe_complex=True
-)
+
+def onsite_energy(func):
+    return _make_modifier(func, _cpp.OnsiteModifier, keywords="potential, x, y, z, sub")
+
+
+def hopping_energy(func):
+    return _make_modifier(func, _cpp.HoppingModifier, maybe_complex=True,
+                          keywords="hopping, hop_id, x1, y1, z1, x2, y2, z2")
