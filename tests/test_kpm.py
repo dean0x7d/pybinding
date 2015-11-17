@@ -8,7 +8,7 @@ models = {
     'graphene-pristine': [graphene.lattice.monolayer(), pb.shape.rectangle(30)],
     'graphene-pristine-oversized': [graphene.lattice.monolayer(), pb.shape.rectangle(45)],
     'graphene-const_potential': [graphene.lattice.monolayer(), pb.shape.rectangle(30),
-                                 pb.electric.constant(0.5)],
+                                 pb.constant_potential(0.5)],
     'graphene-magnetic_field': [graphene.lattice.monolayer(), pb.shape.rectangle(30),
                                 graphene.constant_magnetic_field(800)],
 }

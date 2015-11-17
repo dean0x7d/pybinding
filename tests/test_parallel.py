@@ -17,7 +17,7 @@ def test_sweep(baseline, plot_if_fails):
         model = pb.Model(
             graphene.lattice.monolayer(),
             graphene.shape.hexagon_ac(side_width=20),
-            pb.electric.constant(v)
+            pb.constant_potential(v)
         )
 
         kpm = pb.greens.kpm(model)
@@ -38,8 +38,8 @@ def test_ndsweep(baseline):
         model = pb.Model(
             graphene.lattice.monolayer(),
             graphene.shape.hexagon_ac(side_width=20),
-            pb.electric.constant(v1),
-            pb.electric.constant(v2)
+            pb.constant_potential(v1),
+            pb.constant_potential(v2)
         )
 
         kpm = pb.greens.kpm(model)

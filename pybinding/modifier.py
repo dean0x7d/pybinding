@@ -9,8 +9,8 @@ import numpy as np
 from . import _cpp
 from .support.inspect import get_call_signature
 
-__all__ = ['site_state_modifier', 'site_position_modifier',
-           'onsite_energy_modifier', 'hopping_energy_modifier']
+__all__ = ['site_state_modifier', 'site_position_modifier', 'onsite_energy_modifier',
+           'hopping_energy_modifier', 'constant_potential']
 
 
 def _check_modifier_spec(func, keywords):
@@ -231,3 +231,18 @@ def hopping_energy_modifier(func):
     """
     return _make_modifier(func, _cpp.HoppingModifier, maybe_complex=True,
                           keywords="hopping, hop_id, x1, y1, z1, x2, y2, z2")
+
+
+def constant_potential(magnitude):
+    """Apply a constant onsite energy to every lattice site
+
+    Parameters
+    ----------
+    magnitude : float
+        In units of eV.
+    """
+    @onsite_energy_modifier
+    def function(potential):
+        return potential + magnitude
+
+    return function
