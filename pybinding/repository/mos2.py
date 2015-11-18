@@ -1,9 +1,15 @@
+"""Molybdenum disulfide"""
 import math
 import pybinding as pb
 
 
-def mos2():
-    a = 0.319  # [nm] lattice constant
+def three_band_lattice():
+    """MoS2 lattice using the three-band model"""
+    # TODO: this is a proof of concept for `Lattice.add_hopping_matrices()`
+    # TODO: still needs to be checked for accuracy
+
+    # lattice constant
+    a = 0.319  # [nm]
     # onsite energies
     eps0 = 1.046
     eps2 = 2.104
@@ -14,19 +20,17 @@ def mos2():
     t11 = 0.218
     t12 = 0.338
     t22 = 0.057
-    # convenient
+    # convenient constant
     rt3 = math.sqrt(3)
 
-    lat = pb.Lattice([a, 0], [0.5 * a, 0.5*rt3 * a])
-    lat.add_sublattices(
-        ['s1', (0, 0), eps0],
-        ['s2', (0, 0), eps2],
-        ['s3', (0, 0), eps2],
-    )
+    lat = pb.Lattice(a1=[a, 0], a2=[0.5 * a, 0.5*rt3 * a])
+    lat.add_sublattices(('s1', [0, 0], eps0),
+                        ('s2', [0, 0], eps2),
+                        ('s3', [0, 0], eps2))
 
-    r1 = (1,  0)
-    r2 = (1, -1)
-    r3 = (0, -1)
+    r1 = [1,  0]
+    r2 = [1, -1]
+    r3 = [0, -1]
 
     t_mat1 = [[ t0,   t1,  t2],
               [-t1,  t11, t12],

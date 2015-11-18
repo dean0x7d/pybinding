@@ -1,8 +1,7 @@
 import pytest
 
 import pybinding as pb
-from pybinding.repository import graphene, examples
-from pybinding.repository import misc
+from pybinding.repository import graphene, mos2, examples
 
 lattices = {
     'square': examples.square_lattice(d=0.2, t=1),
@@ -11,7 +10,7 @@ lattices = {
     'graphene-monolayer-4atom': graphene.lattice.monolayer_4atom(),
     'graphene-monolayer-nn': graphene.lattice.monolayer_nn(),
     'graphene-bilayer': graphene.lattice.bilayer(),
-    'mos2': misc.lattice.mos2(),
+    'mos2': mos2.three_band_lattice(),
 }
 
 
