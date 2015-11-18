@@ -90,20 +90,25 @@ def circle(radius, center=(0, 0, 0)):
     return Circle(radius, center)
 
 
-def translational_symmetry(a1=None, a2=None, a3=None):
+def translational_symmetry(a1=True, a2=True, a3=True):
     """Simple translational symmetry
 
     Parameters
     ----------
-    a1, a2, a3 : float
-        Length (in nanometers) of the translation in the 'a1, a2, a3' lattice vector directions.
-        Special values:
-            0 - automatically sets the minimal translation length for the lattice
-            None - no translational symmetry in this direction
+    a1, a2, a3 : bool or float
+        Control translation in the 'a1, a2, a3' lattice vector directions.
+        Possible values:
+            False - No translational symmetry in this direction.
+            True - Translation length is automatically set to the unit cell length.
+            <number> - Manually set the translation length in nanometers.
     """
-    if any(v is not None for v in (a1, a2, a3)):
-        lengths = tuple((v if v is not None else -1) for v in (a1, a2, a3))
-    else:
-        lengths = 0,
+    def to_cpp_params(value):
+        if value is False:
+            return -1  # disabled
+        elif value is True:
+            return 0  # automatic length
+        else:
+            return value  # manual length
 
+    lengths = tuple(to_cpp_params(a) for a in (a1, a2, a3))
     return _cpp.Translational(lengths)
