@@ -5,7 +5,8 @@ from . import _cpp
 from . import pltutils
 from .utils import with_defaults
 
-__all__ = ['Polygon', 'Circle', 'primitive', 'rectangle', 'regular_polygon', 'circle']
+__all__ = ['Polygon', 'Circle', 'primitive', 'rectangle', 'regular_polygon', 'circle',
+           'translational_symmetry']
 
 
 class Polygon(_cpp.Polygon):
@@ -87,3 +88,22 @@ def regular_polygon(num_sides, radius, angle=0):
 
 def circle(radius, center=(0, 0, 0)):
     return Circle(radius, center)
+
+
+def translational_symmetry(a1=None, a2=None, a3=None):
+    """Simple translational symmetry
+
+    Parameters
+    ----------
+    a1, a2, a3 : float
+        Length (in nanometers) of the translation in the 'a1, a2, a3' lattice vector directions.
+        Special values:
+            0 - automatically sets the minimal translation length for the lattice
+            None - no translational symmetry in this direction
+    """
+    if any(v is not None for v in (a1, a2, a3)):
+        lengths = tuple((v if v is not None else -1) for v in (a1, a2, a3))
+    else:
+        lengths = 0,
+
+    return _cpp.Translational(lengths)

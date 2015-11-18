@@ -6,18 +6,18 @@ from pybinding.repository import graphene, examples
 models = {
     'square': [examples.square_lattice(d=0.2, t=1), pb.shape.rectangle(1)],
     'square-periodic-2d': [examples.square_lattice(d=0.2, t=1), pb.shape.rectangle(2),
-                           pb.symmetry.translational(v1=0.6, v2=0.6)],
+                           pb.translational_symmetry(a1=0.6, a2=0.6)],
     'graphene-monolayer': [graphene.lattice.monolayer(), graphene.shape.hexagon_ac(1)],
     'graphene-monolayer-alt': [graphene.lattice.monolayer_alt(), pb.shape.rectangle(1.6, 1.4)],
     'graphene-monolayer-4atom': [graphene.lattice.monolayer_4atom()],
     'graphene-monolayer-nn': [graphene.lattice.monolayer_nn(), pb.shape.regular_polygon(6, 0.9)],
     'graphene-monolayer-periodic-1d': [graphene.lattice.monolayer(), pb.shape.primitive(5, 5),
-                                       pb.symmetry.translational(v1=0)],
+                                       pb.translational_symmetry(a1=0)],
     'graphene-monolayer-periodic-1d-alt': [graphene.lattice.monolayer_4atom(),
                                            pb.shape.rectangle(1),
-                                           pb.symmetry.translational(v2=0.6)],
+                                           pb.translational_symmetry(a2=0.6)],
     'graphene-monolayer-periodic-2d': [graphene.lattice.monolayer_4atom(), pb.shape.rectangle(1),
-                                       pb.symmetry.translational(v1=0.6, v2=0.6)],
+                                       pb.translational_symmetry(a1=0.6, a2=0.6)],
     'graphene-bilayer': [graphene.lattice.bilayer(), graphene.shape.hexagon_ac(0.6)],
 }
 
