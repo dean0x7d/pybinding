@@ -52,36 +52,58 @@ class Circle(_cpp.Circle):
         pltutils.add_margin()
 
 
-def primitive(v1=None, v2=None, v3=None, nanometers=False):
-    """Shape of the lattice's primitive unit cell.
+def primitive(a1=1, a2=1, a3=1):
+    """Repeat the lattice unit cell a number of times
 
     Parameters
     ----------
-    v1, v2, v3 : int or float
-        Number of unit vector lengths in the respective primitive vector directions.
-
-    nanometers : bool
-        If set to True, take length in nanometers instead of number of unit vector lengths.
+    a1, a2, a3 : int or float
+        Number of time to repeat the unit cell in the respective lattice vector directions.
     """
-
-    lengths = tuple((v or 0) for v in (v1, v2, v3))
-    return _cpp.Primitive(lengths, nanometers)
+    return _cpp.Primitive([a1, a2, a3])
 
 
 def rectangle(x, y=None):
-    y = y if y else x
-    x0 = x / 2
-    y0 = y / 2
+    """A simple rectangle shape
+
+    Parameters
+    ----------
+    x : float
+        Width of the rectangle.
+    y : float, optional
+        Height of the rectangle. If not give, assumed equal to `x`.
+    """
+    y = y or x
+    x0, y0 = x / 2, y / 2
     return Polygon([[x0, y0], [x0, -y0], [-x0, -y0], [-x0, y0]])
 
 
 def regular_polygon(num_sides, radius, angle=0):
+    """Regular polygon
+
+    Parameters
+    ----------
+    num_sides : int
+        Number of sides.
+    radius : float
+        Radius of the circle which connects all the vertices of the polygon.
+    angle : float
+        Rotate the polygon.
+    """
     from math import pi, sin, cos
     angles = [angle + 2 * n * pi / num_sides for n in range(num_sides)]
     return Polygon([(radius * sin(a), radius * cos(a)) for a in angles])
 
 
 def circle(radius, center=(0, 0, 0)):
+    """Perfect circle
+
+    Parameters
+    ----------
+    radius : float
+    center : array_like
+        Position of the center.
+    """
     return Circle(radius, center)
 
 
