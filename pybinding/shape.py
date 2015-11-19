@@ -5,7 +5,7 @@ from . import _cpp
 from . import pltutils
 from .utils import with_defaults
 
-__all__ = ['Polygon', 'Circle', 'primitive', 'rectangle', 'regular_polygon', 'circle',
+__all__ = ['Polygon', 'primitive', 'rectangle', 'regular_polygon', 'circle',
            'translational_symmetry']
 
 

@@ -13,11 +13,11 @@ import _pybinding as _cpp
 
 from .model import Model
 from .lattice import *
-from .shape import translational_symmetry
+from .shape import *
 from .modifier import *
 
 from .results import make_path
 from .support.pickle import save, load
 from .parallel import parallel_for, parallelize
 
-from . import (constants, greens, model, parallel, pltutils, results, shape, solver, system)
+from . import (constants, greens, model, parallel, pltutils, results, solver, system)
