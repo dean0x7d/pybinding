@@ -1,12 +1,10 @@
-from pybinding.shape import Polygon
 import math
+import pybinding as pb
 from .constants import a, a_cc
 
 
 def hexagon_ac(side_width, offset=(-a/2, 0)):
     """ Hexagon aligned with the armchair edges of graphene """
-    hexagon = Polygon()
-
     # -> the side width needs to be adjusted to make a perfect hexagon with armchair edges
     # calculate number of atoms on armchair edge for the given width
     side_atoms = math.ceil((side_width / a_cc + 1) * 2/3)
@@ -17,7 +15,8 @@ def hexagon_ac(side_width, offset=(-a/2, 0)):
     x0 = side_width * math.sqrt(3) / 2
     y0 = side_width
 
-    hexagon.vertices = (0, y0), (x0, y0/2), (x0, -y0/2), (0, -y0), (-x0, -y0/2), (-x0, y0/2)
+    hexagon = pb.Polygon([(0,  y0), ( x0,  y0/2), ( x0, -y0/2),
+                          (0, -y0), (-x0, -y0/2), (-x0,  y0/2)])
 
     # make sure that: shape center == carbon hexagon center
     hexagon.offset = offset

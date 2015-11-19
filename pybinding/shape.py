@@ -14,22 +14,17 @@ class Polygon(_cpp.Polygon):
 
     Parameters
     ----------
-    *vertices : tuple
+    vertices : list of array_like
         Polygon vertices. Must be defined in clockwise or counterclockwise order.
     """
 
-    def __init__(self, *vertices):
+    def __init__(self, vertices):
         super().__init__()
-        if not vertices:
-            return
-
-        # vertices may be specified directly as arguments
-        # or as an iterable in the first argument
-        self.vertices = vertices if len(vertices) > 1 else vertices[0]
+        self.vertices = vertices
 
     @property
     def vertices(self):
-        return zip(self.x, self.y)
+        return list(zip(self.x, self.y))
 
     @vertices.setter
     def vertices(self, vertices):
@@ -77,13 +72,13 @@ def rectangle(x, y=None):
     y = y if y else x
     x0 = x / 2
     y0 = y / 2
-    return Polygon([x0, y0], [x0, -y0], [-x0, -y0], [-x0, y0])
+    return Polygon([[x0, y0], [x0, -y0], [-x0, -y0], [-x0, y0]])
 
 
 def regular_polygon(num_sides, radius, angle=0):
     from math import pi, sin, cos
     angles = [angle + 2 * n * pi / num_sides for n in range(num_sides)]
-    return Polygon((radius * sin(a), radius * cos(a)) for a in angles)
+    return Polygon([(radius * sin(a), radius * cos(a)) for a in angles])
 
 
 def circle(radius, center=(0, 0, 0)):
