@@ -29,8 +29,8 @@ def model(request):
 
 def test_pickle_round_trip(model, tmpdir):
     file_name = str(tmpdir.join('file.npz'))
-    model.system.save(file_name)
-    from_file = pb.system.System.from_file(file_name)
+    pb.save(model.system, file_name)
+    from_file = pb.load(file_name)
 
     assert pytest.fuzzy_equal(model.system, from_file)
 

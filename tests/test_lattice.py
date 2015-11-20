@@ -104,8 +104,8 @@ def test_add_hopping(mock_lattice):
 
 def test_pickle_round_trip(lattice, tmpdir):
     file_name = str(tmpdir.join('file.npz'))
-    lattice.save(file_name)
-    from_file = pb.Lattice.from_file(file_name)
+    pb.save(lattice, file_name)
+    from_file = pb.load(file_name)
 
     assert pytest.fuzzy_equal(lattice, from_file)
 

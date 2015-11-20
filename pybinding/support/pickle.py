@@ -120,7 +120,6 @@ def pickleable(props='', impl='', version: int=0):
         if not hasattr(cls, '__getstate__'):
             cls.__getstate_manages_dict__ = True  # enables boost_python pickling
 
-        return _override_methods(cls, __getstate__=getstate, __setstate__=setstate,
-                                 save=save, from_file=staticmethod(load))
+        return _override_methods(cls, __getstate__=getstate, __setstate__=setstate)
 
     return decorator

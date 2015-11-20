@@ -36,8 +36,8 @@ def solver(request, model_ex):
 
 def test_pickle_round_trip(solver, tmpdir):
     file_name = str(tmpdir.join('file.npz'))
-    solver.save(file_name)
-    from_file = pb.solver.Solver.from_file(file_name)
+    pb.save(solver, file_name)
+    from_file = pb.load(file_name)
 
     assert pytest.fuzzy_equal(solver, from_file)
 
