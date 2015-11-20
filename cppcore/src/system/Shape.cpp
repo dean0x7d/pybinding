@@ -37,6 +37,15 @@ Cartesian Shape::length_for(const Lattice& lattice) const {
     return projection;
 }
 
+
+Cartesian Primitive::center() const {
+    return Cartesian::Zero();
+}
+
+std::vector<Cartesian> Primitive::bounding_vectors() const {
+    return {};
+}
+
 Cartesian Primitive::length_for(const Lattice& lattice) const {
     if (nanometers) {
         return length;
@@ -53,6 +62,10 @@ Cartesian Primitive::length_for(const Lattice& lattice) const {
 bool Circle::contains(const Cartesian& point) const {
     Cartesian x = point - _center;
     return x.norm() < radius;
+}
+
+Cartesian Circle::center() const {
+    return _center;
 }
 
 std::vector<Cartesian> Circle::bounding_vectors() const {

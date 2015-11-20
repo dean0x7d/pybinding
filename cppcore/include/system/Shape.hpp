@@ -35,11 +35,11 @@ public:
         : length{std::move(length)}, nanometers{nanometers} { has_nice_edges = false; }
 
     virtual bool contains(const Cartesian&) const final { return true; }
-    virtual Cartesian center() const final { return Cartesian::Zero(); }
-    virtual Cartesian length_for(const Lattice& lattice) const override;
+    virtual Cartesian center() const final;
+    virtual Cartesian length_for(const Lattice& lattice) const final;
 
 protected:
-    virtual std::vector<Cartesian> bounding_vectors() const override { return {}; }
+    virtual std::vector<Cartesian> bounding_vectors() const final;
 
 private:
     Cartesian length;
@@ -56,7 +56,7 @@ public:
         : radius{radius}, _center{std::move(center)} {}
     
     virtual bool contains(const Cartesian& point) const final;
-    virtual Cartesian center() const final { return _center; }
+    virtual Cartesian center() const final;
 
 protected:
     virtual std::vector<Cartesian> bounding_vectors() const final;
