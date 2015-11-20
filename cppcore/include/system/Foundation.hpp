@@ -20,13 +20,13 @@ public:
     Foundation(const Lattice& lattice, const Shape& shape);
 
     /// Evaluate which lattice sites are inside the shape
-    void cut_down_to(const Shape& shape);
+    void cut_down_to(Shape const& shape);
     void cut_down_to(const Symmetry& symmetry);
 
     /// Calculate the spacial position of a lattice site
     Cartesian calculate_position(const Site& site) const;
-    /// Set site to invalid state and notify all of its neighbours
-    void invalidate(Site& site);
+    /// Reduce this site's neighbor count to zero and inform its neighbors of the change
+    void clear_neighbors(Site& site);
     /// Assign Hamiltonian indices to all valid sites. Returns final number of valid sites.
     int finalize();
 
@@ -68,12 +68,11 @@ struct Site {
 
     Cartesian position() const { return foundation->positions[i]; }
     bool is_valid() const { return foundation->is_valid[i]; }
-    int16_t num_neighbours() const { return foundation->neighbour_count[i]; }
+    int16_t num_neighbors() const { return foundation->neighbour_count[i]; }
     int32_t hamiltonian_index() const { return foundation->hamiltonian_indices[i]; }
 
     void set_valid(bool state) { foundation->is_valid[i] = state; }
-    void add_neighbour() { foundation->neighbour_count[i]++; }
-    void remove_neighbour() { foundation->neighbour_count[i]--; }
+    void set_neighbors(int16_t n) { foundation->neighbour_count[i] = n; }
 
     Site shift(Index3D shft) const { return foundation->make_site(index + shft, sublattice); }
 };

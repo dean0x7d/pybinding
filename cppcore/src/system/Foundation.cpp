@@ -34,35 +34,41 @@ Foundation::Foundation(const Lattice& lattice, const Shape& shape)
 
     // The total number of site states also includes the sublattices
     num_sites = size.prod() * size_n;
+    is_valid = ArrayX<bool>::Constant(num_sites, true);
 
     positions.resize(num_sites);
     for_each_site([&](Site site) {
         positions[site.i] = calculate_position(site);
     });
 
-    is_valid = ArrayX<bool>::Constant(num_sites, true);
-    neighbour_count = ArrayX<int16_t>::Zero(num_sites);
+    neighbour_count.resize(num_sites);
+    for_each_site([&](Site site) {
+        auto const& sublattice = lattice[site.sublattice];
+        auto num_neighbors = static_cast<int16_t>(sublattice.hoppings.size());
+
+        // Reduce the neighbor count for sites on the edges
+        for (auto const& hopping : sublattice.hoppings) {
+            auto const index = (site.index + hopping.relative_index).array();
+            if (any_of(index < 0) || any_of(index >= size.array()))
+                num_neighbors -= 1;
+        }
+
+        neighbour_count[site.i] = num_neighbors;
+    });
 }
 
-void Foundation::cut_down_to(const Shape& shape)
-{
-    // Visit each foundation site and invalidate those that are not within the shape
+void Foundation::cut_down_to(Shape const& shape) {
     for_each_site([&](Site site) {
-        if (!shape.contains(site.position())) { // this check is the most expensive part of this loop
-            invalidate(site); // it's not within the shape
-        }
-        else if (shape.has_nice_edges) {
-            // Within, but we still need to count the number of valid neighbours
-            for_each_neighbour(site, [&](Site neighbour, const Hopping&) {
-                if (neighbour.is_valid())
-                    site.add_neighbour();
-            });
-
-            // There may not be enough
-            if (site.num_neighbours() < lattice.min_neighbours)
-                invalidate(site);
-        }
+        bool is_contained = shape.contains(site.position());
+        site.set_valid(is_contained);
     });
+
+    if (shape.has_nice_edges) {
+        for_each_site([&](Site site) {
+            if (!site.is_valid())
+                clear_neighbors(site);
+        });
+    }
 }
 
 void Foundation::cut_down_to(const Symmetry& symmetry)
@@ -86,22 +92,22 @@ Cartesian Foundation::calculate_position(const Site& site) const
     return position;
 }
 
-void Foundation::invalidate(Site& site)
-{
-    if (!site.is_valid())
+void Foundation::clear_neighbors(Site& site) {
+    if (site.num_neighbors() == 0)
         return;
-    site.set_valid(false);
 
-    // visit the neighbours and lower *their* neighbour count
-    for_each_neighbour(site, [&](Site neighbour, const Hopping&) {
-        if (!neighbour.is_valid() || neighbour.num_neighbours() <= 0)
-            return; // skip invalid neighbours
+    for_each_neighbour(site, [&](Site neighbour, Hopping) {
+        if (!neighbour.is_valid())
+            return;
 
-        neighbour.remove_neighbour();
-        // if this takes the neighbour below the min threshold, invalidate it as well
-        if (neighbour.num_neighbours() < lattice.min_neighbours)
-            invalidate(neighbour); // recursive call... but it will not be very deep
+        neighbour.set_neighbors(neighbour.num_neighbors() - 1);
+        if (neighbour.num_neighbors() < lattice.min_neighbours) {
+            neighbour.set_valid(false);
+            clear_neighbors(neighbour); // recursive call... but it will not be very deep
+        }
     });
+
+    site.set_neighbors(0);
 }
 
 int Foundation::finalize()
