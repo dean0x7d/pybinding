@@ -38,6 +38,10 @@ Cartesian Shape::length_for(const Lattice& lattice) const {
 }
 
 
+void Primitive::contains(ArrayX<bool>& is_valid, CartesianArray const&) const {
+    is_valid.setConstant(true);
+}
+
 Cartesian Primitive::center() const {
     return Cartesian::Zero();
 }
@@ -59,9 +63,11 @@ Cartesian Primitive::length_for(const Lattice& lattice) const {
     }
 }
 
-bool Circle::contains(const Cartesian& point) const {
-    Cartesian x = point - _center;
-    return x.norm() < radius;
+
+void Circle::contains(ArrayX<bool>& is_valid, CartesianArray const& positions) const {
+    for (auto i = 0; i < positions.size(); ++i) {
+        is_valid[i] = (positions[i] - _center).norm() < radius;
+    }
 }
 
 Cartesian Circle::center() const {
@@ -79,31 +85,34 @@ std::vector<Cartesian> Circle::bounding_vectors() const {
     return bounding_vectors;
 }
 
-bool Polygon::contains(const Cartesian& point) const { 
-    // raycasting algorithm that checks if the point is inside this polygon
-    bool is_inside = false;
-    
-    // loop over all the sides (neighbouring points) of the polygon
-    for (int i = 0, j = (int)x.size() - 1; i < x.size(); j = i++) { 
-        // aliases for readability
-        const auto& x1 = x[i]; const auto& x2 = x[j];
-        const auto& y1 = y[i]; const auto& y2 = y[j];
+void Polygon::contains(ArrayX<bool>& is_valid, CartesianArray const& positions) const {
+    // Raycasting algorithm checks if `positions` are inside this polygon
+    is_valid.setConstant(false);
 
-        // we shoot the ray along the x direction
-        if ((y1 > point.y()) == (y2 > point.y()))
-            continue; // the ray does not intersect this side of the polygon
-        
-        // the slope of this side
-        float k = (x2-x1) / (y2-y1);
-        
-        // we shoot the ray from left to right
-        // if point.x() is bigger than the point on the side, we crossed the side
-        if (point.x() > k*(point.y()-y1) + x1)
-            is_inside = !is_inside;
+    // Loop over all the sides of the polygon (neighbouring vertices)
+    auto const num_vertices = static_cast<int>(x.size());
+    for (auto i = 0, j = num_vertices - 1; i < num_vertices; j = i++) {
+        // Aliases for readability
+        auto const& x1 = x[i]; auto const& x2 = x[j];
+        auto const& y1 = y[i]; auto const& y2 = y[j];
+        // The slope of this side
+        auto const k = (x2 - x1) / (y2 - y1);
+
+        // Shoot the ray along the x direction and see if it passes between `y1` and `y2`
+        auto intersects_y = (y1 > positions.y) != (y2 > positions.y);
+
+        // The ray is moving from left to right and may cross a side of the polygon
+        auto x_side = k * (positions.y - y1) + x1;
+        auto intersects_x = positions.x > x_side;
+
+        // Eigen doesn't support `operator!`, so this will have to do...
+        auto negate = is_valid.select(
+            ArrayX<bool>::Constant(is_valid.size(), false),
+            ArrayX<bool>::Constant(is_valid.size(), true)
+        );
+        // Flip the states which intersect the side
+        is_valid = (intersects_y && intersects_x).select(negate, is_valid);
     }
-
-    // returns true for an odd number of side crossings
-    return is_inside;
 }
 
 Cartesian Polygon::center() const {

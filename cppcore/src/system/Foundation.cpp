@@ -58,10 +58,7 @@ Foundation::Foundation(const Lattice& lattice, const Shape& shape)
 }
 
 void Foundation::cut_down_to(Shape const& shape) {
-    for_each_site([&](Site site) {
-        bool is_contained = shape.contains(site.position());
-        site.set_valid(is_contained);
-    });
+    shape.contains(is_valid, positions);
 
     if (shape.has_nice_edges) {
         for_each_site([&](Site site) {
