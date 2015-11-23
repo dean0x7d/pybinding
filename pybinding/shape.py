@@ -115,9 +115,10 @@ def translational_symmetry(a1=True, a2=True, a3=True):
     a1, a2, a3 : bool or float
         Control translation in the 'a1, a2, a3' lattice vector directions.
         Possible values:
-            False - No translational symmetry in this direction.
-            True - Translation length is automatically set to the unit cell length.
-            <number> - Manually set the translation length in nanometers.
+
+        * False -> No translational symmetry in this direction.
+        * True -> Translation length is automatically set to the unit cell length.
+        * float value -> Manually set the translation length in nanometers.
     """
     def to_cpp_params(value):
         if value is False:

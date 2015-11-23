@@ -104,14 +104,16 @@ class Lattice(_cpp.Lattice):
             Each element should be a tuple containing the arguments for
             a `add_one_sublattice()` method call. See example.
 
-        Example
-        -------
-        These three calls:
+        Examples
+        --------
+        These three calls::
+
             lattice.add_one_sublattice('a', [0, 0], 0.5)
             lattice.add_one_sublattice('b', [0, 1], 0.0)
             lattice.add_one_sublattice('c', [1, 0], 0.3)
 
-        Can be replaced with a single call to:
+        Can be replaced with a single call to::
+
             lattice.add_sublattices(
                 ('a', [0, 0], 0.5),
                 ('b', [0, 1], 0.0),
@@ -160,14 +162,16 @@ class Lattice(_cpp.Lattice):
             Each element should be a tuple containing the arguments for
             a `add_one_hopping()` method call. See example.
 
-        Example
-        -------
-        These three calls:
+        Examples
+        --------
+        These three calls::
+
             lattice.add_one_hopping([0, 0], 'a', 'b', 0.8)
             lattice.add_one_hopping([0, 1], 'a', 'a', 0.3)
             lattice.add_one_hopping([1, 1], 'a', 'b', 0.8)
 
-        Can be replaced with a single call to:
+        Can be replaced with a single call to::
+
             lattice.add_hoppings(
                 ([0, 0], 'a', 'b', 0.8),
                 ([0, 1], 'a', 'a', 0.3),
@@ -209,9 +213,15 @@ class Lattice(_cpp.Lattice):
         mat = np.vstack([mat, np.zeros(shape=(3 - n, n))])
         return [v.squeeze() for v in reversed(np.hsplit(mat, n))]
 
-    def brillouin_zone(self) -> list:
+    def brillouin_zone(self):
         """Return a list of vertices which form the Brillouin zone (2D only)
 
+        Returns
+        -------
+        list of array_like
+
+        Examples
+        --------
         >>> lat = Lattice(a1=[0, 1], a2=[0.5, 0.5])
         >>> np.allclose(lat.brillouin_zone(), [[-2*pi, 0], [0, -2*pi], [2*pi, 0], [0, 2*pi]])
         True

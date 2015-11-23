@@ -140,6 +140,7 @@ def site_state_modifier(func):
     ----------
     func : callable
         The function parameters must be a combination of any number of the following:
+
         state : ndarray of bool
             Indicates if a lattice site is valid. Invalid sites will be removed from
             the model after all modifiers have been applied.
@@ -149,6 +150,7 @@ def site_state_modifier(func):
             Sublattice ID. Can be checked for equality with `Lattice[sublattice_name]`.
 
         Modifier returns:
+
         ndarray
             A modified `state` argument or an `ndarray` of the same dtype and shape.
 
@@ -166,14 +168,16 @@ def site_position_modifier(func):
     ----------
     func : callable
         The function parameters must be a combination of any number of the following:
+
         x, y, z : ndarray
             Lattice site position.
         sub : ndarray of int
             Sublattice ID. Can be checked for equality with `Lattice[sublattice_name]`.
 
         Modifier returns:
+
         tuple of ndarray
-            Modified 'x, y, z' arguments or 3 `ndarray`s of the same dtype and shape.
+            Modified 'x, y, z' arguments or 3 `ndarray` objects of the same dtype and shape.
 
     Returns
     -------
@@ -189,6 +193,7 @@ def onsite_energy_modifier(func):
     ----------
     func : callable
         The function parameters must be a combination of any number of the following:
+
         potential : ndarray
             The onsite energy.
         x, y, z : ndarray
@@ -197,6 +202,7 @@ def onsite_energy_modifier(func):
             Sublattice ID. Can be checked for equality with `Lattice[sublattice_name]`.
 
         Modifier returns:
+
         ndarray
             A modified `potential` argument or an `ndarray` of the same dtype and shape.
 
@@ -214,6 +220,7 @@ def hopping_energy_modifier(func):
     ----------
     func : callable
         The function parameters must be a combination of any number of the following:
+
         hopping : ndarray
             The hopping energy between two sites.
         x1, y1, z1, x2, y2, z2 : ndarray
@@ -222,6 +229,7 @@ def hopping_energy_modifier(func):
             Hopping ID. Check for equality with `Lattice.hopping_ids[hopping_name]`.
 
         Modifier returns:
+
         ndarray
             A modified `hopping` argument or an `ndarray` of the same dtype and shape.
 

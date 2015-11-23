@@ -14,13 +14,14 @@ class Model(_cpp.Model):
 
     The class is initialized with parameters which can be any of: lattice, shape,
     symmetry or various modifiers. Note that:
-      * A `Model` must have one and only one lattice. If multiple are added, only
-        the last one is considered.
-      * There can be at most one shape and at most one symmetry. Shape and symmetry
-        can be composed as desired, but physically impossible scenarios will result
-        in an empty system and Hamiltonian.
-      * Any number of modifiers can be added. Duplicates are also allowed: the usual
-        result being a doubling of the modifier's effect.
+
+    * A `Model` must have one and only one lattice. If multiple are added, only
+      the last one is considered.
+    * There can be at most one shape and at most one symmetry. Shape and symmetry
+      can be composed as desired, but physically impossible scenarios will result
+      in an empty system and Hamiltonian.
+    * Any number of modifiers can be added. Duplicates are also allowed: the usual
+      result being a doubling of the modifier's effect.
 
     The main properties are `system` and `hamiltonian` which are constructed based
     on the parameters. The Hamiltonian is a sparse matrix in the `scipy.csr_matrix`

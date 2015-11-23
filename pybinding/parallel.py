@@ -52,17 +52,19 @@ def _parallel_for(sequence, produce, retire, num_threads=num_cores, queue_size=n
         threads. The maximum number of jobs that will be kept in memory at any
         one time will be `queue_size` + `num_threads`.
 
-    Example
-    -------
-    def produce(var):
-        model = pb.Model(...)  # something that depends on var
-        greens = pb.greens.kpm(model)
-        return greens.deferred_ldos(...)  # may also depend on var
+    Examples
+    --------
+    ::
 
-    def retire(deferred, idx):
-        print(deferred.result)
+        def produce(var):
+            model = pb.Model(...)  # something that depends on var
+            greens = pb.greens.kpm(model)
+            return greens.deferred_ldos(...)  # may also depend on var
 
-    _parallel_for(np.linspace(0, 1, 50), produce, retire)
+        def retire(deferred, idx):
+            print(deferred.result)
+
+        _parallel_for(np.linspace(0, 1, 50), produce, retire)
     """
     _cpp.parallel_for(sequence, produce, retire, num_threads, queue_size)
 
@@ -304,15 +306,17 @@ def parallelize(callsig=None, num_threads=num_cores, queue_size=num_cores, **kwa
         Variables which will be iterated over in `_parallel_for`
         and passed to the decorated function.
 
-    Example
-    -------
-    @parallelize(a=np.linspace(0, 1, 10), b=np.linspace(-2, 2, 10))
-    def factory(a, b):
-        pb.Model(...)  # depends on `a` and `b`
-        greens = pb.greens.kpm(model)
-        return greens.deferred_ldos(...)  # may also depend on `a` and `b`
+    Examples
+    --------
+    ::
 
-    result = parallel_for(factory)
+        @parallelize(a=np.linspace(0, 1, 10), b=np.linspace(-2, 2, 10))
+        def factory(a, b):
+            pb.Model(...)  # depends on `a` and `b`
+            greens = pb.greens.kpm(model)
+            return greens.deferred_ldos(...)  # may also depend on `a` and `b`
+
+        result = parallel_for(factory)
     """
     if not callsig:
         callsig = get_call_signature(up=2)

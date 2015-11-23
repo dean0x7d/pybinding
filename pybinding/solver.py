@@ -131,15 +131,18 @@ class Solver:
 
             return results.Eigenvalues(self.eigenvalues, probability)
 
-    def calc_probability(self, index, reduce=1e-5):
-        """Calculate the spatial probability density
+    def calc_probability(self, n, reduce=1e-5):
+        r"""Calculate the spatial probability density
 
-        Calculates the following at every position r
-            P(r) = |psi(r)|^2
+        .. math::
+            \text{P}(r) = |\Psi_n(r)|^2
+
+        for each position :math:`r` in `system.positions` where :math:`\Psi_n(r)`
+        is `eigenvectors[:, n]`.
 
         Parameters
         ----------
-        index : int or array_like
+        n : int or array_like
             Index of the desired eigenstate. If an array of indices is given, the
             probability will be calculated at each one and a sum will be returned.
         reduce : float, optional
@@ -151,19 +154,23 @@ class Solver:
         -------
         results.StructureMap
         """
-        if reduce and np.isscalar(index):
-            index = np.flatnonzero(abs(self.eigenvalues[index] - self.eigenvalues) < reduce)
+        if reduce and np.isscalar(n):
+            n = np.flatnonzero(abs(self.eigenvalues[n] - self.eigenvalues) < reduce)
 
-        probability = abs(self.eigenvectors[:, index]) ** 2
+        probability = abs(self.eigenvectors[:, n]) ** 2
         if probability.ndim > 1:
             probability = np.sum(probability, axis=1)
         return results.StructureMap.from_system(probability, self.system)
 
-    def calc_dos(self, energies, broadening) -> np.ndarray:
-        """Calculate the density of states as a function of energy
+    def calc_dos(self, energies, broadening):
+        r"""Calculate the density of states as a function of energy
 
-        Calculates the following, where E is `energies` and c is `broadening`
-            DOS(E) = 1 / (c * sqrt(2pi)) * sum(exp(-0.5 * (eigenvalues - E)^2 / c^2))
+        .. math::
+            \text{DOS}(E) = \frac{1}{c \sqrt{2\pi}}
+                            \sum_n{e^{-\frac{(E_n - E)^2}{2 c^2}}}
+
+        for each :math:`E` in `energies`, where :math:`c` is `broadening` and
+        :math:`E_n` is `eigenvalues[n]`.
 
         Parameters
         ----------
@@ -185,10 +192,15 @@ class Solver:
             return results.DOS(energies, dos)
 
     def calc_spatial_ldos(self, energy, broadening):
-        """Calculate the spatial local density of states at the given energy
+        r"""Calculate the spatial local density of states at the given energy
 
-        Calculates the following, where E is `energy`, c is `broadening`
-            LDOS(r) = 1 / (c * sqrt(2pi)) * sum(|psi(r)|^2 * exp(-0.5 * (eigenvalues - E)^2 / c^2))
+        .. math::
+            \text{LDOS}(r) = \frac{1}{c \sqrt{2\pi}}
+                             \sum_n{|\Psi_n(r)|^2 e^{-\frac{(E_n - E)^2}{2 c^2}}}
+
+        for each position :math:`r` in `system.positions`, where :math:`E` is `energy`,
+        :math:`c` is `broadening`, :math:`E_n` is `eigenvalues[n]` and :math:`\Psi_n(r)`
+        is `eigenvectors[:, n]`.
 
         Parameters
         ----------
@@ -246,8 +258,8 @@ class Solver:
         energies : array_like
         abs_tolerance : float, optional
 
-        Example
-        -------
+        Examples
+        --------
         >>> energies = np.array([0.1, 0.1, 0.2, 0.5, 0.5, 0.5, 0.7, 0.8, 0.8])
         >>> Solver.find_degenerate_states(energies)
         [[0, 1], [3, 4, 5], [7, 8]]
