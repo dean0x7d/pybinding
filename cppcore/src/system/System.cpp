@@ -34,7 +34,7 @@ std::unique_ptr<System> build_system(Lattice const& lattice, Shape const& shape,
 
     auto foundation = Foundation{lattice, shape};
     if (symmetry)
-        foundation.cut_down_to(*symmetry);
+        foundation.apply(*symmetry);
 
     ArrayX<sub_id> sublattices{foundation.num_sites};
     foundation.for_each_site([&](Site site) {

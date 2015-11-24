@@ -17,17 +17,24 @@ struct Site;
  */
 class Foundation {
 public:
-    Foundation(const Lattice& lattice, const Shape& shape);
+    Foundation(Lattice const& lattice, Shape const& shape);
 
 private:
+    /// Return the foundation size required to hold the shape
+    static Index3D determine_size(Lattice const& lattice, Shape const& shape);
+    /// Initialize the coordinates for each site
+    void init_positions(Cartesian center);
+    /// Initialize the neighbor count for each site
+    void init_neighbor_count();
     /// Remove edge sites which have a neighbor count lower than the lattice minimum
     void trim_edges();
 
 public:
-    void cut_down_to(const Symmetry& symmetry);
+    /// Invalidate sites outside the `symmetry`
+    void apply(Symmetry const& symmetry);
 
     /// Calculate the spacial position of a lattice site
-    Cartesian calculate_position(const Site& site) const;
+    Cartesian calculate_position(Site const& site, Cartesian origin) const;
     /// Reduce this site's neighbor count to zero and inform its neighbors of the change
     void clear_neighbors(Site& site);
     /// Assign Hamiltonian indices to all valid sites. Returns final number of valid sites.
@@ -48,8 +55,8 @@ public:
     Site make_site(Index3D index, int sublattice);
 
 public:
-    Index3D size = Index3D::Constant(1); ///< number of unit cells in each lattice vector direction
-    const int size_n; ///< sublattice size (number of sites in each unit cell)
+    Index3D size; ///< number of unit cells in each lattice vector direction
+    int size_n; ///< sublattice size (number of sites in each unit cell)
     int num_sites; ///< total number of sites: product of all sizes (3D and sublattice)
 
     // arrays of length num_sites which track various properties
@@ -58,8 +65,7 @@ public:
     ArrayX<int16_t> neighbour_count; ///< number sites which have a hopping to this one
     ArrayX<int32_t> hamiltonian_indices; ///< Hamiltonian index (single number) for the final system
 
-    Cartesian origin; ///< foundation origin
-    const Lattice& lattice; ///< lattice specification
+    Lattice const& lattice; ///< lattice specification
 };
 
 /// Describes a site on the lattice foundation

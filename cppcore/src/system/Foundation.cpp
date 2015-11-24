@@ -3,46 +3,67 @@
 #include "system/Symmetry.hpp"
 using namespace tbm;
 
-Foundation::Foundation(const Lattice& lattice, const Shape& shape)
-    : size_n(static_cast<int>(lattice.sublattices.size())), lattice(lattice)
+Foundation::Foundation(Lattice const& lattice, Shape const& shape)
+    : size(determine_size(lattice, shape)),
+      size_n(static_cast<int>(lattice.sublattices.size())),
+      lattice(lattice)
 {
+    num_sites = size.prod() * size_n;
+    init_positions(shape.center());
+    is_valid = shape.contains(positions);
+    init_neighbor_count();
+
+    if (shape.has_nice_edges)
+        trim_edges();
+}
+
+Index3D Foundation::determine_size(Lattice const& lattice, Shape const& shape) {
+    // TODO this function could be simpler
+    Index3D size = Index3D::Constant(1);
     Cartesian vector_length = shape.length_for(lattice);
 
     // from: length [nanometers] in each lattice unit vector direction
     // to:   size - number of lattice sites
-    for (std::size_t i = 0; i < lattice.vectors.size(); ++i) {
+    for (auto i = 0u; i < lattice.vectors.size(); ++i) {
         if (shape.has_nice_edges) {
             // integer number of lattice vectors, plus one site (fencepost error otherwise)
-            size[i] = (int)std::ceil(vector_length[i] / lattice.vectors[i].norm()) + 1;
-            // make sure it's an odd number, so that (size-1)/2 is an integer
+            size[i] = static_cast<int>(
+                std::ceil(vector_length[i] / lattice.vectors[i].norm()) + 1
+            );
+            // make sure it's an odd number, so that (size - 1) / 2 is an integer
             size[i] += !(size[i] % 2);
-        }
-        else {
+        } else {
             // primitive shape, just round
-            size[i] = (int)std::round(vector_length[i] / lattice.vectors[i].norm());
+            size[i] = static_cast<int>(
+                std::round(vector_length[i] / lattice.vectors[i].norm())
+            );
             // make sure it's positive, non-zero
             if (size[i] <= 0)
                 size[i] = 1;
         }
     }
 
-    // the foundation is a Bravais lattice
-    Cartesian width = Cartesian::Zero();
-    for (std::size_t i = 0; i < lattice.vectors.size(); ++i)
-        width += static_cast<float>(size[i] - 1) * lattice.vectors[i];
-    origin = shape.center() - width / 2;
+    return size;
+}
 
-    // The total number of site states also includes the sublattices
-    num_sites = size.prod() * size_n;
+void Foundation::init_positions(Cartesian center) {
+    auto origin = [&]{
+        Cartesian width = Cartesian::Zero();
+        for (auto i = 0u; i < lattice.vectors.size(); ++i) {
+            width += static_cast<float>(size[i] - 1) * lattice.vectors[i];
+        }
+        return static_cast<Cartesian>(center - width / 2);
+    }();
 
     positions.resize(num_sites);
     for_each_site([&](Site site) {
-        positions[site.i] = calculate_position(site);
+        positions[site.i] = calculate_position(site, origin);
     });
+}
 
-    is_valid = shape.contains(positions);
-
+void Foundation::init_neighbor_count() {
     neighbour_count.resize(num_sites);
+
     for_each_site([&](Site site) {
         auto const& sublattice = lattice[site.sublattice];
         auto num_neighbors = static_cast<int16_t>(sublattice.hoppings.size());
@@ -56,9 +77,6 @@ Foundation::Foundation(const Lattice& lattice, const Shape& shape)
 
         neighbour_count[site.i] = num_neighbors;
     });
-
-    if (shape.has_nice_edges)
-        trim_edges();
 }
 
 void Foundation::trim_edges() {
@@ -68,8 +86,7 @@ void Foundation::trim_edges() {
     });
 }
 
-void Foundation::cut_down_to(const Symmetry& symmetry)
-{
+void Foundation::apply(Symmetry const& symmetry) {
     auto symmetry_area = symmetry.build_for(*this);
 
     for_each_site([&](Site site) {
@@ -77,8 +94,7 @@ void Foundation::cut_down_to(const Symmetry& symmetry)
     });
 }
 
-Cartesian Foundation::calculate_position(const Site& site) const
-{
+Cartesian Foundation::calculate_position(Site const& site, Cartesian origin) const {
     Cartesian position = origin;
     // + unit cell position (Bravais lattice)
     for (std::size_t i = 0; i < lattice.vectors.size(); ++i) {
