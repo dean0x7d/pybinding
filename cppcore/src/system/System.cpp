@@ -33,7 +33,6 @@ std::unique_ptr<System> build_system(Lattice const& lattice, Shape const& shape,
     auto system = cpp14::make_unique<System>(lattice);
 
     auto foundation = Foundation{lattice, shape};
-    foundation.cut_down_to(shape);
     if (symmetry)
         foundation.cut_down_to(*symmetry);
 

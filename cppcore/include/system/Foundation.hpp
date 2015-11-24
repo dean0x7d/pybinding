@@ -19,8 +19,11 @@ class Foundation {
 public:
     Foundation(const Lattice& lattice, const Shape& shape);
 
-    /// Evaluate which lattice sites are inside the shape
-    void cut_down_to(Shape const& shape);
+private:
+    /// Remove edge sites which have a neighbor count lower than the lattice minimum
+    void trim_edges();
+
+public:
     void cut_down_to(const Symmetry& symmetry);
 
     /// Calculate the spacial position of a lattice site

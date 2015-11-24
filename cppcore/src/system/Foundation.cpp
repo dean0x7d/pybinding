@@ -34,12 +34,13 @@ Foundation::Foundation(const Lattice& lattice, const Shape& shape)
 
     // The total number of site states also includes the sublattices
     num_sites = size.prod() * size_n;
-    is_valid = ArrayX<bool>::Constant(num_sites, true);
 
     positions.resize(num_sites);
     for_each_site([&](Site site) {
         positions[site.i] = calculate_position(site);
     });
+
+    is_valid = shape.contains(positions);
 
     neighbour_count.resize(num_sites);
     for_each_site([&](Site site) {
@@ -55,17 +56,16 @@ Foundation::Foundation(const Lattice& lattice, const Shape& shape)
 
         neighbour_count[site.i] = num_neighbors;
     });
+
+    if (shape.has_nice_edges)
+        trim_edges();
 }
 
-void Foundation::cut_down_to(Shape const& shape) {
-    shape.contains(is_valid, positions);
-
-    if (shape.has_nice_edges) {
-        for_each_site([&](Site site) {
-            if (!site.is_valid())
-                clear_neighbors(site);
-        });
-    }
+void Foundation::trim_edges() {
+    for_each_site([&](Site site) {
+        if (!site.is_valid())
+            clear_neighbors(site);
+    });
 }
 
 void Foundation::cut_down_to(const Symmetry& symmetry)

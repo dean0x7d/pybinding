@@ -38,8 +38,8 @@ Cartesian Shape::length_for(const Lattice& lattice) const {
 }
 
 
-void Primitive::contains(ArrayX<bool>& is_valid, CartesianArray const&) const {
-    is_valid.setConstant(true);
+ArrayX<bool> Primitive::contains(CartesianArray const& positions) const {
+    return ArrayX<bool>::Constant(positions.size(), true);
 }
 
 Cartesian Primitive::center() const {
@@ -64,10 +64,12 @@ Cartesian Primitive::length_for(const Lattice& lattice) const {
 }
 
 
-void Circle::contains(ArrayX<bool>& is_valid, CartesianArray const& positions) const {
+ArrayX<bool> Circle::contains(CartesianArray const& positions) const {
+    ArrayX<bool> is_within(positions.size());
     for (auto i = 0; i < positions.size(); ++i) {
-        is_valid[i] = (positions[i] - _center).norm() < radius;
+        is_within[i] = (positions[i] - _center).norm() < radius;
     }
+    return is_within;
 }
 
 Cartesian Circle::center() const {
@@ -85,9 +87,9 @@ std::vector<Cartesian> Circle::bounding_vectors() const {
     return bounding_vectors;
 }
 
-void Polygon::contains(ArrayX<bool>& is_valid, CartesianArray const& positions) const {
+ArrayX<bool> Polygon::contains(CartesianArray const& positions) const {
     // Raycasting algorithm checks if `positions` are inside this polygon
-    is_valid.setConstant(false);
+    ArrayX<bool> is_within = ArrayX<bool>::Constant(positions.size(), false);
 
     // Loop over all the sides of the polygon (neighbouring vertices)
     auto const num_vertices = static_cast<int>(x.size());
@@ -106,13 +108,15 @@ void Polygon::contains(ArrayX<bool>& is_valid, CartesianArray const& positions) 
         auto intersects_x = positions.x > x_side;
 
         // Eigen doesn't support `operator!`, so this will have to do...
-        auto negate = is_valid.select(
-            ArrayX<bool>::Constant(is_valid.size(), false),
-            ArrayX<bool>::Constant(is_valid.size(), true)
+        auto negate = is_within.select(
+            ArrayX<bool>::Constant(is_within.size(), false),
+            ArrayX<bool>::Constant(is_within.size(), true)
         );
         // Flip the states which intersect the side
-        is_valid = (intersects_y && intersects_x).select(negate, is_valid);
+        is_within = (intersects_y && intersects_x).select(negate, is_within);
     }
+
+    return is_within;
 }
 
 Cartesian Polygon::center() const {

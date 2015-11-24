@@ -11,8 +11,8 @@ class Lattice;
  */
 class Shape {
 public:
-    /// Set `is_valid` for `positions` located within this shape
-    virtual void contains(ArrayX<bool>& is_valid, CartesianArray const& positions) const = 0;
+    /// Return `true` for `positions` located within the shape
+    virtual ArrayX<bool> contains(CartesianArray const& positions) const = 0;
     /// Location of the shape center
     virtual Cartesian center() const = 0;
     /// Returns shape outline length in lattice vector directions
@@ -34,7 +34,7 @@ public:
     Primitive(Cartesian length = Cartesian::Zero(), bool nanometers = false)
         : length{std::move(length)}, nanometers{nanometers} { has_nice_edges = false; }
 
-    virtual void contains(ArrayX<bool>& is_valid, CartesianArray const& positions) const final;
+    virtual ArrayX<bool> contains(CartesianArray const& positions) const final;
     virtual Cartesian center() const final;
     virtual Cartesian length_for(const Lattice& lattice) const final;
 
@@ -55,7 +55,7 @@ public:
     Circle(float radius, Cartesian center = Cartesian::Zero())
         : radius{radius}, _center{std::move(center)} {}
     
-    virtual void contains(ArrayX<bool>& is_valid, CartesianArray const& positions) const final;
+    virtual ArrayX<bool> contains(CartesianArray const& positions) const final;
     virtual Cartesian center() const final;
 
 protected:
@@ -72,7 +72,7 @@ public:
  */
 class Polygon : public Shape {
 public:
-    virtual void contains(ArrayX<bool>& is_valid, CartesianArray const& positions) const final;
+    virtual ArrayX<bool> contains(CartesianArray const& positions) const final;
     virtual Cartesian center() const final;
     
 protected:
