@@ -34,6 +34,7 @@ public:
     bool add_unique(SiteStateModifier const& m);
     bool add_unique(PositionModifier const& m);
     void clear();
+    bool empty() const;
 
 public:
     // Keep modifiers as unique elements but insertion order must be preserved (don't use std::set)
