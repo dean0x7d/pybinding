@@ -17,11 +17,11 @@ def constant_magnetic_field(magnitude):
     const = scale * 2 * pi / phi0
 
     @pb.hopping_energy_modifier
-    def function(hopping, x1, y1, x2, y2):
+    def function(energy, x1, y1, x2, y2):
         # vector potential along the x-axis
         vp_x = 0.5 * magnitude * (y1 + y2)
         # integral of (A * dl) from position 1 to position 2
         peierls = vp_x * (x1 - x2)
-        return hopping * np.exp(1j * const * peierls)
+        return energy * np.exp(1j * const * peierls)
 
     return function

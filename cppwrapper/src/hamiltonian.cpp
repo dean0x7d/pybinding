@@ -51,19 +51,20 @@ public:
     }
 
     template<class Array>
-    void apply_(Array& hopping, HA id, CA p1, CA p2) const {
+    void apply_(Array& hopping, CA p1, CA p2, HA id) const {
         object result = get_override("apply")(
-            DenseURef{hopping}, DenseURef{id},
+            DenseURef{hopping},
             DenseURef{p1.x}, DenseURef{p1.y}, DenseURef{p1.z},
-            DenseURef{p2.x}, DenseURef{p2.y}, DenseURef{p2.z}
+            DenseURef{p2.x}, DenseURef{p2.y}, DenseURef{p2.z},
+            DenseURef{id}
         );
         extract_array(hopping, result);
     }
     
-    virtual void apply(ArrayXf& h, HA id, CA p1, CA p2) const final { apply_(h, id, p1, p2); }
-    virtual void apply(ArrayXd& h, HA id, CA p1, CA p2) const final { apply_(h, id, p1, p2); }
-    virtual void apply(ArrayXcf& h, HA id, CA p1, CA p2) const final { apply_(h, id, p1, p2); }
-    virtual void apply(ArrayXcd& h, HA id, CA p1, CA p2) const final { apply_(h, id, p1, p2); }
+    virtual void apply(ArrayXf& h, CA p1, CA p2, HA id) const final { apply_(h, p1, p2, id); }
+    virtual void apply(ArrayXd& h, CA p1, CA p2, HA id) const final { apply_(h, p1, p2, id); }
+    virtual void apply(ArrayXcf& h, CA p1, CA p2, HA id) const final { apply_(h, p1, p2, id); }
+    virtual void apply(ArrayXcd& h, CA p1, CA p2, HA id) const final { apply_(h, p1, p2, id); }
 };
 
 void export_modifiers() {

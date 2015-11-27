@@ -4,10 +4,10 @@ from .constants import a_cc, beta, hbar
 
 
 @pb.hopping_energy_modifier
-def strained_hopping(hopping, x1, y1, z1, x2, y2, z2):
+def strained_hopping(energy, x1, y1, z1, x2, y2, z2):
     l = _np.sqrt((x1-x2)**2 + (y1-y2)**2 + (z1-z2)**2)
     w = l / a_cc - 1
-    return hopping * _np.exp(-beta * w)
+    return energy * _np.exp(-beta * w)
 
 
 def gaussian_bump(h0, r_limit):
@@ -15,7 +15,7 @@ def gaussian_bump(h0, r_limit):
     b = r_limit * math.sqrt(2) / 3.5
 
     @pb.site_position_modifier
-    def displacement(x, y, z):
+    def displacement(x, y):
         r2 = x**2 + y**2
         r = _np.sqrt(r2)
 

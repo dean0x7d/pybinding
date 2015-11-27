@@ -20,10 +20,10 @@ def coulomb(beta, r_const=.0, offset=(0, 0, 0)):
     scaled_beta = beta * hbar * vf
 
     @pb.onsite_energy_modifier
-    def pot(potential, x, y, z):
+    def potential(energy, x, y, z):
         x0, y0, z0 = offset
         r = _np.sqrt((x-x0)**2 + (y-y0)**2 + (z-z0)**2)
         r[r < r_const] = r_const
-        return potential - scaled_beta / r
+        return energy - scaled_beta / r
 
-    return pot
+    return potential

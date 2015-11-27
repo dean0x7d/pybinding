@@ -146,7 +146,7 @@ def site_state_modifier(func):
             the model after all modifiers have been applied.
         x, y, z : ndarray
             Lattice site position.
-        sub : ndarray of int
+        sub_id : ndarray of int
             Sublattice ID. Can be checked for equality with `Lattice[sublattice_name]`.
 
         Modifier returns:
@@ -158,7 +158,7 @@ def site_state_modifier(func):
     -------
     Modifier
     """
-    return _make_modifier(func, _cpp.SiteStateModifier, keywords="state, x, y, z, sub")
+    return _make_modifier(func, _cpp.SiteStateModifier, keywords="state, x, y, z, sub_id")
 
 
 def site_position_modifier(func):
@@ -171,7 +171,7 @@ def site_position_modifier(func):
 
         x, y, z : ndarray
             Lattice site position.
-        sub : ndarray of int
+        sub_id : ndarray of int
             Sublattice ID. Can be checked for equality with `Lattice[sublattice_name]`.
 
         Modifier returns:
@@ -183,7 +183,7 @@ def site_position_modifier(func):
     -------
     Modifier
     """
-    return _make_modifier(func, _cpp.PositionModifier, keywords="x, y, z, sub", num_return=3)
+    return _make_modifier(func, _cpp.PositionModifier, keywords="x, y, z, sub_id", num_return=3)
 
 
 def onsite_energy_modifier(func):
@@ -194,11 +194,11 @@ def onsite_energy_modifier(func):
     func : callable
         The function parameters must be a combination of any number of the following:
 
-        potential : ndarray
+        energy : ndarray
             The onsite energy.
         x, y, z : ndarray
             Lattice site position.
-        sub : ndarray of int
+        sub_id : ndarray of int
             Sublattice ID. Can be checked for equality with `Lattice[sublattice_name]`.
 
         Modifier returns:
@@ -210,7 +210,7 @@ def onsite_energy_modifier(func):
     -------
     Modifier
     """
-    return _make_modifier(func, _cpp.OnsiteModifier, keywords="potential, x, y, z, sub")
+    return _make_modifier(func, _cpp.OnsiteModifier, keywords="energy, x, y, z, sub_id")
 
 
 def hopping_energy_modifier(func):
@@ -221,7 +221,7 @@ def hopping_energy_modifier(func):
     func : callable
         The function parameters must be a combination of any number of the following:
 
-        hopping : ndarray
+        energy : ndarray
             The hopping energy between two sites.
         x1, y1, z1, x2, y2, z2 : ndarray
             Positions of the two lattice sites connected by the hopping parameter.
@@ -238,7 +238,7 @@ def hopping_energy_modifier(func):
     Modifier
     """
     return _make_modifier(func, _cpp.HoppingModifier, maybe_complex=True,
-                          keywords="hopping, hop_id, x1, y1, z1, x2, y2, z2")
+                          keywords="energy, x1, y1, z1, x2, y2, z2, hop_id")
 
 
 def constant_potential(magnitude):
@@ -250,7 +250,7 @@ def constant_potential(magnitude):
         In units of eV.
     """
     @onsite_energy_modifier
-    def function(potential):
-        return potential + magnitude
+    def function(energy):
+        return energy + magnitude
 
     return function

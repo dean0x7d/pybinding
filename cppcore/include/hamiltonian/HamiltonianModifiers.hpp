@@ -37,14 +37,14 @@ public:
     virtual ~HoppingModifierImpl() = default;
     virtual bool is_complex() const { return false; }
 
-    virtual void apply(ArrayXf& hopping, ArrayX<hop_id> const& hop_id,
-                       CartesianArray const& pos1, CartesianArray const& pos2) const = 0;
-    virtual void apply(ArrayXd& hopping, ArrayX<hop_id> const& hop_id,
-                       CartesianArray const& pos1, CartesianArray const& pos2) const = 0;
-    virtual void apply(ArrayXcf& hopping, ArrayX<hop_id> const& hop_id,
-                       CartesianArray const& pos1, CartesianArray const& pos2) const = 0;
-    virtual void apply(ArrayXcd& hopping, ArrayX<hop_id> const& hop_id,
-                       CartesianArray const& pos1, CartesianArray const& pos2) const = 0;
+    virtual void apply(ArrayXf& hopping, CartesianArray const& pos1, CartesianArray const& pos2,
+                       ArrayX<hop_id> const& id) const = 0;
+    virtual void apply(ArrayXd& hopping, CartesianArray const& pos1, CartesianArray const& pos2,
+                       ArrayX<hop_id> const& id) const = 0;
+    virtual void apply(ArrayXcf& hopping,  CartesianArray const& pos1, CartesianArray const& pos2,
+                       ArrayX<hop_id> const& id) const = 0;
+    virtual void apply(ArrayXcd& hopping,  CartesianArray const& pos1, CartesianArray const& pos2,
+                       ArrayX<hop_id> const& id) const = 0;
 };
 
 using OnsiteModifier = std::shared_ptr<OnsiteModifierImpl const>;
@@ -154,7 +154,7 @@ void HamiltonianModifiers::apply_to_hoppings(SystemOrBoundary const& system, Fn 
                 }
 
                 for (auto const& modifier : hopping)
-                    modifier->apply(hoppings, hop_ids, pos1, pos2);
+                    modifier->apply(hoppings, pos1, pos2, hop_ids);
 
                 hopping_csr_matrix.slice_for_each(
                     start_row, start_idx, size,
