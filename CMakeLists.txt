@@ -19,4 +19,6 @@ if(NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE "Release" CACHE STRING "Choose the type of build" FORCE)
 endif()
 
-add_subdirectory(docs)
+if(EXISTS ${CMAKE_SOURCE_DIR}/docs)
+    add_subdirectory(docs EXCLUDE_FROM_ALL)
+endif()
