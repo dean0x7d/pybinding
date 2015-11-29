@@ -1,40 +1,34 @@
 #include "system/Shape.hpp"
 #include "system/Lattice.hpp"
-using namespace tbm;
 
-Cartesian Shape::length_for(const Lattice& lattice) const {
-    auto get_measure_2D = [](const std::vector<Cartesian>& vec) -> std::vector<Cartesian> {
-        float ab = vec[0].dot(vec[1]);
-        float a2 = vec[0].squaredNorm();
-        float b2 = vec[1].squaredNorm();
-        float divisor = pow(ab, 2) - a2 * b2;
+#include <Eigen/Dense>  // for `colPivHouseholderQr()`
 
-        Cartesian measure_a = (vec[1] * ab - vec[0] * b2) / divisor;
-        Cartesian measure_b = (vec[0] * ab - vec[1] * a2) / divisor;
+namespace tbm {
 
-        return {measure_a, measure_b};
-    };
+Cartesian Shape::length_for(Lattice const& lattice) const {
+    auto const ndim = lattice.vectors.size();
+    auto const lattice_matrix = [&]{
+        Eigen::MatrixXf m(ndim, ndim);
+        for (auto i = 0u; i < ndim; ++i) {
+            m.col(i) = lattice.vectors[i].head(ndim);
+        }
+        return m;
+    }();
 
-    std::vector<Cartesian> measure;
-    if (lattice.vectors.size() == 1)
-        measure = {lattice.vectors[0]};
-    else if (lattice.vectors.size() == 2)
-        measure = get_measure_2D(lattice.vectors);
-    else
-        throw std::runtime_error{"3D systems have not been enabled yet."};
+    Cartesian length = Cartesian::Zero();
+    for (auto const& boundary : bounding_vectors()) {
+        // solve `A*x = b`, where A is lattice_matrix
+        auto const& b = boundary.head(ndim);
+        VectorXf x = lattice_matrix.colPivHouseholderQr().solve(b);
+        length.head(ndim) += x.cwiseAbs();
+    }
+    length *= 0.5f;
 
-    Cartesian projection = Cartesian::Zero();
-    for (std::size_t i = 0; i < lattice.vectors.size(); ++i) {
-        // get a projection of each bounding vector onto the measure vectors
-        for (const Cartesian& bound : bounding_vectors())
-            projection[i] += std::abs(bound.dot(measure[i]));
-
-        // we went around the whole shape, but we only need half
-        projection[i] *= 0.5;
-        projection[i] *= lattice.vectors[i].norm();
+    for (auto i = 0u; i < ndim; ++i) {
+        length[i] *= lattice.vectors[i].norm();
     }
 
-    return projection;
+    return length;
 }
 
 
@@ -137,3 +131,5 @@ std::vector<Cartesian> Polygon::bounding_vectors() const {
 
     return bounding_vectors;
 }
+
+} // namespace tbm

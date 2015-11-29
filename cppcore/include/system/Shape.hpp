@@ -16,7 +16,7 @@ public:
     /// Location of the shape center
     virtual Cartesian center() const = 0;
     /// Returns shape outline length in lattice vector directions
-    virtual Cartesian length_for(const Lattice& lattice) const;
+    virtual Cartesian length_for(Lattice const& lattice) const;
 
 public:
     bool has_nice_edges = true; ///< the edges should conform to lattice.min_neighbours specification
