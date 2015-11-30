@@ -281,30 +281,54 @@ def parallel_for(factory, make_result=None):
 
     Parameters
     ----------
-    factory : Factory
-        Factory function created with the `parallelize` decorator.
-    make_result : callable
-        Creates the final result from raw data.
-        This result is also the final return value of `parallel_for`.
+    factory : :func:`Factory <parallelize>`
+        Factory function created with the :func:`parallelize` decorator.
+    make_result : callable, optional
+        Creates the final result from raw data. This result is also the
+        final return value of :func:`parallel_for`.
+
+    Returns
+    -------
+    array_like
+        A result for each loop iteration.
+
+    Examples
+    --------
+    ::
+
+        @parallelize(x=np.linspace(0, 1, 10))
+        def factory(x):
+            pb.Model(...)  # depends on `x`
+            greens = pb.greens.kpm(model)
+            return greens.deferred_ldos(...)  # may also depend on `x`
+
+        results = parallel_for(factory)
     """
     return ParallelFor(factory, make_result)()
 
 
 @decorator_decorator
-def parallelize(callsig=None, num_threads=num_cores, queue_size=num_cores, **kwargs):
-    """Create a factory function for `parallel_for`
+def parallelize(num_threads=num_cores, queue_size=num_cores, **kwargs):
+    """A decorator which creates factory functions for :func:`parallel_for`
 
     The decorated function must return a `Deferred` compute kernel.
 
     Parameters
     ----------
-    callsig : CallSignature, optional
-        Used to set the default report configuration (file names mostly).
-    num_threads, queue_size : int, optional
-        Forwarded to `_parallel_for`.
+    num_threads : int
+        Number of threads that will run in parallel. Defaults to the number of
+        cores in the current machine.
+    queue_size : int
+        Number of `Deferred` jobs to be queued up for consumption by the worker
+        threads. The maximum number of jobs that will be kept in memory at any
+        one time will be `queue_size` + `num_threads`.
     **kwargs
-        Variables which will be iterated over in `_parallel_for`
-        and passed to the decorated function.
+        Variables which will be iterated over in :func:`parallel_for`
+        and passed to the decorated function. See example.
+
+    Returns
+    -------
+    Factory
 
     Examples
     --------
@@ -316,8 +340,9 @@ def parallelize(callsig=None, num_threads=num_cores, queue_size=num_cores, **kwa
             greens = pb.greens.kpm(model)
             return greens.deferred_ldos(...)  # may also depend on `a` and `b`
 
-        result = parallel_for(factory)
+        results = parallel_for(factory)
     """
+    callsig = kwargs.pop('callsig', None)
     if not callsig:
         callsig = get_call_signature(up=2)
 
@@ -338,18 +363,18 @@ def sweep(factory, plot=lambda r: r.plot(), labels=None, tags=None, silent=False
 
     Parameters
     ----------
-    factory : Factory
-        Factory function created with the `parallelize` decorator.
+    factory : :func:`Factory <parallelize>`
+        Factory function created with the :func:`parallelize` decorator.
     plot : callable
-        Plotting functions which takes a `Sweep` result as its only argument.
+        Plotting functions which takes a :class:`.Sweep` result as its only argument.
     labels, tags : dict
-        Forwarded to `Sweep` object.
+        Forwarded to :class:`.Sweep` object.
     silent : bool
         Don't print status messages.
 
     Returns
     -------
-    Sweep
+    :class:`.Sweep`
     """
     x = factory.variables[0]
     energy = factory.fixtures['energy']
@@ -372,16 +397,16 @@ def ndsweep(factory, plot=None, silent=False):
 
     Parameters
     ----------
-    factory : Factory
-        Factory function created with the `parallelize` decorator.
+    factory : :func:`Factory <parallelize>`
+        Factory function created with the :func:`parallelize` decorator.
     plot : callable
-        Plotting functions which takes a `NDSweep` result as its only argument.
+        Plotting functions which takes a :class:`.NDSweep` result as its only argument.
     silent : bool
         Don't print status messages.
 
     Returns
     -------
-    NDSweep
+    :class:`.NDSweep`
     """
     energy = factory.fixtures['energy']
     variables = factory.variables + (energy,)
