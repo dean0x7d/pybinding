@@ -1,3 +1,8 @@
+"""Processing and presentation of computed data
+
+Result objects hold computed data and offer postprocessing and plotting functions
+which are specifically adapted to the nature of the stored data.
+"""
 from copy import deepcopy
 
 import numpy as np
@@ -9,7 +14,8 @@ from .utils import with_defaults, x_pi
 from .system import Positions, plot_sites, plot_hoppings
 from .support.pickle import pickleable
 
-__all__ = ['make_path', 'DOS', 'LDOS', 'StructureMap', 'Eigenvalues', 'Bands', 'Sweep']
+__all__ = ['make_path', 'DOS', 'LDOS', 'SpatialMap', 'StructureMap',
+           'Eigenvalues', 'Bands', 'Sweep', 'NDSweep']
 
 
 def make_path(k0, k1, *ks, step=0.1):
@@ -46,7 +52,7 @@ def make_path(k0, k1, *ks, step=0.1):
 
 @pickleable
 class DOS:
-    """Density of states
+    """Density of states as a function of energy
 
     Attributes
     ----------
@@ -54,10 +60,17 @@ class DOS:
     dos : array_like
     """
     def __init__(self, energy, dos):
-        self.energy = energy
-        self.dos = dos
+        self.energy = np.atleast_1d(energy)
+        self.dos = np.atleast_1d(dos)
 
     def plot(self, **kwargs):
+        """Labeled line plot
+
+        Parameters
+        ----------
+        **kwargs
+            Forwarded to `plt.plot()`.
+        """
         plt.plot(self.energy, self.dos, **kwargs)
         plt.xlim(self.energy.min(), self.energy.max())
         plt.ylabel('DOS')
@@ -67,11 +80,25 @@ class DOS:
 
 @pickleable
 class LDOS:
+    """Local density of states as a function of energy
+
+    Attributes
+    ----------
+    energy : array_like
+    ldos : array_like
+    """
     def __init__(self, energy, ldos):
-        self.energy = energy
-        self.ldos = ldos
+        self.energy = np.atleast_1d(energy)
+        self.ldos = np.atleast_1d(ldos)
 
     def plot(self, **kwargs):
+        """Labeled line plot
+
+        Parameters
+        ----------
+        **kwargs
+            Forwarded to `plt.plot()`.
+        """
         plt.plot(self.energy, self.ldos, **kwargs)
         plt.xlim(self.energy.min(), self.energy.max())
         plt.ylabel('LDOS')
@@ -86,54 +113,63 @@ class SpatialMap:
     Attributes
     ----------
     data : np.ndarray
-        1d array of values which correspond to (x, y, z) coordinates.
-    pos : Positions or tuple of np.ndarray
-        Lattice site positions. Named tuple with x, y, z fields, each a 1d array.
+        1D array of values which correspond to x, y, z coordinates.
+    pos : tuple of np.ndarray
+        Lattice site positions. Named tuple with x, y, z fields, each a 1D array.
     sub : np.ndarray
         Sublattice ID for each position.
     """
-    def __init__(self, data: np.ndarray, positions: Positions, sublattices: np.ndarray):
-        self.data = data
+    def __init__(self, data, positions, sublattices):
+        self.data = np.atleast_1d(data)
         self.pos = Positions(*positions)  # maybe convert from tuple
-        self.sub = sublattices
+        self.sub = np.atleast_1d(sublattices)
 
     @classmethod
     def from_system(cls, data, system):
+        """Alternate constructor which takes `pos` and `sub` from `system`
+
+        Parameters
+        ----------
+        data : np.ndarray
+        system : :class:`.System`
+        """
         return cls(data, system.positions, system.sublattices)
 
     def copy(self) -> 'SpatialMap':
+        """Return a deep copy"""
         return deepcopy(self)
 
-    def save_txt(self, file_name):
-        with open(file_name + '.dat', 'w') as file:
+    def save_txt(self, filename):
+        with open(filename + '.dat', 'w') as file:
             file.write('# {:12}{:13}{:13}\n'.format('x(nm)', 'y(nm)', 'data'))
             for x, y, d in zip(self.pos.x, self.pos.y, self.data):
                 file.write(("{:13.5e}" * 3 + '\n').format(x, y, d))
 
     def filter(self, idx):
-        """Leave only the sites indicated by `idx`
+        """Leave only the sites indicated by `idx`: same rules as numpy indexing
 
         Parameters
         ----------
         idx : array_like
-            Same rules as numpy indexing.
         """
+        # TODO: consider making this class immutable and use __getitem__ instead of filter
         self.data = self.data[idx]
         self.pos = Positions(*map(lambda v: v[idx], self.pos))
         self.sub = self.sub[idx]
 
     def crop(self, **limits):
-        """Leave only the sites which are within the given limits
+        """Leave only the sites that are within the given limits
 
         Parameters
         ----------
         **limits
             Attribute names and corresponding limits.
 
-        Example
-        -------
-        Leave only the data where -10 <= x < 10 and 2 <= y < 4:
-        s.crop(x=(-10, 10), y=(2, 4))
+        Examples
+        --------
+        Leave only the data where -10 <= x < 10 and 2 <= y < 4::
+
+            s.crop(x=(-10, 10), y=(2, 4))
         """
         idx = np.ones(self.pos.x.size, dtype=bool)
         attrib = {'x': self.pos.x, 'y': self.pos.y, 'z': self.pos.z,
@@ -174,6 +210,13 @@ class SpatialMap:
         ax.set_yticks(ax.get_yticks()[1:-1])
 
     def plot_pcolor(self, **kwargs):
+        """Color plot of the xy plane
+
+        Parameters
+        ----------
+        **kwargs
+            Forwarded to `plt.tripcolor()`.
+        """
         x, y, _ = self.pos
         kwargs = with_defaults(kwargs, cmap='YlGnBu', shading='gouraud', rasterized=True)
         pcolor = plt.tripcolor(x, y, self.data, **kwargs)
@@ -181,6 +224,15 @@ class SpatialMap:
         return pcolor
 
     def plot_contourf(self, num_levels=50, **kwargs):
+        """Filled contour plot of the xy plane
+
+        Parameters
+        ----------
+        num_levels : int
+            Number of contour levels.
+        **kwargs
+            Forwarded to `plt.tricontourf()`.
+        """
         levels = np.linspace(self.data.min(), self.data.max(), num=num_levels)
         x, y, _ = self.pos
         kwargs = with_defaults(kwargs, cmap='YlGnBu', levels=levels, rasterized=True)
@@ -189,6 +241,13 @@ class SpatialMap:
         return contourf
 
     def plot_contour(self, **kwargs):
+        """Contour plot of the xy plane
+
+        Parameters
+        ----------
+        **kwargs
+            Forwarded to `plt.tricontour()`.
+        """
         x, y, _ = self.pos
         contour = plt.tricontour(x, y, self.data, **kwargs)
         self._decorate_plot()
@@ -206,8 +265,7 @@ class StructureMap(SpatialMap):
     boundaries : list of scipy.csr_matrix
         Boundary hoppings. See 'System.boundaries`.
     """
-    def __init__(self, data: np.ndarray, positions: Positions, sublattices: np.ndarray,
-                 hoppings: csr_matrix, boundaries: list):
+    def __init__(self, data, positions, sublattices, hoppings, boundaries):
         super().__init__(data, positions, sublattices)
         self.hoppings = hoppings
         self.boundaries = boundaries
@@ -218,11 +276,12 @@ class StructureMap(SpatialMap):
                    system.hoppings.tocsr(), system.boundaries)
 
     def copy(self) -> 'StructureMap':
+        """Return a deep copy"""
         return deepcopy(self)
 
     @property
     def spatial_map(self) -> SpatialMap:
-        """Just the SpatialMap subset without hoppings"""
+        """Just the :class:`SpatialMap` subset without hoppings"""
         return SpatialMap(self.data, self.pos, self.sub)
 
     @staticmethod
@@ -238,8 +297,23 @@ class StructureMap(SpatialMap):
         for boundary in self.boundaries:
             boundary.hoppings = self._filter_csr_matrix(boundary.hoppings, idx)
 
-    def plot_structure(self, site_radius=(0.03, 0.05), site_props: dict=None, hopping_width=1,
-                       hopping_props: dict=None, cbar_props: dict=None):
+    def plot_structure(self, site_radius=(0.03, 0.05), site_props=None, hopping_width=1,
+                       hopping_props=None, cbar_props=None):
+        """Plot the spatial structure with a colormap of `data` at the lattice sites
+
+        Parameters
+        ----------
+        site_radius : Tuple[float, float]
+            Min and max radius of the lattice sites
+        site_props : dict
+            Forwarded to :func:`.plot_sites`.
+        hopping_width : float
+            Width of the lines representing the hoppings.
+        hopping_props : dict
+            Forwarded to :func:`.plot_hoppings`.
+        cbar_props : dict
+            Forwarded to `plt.colorbar`.
+        """
         ax = plt.gca()
         ax.set_aspect('equal', 'datalim')
         ax.set_xlabel('x (nm)')
@@ -278,9 +352,16 @@ class StructureMap(SpatialMap):
 
 @pickleable
 class Eigenvalues:
+    """Hamiltonian eigenvalues with optional probability map
+
+    Attributes
+    ----------
+    values : np.ndarray
+    probability : np.ndarray
+    """
     def __init__(self, eigenvalues, probability=None):
-        self.values = eigenvalues
-        self.probability = probability
+        self.values = np.atleast_1d(eigenvalues)
+        self.probability = np.atleast_1d(probability)
 
     @property
     def indices(self):
@@ -354,6 +435,14 @@ class Eigenvalues:
 
 @pickleable
 class Bands:
+    """Band structure along a path in k-space
+
+    Attributes
+    ----------
+    k_points : List[Tuple[float]]
+    k_path : array_like
+    bands : array_like
+    """
     def __init__(self, k_points, k_path, bands):
         self.k_points = k_points
         self.k_path = k_path
@@ -368,7 +457,16 @@ class Bands:
             names.append(fmt.format(', '.join(values)))
         return names
 
-    def plot(self, names=None, **kwargs):
+    def plot(self, point_labels=None, **kwargs):
+        """Line plot of the band structure
+
+        Parameters
+        ----------
+        point_labels : List[str]
+            Labels for the `k_points`.
+        **kwargs
+            Forwarded to `plt.plot()`.
+        """
         default_color = pltutils.get_palette('Set1')[1]
         plt.plot(self.bands, **with_defaults(kwargs, color=default_color))
 
@@ -381,9 +479,9 @@ class Bands:
         border_indices = [idx for idx, k in enumerate(self.k_path)
                           if any(np.allclose(k, k0) for k0 in self.k_points)]
 
-        if not names:
-            names = self._point_names(self.k_points)
-        plt.xticks(border_indices, names)
+        if not point_labels:
+            point_labels = self._point_names(self.k_points)
+        plt.xticks(border_indices, point_labels)
 
         for idx in border_indices:
             ymax = plt.gca().transLimits.transform([0, max(self.bands[idx])])[1]
@@ -407,9 +505,7 @@ class Sweep:
     tags : dict
         Any additional user defined variables.
     """
-
-    def __init__(self, x: np.ndarray, y: np.ndarray, data: np.ndarray,
-                 labels: dict=None, tags: dict=None):
+    def __init__(self, x, y, data, labels=None, tags=None):
         self.x = np.atleast_1d(x)
         self.y = np.atleast_1d(y)
         self.data = np.atleast_2d(data)
