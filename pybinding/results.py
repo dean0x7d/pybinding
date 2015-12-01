@@ -9,7 +9,7 @@ from .utils import with_defaults, x_pi
 from .system import Positions, plot_sites, plot_hoppings
 from .support.pickle import pickleable
 
-__all__ = ['make_path', 'LDOSpoint', 'StructureMap', 'Eigenvalues', 'Bands', 'Sweep']
+__all__ = ['make_path', 'DOS', 'LDOS', 'StructureMap', 'Eigenvalues', 'Bands', 'Sweep']
 
 
 def make_path(k0, k1, *ks, step=0.1):
@@ -66,7 +66,7 @@ class DOS:
 
 
 @pickleable
-class LDOSpoint:
+class LDOS:
     def __init__(self, energy, ldos):
         self.energy = energy
         self.ldos = ldos

@@ -21,9 +21,10 @@ def kpm(request):
 
 
 def test_ldos(kpm, baseline, plot_if_fails):
-    results = [k.calc_ldos(energy=np.linspace(-2, 2, 100), broadening=0.06, position=(0, 0))
-               for k in kpm]
-    expected = baseline(results[0])
+    energy = np.linspace(-2, 2, 100)
+    results = [k.calc_ldos(energy, broadening=0.06, position=(0, 0)) for k in kpm]
+
+    expected = pb.results.LDOS(energy, baseline(results[0].ldos))
     for i in range(len(results)):
         plot_if_fails(results[i], expected, 'plot', label=i)
 

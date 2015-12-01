@@ -85,10 +85,10 @@ class Greens:
 
         Returns
         -------
-        results.LDOSpoint
+        results.LDOS
         """
         ldos = self.impl.calc_ldos(energy, broadening, position, sublattice)
-        return results.LDOSpoint(energy, ldos)
+        return results.LDOS(energy, ldos)
 
     def deferred_ldos(self, energy, broadening, position, sublattice=-1):
         """Same as `calc_ldos` but for parallel computation: see the `parallel` module
