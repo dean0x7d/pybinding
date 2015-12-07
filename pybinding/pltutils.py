@@ -1,3 +1,5 @@
+from contextlib import contextmanager
+
 import numpy as np
 import matplotlib as mpl
 import matplotlib.style as mpl_style
@@ -6,11 +8,32 @@ import matplotlib.pyplot as plt
 from .utils import with_defaults
 
 
-def _get_ax(ax=None):
-    return ax if ax else plt.gca()
+@contextmanager
+def axes(ax):
+    """Set the active Axes instance to `ax`
+
+    Parameters
+    ----------
+    ax : plt.Axes
+
+    Examples
+    --------
+    >>> f, (ax1, ax2) = plt.subplots(1, 2)
+    >>> ax2 == plt.gca()
+    True
+    >>> with axes(ax1):
+    ...    ax1 == plt.gca()
+    True
+    >>> ax2 == plt.gca()
+        True
+    """
+    previous_ax = plt.gca()
+    plt.sca(ax)
+    yield
+    plt.sca(previous_ax)
 
 
-def despine(trim=False, ax=None):
+def despine(trim=False):
     """Remove the top and right spines
 
     Parameters
@@ -18,7 +41,7 @@ def despine(trim=False, ax=None):
     trim : bool
         Trim spines so that they don't extend beyond the last major ticks.
     """
-    ax = _get_ax(ax)
+    ax = plt.gca()
     if ax.name == '3d':
         return
 
@@ -36,10 +59,10 @@ def despine(trim=False, ax=None):
             getattr(ax, "set_{}ticks".format(v))(ticks)
 
 
-def despine_all(ax=None):
+def despine_all():
     """Remove all spines, axes labels and ticks
     """
-    ax = _get_ax(ax)
+    ax = plt.gca()
     if ax.name == '3d':
         return
 
@@ -54,9 +77,9 @@ def despine_all(ax=None):
     ax.set_yticks([])
 
 
-def set_min_range(min_range, vs='xy', ax=None):
+def set_min_range(min_range, vs='xy'):
     """Set minimum axis range"""
-    ax = _get_ax(ax)
+    ax = plt.gca()
     for v in vs:
         vmin, vmax = getattr(ax, "get_{}lim".format(v))()
         if abs(vmax - vmin) < min_range:
@@ -65,9 +88,9 @@ def set_min_range(min_range, vs='xy', ax=None):
             getattr(ax, "set_{}lim".format(v))(vmin, vmax, auto=None)
 
 
-def add_margin(margin=0.08, vs='xy', ax=None):
+def add_margin(margin=0.08, vs='xy'):
     """Adjust the axis range to include a margin (after autoscale)"""
-    ax = _get_ax(ax)
+    ax = plt.gca()
     for v in vs:
         vmin, vmax = getattr(ax, "get_{}lim".format(v))()
         set_min_range(abs(vmax - vmin) * (1 + margin), vs=v, ax=ax)
