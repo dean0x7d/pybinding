@@ -340,8 +340,8 @@ class Lattice(_cpp.Lattice):
         # ensure there is some padding around the lattice
         points = [n * v + o for n in (-0.5, 0.5) for v in self.vectors for o in offsets]
         x, y, _ = zip(*points)
-        pltutils.set_min_range(abs(max(x) - min(x)), 'x')
-        pltutils.set_min_range(abs(max(y) - min(y)), 'y')
+        pltutils.set_min_axis_length(abs(max(x) - min(x)), 'x')
+        pltutils.set_min_axis_length(abs(max(y) - min(y)), 'y')
 
     def plot_brillouin_zone(self, **kwargs):
         """Plot the Brillouin zone and reciprocal lattice vectors
@@ -385,8 +385,8 @@ class Lattice(_cpp.Lattice):
                 pltutils.annotate_box(text, vertex * 1.05, ha=ha, va=va, bbox=dict(lw=0))
 
             x, y = zip(*vertices)
-            pltutils.set_min_range(abs(max(x) - min(x)) * 2, 'x')
-            pltutils.set_min_range(abs(max(y) - min(y)) * 2, 'y')
+            pltutils.set_min_axis_length(abs(max(x) - min(x)) * 2, 'x')
+            pltutils.set_min_axis_length(abs(max(y) - min(y)) * 2, 'y')
             ax.set_ylabel(r"$k_y (nm^{-1})$")
 
         pltutils.despine(trim=True)

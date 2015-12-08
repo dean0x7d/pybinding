@@ -136,7 +136,7 @@ class System:
             b_hop = boundary.hoppings.tocoo()
             plot_hoppings(ax, pos, b_hop, hopping_width, boundary.shift, boundary=True, **kwargs)
 
-        pltutils.set_min_range(0.5)
+        pltutils.set_min_axis_length(0.5)
         pltutils.despine(trim=True)
         pltutils.add_margin()
 

@@ -11,3 +11,4 @@ API Reference
     greens
     results
     parallel
+    pltutils

@@ -1,3 +1,4 @@
+"""Collection of utility functions for matplotlib"""
 from contextlib import contextmanager
 
 import numpy as np
@@ -10,7 +11,7 @@ from .utils import with_defaults
 
 @contextmanager
 def axes(ax):
-    """Set the active Axes instance to `ax`
+    """A context manager that sets the active Axes instance to `ax`
 
     Parameters
     ----------
@@ -25,7 +26,7 @@ def axes(ax):
     ...    ax1 == plt.gca()
     True
     >>> ax2 == plt.gca()
-        True
+    True
     """
     previous_ax = plt.gca()
     plt.sca(ax)
@@ -60,8 +61,7 @@ def despine(trim=False):
 
 
 def despine_all():
-    """Remove all spines, axes labels and ticks
-    """
+    """Remove all spines, axes labels and ticks"""
     ax = plt.gca()
     if ax.name == '3d':
         return
@@ -77,38 +77,78 @@ def despine_all():
     ax.set_yticks([])
 
 
-def set_min_range(min_range, vs='xy'):
-    """Set minimum axis range"""
+def set_min_axis_length(length, axis='xy'):
+    """Set minimum axis length
+
+    Parameters
+    ----------
+    length : float
+        Minimum range in data coordinates
+    axis : {'x', 'y', 'xy'}
+        Apply to a single axis ('x', 'y') or both ('xy').
+    """
     ax = plt.gca()
-    for v in vs:
-        vmin, vmax = getattr(ax, "get_{}lim".format(v))()
-        if abs(vmax - vmin) < min_range:
-            c = (vmax + vmin) / 2
-            vmin, vmax = c - min_range / 2, c + min_range / 2
-            getattr(ax, "set_{}lim".format(v))(vmin, vmax, auto=None)
+    for a in axis:
+        _min, _max = getattr(ax, "get_{}lim".format(a))()
+        if abs(_max - _min) < length:
+            center = (_max + _min) / 2
+            _min = center - length / 2
+            _max = center + length / 2
+            getattr(ax, "set_{}lim".format(a))(_min, _max, auto=None)
 
 
-def add_margin(margin=0.08, vs='xy'):
-    """Adjust the axis range to include a margin (after autoscale)"""
+def add_margin(margin=0.08, axis='xy'):
+    """Adjust the axis length to include a margin (after autoscale)
+
+    Parameters
+    ----------
+    margin : float
+        Fraction of the original length.
+    axis : {'x', 'y', 'xy'}
+        Apply to a single axis ('x', 'y') or both ('xy').
+    """
     ax = plt.gca()
-    for v in vs:
-        vmin, vmax = getattr(ax, "get_{}lim".format(v))()
-        set_min_range(abs(vmax - vmin) * (1 + margin), vs=v, ax=ax)
+    for a in axis:
+        _min, _max = getattr(ax, "get_{}lim".format(a))()
+        set_min_axis_length(abs(_max - _min) * (1 + margin), axis=a)
 
 
 def blend_colors(color, bg, factor):
-    """Blend color with background"""
+    """Blend color with background
+
+    Parameters
+    ----------
+    color
+        Color that will be blended.
+    bg
+        Background color.
+    factor : float
+        Blend factor: 0 to 1.
+    """
     from matplotlib.colors import colorConverter
-    color, bg = map(lambda c: np.array(colorConverter.to_rgb(c)), (color, bg))
+    color, bg = (np.array(colorConverter.to_rgb(c)) for c in (color, bg))
     return (1 - factor) * bg + factor * color
 
 
 def colorbar(mappable=None, cax=None, ax=None, powerlimits=(0, 0), label="", **kwargs):
-    """Convenient colorbar function"""
+    """Custom colorbar
+
+    Changes default `pad` and `aspect` argument values turns on rasterization for a
+    nicer looking colorbar with smaller size in vector formats (pdf, svg).
+
+    Parameters
+    ----------
+    powerlimits : Tuple[int, int]
+        Sets size thresholds for scientific notation.
+    label : str
+        Color data label.
+    mappable, cax, ax, **kwargs
+        Forwarded to `plt.colorbar()`.
+    """
     cbar = plt.colorbar(mappable, cax, ax, **with_defaults(kwargs, pad=0.02, aspect=28))
 
     cbar.solids.set_edgecolor("face")  # remove white gaps between segments
-    cbar.solids.set_rasterized(True)   # and reduce pdf output size
+    cbar.solids.set_rasterized(True)   # and reduce pdf and svg output size
 
     if powerlimits and hasattr(cbar.formatter, 'set_powerlimits'):
         cbar.formatter.set_powerlimits(powerlimits)
@@ -125,7 +165,19 @@ def colorbar(mappable=None, cax=None, ax=None, powerlimits=(0, 0), label="", **k
 
 
 def annotate_box(s, xy, fontcolor='black', **kwargs):
-    """Annotate with a box around the text"""
+    """Annotate with a box around the text
+
+    Parameters
+    ----------
+    s : str
+        Text string.
+    xy : Tuple[float, float]
+        Text position.
+    fontcolor : color
+        Setting 'white' will make the background black.
+    **kwargs
+        Forwarded to `plt.annotate()`.
+    """
     kwargs['bbox'] = with_defaults(
         kwargs.get('bbox', {}),
         boxstyle="round,pad=0.2", alpha=0.5, lw=0.3,
@@ -142,11 +194,38 @@ def annotate_box(s, xy, fontcolor='black', **kwargs):
 
 
 def cm2inch(*values):
-    """ Convert from centimeter to inch """
+    """Convert from centimeter to inch
+
+    Parameters
+    ----------
+    *values
+
+    Returns
+    -------
+    tuple
+
+    Examples
+    --------
+    >>> cm2inch(2.54, 5.08)
+    (1.0, 2.0)
+    """
     return tuple(v / 2.54 for v in values)
 
 
 def legend(*args, reverse=False, facecolor='0.98', lw=0, **kwargs):
+    """Custom legend
+
+    Parameters
+    ----------
+    reverse : bool
+        Reverse the label order.
+    facecolor : color
+        Legend background color.
+    lw : float
+        Frame width.
+    *args, **kwargs
+        Forwarded to `plt.legend()`.
+    """
     h, l = plt.gca().get_legend_handles_labels()
     if not h:
         return None
@@ -163,6 +242,21 @@ def legend(*args, reverse=False, facecolor='0.98', lw=0, **kwargs):
 
 
 def get_palette(name=None, num_colors=8, start=0):
+    """Get a color palette from matplotlib's colormap database
+
+    Parameters
+    ----------
+    name : str, optional
+        Name of the palette to get. If `None`, get the active palette.
+    num_colors : int
+        Number of colors to retrieve.
+    start : int
+        Staring from this color number.
+
+    Returns
+    -------
+    List
+    """
     if not name:
         return mpl.rcParams["axes.color_cycle"]
 
@@ -183,13 +277,38 @@ def get_palette(name=None, num_colors=8, start=0):
 
 
 def set_palette(name=None, num_colors=8, start=0):
+    """Set the active color palette
+
+    Parameters
+    ----------
+    name : str, optional
+        Name of the palette. If `None`, modify the active palette.
+    num_colors : int
+        Number of colors to retrieve.
+    start : int
+        Staring from this color number.
+    """
     palette = get_palette(name, num_colors, start)
     mpl.rcParams["axes.prop_cycle"] = plt.cycler('color', palette)
     mpl.rcParams["patch.facecolor"] = palette[0]
 
 
 def direct_cmap_norm(data, colors, blend=1):
-    """Colormap with direct mapping: data[i] -> colors[i]"""
+    """Colormap with direct mapping: data[i] -> colors[i]
+
+    Parameters
+    ----------
+    data : array_like
+        The data for which the colormap will be created.
+    colors : color or tuple of colors
+        Colors to map to unique data values.
+    blend : float
+        Like `alpha` but always blend with white.
+
+    Returns
+    -------
+    Tuple[ListedColormap, BoundaryNorm]
+    """
     if not isinstance(colors, (list, tuple)):
         colors = [colors]
     if blend < 1:
@@ -207,6 +326,13 @@ def direct_cmap_norm(data, colors, blend=1):
 def align(x, y):
     """Return text alignment based on (x, y) numbers
 
+    Parameters
+    ----------
+    x, y : int
+        Negative is left/bottom, positive is right/top, zero is center/center.
+
+    Examples
+    --------
     >>> align(1, -1)
     ('right', 'bottom')
     >>> align(0, 1)
@@ -277,4 +403,11 @@ pb_style = _make_style()
 
 
 def use_style(style=pb_style):
+    """Shortcut for `matplotlib.style.use()`
+
+    Parameters
+    ----------
+    style : dict
+        The default value is the preferred pybinding figure style.
+    """
     mpl_style.use(style)
