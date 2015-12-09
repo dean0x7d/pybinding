@@ -1,7 +1,7 @@
 from collections import namedtuple
 
 import numpy as np
-from scipy.sparse import coo_matrix
+import matplotlib.pyplot as plt
 
 from . import _cpp
 from . import pltutils
@@ -9,42 +9,66 @@ from .utils import with_defaults
 from .support.sparse import SparseMatrix
 from .support.pickle import pickleable
 
+__all__ = ['Positions', 'Boundary', 'System', 'plot_hoppings', 'plot_sites']
+
+
 Positions = namedtuple('Positions', 'x y z')
+Positions.__doc__ = """
+Named tuple of arrays
+
+Attributes
+----------
+x, y, z : array_like
+    1D arrays of Cartesian coordinates
+"""
 
 
 @pickleable(impl='shift hoppings.')
 class Boundary:
+    """Periodic boundary"""
+
     def __init__(self, impl: _cpp.Boundary):
         self.impl = impl
 
     @property
     def shift(self) -> np.ndarray:
+        """Position shift of the periodic boundary condition"""
         return self.impl.shift
 
     @property
     def hoppings(self) -> SparseMatrix:
+        """Sparse matrix of the boundary hoppings"""
         return SparseMatrix(self.impl.hoppings)
 
 
 @pickleable(impl='positions sublattices hoppings. boundaries[]')
 class System:
+    """Structural data of the model
+
+    Stores positions, sublattice and hopping IDs for all lattice sites.
+    """
+
     def __init__(self, impl: _cpp.System):
         self.impl = impl
 
     @property
     def num_sites(self) -> int:
+        """Total number of sites in the system"""
         return self.impl.num_sites
 
     @property
     def x(self) -> np.ndarray:
+        """1D array of x coordinates"""
         return self.impl.positions.x
 
     @property
     def y(self) -> np.ndarray:
+        """1D array of y coordinates"""
         return self.impl.positions.y
 
     @property
     def z(self) -> np.ndarray:
+        """1D array of z coordinates"""
         return self.impl.positions.z
 
     @property
@@ -54,22 +78,39 @@ class System:
 
     @property
     def positions(self):
+        """Named tuple of x, y, z positions"""
         return Positions(self.x, self.y, self.z)
 
     @property
     def sublattices(self) -> np.ndarray:
+        """1D array of sublattice IDs"""
         return self.impl.sublattices
 
     @property
     def hoppings(self) -> SparseMatrix:
+        """Sparse matrix of hopping IDs"""
         return SparseMatrix(self.impl.hoppings)
 
     @property
     def boundaries(self):
+        """List of :class:`.Boundary`"""
         return [Boundary(b) for b in self.impl.boundaries]
 
-    def find_nearest(self, position, at_sublattice=-1) -> int:
-        """Find the index of the atom closest to the given position."""
+    def find_nearest(self, position, at_sublattice=-1):
+        """Find the index of the atom closest to the given position
+
+        Parameters
+        ----------
+        position : array_like
+            Where to look.
+        at_sublattice : int
+            Look for a specific sublattice site, or -1 if any will do (default).
+
+        Returns
+        -------
+        int
+            Index of the site or -1 if not found.
+        """
         if hasattr(self.impl, 'find_nearest'):
             # use cpp implementation
             return self.impl.find_nearest(position, int(at_sublattice))
@@ -84,26 +125,28 @@ class System:
                 masked_distance = ma.array(distance, mask=self.sublattices != at_sublattice)
                 return ma.argmin(masked_distance)
 
-    def plot(self, site_radius: float=0.025, site_props: dict=None, hopping_width: float=1,
-             hopping_props: dict=None, boundary_color: str='#ff4444', rotate: tuple=(0, 1, 2)):
-        """
+    def plot(self, site_radius=0.025, site_props=None, hopping_width=1.0, hopping_props=None,
+             boundary_color='#ff4444', rotate=(0, 1, 2)):
+        """Plot the structure of the system: sites and hoppings
+
         Parameters
         ----------
         site_radius : float
-            radius [data units] of the circle representing a lattice site
-        site_props : `~matplotlib.collections.Collection` properties
-            additional plot options for sites
+            Radius (in data units) of the circle representing a lattice site.
+        site_props : Optional[dict]
+            Forwarded to :class:`.CircleCollection`: additional site plotting options.
         hopping_width : float
-            width [figure units] of the hopping lines
-        hopping_props : `~matplotlib.collections.Collection` properties
-            additional plot options for hoppings
-        rotate : tuple
-            axes to direction mapping:
-            (0, 1, 2) -> (x, y, z) plots xy-plane
-            (1, 2, 0) -> (y, z, x) plots yz-plane
-        """
-        import matplotlib.pyplot as plt
+            Width (in figure units) of the hopping lines.
+        hopping_props : Optional[dict]
+            Forwarded to :class:`.LineCollection`: additional hopping line options.
+        boundary_color : color
+            Color of the hopping lines on the boundaries.
+        rotate : Tuple[int, int, int]
+            Axes mapping:
 
+            * (0, 1, 2) -> (x, y, z) plots xy-plane
+            * (1, 2, 0) -> (y, z, x) plots yz-plane
+        """
         ax = plt.gca()
         ax.set_aspect('equal')
         ax.set_xlabel("x (nm)")
@@ -118,15 +161,15 @@ class System:
         hopping_props = hopping_props if hopping_props else {}
 
         # plot main part
-        plot_hoppings(ax, pos, hop, hopping_width, **hopping_props)
-        plot_sites(ax, pos, sub, site_radius, **site_props)
+        plot_hoppings(pos, hop, hopping_width, **hopping_props)
+        plot_sites(pos, sub, site_radius, **site_props)
 
         # plot periodic part
         for boundary in self.boundaries:
             # shift the main sites and hoppings with lowered alpha
             for shift in [boundary.shift, -boundary.shift]:
-                plot_sites(ax, pos, sub, site_radius, shift, blend=0.5, **site_props)
-                plot_hoppings(ax, pos, hop, hopping_width, shift, blend=0.5, **hopping_props)
+                plot_sites(pos, sub, site_radius, shift, blend=0.5, **site_props)
+                plot_hoppings(pos, hop, hopping_width, shift, blend=0.5, **hopping_props)
 
             # special color for the boundary hoppings
             if boundary_color:
@@ -134,33 +177,37 @@ class System:
             else:
                 kwargs = hopping_props
             b_hop = boundary.hoppings.tocoo()
-            plot_hoppings(ax, pos, b_hop, hopping_width, boundary.shift, boundary=True, **kwargs)
+            plot_hoppings(pos, b_hop, hopping_width, boundary.shift, boundary=True, **kwargs)
 
         pltutils.set_min_axis_length(0.5)
         pltutils.despine(trim=True)
         pltutils.add_margin()
 
 
-def plot_hoppings(ax, positions: tuple, hoppings: coo_matrix, width: float,
-                  offset=(0, 0, 0), boundary=False, blend=1.0, **kwargs):
+def plot_hoppings(positions, hoppings, width, offset=(0, 0, 0),
+                  boundary=False, blend=1.0, **kwargs):
     """Plot hopping lines between sites
 
     Parameters
     ----------
-    positions : tuple
+    positions : Positions
         Site coordinates in the form of a (x, y, z) tuple of arrays.
-    hoppings : coo_matrix
-        Sparse COO matrix with the hopping data, usually model.system.hoppings.tocoo().
+    hoppings : :class:`~scipy.sparse.coo_matrix`
+        Sparse COO matrix with the hopping data, usually `model.system.hoppings.tocoo()`.
     width : float
         Width of the hopping plot lines.
-    offset : tuple
-        Offset of positions.
+    offset : Tuple[float, float, float]
+        Offset all positions by a constant value.
     boundary : bool
         The offset is applied differently at boundaries.
     blend : float
-        Blend all colors to white (fake alpha): expected values between 0 and 1.
-    kwargs
-        Passed on to matplotlib's LineCollection.
+        Blend all colors to white (fake alpha blending): expected values between 0 and 1.
+    **kwargs
+        Forwarded to matplotlib's :class:`.LineCollection`.
+
+    Returns
+    -------
+    :class:`.LineCollection`
     """
     if width == 0 or hoppings.data.size == 0:
         return
@@ -173,6 +220,7 @@ def plot_hoppings(ax, positions: tuple, hoppings: coo_matrix, width: float,
     unique_hop_ids = np.arange(hoppings.data.max() + 1)
     kwargs['cmap'], kwargs['norm'] = pltutils.direct_cmap_norm(unique_hop_ids, colors, blend)
 
+    ax = plt.gca()
     ndims = 3 if ax.name == '3d' else 2
     offset = np.array(offset[:ndims])
     positions = np.array(positions[:ndims]).T
@@ -207,24 +255,28 @@ def plot_hoppings(ax, positions: tuple, hoppings: coo_matrix, width: float,
     return col
 
 
-def plot_sites(ax, positions: tuple, data: np.ndarray, radius: np.ndarray,
-               offset=(0, 0, 0), blend=1.0, **kwargs):
-    """Plot circles at site positions
+def plot_sites(positions, data, radius, offset=(0, 0, 0), blend=1.0, **kwargs):
+    """Plot circles at lattice site positions
 
     Parameters
     ----------
-    positions : tuple
+    positions : Positions
         Site coordinates in the form of a (x, y, z) tuple of arrays.
     data : array_like
-        Color data at each site. Should be the same size as (x, y, z).
-    radius : float or array_like
-        Radius [data units] of the circles. Scalar or array with the same size as (x, y, z).
-    offset : tuple
-        Offset of positions.
+        Color data at each site. Should be a 1D array of the same size as `positions`.
+    radius : Union[float, array_like]
+        Radius (in data units) of the plotted circles representing lattice sites.
+        Should be a scalar value or array with the same size as `positions`.
+    offset : Tuple[float, float, float]
+            Offset all positions by a constant value.
     blend : float
-        Blend all colors to white (fake alpha): expected values between 0 and 1.
-    kwargs
-        Passed on to CircleCollection.
+        Blend all colors to white (fake alpha blending): expected values between 0 and 1.
+    **kwargs
+        Forwarded to :class:`.CircleCollection`.
+
+    Returns
+    -------
+    :class:`.CircleCollection`
     """
     if np.all(radius == 0):
         return
@@ -245,6 +297,7 @@ def plot_sites(ax, positions: tuple, data: np.ndarray, radius: np.ndarray,
     # create array of (x, y) points
     points = np.array(positions[:2]).T + offset[:2]
 
+    ax = plt.gca()
     if ax.name != '3d':
         # sort based on z position to get proper 2D z-order
         idx = positions[2].argsort()
@@ -274,13 +327,24 @@ def plot_sites(ax, positions: tuple, data: np.ndarray, radius: np.ndarray,
 
 
 def plot_site_indices(system):
-    """Show the Hamiltonian index next to each atom (mainly for debugging)"""
+    """Show the Hamiltonian index next to each atom (mainly for debugging)
+
+    Parameters
+    ----------
+    system : System
+    """
     for i, xy in enumerate(zip(system.x, system.y)):
         pltutils.annotate_box(i, xy)
 
 
 def plot_hopping_values(system, lattice):
-    """Show the hopping energy over each hopping line (mainly for debugging)"""
+    """Show the hopping energy over each hopping line (mainly for debugging)
+
+    Parameters
+    ----------
+    system : System
+    lattice : Lattice
+    """
     pos = system.xyz[:, :2]
 
     def get_energy(hopping_id):
