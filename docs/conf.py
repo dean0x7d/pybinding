@@ -21,12 +21,29 @@ extensions = [
     'sphinx.ext.autosummary',
     'sphinx.ext.mathjax',
     'numpydoc',
+    'matplotlib.sphinxext.plot_directive',
 ]
 
 autodoc_member_order = 'groupwise'
 
+# mathjax 2.6 beta is required to resolve a bug -> remove this when 2.6 becomes stable
+mathjax_path = "https://beta.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"
+
 numpydoc_class_members_toctree = False
 numpydoc_show_class_members = False
+
+plot_include_source = True
+plot_html_show_source_link = False
+plot_formats = [('png', 120)]
+plot_html_show_formats = False
+plot_pre_code = """
+import pybinding as pb
+import numpy as np
+import matplotlib.pyplot as plt
+from math import pi, sqrt
+
+pb.pltutils.use_style()
+"""
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']

@@ -6,6 +6,7 @@ pybinding documentation
     :maxdepth: 2
    
     intro
+    tutorial/index
     api/index
 
 
