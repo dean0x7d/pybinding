@@ -40,7 +40,6 @@ plot_pre_code = """
 import pybinding as pb
 import numpy as np
 import matplotlib.pyplot as plt
-from math import pi, sqrt
 
 pb.pltutils.use_style()
 """
