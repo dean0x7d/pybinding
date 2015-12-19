@@ -16,3 +16,4 @@ pick up on the fly.
     :maxdepth: 1
 
     import
+    lattice
