@@ -7,6 +7,7 @@ pybinding documentation
    
     intro
     tutorial/index
+    examples/index
     api/index
 
 

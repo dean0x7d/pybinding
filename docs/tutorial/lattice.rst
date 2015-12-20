@@ -193,6 +193,7 @@ Some commmon lattices are included in pybinding's material repository. For examp
 Further reading
 ***************
 
+For more lattice specifications check out the :doc:`examples section </examples/lattice/index>`.
+
 .. todo::
-    * link to examples
     * link to advanced features
