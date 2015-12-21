@@ -1,14 +1,17 @@
 import pytest
-from .utils.path import path_from_fixture
-from .utils.compare_figures import CompareFigure
 
 from contextlib import suppress
 
 import numpy as np
+import matplotlib as mpl
+mpl.use('Agg')  # disable `plt.show()` popup window during testing
 import matplotlib.pyplot as plt
 from scipy.sparse import csr_matrix
 
 import pybinding as pb
+
+from .utils.path import path_from_fixture
+from .utils.compare_figures import CompareFigure
 
 
 def pytest_addoption(parser):
