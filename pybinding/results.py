@@ -330,18 +330,18 @@ class StructureMap(SpatialMap):
 
         radius = to_radius(self.data)
         site_props = with_defaults(site_props, cmap='YlGnBu')
-        collection = plot_sites(ax, self.pos, self.data, radius, **site_props)
+        collection = plot_sites(self.pos, self.data, radius, **site_props)
 
         hop = self.hoppings.tocoo()
         hopping_props = with_defaults(hopping_props, colors='#bbbbbb')
-        plot_hoppings(ax, self.pos, hop, hopping_width, **hopping_props)
+        plot_hoppings(self.pos, hop, hopping_width, **hopping_props)
 
         for boundary in self.boundaries:
             for shift in [boundary.shift, -boundary.shift]:
-                plot_sites(ax, self.pos, self.data, radius, shift, alpha=0.5, **site_props)
-                plot_hoppings(ax, self.pos, hop, hopping_width, shift, alpha=0.5, **hopping_props)
+                plot_sites(self.pos, self.data, radius, shift, alpha=0.5, **site_props)
+                plot_hoppings(self.pos, hop, hopping_width, shift, alpha=0.5, **hopping_props)
 
-            plot_hoppings(ax, self.pos, boundary.hoppings.tocoo(), hopping_width,
+            plot_hoppings(self.pos, boundary.hoppings.tocoo(), hopping_width,
                           boundary.shift, boundary=True, alpha=0.5, **hopping_props)
 
         if cbar_props is not False:
