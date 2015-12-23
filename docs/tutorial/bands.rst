@@ -11,9 +11,9 @@ Example
 This is a complete example of calculating the band structure. A more detailed explanation is
 included below. Note that this example uses an existing lattice from `pybinding.repository`.
 
-:download:`Source code </examples/bands/monolayer_graphene.py>`
+:download:`Source code </tutorial/bands_example.py>`
 
-.. plot:: examples/bands/monolayer_graphene.py
+.. plot:: tutorial/bands_example.py
     :include-source:
 
 
@@ -113,4 +113,4 @@ The return value of the method is a :class:`.Bands` result object.
 Further reading
 ***************
 
-For more band structure calculations check out the :doc:`examples section </examples/bands/index>`.
+For more band structure calculations check out the :doc:`examples section </examples/lattice/index>`.

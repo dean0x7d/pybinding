@@ -10,10 +10,11 @@ Example
 *******
 
 The following code shows the basic steps for creating and inspecting a lattice. The text below
-will explain things in more detail, this is just a quick preview. Full example file:
-:download:`download </examples/lattice/monolayer_graphene.py>`
+will explain things in more detail, this is just a quick preview.
 
-.. plot:: examples/lattice/monolayer_graphene.py
+:download:`Source code </tutorial/lattice_example.py>`
+
+.. plot:: tutorial/lattice_example.py
     :include-source:
 
 

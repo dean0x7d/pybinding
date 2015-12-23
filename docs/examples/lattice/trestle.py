@@ -25,3 +25,12 @@ plt.show()
 
 lattice.plot_brillouin_zone()
 plt.show()
+
+
+model = pb.Model(trestle(), pb.translational_symmetry())
+solver = pb.solver.lapack(model)
+
+reciprocal_length = lattice.brillouin_zone()[0]
+bands = solver.calc_bands(0, reciprocal_length)
+bands.plot()
+plt.show()

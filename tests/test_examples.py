@@ -2,12 +2,12 @@ import pytest
 import pathlib
 
 
-examples_path = (pathlib.Path(__file__) / "../../docs/examples").resolve()
-examples = {path.stem: path for path in examples_path.glob('*/*.py')}
+docs = (pathlib.Path(__file__) / "../../docs/").resolve()
+examples = list(docs.glob('*/**/*.py'))
 assert len(examples) != 0
 
 
-@pytest.fixture(scope='module', ids=list(examples.keys()), params=examples.values())
+@pytest.fixture(scope='module', ids=[e.stem for e in examples], params=examples)
 def example_file(request):
     return request.param
 

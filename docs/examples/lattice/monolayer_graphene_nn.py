@@ -1,7 +1,7 @@
 """Monolayer graphene with next-nearest hoppings"""
 import pybinding as pb
 import matplotlib.pyplot as plt
-from math import sqrt
+from math import sqrt, pi
 
 pb.pltutils.use_style()
 
@@ -41,4 +41,18 @@ lattice.plot()
 plt.show()
 
 lattice.plot_brillouin_zone()
+plt.show()
+
+
+model = pb.Model(monolayer_graphene_nn(), pb.translational_symmetry())
+solver = pb.solver.lapack(model)
+
+a_cc = 0.142
+Gamma = [0, 0]
+K1 = [-4*pi / (3*sqrt(3)*a_cc), 0]
+M = [0, 2*pi / (3*a_cc)]
+K2 = [2*pi / (3*sqrt(3)*a_cc), 2*pi / (3*a_cc)]
+
+bands = solver.calc_bands(K1, Gamma, M, K2)
+bands.plot(point_labels=['K', r'$\Gamma$', 'M', 'K'])
 plt.show()

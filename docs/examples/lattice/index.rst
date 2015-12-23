@@ -1,5 +1,5 @@
-Lattice
--------
+Lattice specification and bands
+-------------------------------
 
 Checkerboard
 ************
