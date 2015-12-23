@@ -17,3 +17,4 @@ pick up on the fly.
 
     import
     lattice
+    bands
