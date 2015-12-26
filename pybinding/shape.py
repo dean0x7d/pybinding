@@ -58,9 +58,9 @@ def primitive(a1=1, a2=1, a3=1):
     Parameters
     ----------
     a1, a2, a3 : int or float
-        Number of time to repeat the unit cell in the respective lattice vector directions.
+        Number of times to repeat the unit cell in the respective lattice vector directions.
     """
-    return _cpp.Primitive([a1, a2, a3])
+    return _cpp.Primitive(a1, a2, a3)
 
 
 def rectangle(x, y=None):

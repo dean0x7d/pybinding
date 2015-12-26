@@ -5,7 +5,7 @@
 
 namespace tbm {
 
-Cartesian Shape::length_for(Lattice const& lattice) const {
+FS Polygon::foundation_size(Lattice const& lattice) const {
     auto const ndim = lattice.vectors.size();
     auto const lattice_matrix = [&]{
         Eigen::MatrixXf m(ndim, ndim);
@@ -15,70 +15,43 @@ Cartesian Shape::length_for(Lattice const& lattice) const {
         return m;
     }();
 
-    Cartesian length = Cartesian::Zero();
-    for (auto const& boundary : bounding_vectors()) {
+    auto const num_sides = static_cast<int>(x.size());
+    Cartesian const center(x.sum() / num_sides, y.sum() / num_sides, .0f);
+
+    Cartesian mul = Cartesian::Zero();
+    Cartesian offset = Cartesian::Zero();
+
+    // loop over all sides of the polygon
+    for (int i = 0, j = num_sides - 1; i < num_sides; j = i++) {
+        Cartesian const side_vector(x[i] - x[j], y[i] - y[j], .0f);
+        Cartesian const side_center((x[i] + x[j]) / 2, (y[i] + y[j]) / 2, .0f);
+
         // solve `A*x = b`, where A is lattice_matrix
-        auto const& b = boundary.head(ndim);
+        auto const& b = side_vector.head(ndim);
         VectorXf x = lattice_matrix.colPivHouseholderQr().solve(b);
-        length.head(ndim) += x.cwiseAbs();
-    }
-    length *= 0.5f;
+        mul.head(ndim) += x.cwiseAbs();
 
-    for (auto i = 0u; i < ndim; ++i) {
-        length[i] *= lattice.vectors[i].norm();
-    }
-
-    return length;
-}
-
-
-ArrayX<bool> Primitive::contains(CartesianArray const& positions) const {
-    return ArrayX<bool>::Constant(positions.size(), true);
-}
-
-Cartesian Primitive::center() const {
-    return Cartesian::Zero();
-}
-
-std::vector<Cartesian> Primitive::bounding_vectors() const {
-    return {};
-}
-
-Cartesian Primitive::length_for(const Lattice& lattice) const {
-    if (nanometers) {
-        return length;
-    }
-    else {
-        Cartesian length_nm = Cartesian::Zero();
-        for (std::size_t i = 0; i < lattice.vectors.size(); ++i) {
-            length_nm[i] = length[i] * lattice.vectors[i].norm();
+        Cartesian t = Cartesian::Zero();
+        for (auto n = 0u; n < ndim; ++n) {
+            t += abs(x[n]) * lattice.vectors[n].cwiseAbs();
         }
-        return length_nm;
+        t.head(ndim) -= b.cwiseAbs();
+
+        auto diff = side_center.array() > center.array();
+        offset.head(ndim) += diff.select(t, -t);
     }
-}
+    mul *= 0.5f;
+    offset *= 0.25f;
 
-
-ArrayX<bool> Circle::contains(CartesianArray const& positions) const {
-    ArrayX<bool> is_within(positions.size());
-    for (auto i = 0; i < positions.size(); ++i) {
-        is_within[i] = (positions[i] - _center).norm() < radius;
+    Index3D size = Index3D::Constant(1);
+    for (auto i = 0u; i < ndim; ++i) {
+        // integer number of lattice vectors, plus one site (fencepost error otherwise)
+        size[i] = static_cast<int>(std::ceil(mul[i])) + 1;
+        // make sure it's an odd number, so that (size - 1) / 2 is an integer
+        size[i] += !(size[i] % 2);
     }
-    return is_within;
-}
 
-Cartesian Circle::center() const {
-    return _center;
-}
-
-std::vector<Cartesian> Circle::bounding_vectors() const {
-    std::vector<Cartesian> bounding_vectors;
-
-    bounding_vectors.emplace_back(.0f, 2*radius, .0f);
-    bounding_vectors.emplace_back(2*radius, .0f, .0f);
-    bounding_vectors.emplace_back(.0f, -2*radius, .0f);
-    bounding_vectors.emplace_back(-2*radius, .0f , .0f);
-
-    return bounding_vectors;
+    return {size, offset};
 }
 
 ArrayX<bool> Polygon::contains(CartesianArray const& positions) const {
@@ -121,15 +94,24 @@ Cartesian Polygon::center() const {
     return center + offset;
 }
 
-std::vector<Cartesian> Polygon::bounding_vectors() const {
-    std::vector<Cartesian> bounding_vectors;
+Circle::Circle(float radius, Cartesian center)
+: radius{radius}, _center{center} {
+    x.resize(4);
+    x << .0f, 2 * radius, .0f, -2 * radius;
+    y.resize(4);
+    y << 2 * radius, .0f, -2 * radius, .0f;
+}
 
-    // loop over all sides of the polygon
-    for (int i = 0, j = (int)x.size()-1; i < x.size(); j = i++) {
-        bounding_vectors.emplace_back(x[i] - x[j], y[i] - y[j], .0f);
+ArrayX<bool> Circle::contains(CartesianArray const& positions) const {
+    ArrayX<bool> is_within(positions.size());
+    for (auto i = 0; i < positions.size(); ++i) {
+        is_within[i] = (positions[i] - _center).norm() < radius;
     }
+    return is_within;
+}
 
-    return bounding_vectors;
+Cartesian Circle::center() const {
+    return _center;
 }
 
 } // namespace tbm

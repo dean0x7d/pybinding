@@ -15,6 +15,7 @@ class Model {
 public: // set parameters
     /// (Required) Set the crystal lattice specification
     void set_lattice(const std::shared_ptr<Lattice>& lattice);
+    void set_primitive(Primitive primitive);
     /// (Required) Set the shape of the system
     void set_shape(const std::shared_ptr<Shape>& lattice);
     /// (Optional)
@@ -57,6 +58,7 @@ private:
     std::shared_ptr<const Lattice> _lattice; ///< crystal lattice specification
     mutable std::shared_ptr<const Shape> _shape; ///< defines the shape of the system
     std::shared_ptr<const Symmetry> _symmetry;
+    Primitive primitive;
 
     SystemModifiers system_modifiers;
     HamiltonianModifiers hamiltonian_modifiers;

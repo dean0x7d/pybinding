@@ -1,4 +1,5 @@
 #include "Model.hpp"
+#include "system/Foundation.hpp"
 #include "hamiltonian/Hamiltonian.hpp"
 #include "support/format.hpp"
 #include "utils/Chrono.hpp"
@@ -18,6 +19,10 @@ void Model::set_lattice(const std::shared_ptr<Lattice>& new_lattice)
     _lattice = new_lattice;
     _system.reset();
     _hamiltonian.reset();
+}
+
+void Model::set_primitive(Primitive new_primitive) {
+    primitive = new_primitive;
 }
 
 void Model::set_wave_vector(const Cartesian& new_wave_vector)
@@ -75,11 +80,12 @@ std::shared_ptr<const System> Model::system() const {
         // check for all the required parameters
         if (!_lattice)
             throw std::logic_error{"A lattice must be defined."};
-        if (!_shape)
-            _shape = std::make_shared<Primitive>();
 
         auto build_time = Chrono{};
-        _system = build_system(*_lattice, *_shape, system_modifiers, _symmetry.get());
+
+        auto foundation = _shape ? Foundation(*_lattice, *_shape)
+                                 : Foundation(*_lattice, primitive);
+        _system = build_system(foundation, system_modifiers, _symmetry.get());
 
         build_report = fmt::format("Built system with {} lattice sites, {}",
                                    fmt::with_suffix(_system->num_sites()), build_time.toc());

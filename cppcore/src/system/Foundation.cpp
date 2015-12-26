@@ -3,47 +3,25 @@
 #include "system/Symmetry.hpp"
 using namespace tbm;
 
-Foundation::Foundation(Lattice const& lattice, Shape const& shape)
-    : size(determine_size(lattice, shape)),
-      size_n(static_cast<int>(lattice.sublattices.size())),
-      lattice(lattice)
-{
+Foundation::Foundation(Lattice const& lattice, Primitive const& primitive)
+    : size_n(static_cast<int>(lattice.sublattices.size())), lattice(lattice) {
+    size = primitive.size;
     num_sites = size.prod() * size_n;
-    init_positions(shape.center());
+    init_positions(Cartesian::Zero());
+    is_valid.setConstant(num_sites, true);
+    init_neighbor_count();
+}
+
+Foundation::Foundation(Lattice const& lattice, Shape const& shape)
+    : size_n(static_cast<int>(lattice.sublattices.size())), lattice(lattice) {
+    auto const fs = shape.foundation_size(lattice);
+    size = fs.size;
+    num_sites = size.prod() * size_n;
+    init_positions(shape.center() + fs.offset);
     is_valid = shape.contains(positions);
     init_neighbor_count();
 
-    if (shape.has_nice_edges)
-        trim_edges();
-}
-
-Index3D Foundation::determine_size(Lattice const& lattice, Shape const& shape) {
-    // TODO this function could be simpler
-    Index3D size = Index3D::Constant(1);
-    Cartesian vector_length = shape.length_for(lattice);
-
-    // from: length [nanometers] in each lattice unit vector direction
-    // to:   size - number of lattice sites
-    for (auto i = 0u; i < lattice.vectors.size(); ++i) {
-        if (shape.has_nice_edges) {
-            // integer number of lattice vectors, plus one site (fencepost error otherwise)
-            size[i] = static_cast<int>(
-                std::ceil(vector_length[i] / lattice.vectors[i].norm()) + 1
-            );
-            // make sure it's an odd number, so that (size - 1) / 2 is an integer
-            size[i] += !(size[i] % 2);
-        } else {
-            // primitive shape, just round
-            size[i] = static_cast<int>(
-                std::round(vector_length[i] / lattice.vectors[i].norm())
-            );
-            // make sure it's positive, non-zero
-            if (size[i] <= 0)
-                size[i] = 1;
-        }
-    }
-
-    return size;
+    trim_edges();
 }
 
 void Foundation::init_positions(Cartesian center) {

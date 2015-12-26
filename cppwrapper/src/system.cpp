@@ -124,10 +124,9 @@ void export_system() {
     using tbm::Shape;
     class_<Shape, noncopyable> {"Shape", no_init};
     
-    using tbm::Primitive;
-    class_<Primitive, bases<Shape>, noncopyable> {
+    class_<tbm::Primitive> {
         "Primitive", "Shape of the primitive unit cell",
-        init<Cartesian, bool> {(arg("self"), "length", arg("nanometers")=false)}
+        init<size_t, size_t, size_t> {args("self", "a1"_kw=1, "a2"_kw=1, "a3"_kw=1)}
     };
 
     using tbm::Circle;

@@ -4,10 +4,11 @@
 using namespace boost::python;
 using tbm::Model;
 
-void export_core()
-{
+
+void export_core() {
     class_<Model>{"Model", "The main tight-binding interface object."}
     .def("add", &Model::set_lattice)
+    .def("add", &Model::set_primitive)
     .def("add", &Model::set_shape)
     .def("add", &Model::set_symmetry)
     .def("add", &Model::add_site_state_modifier)

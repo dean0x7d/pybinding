@@ -27,12 +27,11 @@ int System::find_nearest(Cartesian target_position, sub_id target_sublattice) co
     return nearest_index;
 }
 
-std::unique_ptr<System> build_system(Lattice const& lattice, Shape const& shape,
+std::unique_ptr<System> build_system(Foundation& foundation,
                                      SystemModifiers const& system_modifers,
                                      Symmetry const* symmetry) {
-    auto system = cpp14::make_unique<System>(lattice);
+    auto system = cpp14::make_unique<System>(foundation.lattice);
 
-    auto foundation = Foundation{lattice, shape};
     if (symmetry)
         foundation.apply(*symmetry);
 

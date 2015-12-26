@@ -7,6 +7,7 @@
 
 namespace tbm {
 
+class Primitive;
 class Shape;
 class Symmetry;
 struct Site;
@@ -17,11 +18,10 @@ struct Site;
  */
 class Foundation {
 public:
+    Foundation(Lattice const& lattice, Primitive const& shape);
     Foundation(Lattice const& lattice, Shape const& shape);
 
 private:
-    /// Return the foundation size required to hold the shape
-    static Index3D determine_size(Lattice const& lattice, Shape const& shape);
     /// Initialize the coordinates for each site
     void init_positions(Cartesian center);
     /// Initialize the neighbor count for each site
