@@ -1,57 +1,18 @@
 #include "system/Shape.hpp"
-#include "system/Lattice.hpp"
-
-#include <Eigen/Dense>  // for `colPivHouseholderQr()`
 
 namespace tbm {
 
-FS Polygon::foundation_size(Lattice const& lattice) const {
-    auto const ndim = lattice.vectors.size();
-    auto const lattice_matrix = [&]{
-        Eigen::MatrixXf m(ndim, ndim);
-        for (auto i = 0u; i < ndim; ++i) {
-            m.col(i) = lattice.vectors[i].head(ndim);
-        }
-        return m;
-    }();
+Polygon::Polygon(std::vector<Cartesian> const& bounding_points, Cartesian offset)
+    : Shape(bounding_points, offset)
+{
+    auto const size = bounding_points.size();
+    x.resize(size);
+    y.resize(size);
 
-    auto const num_sides = static_cast<int>(x.size());
-    Cartesian const center(x.sum() / num_sides, y.sum() / num_sides, .0f);
-
-    Cartesian mul = Cartesian::Zero();
-    Cartesian offset = Cartesian::Zero();
-
-    // loop over all sides of the polygon
-    for (int i = 0, j = num_sides - 1; i < num_sides; j = i++) {
-        Cartesian const side_vector(x[i] - x[j], y[i] - y[j], .0f);
-        Cartesian const side_center((x[i] + x[j]) / 2, (y[i] + y[j]) / 2, .0f);
-
-        // solve `A*x = b`, where A is lattice_matrix
-        auto const& b = side_vector.head(ndim);
-        VectorXf x = lattice_matrix.colPivHouseholderQr().solve(b);
-        mul.head(ndim) += x.cwiseAbs();
-
-        Cartesian t = Cartesian::Zero();
-        for (auto n = 0u; n < ndim; ++n) {
-            t += abs(x[n]) * lattice.vectors[n].cwiseAbs();
-        }
-        t.head(ndim) -= b.cwiseAbs();
-
-        auto diff = side_center.array() > center.array();
-        offset.head(ndim) += diff.select(t, -t);
+    for (auto i = 0u; i < size; ++i) {
+        x[i] = bounding_points[i].x();
+        y[i] = bounding_points[i].y();
     }
-    mul *= 0.5f;
-    offset *= 0.25f;
-
-    Index3D size = Index3D::Constant(1);
-    for (auto i = 0u; i < ndim; ++i) {
-        // integer number of lattice vectors, plus one site (fencepost error otherwise)
-        size[i] = static_cast<int>(std::ceil(mul[i])) + 1;
-        // make sure it's an odd number, so that (size - 1) / 2 is an integer
-        size[i] += !(size[i] % 2);
-    }
-
-    return {size, offset};
 }
 
 ArrayX<bool> Polygon::contains(CartesianArray const& positions) const {
@@ -86,32 +47,15 @@ ArrayX<bool> Polygon::contains(CartesianArray const& positions) const {
     return is_within;
 }
 
-Cartesian Polygon::center() const {
-    Cartesian center = Cartesian::Zero();
-    center.x() = (x.maxCoeff() + x.minCoeff()) / 2;
-    center.y() = (y.maxCoeff() + y.minCoeff()) / 2;
-
-    return center + offset;
-}
-
-Circle::Circle(float radius, Cartesian center)
-: radius{radius}, _center{center} {
-    x.resize(4);
-    x << .0f, 2 * radius, .0f, -2 * radius;
-    y.resize(4);
-    y << 2 * radius, .0f, -2 * radius, .0f;
-}
+Circle::Circle(float r, Cartesian c, Cartesian offset)
+    : Shape({{-r, -r, 0}, {-r, r, 0}, {r, r, 0}, {r, -r, 0}}, offset), radius(r), center(c) {}
 
 ArrayX<bool> Circle::contains(CartesianArray const& positions) const {
     ArrayX<bool> is_within(positions.size());
     for (auto i = 0; i < positions.size(); ++i) {
-        is_within[i] = (positions[i] - _center).norm() < radius;
+        is_within[i] = (positions[i] - center).norm() < radius;
     }
     return is_within;
-}
-
-Cartesian Circle::center() const {
-    return _center;
 }
 
 } // namespace tbm

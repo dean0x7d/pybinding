@@ -15,6 +15,7 @@ using std::sqrt;
 using Eigen::Ref;
 using Eigen::Map;
 using Eigen::DenseBase;
+using Eigen::Array3i;
 using Eigen::ArrayXi;
 using Eigen::ArrayXf;
 using Eigen::ArrayXcf;

@@ -19,21 +19,13 @@ class Polygon(_cpp.Polygon):
     """
 
     def __init__(self, vertices):
-        super().__init__()
-        self.vertices = vertices
+        if len(vertices) < 3:
+            raise ValueError("A polygon must have at least 3 sides")
+        super().__init__(vertices, [0, 0, 0])
 
     @property
     def vertices(self):
         return list(zip(self.x, self.y))
-
-    @vertices.setter
-    def vertices(self, vertices):
-        x, y = zip(*vertices)
-        if len(x) < 3:
-            raise ValueError("A polygon must have at least 3 sides")
-
-        self.x = np.array(x, dtype=np.float32)
-        self.y = np.array(y, dtype=np.float32)
 
     def plot(self, **kwargs):
         plt.plot(np.append(self.x, self.x[0]), np.append(self.y, self.y[0]),

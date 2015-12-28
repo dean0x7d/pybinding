@@ -132,17 +132,16 @@ void export_system() {
     using tbm::Circle;
     class_<Circle, bases<Shape>, noncopyable> {
         "Circle", "Perfect circle",
-        init<float, optional<Cartesian>> {
-            (arg("self"), "radius", "center")
-        }
+        init<float, optional<Cartesian>>{args("self", "radius", "center")}
     }
     .add_property("r", &Circle::radius, &Circle::radius)
-    .add_property("center", &Circle::_center, &Circle::_center)
+    .add_property("center", &Circle::center, &Circle::center)
     ;
     
     using tbm::Polygon;
     class_<Polygon, bases<Shape>, noncopyable> {
-        "Polygon", "Shape defined by a list of vertices", init<> {arg("self")}
+        "Polygon", "Shape defined by a list of vertices",
+        init<std::vector<Cartesian> const&, Cartesian> {args("self", "bounding_points", "offset")}
     }
     .add_property("x", copy_value(&Polygon::x), &Polygon::x)
     .add_property("y", copy_value(&Polygon::y), &Polygon::y)

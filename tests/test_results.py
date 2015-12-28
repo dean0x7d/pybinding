@@ -57,7 +57,7 @@ def test_spatial_map(model):
     assert len(spatial_map.pos.x) == 2 * len(tmp.pos.x)
 
     tmp = spatial_map.copy()
-    tmp.crop(x=(0, 0.2), y=(0, 0.2))
+    tmp.crop(x=(-0.1, 0.1), y=(0, 0.1))
     assert len(tmp.pos.x) == 1
 
 

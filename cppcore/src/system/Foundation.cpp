@@ -1,38 +1,84 @@
 #include "system/Foundation.hpp"
 #include "system/Shape.hpp"
 #include "system/Symmetry.hpp"
-using namespace tbm;
+
+#include <Eigen/Dense>  // for `colPivHouseholderQr()`
+
+
+namespace tbm {
 
 Foundation::Foundation(Lattice const& lattice, Primitive const& primitive)
-    : size_n(static_cast<int>(lattice.sublattices.size())), lattice(lattice) {
+    : lattice(lattice)
+{
     size = primitive.size;
+    size_n = static_cast<int>(lattice.sublattices.size());
+
+    auto const origin = [&]{
+        Cartesian width = Cartesian::Zero();
+        for (auto i = 0u; i < lattice.vectors.size(); ++i) {
+            width += static_cast<float>(size[i] - 1) * lattice.vectors[i];
+        }
+        return static_cast<Cartesian>( - width / 2);
+    }();
+
     num_sites = size.prod() * size_n;
-    init_positions(Cartesian::Zero());
+    init_positions(origin);
     is_valid.setConstant(num_sites, true);
     init_neighbor_count();
 }
 
 Foundation::Foundation(Lattice const& lattice, Shape const& shape)
-    : size_n(static_cast<int>(lattice.sublattices.size())), lattice(lattice) {
-    auto const fs = shape.foundation_size(lattice);
-    size = fs.size;
+    : lattice(lattice)
+{
+    auto const bounds = find_bounds(lattice, shape);
+    size = (bounds.second - bounds.first) + Index3D::Ones();
+    size_n = static_cast<int>(lattice.sublattices.size());
+
+    Cartesian origin = shape.offset;
+    for (auto i = 0u; i < lattice.vectors.size(); ++i) {
+        origin += static_cast<float>(bounds.first[i]) * lattice.vectors[i];
+    }
+
     num_sites = size.prod() * size_n;
-    init_positions(shape.center() + fs.offset);
+    init_positions(origin);
     is_valid = shape.contains(positions);
     init_neighbor_count();
 
     trim_edges();
 }
 
-void Foundation::init_positions(Cartesian center) {
-    auto origin = [&]{
-        Cartesian width = Cartesian::Zero();
-        for (auto i = 0u; i < lattice.vectors.size(); ++i) {
-            width += static_cast<float>(size[i] - 1) * lattice.vectors[i];
+std::pair<Index3D, Index3D> Foundation::find_bounds(Lattice const& lattice,
+                                                    Shape const& shape) {
+    auto const ndim = lattice.vectors.size();
+    auto const lattice_matrix = [&]{
+        Eigen::MatrixXf m(ndim, ndim);
+        for (auto i = 0u; i < ndim; ++i) {
+            m.col(i) = lattice.vectors[i].head(ndim);
         }
-        return static_cast<Cartesian>(center - width / 2);
+        return m;
     }();
 
+    Array3i lower_bound = Array3i::Constant(std::numeric_limits<int>::max());
+    Array3i upper_bound = Array3i::Constant(std::numeric_limits<int>::min());
+    for (auto const& point : shape.bounding_points) {
+        // Translate Cartesian coordinates `p` into lattice vector coordinates `v`
+        // -> solve `A*v = p`, where A is `lattice_matrix`
+        auto const& p = point.head(ndim);
+        Array3i v = Array3i::Zero();
+        v.head(ndim) = lattice_matrix.colPivHouseholderQr().solve(p).cast<int>();
+
+        lower_bound = (v < lower_bound).select(v, lower_bound);
+        upper_bound = (v > upper_bound).select(v, upper_bound);
+    }
+
+    // Add +/- 1 padding to compensate for `cast<int>()` truncation
+    lower_bound.head(ndim) -= 1;
+    upper_bound.head(ndim) += 1;
+
+    return {lower_bound, upper_bound};
+}
+
+void Foundation::init_positions(Cartesian origin) {
     positions.resize(num_sites);
     for_each_site([&](Site site) {
         positions[site.i] = calculate_position(site, origin);
@@ -115,3 +161,5 @@ int Foundation::finalize()
 
     return num_valid_sites;
 }
+
+} // namespace tbm

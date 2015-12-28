@@ -4,13 +4,6 @@
 
 namespace tbm {
 
-class Lattice;
-
-struct FS {
-    Index3D size;
-    Cartesian offset;
-};
-
 /**
  Shape of the primitive unit cell
  */
@@ -27,12 +20,14 @@ public:
  */
 class Shape {
 public:
+    Shape(std::vector<Cartesian> const& bounding_points, Cartesian offset)
+        : bounding_points(bounding_points), offset(offset) {}
+
     /// Return `true` for `positions` located within the shape
     virtual ArrayX<bool> contains(CartesianArray const& positions) const = 0;
-    /// Location of the shape center
-    virtual Cartesian center() const = 0;
-    /// Return the foundation size required to hold the shape
-    virtual FS foundation_size(Lattice const& lattice) const = 0;
+
+    std::vector<Cartesian> bounding_points;
+    Cartesian offset;
 };
 
 
@@ -41,29 +36,26 @@ public:
  */
 class Polygon : public Shape {
 public:
-    ArrayX<bool> contains(CartesianArray const& positions) const override;
-    Cartesian center() const override;
-    FS foundation_size(Lattice const& lattice) const override;
+    Polygon(std::vector<Cartesian> const& bounding_points, Cartesian offset);
 
-public:
+    ArrayX<bool> contains(CartesianArray const& positions) const override;
+
     ArrayX<float> x, y;
-    Cartesian offset;
 };
 
 
 /**
  Simple circle defined by radius and center coordinates
  */
-class Circle : public Polygon {
+class Circle : public Shape {
 public:
-    Circle(float radius, Cartesian center = Cartesian::Zero());
+    Circle(float radius, Cartesian center = Cartesian::Zero(),
+           Cartesian offset = Cartesian::Zero());
     
     ArrayX<bool> contains(CartesianArray const& positions) const final;
-    Cartesian center() const final;
 
-public:
     float radius;
-    Cartesian _center;
+    Cartesian center;
 };
 
 } // namespace tbm

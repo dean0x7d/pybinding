@@ -22,8 +22,10 @@ public:
     Foundation(Lattice const& lattice, Shape const& shape);
 
 private:
+    /// Return the lower and upper bound of the shape in lattice vector coordinates
+    static std::pair<Index3D, Index3D> find_bounds(Lattice const& lattice, Shape const& shape);
     /// Initialize the coordinates for each site
-    void init_positions(Cartesian center);
+    void init_positions(Cartesian origin);
     /// Initialize the neighbor count for each site
     void init_neighbor_count();
     /// Remove edge sites which have a neighbor count lower than the lattice minimum
