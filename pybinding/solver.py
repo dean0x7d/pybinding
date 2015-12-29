@@ -263,11 +263,19 @@ class Solver:
         >>> energies = np.array([0.1, 0.1, 0.2, 0.5, 0.5, 0.5, 0.7, 0.8, 0.8])
         >>> Solver.find_degenerate_states(energies)
         [[0, 1], [3, 4, 5], [7, 8]]
+
+        >>> energies = np.array([0.1, 0.2, 0.5, 0.7])
+        >>> Solver.find_degenerate_states(energies)
+        []
         """
+        # when:   energy == [0.1, 0.1, 0.2, 0.5, 0.5, 0.5, 0.7, 0.8, 0.8]
+        # ...     idx == [0, 3, 4, 7]
         idx = np.flatnonzero(abs(np.diff(energies)) < abs_tolerance)
-        # from doctest example: idx = [1, 0, 0, 1, 1, 0, 0, 1]
+        if idx.size == 0:
+            return []
         groups = np.split(idx, np.flatnonzero(np.diff(idx) != 1) + 1)
-        # from doctest example: groups = [[0], [3, 4], [7]]
+        # ...     groups == [[0], [3, 4], [7]]
+        # return: [[0, 1], [3, 4, 5], [7, 8]]
         return [list(g) + [g[-1] + 1] for g in groups]
 
 
