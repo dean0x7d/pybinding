@@ -40,9 +40,9 @@ public:
  */
 class Polygon : public Shape {
 public:
-    Polygon(std::vector<Cartesian> const& bounding_points, Cartesian offset);
+    Polygon(std::vector<Cartesian> const& vertices, Cartesian offset = Cartesian::Zero());
 
-    ArrayX<bool> contains(CartesianArray const& positions) const override;
+    ArrayX<bool> contains(CartesianArray const& positions) const final;
 
     ArrayX<float> x, y;
 };

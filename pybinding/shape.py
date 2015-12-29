@@ -18,18 +18,26 @@ class Polygon(_cpp.Polygon):
     ----------
     vertices : list of array_like
         Polygon vertices. Must be defined in clockwise or counterclockwise order.
+    offset : array_like
+        Offset of the lattice coordinate origin with relative to the shape origin.
     """
-
-    def __init__(self, vertices):
+    def __init__(self, vertices, offset=(0, 0, 0)):
         if len(vertices) < 3:
-            raise ValueError("A polygon must have at least 3 sides")
-        super().__init__(vertices, [0, 0, 0])
+            raise RuntimeError("A polygon must have at least 3 sides")
+        super().__init__(vertices, offset)
 
     @property
     def vertices(self):
         return list(zip(self.x, self.y))
 
     def plot(self, **kwargs):
+        """Line plot of the polygon
+
+        Parameters
+        ----------
+        **kwargs
+            Forwarded to `plt.plot()`.
+        """
         plt.plot(np.append(self.x, self.x[0]), np.append(self.y, self.y[0]),
                  **with_defaults(kwargs, color='black'))
         plt.axis('scaled')

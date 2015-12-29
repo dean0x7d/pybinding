@@ -1,8 +1,37 @@
 import pytest
 
+import math
 import numpy as np
 import pybinding as pb
 from pybinding.repository import graphene
+
+
+polygons = {
+    'triangle': pb.regular_polygon(3, radius=1.1),
+    'triangle90': pb.regular_polygon(3, radius=1.1, angle=math.pi/2),
+    'diamond': pb.regular_polygon(4, radius=1),
+    'square': pb.regular_polygon(4, radius=1, angle=math.pi/4),
+    'pentagon': pb.regular_polygon(5, radius=1),
+}
+
+
+@pytest.fixture(scope='module', ids=list(polygons.keys()), params=polygons.values())
+def polygon(request):
+    return request.param
+
+
+def test_polygon_api():
+    with pytest.raises(RuntimeError) as excinfo:
+        pb.Polygon([0, 0], [0, 1])
+    assert "at least 3 sides" in str(excinfo.value)
+
+
+def test_polygon(polygon, baseline, plot_if_fails):
+    model = pb.Model(graphene.lattice.monolayer(), polygon)
+    expected = baseline(model.system)
+    plot_if_fails(model.system, expected, 'plot')
+    plot_if_fails(polygon, polygon, 'plot')
+    assert pytest.fuzzy_equal(model.system, expected, 1.e-4, 1.e-6)
 
 
 def test_freeform(baseline, plot_if_fails):
@@ -19,10 +48,12 @@ def test_freeform(baseline, plot_if_fails):
          [-1, 1, 0], [-1, 1, 0], [-1, -1, 0], [-1, -1, 0]]
     )
 
-    model = pb.Model(graphene.lattice.monolayer(), donut(0.6, 1.1))
+    shape = donut(0.6, 1.1)
+    model = pb.Model(graphene.lattice.monolayer(), shape)
     expected = baseline(model.system)
     plot_if_fails(model.system, expected, 'plot')
-    assert pytest.fuzzy_equal(model.system, expected)
+    plot_if_fails(shape, shape, 'plot')
+    assert pytest.fuzzy_equal(model.system, expected, 1.e-4, 1.e-6)
 
 
 def test_freeform_plot():
