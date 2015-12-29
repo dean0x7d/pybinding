@@ -326,10 +326,6 @@ def parallelize(num_threads=num_cores, queue_size=num_cores, **kwargs):
         Variables which will be iterated over in :func:`parallel_for`
         and passed to the decorated function. See example.
 
-    Returns
-    -------
-    Factory
-
     Examples
     --------
     ::

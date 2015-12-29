@@ -40,6 +40,18 @@ public:
     }
 };
 
+class PyShape : public tbm::Shape, public wrapper<tbm::Shape> {
+public:
+    using tbm::Shape::Shape;
+
+    ArrayX<bool> contains(CartesianArray const& p) const final {
+        object result = get_override("contains")(
+            DenseURef{p.x}, DenseURef{p.y}, DenseURef{p.z}
+        );
+        return extract<ArrayX<bool>>{result}();
+    }
+};
+
 void export_system() {
     using tbm::System;
     using Boundary = tbm::System::Boundary;
@@ -120,32 +132,27 @@ void export_system() {
     .enable_pickling()
     .def("__getinitargs__", [](Lattice const& l) { return l.vectors; })
     ;
-    
-    using tbm::Shape;
-    class_<Shape, noncopyable> {"Shape", no_init};
-    
+
     class_<tbm::Primitive> {
         "Primitive", "Shape of the primitive unit cell",
         init<size_t, size_t, size_t> {args("self", "a1"_kw=1, "a2"_kw=1, "a3"_kw=1)}
     };
 
-    using tbm::Circle;
-    class_<Circle, bases<Shape>, noncopyable> {
-        "Circle", "Perfect circle",
-        init<float, optional<Cartesian>>{args("self", "radius", "center")}
+    using tbm::Shape;
+    class_<PyShape, noncopyable> {"Shape",
+        init<std::vector<Cartesian> const&, Cartesian> {args("self", "bbox_vertices", "offset")}
     }
-    .add_property("r", &Circle::radius, &Circle::radius)
-    .add_property("center", &Circle::center, &Circle::center)
+    .add_property("bbox_vertices", copy_value(&PyShape::bbox_vertices))
+    .add_property("offset", copy_value(&PyShape::bbox_vertices))
     ;
-    
+
     using tbm::Polygon;
     class_<Polygon, bases<Shape>, noncopyable> {
         "Polygon", "Shape defined by a list of vertices",
-        init<std::vector<Cartesian> const&, Cartesian> {args("self", "bounding_points", "offset")}
+        init<std::vector<Cartesian> const&, Cartesian> {args("self", "bbox_vertices", "offset")}
     }
     .add_property("x", copy_value(&Polygon::x), &Polygon::x)
     .add_property("y", copy_value(&Polygon::y), &Polygon::y)
-    .add_property("offset", copy_value(&Polygon::offset), &Polygon::offset)
     ;
 
     using tbm::Symmetry;

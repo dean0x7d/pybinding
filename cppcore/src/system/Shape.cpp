@@ -2,16 +2,24 @@
 
 namespace tbm {
 
-Polygon::Polygon(std::vector<Cartesian> const& bounding_points, Cartesian offset)
-    : Shape(bounding_points, offset)
+Shape::Shape(std::vector<Cartesian> const& bbox_vertices, Cartesian offset)
+    : bbox_vertices(bbox_vertices), offset(offset)
 {
-    auto const size = bounding_points.size();
+    if (bbox_vertices.size() < 2)
+        throw std::logic_error("Shape: The bounding box must contain at least two vertices.");
+}
+
+
+Polygon::Polygon(std::vector<Cartesian> const& vertices, Cartesian offset)
+    : Shape(vertices, offset)
+{
+    auto const size = vertices.size();
     x.resize(size);
     y.resize(size);
 
     for (auto i = 0u; i < size; ++i) {
-        x[i] = bounding_points[i].x();
-        y[i] = bounding_points[i].y();
+        x[i] = vertices[i].x();
+        y[i] = vertices[i].y();
     }
 }
 
@@ -47,15 +55,29 @@ ArrayX<bool> Polygon::contains(CartesianArray const& positions) const {
     return is_within;
 }
 
-Circle::Circle(float r, Cartesian c, Cartesian offset)
-    : Shape({{-r, -r, 0}, {-r, r, 0}, {r, r, 0}, {r, -r, 0}}, offset), radius(r), center(c) {}
+FreeformShape::FreeformShape(ContainsFunc contains_func, Cartesian width,
+                             Cartesian center, Cartesian offset)
+    : Shape({}, offset), contains_func(contains_func)
+{
+    Cartesian base_vertex = center + 0.5 * width;
+    auto const x = base_vertex.x();
+    auto const y = base_vertex.y();
+    auto const z = base_vertex.z();
 
-ArrayX<bool> Circle::contains(CartesianArray const& positions) const {
-    ArrayX<bool> is_within(positions.size());
-    for (auto i = 0; i < positions.size(); ++i) {
-        is_within[i] = (positions[i] - center).norm() < radius;
-    }
-    return is_within;
+    bbox_vertices = {
+        {x,   y,  z},
+        {-x,  y,  z},
+        {x,  -y,  z},
+        {-x, -y,  z},
+        {x,   y, -z},
+        {-x,  y, -z},
+        {x,  -y, -z},
+        {-x, -y, -z}
+    };
+}
+
+ArrayX<bool> FreeformShape::contains(CartesianArray const& positions) const {
+    return contains_func(positions);
 }
 
 } // namespace tbm

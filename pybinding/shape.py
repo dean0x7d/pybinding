@@ -1,3 +1,5 @@
+import itertools
+
 import numpy as np
 import matplotlib.pyplot as plt
 
@@ -5,7 +7,7 @@ from . import _cpp
 from . import pltutils
 from .utils import with_defaults
 
-__all__ = ['Polygon', 'primitive', 'rectangle', 'regular_polygon', 'circle',
+__all__ = ['Polygon', 'FreeformShape', 'primitive', 'rectangle', 'regular_polygon', 'circle',
            'translational_symmetry']
 
 
@@ -35,10 +37,69 @@ class Polygon(_cpp.Polygon):
         pltutils.add_margin()
 
 
-class Circle(_cpp.Circle):
-    def plot(self, **kwargs):
-        plt.gca().add_artist(plt.Circle(tuple(self.center), self.r, fill=False,
-                                        **with_defaults(kwargs, color='black')))
+class FreeformShape(_cpp.Shape):
+    """Shape defined by a bounding box and a function
+
+    Parameters
+    ----------
+    contains : callable
+        The function which selects if a point is contained within the shape.
+    width : array_like
+        Width up to 3 dimensions which specifies the size of the bounding box.
+    center : array_like
+        The position of the center of the bounding box.
+    offset : array_like
+        Offset of the lattice coordinate origin with relative to the shape origin.
+    """
+    def __init__(self, contains, width, center=(0, 0, 0), offset=(0, 0, 0)):
+        width = np.atleast_1d(width)
+        width.resize(3)
+        center = np.atleast_1d(center)
+        center.resize(3)
+        # e.g. vertex == [x0, y0]
+        vertex = center + width / 2
+        # e.g. bbox_vertices == [(x0, y0), (x0, -y0), (-x0, y0), (-x0, -y0)]
+        bbox_vertices = list(itertools.product(*zip(vertex, -vertex)))
+
+        super().__init__(bbox_vertices, np.atleast_1d(offset))
+        self._contains = contains
+
+    def contains(self, x, y, z):
+        """Is the lattice site a position (x, y, z) located within the shape?
+
+        Parameters
+        ----------
+        x, y, z : np.ndarray
+
+        Returns
+        -------
+        np.ndarray
+        """
+        return self._contains(x, y, z)
+
+    def plot(self, resolution=(1000, 1000), **kwargs):
+        """Plot an lightly shaded silhouette of the freeform shape
+
+        This method only works for 2D shapes.
+
+        Parameters
+        ----------
+        resolution : Tuple[int, int]
+            The (x, y) pixel resolution of the generated shape image.
+        **kwargs
+            Forwarded to `plt.imshow()`.
+        """
+        if any(z != 0 for _, _, z in self.bbox_vertices):
+            raise RuntimeError("This method only works for 2D shapes.")
+
+        x, y, *_ = zip(*self.bbox_vertices)
+        xx, yy = np.meshgrid(np.linspace(min(x), max(x), resolution[0]),
+                             np.linspace(min(y), max(y), resolution[1]))
+        img = self.contains(xx, yy, 0)
+        img = np.ma.masked_array(img, np.logical_not(img))
+
+        plt.imshow(img, extent=(min(x), max(x), min(y), max(y)),
+                   **with_defaults(kwargs, cmap='gray', alpha=0.15))
         plt.axis('scaled')
         pltutils.despine(trim=True)
         pltutils.add_margin()
@@ -96,7 +157,10 @@ def circle(radius, center=(0, 0, 0)):
     center : array_like
         Position of the center.
     """
-    return Circle(radius, center)
+    def contains(x, y, z):
+        return np.sqrt(x**2 + y**2 + z**2) < radius
+
+    return FreeformShape(contains, [2 * radius, 2 * radius], center)
 
 
 def translational_symmetry(a1=True, a2=True, a3=True):

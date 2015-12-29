@@ -17,17 +17,21 @@ public:
 
 /**
  Abstract base shape
+
+ The bounding box (bbox) specifies the maximum area (or volume) where the shape will be
+ located. The entire bbox is filled with lattice sites and then the `contains` function
+ decides which of those sites are actually located within the desired shape.
+ It's like carving a sculpture from a block of stone.
  */
 class Shape {
 public:
-    Shape(std::vector<Cartesian> const& bounding_points, Cartesian offset)
-        : bounding_points(bounding_points), offset(offset) {}
+    Shape(std::vector<Cartesian> const& bbox_vertices, Cartesian offset);
 
     /// Return `true` for `positions` located within the shape
     virtual ArrayX<bool> contains(CartesianArray const& positions) const = 0;
 
-    std::vector<Cartesian> bounding_points;
-    Cartesian offset;
+    std::vector<Cartesian> bbox_vertices; ///< bounding box defined by its vertices
+    Cartesian offset; ///< offset of the lattice origin from the shape origin
 };
 
 
@@ -45,17 +49,20 @@ public:
 
 
 /**
- Simple circle defined by radius and center coordinates
+ Shape defined by a bounding box and a function
  */
-class Circle : public Shape {
+class FreeformShape : public Shape {
 public:
-    Circle(float radius, Cartesian center = Cartesian::Zero(),
-           Cartesian offset = Cartesian::Zero());
-    
-    ArrayX<bool> contains(CartesianArray const& positions) const final;
+    using ContainsFunc = std::function<ArrayX<bool>(CartesianArray const&)>;
 
-    float radius;
-    Cartesian center;
+    FreeformShape(ContainsFunc contains_func, Cartesian width,
+                  Cartesian center = Cartesian::Zero(),
+                  Cartesian offset = Cartesian::Zero());
+
+    ArrayX<bool> contains(CartesianArray const& positions) const override;
+
+private:
+    ContainsFunc contains_func;
 };
 
 } // namespace tbm
