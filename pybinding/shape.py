@@ -41,6 +41,8 @@ class Polygon(_cpp.Polygon):
         plt.plot(np.append(self.x, self.x[0]), np.append(self.y, self.y[0]),
                  **with_defaults(kwargs, color='black'))
         plt.axis('scaled')
+        plt.xlabel("x (nm)")
+        plt.ylabel("y (nm)")
         pltutils.despine(trim=True)
         pltutils.add_margin()
 
@@ -109,6 +111,8 @@ class FreeformShape(_cpp.Shape):
         plt.imshow(img, extent=(min(x), max(x), min(y), max(y)),
                    **with_defaults(kwargs, cmap='gray', alpha=0.15))
         plt.axis('scaled')
+        plt.xlabel("x (nm)")
+        plt.ylabel("y (nm)")
         pltutils.despine(trim=True)
         pltutils.add_margin()
 
