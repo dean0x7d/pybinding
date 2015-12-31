@@ -46,7 +46,7 @@ def test_eigenvalues(solver, baseline, plot_if_fails):
     eig = solver.calc_eigenvalues(map_probability_at=(0, 0))
     expected = baseline(eig)
     plot_if_fails(eig, expected, 'plot_heatmap')
-    assert pytest.fuzzy_equal(eig, expected, 2.e-2, 1.e-6)
+    assert pytest.fuzzy_equal(eig, expected, 2.e-2, 1.e-5)
 
 
 def test_dos(solver, baseline, plot_if_fails):
