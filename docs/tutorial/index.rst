@@ -19,3 +19,4 @@ pick up on the fly.
     lattice
     bands
     finite
+    shape_symmetry
