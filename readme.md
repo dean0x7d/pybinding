@@ -1,5 +1,6 @@
 # pybinding
 
+[![Documentation Status](https://readthedocs.org/projects/pybinding/badge/?version=latest)](http://pybinding.readthedocs.org/en/latest/?badge=latest)
 [![Build Status](https://travis-ci.org/dean0x7d/pybinding.svg?branch=develop)](https://travis-ci.org/dean0x7d/pybinding)
 
 Pybinding is a Python package for numerical tight-binding calculations in solid state physics.
@@ -24,4 +25,5 @@ with low memory usage.
 
 ### Current status: Alpha
 
-Preparing documentation in anticipation of the first beta release.
+Preparing the [documentation](http://pybinding.readthedocs.org/) in anticipation of the first
+beta release.

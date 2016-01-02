@@ -10,8 +10,10 @@ in the package, see the API Reference.
     This user guide is still a work in progress.
 
 
+Table of Contents
+-----------------
+
 .. toctree::
-    :caption: Contents
     :maxdepth: 2
 
     intro
@@ -19,11 +21,5 @@ in the package, see the API Reference.
     examples/index
     api/index
 
-
-Indices and tables
-==================
-
 * :ref:`genindex`
-* :ref:`modindex`
-* :ref:`search`
 

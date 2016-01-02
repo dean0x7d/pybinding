@@ -273,7 +273,7 @@ def get_palette(name=None, num_colors=8, start=0):
 
     from itertools import cycle, islice
     palette = list(islice(cycle(palette), start, start + num_colors))
-    return palette
+    return [list(color) for color in palette]
 
 
 def set_palette(name=None, num_colors=8, start=0):

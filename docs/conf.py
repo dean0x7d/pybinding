@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 import sys
 import os
+import pybinding as pb
 
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
@@ -41,9 +42,8 @@ plot_pre_code = """
 import pybinding as pb
 import numpy as np
 import matplotlib.pyplot as plt
-
-pb.pltutils.use_style()
 """
+plot_rcparams = pb.pltutils.pb_style
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
@@ -61,7 +61,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = 'pybinding'
-copyright = '2015, Dean Moldovan'
+copyright = '2016, Dean Moldovan'
 author = 'Dean Moldovan'
 
 # The version info for the project you're documenting, acts as replacement for
