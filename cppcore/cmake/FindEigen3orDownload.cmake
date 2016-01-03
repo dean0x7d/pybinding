@@ -21,10 +21,14 @@ if (NOT EIGEN3_FOUND)
 
     if(NOT EXISTS ${EIGEN3_INCLUDE_DIR})
         message(STATUS "Downloading Eigen3...")
+        set(url "https://bitbucket.org/eigen/eigen/get/${EIGEN3_VERSION}.tar.gz")
         set(tmp_dir "${dependencies_dir}/tmp")
         set(tar_file "${tmp_dir}/eigen.tar.gz")
-        file(DOWNLOAD "https://bitbucket.org/eigen/eigen/get/${EIGEN3_VERSION}.tar.gz"
-             ${tar_file})
+        file(DOWNLOAD ${url} ${tar_file} STATUS status)
+	
+    	if(status)
+    		execute_process(COMMAND wget -q -O ${tar_file} ${url})
+    	endif()
 
         # extract downloaded tar file
         execute_process(COMMAND ${CMAKE_COMMAND} -E tar xzf ${tar_file}
