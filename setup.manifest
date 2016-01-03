@@ -1,4 +1,5 @@
 include readme.md license.md
 recursive-include tests *.py *.pbz *.png
+recursive-include docs *.py *.rst
 global-include CMakeLists.txt *.cmake *.hpp *.cpp
 prune cppcore/deps

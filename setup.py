@@ -39,24 +39,27 @@ class CMakeBuild(build_ext):
             extfulldir = os.path.abspath(os.path.dirname(extpath))
             cmake_args = ['-DCMAKE_LIBRARY_OUTPUT_DIRECTORY=' + extfulldir,
                           '-DPYTHON_EXECUTABLE=' + sys.executable]
+            build_args = ['--config', 'Release']
 
             if platform.system() == "Windows":
                 cmake_args += ['-DCMAKE_LIBRARY_OUTPUT_DIRECTORY_RELEASE=' + extfulldir,
                                '-G', 'Visual Studio 14 2015 Win64']
+            else:
+                build_args += ['--', '-j2']
 
             subprocess.check_call(['cmake', cmake_dir] + cmake_args, cwd=build_dir)
-            subprocess.check_call(['cmake', '--build', '.', '--config', 'Release'], cwd=build_dir)
+            subprocess.check_call(['cmake', '--build', '.'] + build_args, cwd=build_dir)
 
 
 manifest_maker.template = "setup.manifest"
 setup(
     name='pybinding',
-    version='0.6.0',
-    description='Python tight-binding package',
+    version='0.6.0.dev1',
+    description='Package for tight-binding calculations',
     long_description='',
     url='https://github.com/dean0x7d/pybinding',
     license='BSD',
-    keywords='pybinding tight-binding physics cmt',
+    keywords='pybinding tight-binding solid-state physics cmt',
 
     author='Dean Moldovan',
     author_email='dean.moldovan@uantwerpen.be',
@@ -69,8 +72,8 @@ setup(
         'Programming Language :: C++',
         'Programming Language :: Python :: 3 :: Only',
         'Programming Language :: Python :: 3.4',
+        'Programming Language :: Python :: 3.5',
         'Programming Language :: Python :: Implementation :: CPython',
-
     ],
 
     packages=find_packages(exclude=['cppcore', 'cppwrapper', 'test*']),
