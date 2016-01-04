@@ -51,19 +51,29 @@ class CMakeBuild(build_ext):
             subprocess.check_call(['cmake', '--build', '.'] + build_args, cwd=build_dir)
 
 
+def about(package):
+    ret = {}
+    filename = os.path.join(os.path.dirname(__file__), package, "__about__.py")
+    with open(filename, 'rb') as file:
+        exec(compile(file.read(), filename, 'exec'), ret)
+    return ret
+
+
+info = about("pybinding")
 manifest_maker.template = "setup.manifest"
 setup(
-    name='pybinding',
-    version='0.6.0.dev1',
-    description='Package for tight-binding calculations',
-    long_description='',
-    url='https://github.com/dean0x7d/pybinding',
-    license='BSD',
-    keywords='pybinding tight-binding solid-state physics cmt',
+    name=info['__title__'],
+    version=info['__version__'],
+    description=info['__summary__'],
+    long_description="Documentation: http://pybinding.readthedocs.org/",
+    url=info['__url__'],
+    license=info['__license__'],
+    keywords="pybinding tight-binding solid-state physics cmt",
 
-    author='Dean Moldovan',
-    author_email='dean.moldovan@uantwerpen.be',
+    author=info['__author__'],
+    author_email=info['__email__'],
 
+    platforms=['Unix', 'Windows'],
     classifiers=[
         'Development Status :: 3 - Alpha',
         'Intended Audience :: Science/Research',
