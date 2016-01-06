@@ -135,7 +135,7 @@ void export_system() {
 
     class_<tbm::Primitive> {
         "Primitive", "Shape of the primitive unit cell",
-        init<size_t, size_t, size_t> {args("self", "a1"_kw=1, "a2"_kw=1, "a3"_kw=1)}
+        init<int, int, int> {args("self", "a1"_kw=1, "a2"_kw=1, "a3"_kw=1)}
     };
 
     using tbm::Shape;

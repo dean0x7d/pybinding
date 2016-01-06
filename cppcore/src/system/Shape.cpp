@@ -1,6 +1,16 @@
 #include "system/Shape.hpp"
 
+
 namespace tbm {
+
+Primitive::Primitive(int a1, int a2, int a3)
+    : size(a1, a2, a3)
+{
+    if (any_of(size.array() <= 0)) {
+        throw std::logic_error("Primitive: The size must be at least 1 in every direction.");
+    }
+}
+
 
 Shape::Shape(std::vector<Cartesian> const& bbox_vertices, Cartesian offset)
     : bbox_vertices(bbox_vertices), offset(offset)

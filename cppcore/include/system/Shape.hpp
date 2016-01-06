@@ -9,7 +9,7 @@ namespace tbm {
  */
 class Primitive {
 public:
-    Primitive(size_t a1 = 1, size_t a2 = 1, size_t a3 = 1) : size(a1, a2, a3) {}
+    Primitive(int a1 = 1, int a2 = 1, int a3 = 1);
 
     Index3D size;
 };
