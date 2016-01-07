@@ -258,7 +258,7 @@ def get_palette(name=None, num_colors=8, start=0):
     List
     """
     if not name:
-        return mpl.rcParams["axes.color_cycle"]
+        return [x['color'] for x in mpl.rcParams["axes.prop_cycle"]]
 
     brewer = dict(Set1=9, Set2=8, Set3=12, Pastel1=9, Pastel2=8, Accent=8, Dark2=8, Paired=12)
     if name in brewer:
