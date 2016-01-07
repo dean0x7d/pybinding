@@ -17,7 +17,7 @@ Table of Contents
     :maxdepth: 2
 
     intro
-    install
+    install/index
     tutorial/index
     examples/index
     api/index
