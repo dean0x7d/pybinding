@@ -75,8 +75,23 @@ elseif(${CMAKE_CXX_COMPILER_ID} STREQUAL Intel)
 elseif(${CMAKE_CXX_COMPILER_ID} STREQUAL MSVC)
 endif()
 
-if(WIN32)
-    target_compile_options(pybinding_cppcore PRIVATE /W3)
-else()
-    target_compile_options(pybinding_cppcore PRIVATE -Wall -Wextra)
-endif()
+
+option(PB_WERROR "Make all warnings into errors" OFF)
+
+function(set_higher_warning_level TARGET)
+    if(WIN32)
+        target_compile_options(${TARGET} PRIVATE /W3)
+    else()
+        target_compile_options(${TARGET} PRIVATE -Wall -Wextra)
+    endif()
+
+    if(PB_WERROR OR DEFINED ENV{PB_WERROR})
+        if(WIN32)
+            target_compile_options(${TARGET} PRIVATE /WX)
+        else()
+            target_compile_options(${TARGET} PRIVATE -Werror)
+        endif()
+    endif()
+endfunction()
+
+set_higher_warning_level(pybinding_cppcore)

@@ -6,5 +6,5 @@ elif [ "$TRAVIS_OS_NAME" = "osx" ]; then
     export CXX=clang++ CC=clang
 fi
 
-export CMAKE_CXX_FLAGS=-Werror
+export PB_WERROR=1  # make warnings into errors
 export MAKEFLAGS=-j2
