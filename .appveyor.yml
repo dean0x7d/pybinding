@@ -1,0 +1,15 @@
+version: '{build}'
+os: Visual Studio 2015
+environment:
+  PATH: C:\Miniconda35-x64\Scripts\;%PATH%
+  PB_WERROR: 1
+install:
+  - cmd: git submodule update -q --init --recursive
+  - cmd: conda update -y -q conda
+  - cmd: conda create -y -q -n pb35 python=3.5 numpy scipy matplotlib
+  - cmd: activate pb35
+build_script:
+- cmd: python setup.py build_ext
+- cmd: python setup.py install > nul
+test_script:
+- cmd: py.test
