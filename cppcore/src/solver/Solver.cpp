@@ -2,9 +2,14 @@
 #include "support/physics.hpp"
 using namespace tbm;
 
-void Solver::set_model(Model const& new_model) {
+
+BaseSolver::BaseSolver(Model const& model, MakeStrategy const& make_strategy)
+    : model(model), make_strategy(make_strategy), strategy(make_strategy(model)) {}
+
+void BaseSolver::set_model(Model const& new_model) {
     is_solved = false;
     model = new_model;
+
     if (strategy) {
         // try to assign a new Hamiltonian to the existing Solver strategy
         bool success = strategy->set_hamiltonian(model.hamiltonian());
@@ -14,10 +19,10 @@ void Solver::set_model(Model const& new_model) {
 
     // creates a SolverStrategy with a scalar type suited to the Hamiltonian
     if (!strategy)
-        strategy = create_strategy_for(model.hamiltonian());
+        strategy = make_strategy(model);
 }
 
-void Solver::solve() {
+void BaseSolver::solve() {
     if (is_solved)
         return;
 
@@ -28,17 +33,17 @@ void Solver::solve() {
     is_solved = true;
 }
 
-DenseURef Solver::eigenvalues() {
+DenseURef BaseSolver::eigenvalues() {
     solve();
     return strategy->eigenvalues();
 }
 
-DenseURef Solver::eigenvectors() {
+DenseURef BaseSolver::eigenvectors() {
     solve();
     return strategy->eigenvectors();
 }
 
-ArrayXd Solver::calc_dos(ArrayXf target_energies, float broadening) {
+ArrayXd BaseSolver::calc_dos(ArrayXf target_energies, float broadening) {
     ArrayXd dos(target_energies.size());
 
     // TODO: also handle <double>
@@ -55,7 +60,7 @@ ArrayXd Solver::calc_dos(ArrayXf target_energies, float broadening) {
     return dos;
 }
 
-ArrayXd Solver::calc_spatial_ldos(float target_energy, float broadening) {
+ArrayXd BaseSolver::calc_spatial_ldos(float target_energy, float broadening) {
     auto const& sys = *system();
     auto const system_size = sys.num_sites();
     ArrayXd ldos = ArrayXd::Zero(system_size);
@@ -83,6 +88,6 @@ ArrayXd Solver::calc_spatial_ldos(float target_energy, float broadening) {
     return ldos;
 }
 
-std::string Solver::report(bool shortform) const {
+std::string BaseSolver::report(bool shortform) const {
     return strategy->report(shortform) + " " + calculation_timer.str();
 }

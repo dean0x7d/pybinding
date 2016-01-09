@@ -1,5 +1,8 @@
 #pragma once
 #include "Model.hpp"
+#include "hamiltonian/Hamiltonian.hpp"
+
+#include "detail/strategy.hpp"
 
 #include "utils/Chrono.hpp"
 #include "utils/Log.hpp"
@@ -7,12 +10,7 @@
 #include "support/dense.hpp"
 #include "support/thread.hpp"
 
-#include <memory>
-
 namespace tbm {
-
-class Hamiltonian;
-template <class scalar_t> class HamiltonianT;
 
 /**
  Abstract base class for Green's function strategy.
@@ -60,41 +58,45 @@ protected:
     std::shared_ptr<const HamiltonianT<scalar_t>> hamiltonian; ///< the Hamiltonian to solve
 };
 
-
 /**
  Green's function calculation interface.
  Internally it uses a GreensStrategy with the scalar of the given Hamiltonian.
- Derived classes must implement create_strategy_for(hamiltonian).
  */
-class Greens {
-public:
-    virtual ~Greens() = default;
+class BaseGreens {
+    using MakeStrategy = std::function<std::unique_ptr<GreensStrategy>(Model const&)>;
 
 public:
     void set_model(Model const&);
     Model const& get_model() const { return model; }
     std::shared_ptr<System const> system() const { return model.system(); }
 
-    /// Get some information about what happened during the last calculation
-    std::string report(bool shortform) const {
-        return strategy ? strategy->report(shortform) + " " + calculation_timer.str() : "";
-    }
-
-    ArrayXcf calc_greens(int i, int j, ArrayXf energy, float broadening);
+    ArrayXcf calc_greens(int i, int j, ArrayXf energy, float broadening) const;
     ArrayXf calc_ldos(ArrayXf energy, float broadening,
-                      Cartesian position, sub_id sublattice = -1);
+                      Cartesian position, sub_id sublattice = -1) const;
     Deferred<ArrayXf> deferred_ldos(ArrayXf energy, float broadening,
-                                    Cartesian position, sub_id sublattice = -1);
+                                    Cartesian position, sub_id sublattice = -1) const;
+
+    /// Get some information about what happened during the last calculation
+    std::string report(bool shortform) const;
 
 protected:
-    /// Create a new Green's strategy object for the given Hamiltonian
-    virtual std::unique_ptr<GreensStrategy>
-        create_strategy_for(const std::shared_ptr<const Hamiltonian>&) const = 0;
+    BaseGreens(Model const& model, MakeStrategy const& make_strategy);
 
-protected:
+private:
     Model model;
+    MakeStrategy make_strategy;
     std::unique_ptr<GreensStrategy> strategy;
-    Chrono calculation_timer; ///< last calculation time
+    mutable Chrono calculation_timer; ///< last calculation time
+};
+
+template<template<class> class Strategy>
+class Greens : public BaseGreens {
+    using Config = typename Strategy<float>::Config;
+    using MakeStrategy = detail::MakeStrategy<GreensStrategy, Strategy>;
+
+public:
+    explicit Greens(Model const& model, Config const& config = {})
+        : BaseGreens(model, MakeStrategy(config)) {}
 };
 
 } // namespace tbm

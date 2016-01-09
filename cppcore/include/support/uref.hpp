@@ -56,9 +56,9 @@ namespace detail {
 
 template<class Derived>
 Eigen::Map<const Derived> uref_cast(const DenseURef& u) {
-    if (u.type != detail::get_type<typename Derived::Scalar>())
+    if (u.type != ::detail::get_type<typename Derived::Scalar>())
         throw std::logic_error{"eigen_cast(DenseURef) - wrong scalar type selected"};
-    return detail::make_map<Derived>::exec(u);
+    return ::detail::make_map<Derived>::exec(u);
 }
 
 struct SparseURef {

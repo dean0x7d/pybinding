@@ -30,10 +30,10 @@ struct FEASTConfig {
 };
 
 /**
- Implementation of the FEASTStrategy eigensolver.
+ Implementation of the FEAST eigensolver
  */
 template<class scalar_t>
-class FEASTStrategy : public SolverStrategyT<scalar_t> {
+class FEAST : public SolverStrategyT<scalar_t> {
     using real_t = num::get_real_t<scalar_t>;
     using complex_t = num::get_complex_t<scalar_t>;
 
@@ -51,7 +51,8 @@ public:
     };
     
 public:
-    explicit FEASTStrategy(const FEASTConfig& config) : config(config) {}
+    using Config = FEASTConfig;
+    explicit FEAST(Config const& config) : config(config) {}
 
 public: // overrides
     // map eigenvalues and wavefunctions to only expose results up to the usable subspace size
@@ -75,7 +76,7 @@ private: // implementation
 
 private:
     int	fpm[128]; ///< FEAST init parameters
-    FEASTConfig config;
+    Config config;
     Info info;
     ArrayX<real_t> residual; ///< relative residual
 
@@ -85,52 +86,10 @@ protected: // declared used inherited members (template class requirement)
     using SolverStrategyT<scalar_t>::hamiltonian;
 };
 
-
-/**
- FEAST eigensolver.
- */
-class FEAST : public Solver {
-public: // construction and configuration
-    static constexpr auto defaults = FEASTConfig{};
-    
-    /**
-     Find the eigenvalues and eigenvectors in the given energy range.
-     
-     @param energy_range Where to look for eigenvalues.
-     @param initial_size_guess A guess for the number of eigenvalues in the energy range.
-                               The optimal value should be 50% bigger than final subspace size.
-     @param recycle_subspace Reuse previous results as initial data for the solver.
-     @param is_verbose Activate FEAST solver info (prints directly to stdout).
-     */
-    FEAST(Model const& model,
-          std::pair<double, double> energy_range,
-          int initial_size_guess,
-          bool recycle_subspace = defaults.recycle_subspace,
-          bool is_verbose = defaults.is_verbose,
-          FEASTConfig const& c = {})
-        : config(c) {
-        config.energy_min = static_cast<float>(energy_range.first);
-        config.energy_max = static_cast<float>(energy_range.second);
-        config.initial_size_guess = initial_size_guess;
-        config.recycle_subspace = recycle_subspace;
-        config.is_verbose = is_verbose;
-
-        set_model(model);
-    }
-
-    // required implementation
-    virtual std::unique_ptr<SolverStrategy>
-        create_strategy_for(const std::shared_ptr<const Hamiltonian>&) const override;
-
-private:
-    FEASTConfig config;
-};
+extern template class tbm::FEAST<float>;
+extern template class tbm::FEAST<std::complex<float>>;
+//extern template class tbm::FEAST<double>;
+//extern template class tbm::FEAST<std::complex<double>>;
 
 } // namespace tbm
-#else
-namespace tbm {
-    struct _SuppressFEASThasNoSymbolsWarning {
-        _SuppressFEASThasNoSymbolsWarning();
-    };
-}
 #endif // TBM_USE_FEAST

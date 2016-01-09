@@ -3,7 +3,7 @@
 #include <type_traits>
 
 // helper functions for use until C++14 brings this into std
-namespace cpp14 {
+namespace tbm { namespace cpp14 {
 
 template<class T, class... Args>
 std::unique_ptr<T> make_unique(Args&&... args) {
@@ -23,4 +23,4 @@ auto cend(const T& t) -> decltype(t.cend()) {
 template <bool condition, class T = void>
 using enable_if_t = typename std::enable_if<condition, T>::type;
 
-} // end namespace cpp14
+}} // end namespace tbm::cpp14

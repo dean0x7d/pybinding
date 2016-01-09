@@ -1,21 +1,8 @@
 #pragma once
-#ifdef _MSC_VER
-# pragma warning(disable: 4579) // in-class static constexpr cannot be used at runtime
-#endif
-
 #include "greens/Greens.hpp"
 #include "support/sparse.hpp"
 
 namespace tbm { namespace kpm {
-
-struct Config {
-    float lambda = 4.0f; ///< controls the accuracy of the kernel polynomial method
-    float min_energy = 0.0f; ///< lowest eigenvalue of the Hamiltonian
-    float max_energy = 0.0f; ///< highest eigenvalue of the Hamiltonian
-
-    int optimization_level = 2; ///< 0 to 2, higher levels apply more complex optimizations
-    float lanczos_precision = 0.002f; ///< how precise should the min/max energy estimation be
-};
 
 /**
  Computes and stores the energy bounds (min and max energy)
@@ -128,28 +115,41 @@ private:
     std::string long_report;
 };
 
+} // namespace kpm
+
+
+struct KPMConfig {
+    float lambda = 4.0f; ///< controls the accuracy of the kernel polynomial method
+    float min_energy = 0.0f; ///< lowest eigenvalue of the Hamiltonian
+    float max_energy = 0.0f; ///< highest eigenvalue of the Hamiltonian
+
+    int optimization_level = 2; ///< 0 to 2, higher levels apply more complex optimizations
+    float lanczos_precision = 0.002f; ///< how precise should the min/max energy estimation be
+};
+
 /**
  Kernel polynomial method for calculating Green's function
  */
 template<class scalar_t>
-class Strategy : public GreensStrategyT<scalar_t> {
+class KPM : public GreensStrategyT<scalar_t> {
     using real_t = num::get_real_t<scalar_t>;
     using complex_t = num::get_complex_t<scalar_t>;
 
 public:
-    explicit Strategy(const Config& config) : config(config) {}
+    using Config = KPMConfig;
+    explicit KPM(Config const& config);
 
 protected: // required implementation
-    virtual void hamiltonian_changed() override;
-    virtual ArrayXcf calculate(int i, int j, ArrayXf energy, float broadening) override;
-    virtual std::string report(bool shortform) const override;
+    void hamiltonian_changed() override;
+    ArrayXcf calculate(int i, int j, ArrayXf energy, float broadening) override;
+    std::string report(bool shortform) const override;
     
 private:
     /// Calculate the KPM Green's function moments
-    static ArrayX<scalar_t> calculate_moments(OptimizedHamiltonian<scalar_t> const& oh,
+    static ArrayX<scalar_t> calculate_moments(kpm::OptimizedHamiltonian<scalar_t> const& oh,
                                               int num_moments);
     /// Optimized `calculate_moments`: lower memory bandwidth requirements
-    static ArrayX<scalar_t> calculate_moments2(OptimizedHamiltonian<scalar_t> const& oh,
+    static ArrayX<scalar_t> calculate_moments2(kpm::OptimizedHamiltonian<scalar_t> const& oh,
                                                int num_moments);
     /// Put the kernel in *Kernel* polynomial method
     static void apply_lorentz_kernel(ArrayX<scalar_t>& moments, float lambda);
@@ -159,51 +159,17 @@ private:
 
 private:
     Config const config;
-    Bounds<scalar_t> bounds;
-    OptimizedHamiltonian<scalar_t> optimized_hamiltonian;
-
-    Stats stats;
+    kpm::Bounds<scalar_t> bounds;
+    kpm::OptimizedHamiltonian<scalar_t> optimized_hamiltonian;
+    kpm::Stats stats;
 
 protected: // declare used inherited members (template class requirement)
     using GreensStrategyT<scalar_t>::hamiltonian;
 };
 
-} // namespace tbm::kpm
+extern template class KPM<float>;
+extern template class KPM<std::complex<float>>;
+extern template class KPM<double>;
+extern template class KPM<std::complex<double>>;
 
-/**
- Concrete Greens for creating KPM objects.
- */
-class KPM : public Greens {
-public: // construction and configuration
-    using Config = kpm::Config;
-    static constexpr auto defaults = Config{};
-
-    KPM(Model const& model,
-        float lambda = defaults.lambda,
-        std::pair<float, float> energy_range = {defaults.min_energy, defaults.max_energy},
-        int optimization_level = defaults.optimization_level,
-        float lanczos_precision = defaults.lanczos_precision)
-    {
-        if (energy_range.first > energy_range.second)
-            throw std::invalid_argument{"KPM: Invalid energy range specified (min > max)."};
-        if (lambda <= 0)
-            throw std::invalid_argument{"KPM: Lambda must be positive."};
-
-        config.lambda = lambda;
-        config.min_energy = energy_range.first;
-        config.max_energy = energy_range.second;
-        config.optimization_level = optimization_level;
-        config.lanczos_precision = lanczos_precision;
-
-        set_model(model);
-    }
-
-protected: // required implementation
-    virtual std::unique_ptr<GreensStrategy>
-        create_strategy_for(const std::shared_ptr<const Hamiltonian>&) const override;
-
-private:
-    Config config = {};
-};
-    
 } // namespace tbm

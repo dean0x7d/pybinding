@@ -1,12 +1,11 @@
 #include "solver/FEAST.hpp"
 
 #ifdef TBM_USE_FEAST
-# include "hamiltonian/Hamiltonian.hpp"
 # include "support/format.hpp"
 using namespace tbm;
 
 template<class scalar_t>
-void FEASTStrategy<scalar_t>::solve() {
+void FEAST<scalar_t>::solve() {
     // size of the matrix
     config.system_size = hamiltonian->get_matrix().rows();
     // reset info flags
@@ -66,7 +65,7 @@ void FEASTStrategy<scalar_t>::solve() {
 }
 
 template<class scalar_t>
-std::string FEASTStrategy<scalar_t>::report(bool is_shortform) const {
+std::string FEAST<scalar_t>::report(bool is_shortform) const {
     using fmt::format;
     std::string report;
     
@@ -94,13 +93,13 @@ std::string FEASTStrategy<scalar_t>::report(bool is_shortform) const {
 }
 
 template<class scalar_t>
-void FEASTStrategy<scalar_t>::hamiltonian_changed() {
+void FEAST<scalar_t>::hamiltonian_changed() {
     if (!config.recycle_subspace)
         force_clear();
 }
 
 template<class scalar_t>
-void FEASTStrategy<scalar_t>::force_clear()
+void FEAST<scalar_t>::force_clear()
 {
     _eigenvalues.resize(0);
     _eigenvectors.resize(0, 0);
@@ -108,7 +107,7 @@ void FEASTStrategy<scalar_t>::force_clear()
 }
 
 template<class scalar_t>
-void FEASTStrategy<scalar_t>::init_feast()
+void FEAST<scalar_t>::init_feast()
 {
     feastinit(fpm);
     fpm[0] = config.is_verbose ? 1 : 0;
@@ -125,7 +124,7 @@ void FEASTStrategy<scalar_t>::init_feast()
 }
 
 template<class scalar_t>
-void FEASTStrategy<scalar_t>::init_pardiso()
+void FEAST<scalar_t>::init_pardiso()
 {
     fpm[63] = 0; // disabled
     int* iparm = &fpm[64];
@@ -168,7 +167,7 @@ void FEASTStrategy<scalar_t>::init_pardiso()
 }
 
 template<class scalar_t>
-void FEASTStrategy<scalar_t>::call_feast()
+void FEAST<scalar_t>::call_feast()
 {
     init_feast();
 //    init_pardiso();
@@ -194,13 +193,13 @@ void FEASTStrategy<scalar_t>::call_feast()
 }
 
 template<class scalar_t>
-void FEASTStrategy<scalar_t>::call_feast_impl()
+void FEAST<scalar_t>::call_feast_impl()
 {
     
 }
 
 template<>
-void FEASTStrategy<float>::call_feast_impl()
+void FEAST<float>::call_feast_impl()
 {
     const auto& h_matrix = hamiltonian->get_matrix();
     
@@ -234,7 +233,7 @@ void FEASTStrategy<float>::call_feast_impl()
 }
 
 template<>
-void FEASTStrategy<std::complex<float>>::call_feast_impl()
+void FEAST<std::complex<float>>::call_feast_impl()
 {
     const auto& h_matrix = hamiltonian->get_matrix();
     
@@ -267,37 +266,11 @@ void FEASTStrategy<std::complex<float>>::call_feast_impl()
     );
 }
 
-
-namespace {
-    template<class scalar_t>
-    std::unique_ptr<SolverStrategy> try_create_for(const std::shared_ptr<const Hamiltonian>& ham,
-                                                   const FEASTConfig& config) {
-        auto cast_ham = std::dynamic_pointer_cast<const HamiltonianT<scalar_t>>(ham);
-        if (!cast_ham)
-            return nullptr;
-
-        auto feast = cpp14::make_unique<FEASTStrategy<scalar_t>>(config);
-        feast->set_hamiltonian(cast_ham);
-
-        return std::move(feast);
-    }
-}
-
-std::unique_ptr<SolverStrategy>FEAST::create_strategy_for(
-    const std::shared_ptr<const Hamiltonian>& hamiltonian) const
-{
-    std::unique_ptr<SolverStrategy> new_solver;
-    
-    if (!new_solver) new_solver = try_create_for<float>(hamiltonian, config);
-    if (!new_solver) new_solver = try_create_for<std::complex<float>>(hamiltonian, config);
-//    if (!new_solver) new_solver = try_create_for<double>(hamiltonian, config);
-//    if (!new_solver) new_solver = try_create_for<std::complex<double>>(hamiltonian, config);
-    if (!new_solver)
-        throw std::runtime_error{"KPMFactory: unknown Hamiltonian type."};
-    
-    return new_solver;
-}
+template class tbm::FEAST<float>;
+template class tbm::FEAST<std::complex<float>>;
+//template class tbm::FEAST<double>;
+//template class tbm::FEAST<std::complex<double>>;
 
 #else // TBM_USE_FEAST
-tbm::_SuppressFEASThasNoSymbolsWarning::_SuppressFEASThasNoSymbolsWarning() {}
+void _suppress_FEAST_has_no_symbols_warning() {}
 #endif // TBM_USE_FEAST

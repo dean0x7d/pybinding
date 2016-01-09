@@ -1,6 +1,9 @@
 #pragma once
 #include "Model.hpp"
 #include "system/Lattice.hpp"
+#include "hamiltonian/Hamiltonian.hpp"
+
+#include "detail/strategy.hpp"
 
 #include "utils/Chrono.hpp"
 #include "utils/Log.hpp"
@@ -11,10 +14,6 @@
 #include <memory>
 
 namespace tbm {
-
-class System;
-class Hamiltonian;
-template <class scalar_t> class HamiltonianT;
 
 /**
  Abstract base class for an eigensolver
@@ -77,9 +76,8 @@ protected:
  This is an abstract base factory. The derived factories will need to
  implement the create_for(hamiltonian) method.
  */
-class Solver {
-public:
-    virtual ~Solver() = default;
+class BaseSolver {
+    using MakeStrategy = std::function<std::unique_ptr<SolverStrategy>(Model const&)>;
 
 public:
     void solve();
@@ -97,15 +95,25 @@ public:
     ArrayXd calc_spatial_ldos(float energy, float broadening);
 
 protected:
-    /// Create a new SolverStrategy object for this Hamiltonian
-    virtual std::unique_ptr<SolverStrategy>
-        create_strategy_for(const std::shared_ptr<const Hamiltonian>&) const = 0;
+    BaseSolver(Model const& model, MakeStrategy const& make_strategy);
 
-protected:
-    bool is_solved = false;
+private:
     Model model;
+    MakeStrategy make_strategy;
     std::unique_ptr<SolverStrategy> strategy;
-    Chrono calculation_timer; ///< last calculation time
+
+    bool is_solved = false;
+    mutable Chrono calculation_timer; ///< last calculation time
+};
+
+template<template<class> class Strategy>
+class Solver : public BaseSolver {
+    using Config = typename Strategy<float>::Config;
+    using MakeStrategy = detail::MakeStrategy<SolverStrategy, Strategy>;
+
+public:
+    explicit Solver(Model const& model, Config const& config = {})
+        : BaseSolver(model, MakeStrategy(config)) {}
 };
 
 } // namespace tbm

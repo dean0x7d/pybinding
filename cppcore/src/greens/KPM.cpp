@@ -1,5 +1,4 @@
 #include "greens/KPM.hpp"
-#include "hamiltonian/Hamiltonian.hpp"
 
 #include "compute/lanczos.hpp"
 #include "compute/kernel_polynomial.hpp"
@@ -170,7 +169,15 @@ double OptimizedHamiltonian<scalar_t>::optimized_area(int num_moments) const {
 
 
 template<class scalar_t>
-ArrayXcf Strategy<scalar_t>::calculate(int i, int j, ArrayXf energy, float broadening) {
+KPM<scalar_t>::KPM(Config const& config) : config(config) {
+    if (config.min_energy > config.max_energy)
+        throw std::invalid_argument{"KPM: Invalid energy range specified (min > max)."};
+    if (config.lambda <= 0)
+        throw std::invalid_argument{"KPM: Lambda must be positive."};
+}
+
+template<class scalar_t>
+ArrayXcf KPM<scalar_t>::calculate(int i, int j, ArrayXf energy, float broadening) {
     stats = {};
     auto timer = Chrono{};
 
@@ -213,8 +220,8 @@ ArrayXcf Strategy<scalar_t>::calculate(int i, int j, ArrayXf energy, float broad
 }
 
 template<class scalar_t>
-ArrayX<scalar_t> Strategy<scalar_t>::calculate_moments(OptimizedHamiltonian<scalar_t> const& oh,
-                                                       int num_moments) {
+ArrayX<scalar_t> KPM<scalar_t>::calculate_moments(OptimizedHamiltonian<scalar_t> const& oh,
+                                                  int num_moments) {
     auto const i = oh.optimized_idx.i;
     auto const j = oh.optimized_idx.j;
 
@@ -252,8 +259,8 @@ ArrayX<scalar_t> Strategy<scalar_t>::calculate_moments(OptimizedHamiltonian<scal
 }
 
 template<class scalar_t>
-ArrayX<scalar_t> Strategy<scalar_t>::calculate_moments2(OptimizedHamiltonian<scalar_t> const& oh,
-                                                        int num_moments) {
+ArrayX<scalar_t> KPM<scalar_t>::calculate_moments2(OptimizedHamiltonian<scalar_t> const& oh,
+                                                   int num_moments) {
     auto const i = oh.optimized_idx.i;
     auto const j = oh.optimized_idx.j;
 
@@ -294,7 +301,7 @@ ArrayX<scalar_t> Strategy<scalar_t>::calculate_moments2(OptimizedHamiltonian<sca
 }
 
 template<class scalar_t>
-void Strategy<scalar_t>::apply_lorentz_kernel(ArrayX<scalar_t>& moments, float lambda) {
+void KPM<scalar_t>::apply_lorentz_kernel(ArrayX<scalar_t>& moments, float lambda) {
     auto const N = moments.size();
 
     auto lorentz_kernel = [=](real_t n) { // n is real_t to get proper fp division
@@ -307,9 +314,8 @@ void Strategy<scalar_t>::apply_lorentz_kernel(ArrayX<scalar_t>& moments, float l
 }
 
 template<class scalar_t>
-auto Strategy<scalar_t>::calculate_greens(const ArrayX<real_t>& energy,
-                                          const ArrayX<scalar_t>& moments)
-                                          -> ArrayX<complex_t> {
+auto KPM<scalar_t>::calculate_greens(ArrayX<real_t> const& energy, ArrayX<scalar_t> const& moments)
+                                     -> ArrayX<complex_t> {
     // Note that this integer array has real type values
     ArrayX<real_t> ns{moments.size()};
     for (auto n = 0; n < ns.size(); ++n)
@@ -327,13 +333,13 @@ auto Strategy<scalar_t>::calculate_greens(const ArrayX<real_t>& energy,
 }
 
 template<class scalar_t>
-void Strategy<scalar_t>::hamiltonian_changed() {
+void KPM<scalar_t>::hamiltonian_changed() {
     bounds = {};
     optimized_hamiltonian = {};
 }
 
 template<class scalar_t>
-std::string Strategy<scalar_t>::report(bool is_shortform) const {
+std::string KPM<scalar_t>::report(bool is_shortform) const {
     return stats.report(is_shortform);
 }
 
@@ -394,32 +400,8 @@ void Stats::append(std::string short_str, std::string long_str, Chrono const& ti
     long_report += fmt::format(long_line, long_str, time);
 }
 
-namespace {
-    template<class scalar_t>
-    std::unique_ptr<GreensStrategy> try_create_for(std::shared_ptr<const Hamiltonian> const& ham,
-                                                   kpm::Config const& config) {
-        auto cast_ham = std::dynamic_pointer_cast<HamiltonianT<scalar_t> const>(ham);
-        if (!cast_ham)
-            return nullptr;
 
-        auto kpm_strategy = cpp14::make_unique<kpm::Strategy<scalar_t>>(config);
-        kpm_strategy->set_hamiltonian(cast_ham);
-
-        return std::move(kpm_strategy);
-    }
-}
-
-std::unique_ptr<GreensStrategy>
-KPM::create_strategy_for(const std::shared_ptr<const Hamiltonian>& hamiltonian) const
-{
-    std::unique_ptr<GreensStrategy> new_greens;
-    
-    if (!new_greens) new_greens = try_create_for<float>(hamiltonian, config);
-    if (!new_greens) new_greens = try_create_for<std::complex<float>>(hamiltonian, config);
-//    if (!new_greens) new_greens = try_create_for<double>(hamiltonian, config);
-//    if (!new_greens) new_greens = try_create_for<std::complex<double>>(hamiltonian, config);
-    if (!new_greens)
-        throw std::runtime_error{"KPM: unknown Hamiltonian type."};
-    
-    return new_greens;
-}
+template class tbm::KPM<float>;
+template class tbm::KPM<std::complex<float>>;
+//template class tbm::KPM<double>;
+//template class tbm::KPM<std::complex<double>>;

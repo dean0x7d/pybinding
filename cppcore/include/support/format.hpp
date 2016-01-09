@@ -43,13 +43,15 @@ inline void println(const std::string& str, bool flush = false) {
 inline std::string str(const std::string& s) { return s; }
 
 namespace detail {
+    using tbm::cpp14::enable_if_t;
+
     inline const char* norm_arg(const std::string& x) { return x.c_str(); }
 
-    template<class T> cpp14::enable_if_t<std::is_integral<T>::value, std::int64_t> norm_arg(T x) { return x; }
-    template<class T> cpp14::enable_if_t<std::is_floating_point<T>::value, double> norm_arg(T x) { return x; }
-    template<class T> cpp14::enable_if_t<std::is_pointer<T>::value, T> norm_arg(T x) { return x; }
+    template<class T> enable_if_t<std::is_integral<T>::value, std::int64_t> norm_arg(T x) { return x; }
+    template<class T> enable_if_t<std::is_floating_point<T>::value, double> norm_arg(T x) { return x; }
+    template<class T> enable_if_t<std::is_pointer<T>::value, T> norm_arg(T x) { return x; }
 
-    template<class T> cpp14::enable_if_t<
+    template<class T> enable_if_t<
         !std::is_integral<T>::value &&
         !std::is_floating_point<T>::value &&
         !std::is_pointer<T>::value,

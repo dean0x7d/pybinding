@@ -1,14 +1,16 @@
 #include "greens/Greens.hpp"
-#include "hamiltonian/Hamiltonian.hpp"
-
 #include "support/physics.hpp"
 
 using namespace tbm;
 using physics::pi;
 
 
-void Greens::set_model(Model const& new_model) {
+BaseGreens::BaseGreens(Model const& model, MakeStrategy const& make_strategy)
+    : model(model), make_strategy(make_strategy), strategy(make_strategy(model)) {}
+
+void BaseGreens::set_model(Model const& new_model) {
     model = new_model;
+
     if (strategy) {
         // try to assign a new Hamiltonian to the existing Green's strategy
         bool success = strategy->set_hamiltonian(model.hamiltonian());
@@ -18,10 +20,10 @@ void Greens::set_model(Model const& new_model) {
 
     // creates a Green's strategy with a scalar type suited to the Hamiltonian
     if (!strategy)
-        strategy = create_strategy_for(model.hamiltonian());
+        strategy = make_strategy(model);
 }
 
-ArrayXcf Greens::calc_greens(int i, int j, ArrayXf energy, float broadening) {
+ArrayXcf BaseGreens::calc_greens(int i, int j, ArrayXf energy, float broadening) const {
     auto const size = model.hamiltonian()->rows();
     if (i < 0 || i > size || j < 0 || j > size)
         throw std::logic_error{"KPM::calc_greens(i,j): invalid value for i or j."};
@@ -33,21 +35,17 @@ ArrayXcf Greens::calc_greens(int i, int j, ArrayXf energy, float broadening) {
     return greens_function;
 }
 
-ArrayXf Greens::calc_ldos(ArrayXf energy, float broadening,
-                          Cartesian position, sub_id sublattice)
-{
+ArrayXf BaseGreens::calc_ldos(ArrayXf energy, float broadening,
+                              Cartesian position, sub_id sublattice) const {
     auto i = model.system()->find_nearest(position, sublattice);
     auto greens_function = calc_greens(i, i, energy, broadening);
 
     return -1/pi * greens_function.imag();
 }
 
-Deferred<ArrayXf> Greens::deferred_ldos(ArrayXf energy, float broadening,
-                                        Cartesian position, sub_id sublattice)
-{
-    auto shared_strategy = std::shared_ptr<GreensStrategy>{
-        create_strategy_for(model.hamiltonian())
-    };
+Deferred<ArrayXf> BaseGreens::deferred_ldos(ArrayXf energy, float broadening,
+                                            Cartesian position, sub_id sublattice) const {
+    auto shared_strategy = std::shared_ptr<GreensStrategy>{make_strategy(model)};
     auto& model = this->model;
 
     return {
@@ -60,4 +58,8 @@ Deferred<ArrayXf> Greens::deferred_ldos(ArrayXf energy, float broadening,
             return shared_strategy->report(true);
         }
     };
+}
+
+std::string BaseGreens::report(bool shortform) const {
+    return strategy ? strategy->report(shortform) + " " + calculation_timer.str() : "";
 }
