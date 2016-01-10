@@ -3,15 +3,18 @@
 #include "system/Foundation.hpp"
 using namespace tbm;
 
-SymmetrySpec Translational::build_for(const Foundation& foundation) const
-{
-    auto s = SymmetrySpec{};
-    s.left.setZero();
-    s.right = foundation.size.array() - 1;
-    s.middle.setZero();
+bool SymmetryArea::contains(Index3D const& index) const {
+    return all_of(left.array() <= index.array()) && all_of(index.array() <= right.array());
+}
+
+SymmetryArea Symmetry::area(Foundation const& foundation) const {
+    SymmetryArea a;
+    a.left.setZero();
+    a.right = foundation.size.array() - 1;
+    a.middle.setZero();
 
     // see if we have periodicities in any of the lattice vector directions
-    for (std::size_t n = 0; n < foundation.lattice.vectors.size(); ++n) {
+    for (auto n = 0u; n < foundation.lattice.vectors.size(); ++n) {
         if (length[n] < 0)
             continue; // not periodic
 
@@ -23,60 +26,64 @@ SymmetrySpec Translational::build_for(const Foundation& foundation) const
             num_lattice_sites = 1;
 
         // left and right borders of the periodic cell
-        s.left[n] = (foundation.size[n] - num_lattice_sites) / 2;
-        s.right[n] = s.left[n] + num_lattice_sites - 1;
+        a.left[n] = (foundation.size[n] - num_lattice_sites) / 2;
+        a.right[n] = a.left[n] + num_lattice_sites - 1;
         // length of the periodic cell
-        s.middle[n] = num_lattice_sites;
+        a.middle[n] = num_lattice_sites;
     }
 
+    return a;
+}
+
+std::vector<Translation> Symmetry::translations(Foundation const& foundation) const {
+    auto const& lattice = foundation.lattice;
+    auto const symmetry_area = area(foundation);
+
+    std::vector<Translation> translations;
+    auto add_translation = [&](Index3D direction) {
+        if (direction == Index3D::Zero())
+            return; // not a valid translation
+
+        // check if the direction already exists
+        for (auto const& t : translations) {
+            if (t.direction == direction || t.direction == -direction)
+                return;
+        }
+
+        Index3D boundary = Index3D::Constant(-1);
+        for (auto n = 0u; n < lattice.vectors.size(); ++n) {
+            if (direction[n] > 0)
+                boundary[n] = symmetry_area.left[n];
+            else if (direction[n] < 0)
+                boundary[n] = symmetry_area.right[n];
+        }
+
+        auto const shift_index = direction.cwiseProduct(symmetry_area.middle);
+
+        Cartesian shift_lenght = Cartesian::Zero();
+        for (auto n = 0u; n < lattice.vectors.size(); ++n) {
+            auto const shift = static_cast<float>(direction[n] * symmetry_area.middle[n]);
+            shift_lenght += shift * lattice.vectors[n];
+        }
+
+        translations.push_back({direction, boundary, shift_index, shift_lenght});
+    };
+
     // add translations in the hopping directions
-    for (const auto& sublattice : foundation.lattice.sublattices) {
-        for (const auto& hopping : sublattice.hoppings) {
+    for (auto const& sublattice : foundation.lattice.sublattices) {
+        for (auto const& hopping : sublattice.hoppings) {
             // only take the directions which have a non-negative period length
-            Index3D direction = (length.array() >= 0).select(hopping.relative_index, 0);
-            s.add_translation(direction, foundation.lattice);
+            add_translation((length.array() >= 0).select(hopping.relative_index, 0));
         }
     }
 
-    return s;
+    return translations;
 }
 
-void SymmetrySpec::add_translation(const Index3D& direction, const Lattice& lattice)
-{
-    if (direction == Index3D::Zero())
-        return; // not a valid translation
-    
-    // check if the direction already exists
-    for (const auto& translation : translations) {
-        if (translation.direction == direction || translation.direction == -direction)
-            return;
-    }
-    
-    Translation translation;
-    translation.direction = direction;
+void Symmetry::apply(Foundation& foundation) const {
+    auto symmetry_area = area(foundation);
 
-    // border site indices of this translation
-    translation.boundary.setConstant(-1);
-    for (std::size_t n = 0; n < lattice.vectors.size(); ++n) {
-        if (direction[n] > 0)
-            translation.boundary[n] = left[n];
-        else if (direction[n] < 0)
-            translation.boundary[n] = right[n];
-    }
-
-    translation.shift_lenght.setZero();
-    for (std::size_t n = 0; n < lattice.vectors.size(); ++n) {
-        auto const shift = static_cast<float>(direction[n] * middle[n]);
-        translation.shift_lenght += shift * lattice.vectors[n];
-    }
-
-    // translation shift in number of lattice sites
-    translation.shift_index = direction.cwiseProduct(middle);
-
-    translations.push_back(translation);
-}
-
-bool SymmetrySpec::contains(const Index3D& index) const
-{
-    return all_of(left.array() <= index.array()) && all_of(index.array() <= right.array());
+    foundation.for_each_site([&](Site site) {
+        site.set_valid(site.is_valid() && symmetry_area.contains(site.index));
+    });
 }

@@ -184,4 +184,4 @@ def translational_symmetry(a1=True, a2=True, a3=True):
             return value  # manual length
 
     lengths = tuple(to_cpp_params(a) for a in (a1, a2, a3))
-    return _cpp.Translational(lengths)
+    return _cpp.TranslationalSymmetry(lengths)

@@ -1,9 +1,7 @@
 #include "system/Foundation.hpp"
 #include "system/Shape.hpp"
-#include "system/Symmetry.hpp"
 
 #include <Eigen/Dense>  // for `colPivHouseholderQr()`
-
 
 namespace tbm {
 
@@ -107,14 +105,6 @@ void Foundation::trim_edges() {
     for_each_site([&](Site site) {
         if (!site.is_valid())
             clear_neighbors(site);
-    });
-}
-
-void Foundation::apply(Symmetry const& symmetry) {
-    auto symmetry_area = symmetry.build_for(*this);
-
-    for_each_site([&](Site site) {
-        site.set_valid(site.is_valid() && symmetry_area.contains(site.index));
     });
 }
 

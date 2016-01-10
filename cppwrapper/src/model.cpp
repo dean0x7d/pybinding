@@ -17,7 +17,6 @@ void export_core() {
     .def("add", &Model::add_onsite_modifier)
     .def("add", &Model::add_hopping_modifier)
     .def("set_wave_vector", &Model::set_wave_vector, args("self", "wave_vector"))
-    .add_property("symmetry", &Model::symmetry, &Model::set_symmetry)
     .add_property("state_modifiers", &Model::state_modifiers)
     .add_property("position_modifiers", &Model::position_modifiers)
     .add_property("onsite_modifiers", &Model::onsite_modifiers)
@@ -26,7 +25,6 @@ void export_core() {
     .add_property("hamiltonian", &Model::hamiltonian)
     .def("report", &Model::report,
          "Report of the last build operation: system and Hamiltonian")
-    .def("clear_symmetry", &Model::clear_symmetry)
     .def("clear_system_modifiers", &Model::clear_system_modifiers)
     .def("clear_hamiltonian_modifiers", &Model::clear_hamiltonian_modifiers)
     .def("clear_all_modifiers", &Model::clear_all_modifiers)

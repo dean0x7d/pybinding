@@ -29,11 +29,11 @@ int System::find_nearest(Cartesian target_position, sub_id target_sublattice) co
 
 std::unique_ptr<System> build_system(Foundation& foundation,
                                      SystemModifiers const& system_modifers,
-                                     Symmetry const* symmetry) {
+                                     Symmetry const& symmetry) {
     auto system = cpp14::make_unique<System>(foundation.lattice);
 
     if (symmetry)
-        foundation.apply(*symmetry);
+        symmetry.apply(foundation);
 
     if (!system_modifers.empty()) {
         ArrayX<sub_id> sublattices{foundation.num_sites};
@@ -51,7 +51,7 @@ std::unique_ptr<System> build_system(Foundation& foundation,
 
     populate_body(*system, foundation);
     if (symmetry)
-        populate_boundaries(*system, foundation, *symmetry);
+        populate_boundaries(*system, foundation, symmetry);
 
     if (system->num_sites() == 0) // sanity check
         throw std::runtime_error{"Sanity fail: the system was built with 0 lattice sites."};
@@ -95,13 +95,12 @@ void populate_body(System& system, Foundation& foundation) {
 
 void populate_boundaries(System& system, Foundation& foundation, Symmetry const& symmetry) {
     auto const num_valid_sites = foundation.finalize();
-    auto symmetry_area = symmetry.build_for(foundation);
 
     // a boundary is added first to prevent copying of Eigen::SparseMatrix
     // --> revise when Eigen types become movable
 
     system.boundaries.emplace_back(system);
-    for (const auto& translation : symmetry_area.translations) {
+    for (const auto& translation : symmetry.translations(foundation)) {
         auto& boundary = system.boundaries.back();
 
         // preallocate data (overestimated)

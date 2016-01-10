@@ -4,55 +4,43 @@
 
 namespace tbm {
 
-class Lattice;
 class Foundation;
 
-// TODO: this only works for translational symmetry
-struct SymmetrySpec {
-    /// Describes a symmetry translation
-    struct Translation {
-        Index3D direction; ///< translation direction in number of unit cell
-        Index3D boundary; ///< indices of the boundary sites - to be used with for_sites method
-        Index3D shift_index; ///< width of a translation unit in lattice sites
-        Cartesian shift_lenght; ///< width of a translation unit in nanometers
-    };
-
-    /// Is this lattice site contained in the symmetry unit cell
-    virtual bool contains(const Index3D& index) const;
-
-    /// Add a translation in the relative_index directions
-    void add_translation(const Index3D& relative_index, const Lattice& lattice);
-
+struct SymmetryArea {
     Index3D left, right, middle;
-    std::vector<Translation> translations;
+
+    /// Is this lattice site contained in the symmetry unit cell?
+    bool contains(Index3D const& index) const;
 };
 
-
-/**
- Abstract base symmetry.
- */
-class Symmetry {
-public:
-    /// Build the symmetry for the given lattice and foundation size
-    virtual SymmetrySpec build_for(const Foundation& foundation) const = 0;
+struct Translation {
+    Index3D direction; ///< translation direction in number of unit cell
+    Index3D boundary; ///< indices of the boundary sites - to be used with for_sites method
+    Index3D shift_index; ///< width of a translation unit in lattice sites
+    Cartesian shift_lenght; ///< width of a translation unit in nanometers
 };
 
-
 /**
- Simple translational symmetry.
+ Translational symmetry
+
  The constructor takes the translation length in each lattice vector direction.
  A positive number is a valid length. A negative number disables translation in that direction.
  Zero is a special value which automatically sets the minimal translation length for the lattice, 
  i.e. the lattice vector length.
 */
-class Translational : public Symmetry {
+class Symmetry {
 public:
-    Translational(Cartesian length) : length{length} {}
+    Symmetry() = default;
+    explicit Symmetry(Cartesian length) : length{length} {}
 
-    virtual SymmetrySpec build_for(const Foundation& foundation) const override;
+    SymmetryArea area(Foundation const& foundation) const;
+    std::vector<Translation> translations(Foundation const& foundation) const;
+    void apply(Foundation& foundation) const;
+
+    explicit operator bool() const { return length != Cartesian::Constant(-1); }
 
 private:
-    Cartesian length = Cartesian::Zero();
+    Cartesian length = Cartesian::Constant(-1);
 };
 
 } // namespace tbm

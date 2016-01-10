@@ -24,13 +24,10 @@ void Model::set_shape(Shape const& new_shape) {
     _hamiltonian.reset();
 }
 
-void Model::set_symmetry(const std::shared_ptr<Symmetry>& new_symmetry)
-{
-    if (_symmetry != new_symmetry) {
-        _symmetry = new_symmetry;
-        _system.reset();
-        _hamiltonian.reset();
-    }
+void Model::set_symmetry(Symmetry const& new_symmetry) {
+    symmetry = new_symmetry;
+    _system.reset();
+    _hamiltonian.reset();
 }
 
 void Model::add_site_state_modifier(SiteStateModifier const& m) {
@@ -63,7 +60,7 @@ std::shared_ptr<const System> Model::system() const {
 
         auto foundation = shape ? Foundation(lattice, shape)
                                 : Foundation(lattice, primitive);
-        _system = build_system(foundation, system_modifiers, _symmetry.get());
+        _system = build_system(foundation, system_modifiers, symmetry);
 
         build_report = fmt::format("Built system with {} lattice sites, {}",
                                    fmt::with_suffix(_system->num_sites()), build_time.toc());

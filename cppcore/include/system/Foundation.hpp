@@ -9,7 +9,6 @@ namespace tbm {
 
 class Primitive;
 class Shape;
-class Symmetry;
 struct Site;
 
 /**
@@ -32,9 +31,6 @@ private:
     void trim_edges();
 
 public:
-    /// Invalidate sites outside the `symmetry`
-    void apply(Symmetry const& symmetry);
-
     /// Calculate the spacial position of a lattice site
     Cartesian calculate_position(Site const& site, Cartesian origin) const;
     /// Reduce this site's neighbor count to zero and inform its neighbors of the change

@@ -150,14 +150,7 @@ void export_system() {
         init<Polygon::Vertices const&, Cartesian> {args("self", "vertices", "offset")}
     };
 
-    using tbm::Symmetry;
-    class_<Symmetry, noncopyable> {"Symmetry", no_init};
-
-    using tbm::Translational;
-    class_<Translational, bases<Symmetry>, noncopyable> {
-        "Translational", "Periodic boundary condition.", 
-        init<Cartesian> {(arg("self"), "length")}
-    };
+    class_<tbm::Symmetry>{"TranslationalSymmetry", init<Cartesian>{args("self", "length")}};
 
     class_<PySiteStateModifier, noncopyable>{"SiteStateModifier"};
     class_<PyPositionModifier, noncopyable>{"PositionModifier"};

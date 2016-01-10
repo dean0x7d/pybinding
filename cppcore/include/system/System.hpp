@@ -52,7 +52,7 @@ public:
     std::vector<Boundary> boundaries;
 };
 
-std::unique_ptr<System> build_system(Foundation&, SystemModifiers const&, Symmetry const*);
+std::unique_ptr<System> build_system(Foundation&, SystemModifiers const&, Symmetry const&);
 void populate_body(System&, Foundation&);
 void populate_boundaries(System&, Foundation&, Symmetry const&);
 

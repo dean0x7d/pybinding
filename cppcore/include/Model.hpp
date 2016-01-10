@@ -18,7 +18,7 @@ public:
 public: // set parameters
     void set_primitive(Primitive primitive);
     void set_shape(Shape const& shape);
-    void set_symmetry(const std::shared_ptr<Symmetry>& symmetry);
+    void set_symmetry(Symmetry const& symmetry);
 
     void add_site_state_modifier(SiteStateModifier const& m);
     void add_position_modifier(PositionModifier const& m);
@@ -29,8 +29,9 @@ public: // set parameters
 
 public: // get parameters
     Lattice const& get_lattice() const { return lattice; }
+    Primitive const& get_primitive() const { return primitive; }
     Shape const& get_shape() const { return shape; }
-    std::shared_ptr<const Symmetry> symmetry() const { return _symmetry; }
+    Symmetry const& get_symmetry() const { return symmetry; }
 
     std::vector<SiteStateModifier> state_modifiers() const { return system_modifiers.state; }
     std::vector<PositionModifier> position_modifiers() const { return system_modifiers.position; }
@@ -46,16 +47,15 @@ public: // get information
     std::string report();
 
 public:
-    void clear_symmetry() { _symmetry.reset(); }
     void clear_system_modifiers() { system_modifiers.clear(); }
     void clear_hamiltonian_modifiers() { hamiltonian_modifiers.clear(); }
     void clear_all_modifiers() { clear_system_modifiers(); clear_hamiltonian_modifiers(); }
 
 private:
     Lattice lattice;
-    Shape shape;
-    std::shared_ptr<const Symmetry> _symmetry;
     Primitive primitive;
+    Shape shape;
+    Symmetry symmetry;
 
     SystemModifiers system_modifiers;
     HamiltonianModifiers hamiltonian_modifiers;
