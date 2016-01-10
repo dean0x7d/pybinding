@@ -18,13 +18,10 @@ void Model::set_wave_vector(const Cartesian& new_wave_vector)
     }
 }
 
-void Model::set_shape(const std::shared_ptr<Shape>& new_shape)
-{
-    if (_shape != new_shape) {
-        _shape = new_shape;
-        _system.reset();
-        _hamiltonian.reset();
-    }
+void Model::set_shape(Shape const& new_shape) {
+    shape = new_shape;
+    _system.reset();
+    _hamiltonian.reset();
 }
 
 void Model::set_symmetry(const std::shared_ptr<Symmetry>& new_symmetry)
@@ -64,8 +61,8 @@ std::shared_ptr<const System> Model::system() const {
     if (!_system) {
         auto build_time = Chrono{};
 
-        auto foundation = _shape ? Foundation(lattice, *_shape)
-                                 : Foundation(lattice, primitive);
+        auto foundation = shape ? Foundation(lattice, shape)
+                                : Foundation(lattice, primitive);
         _system = build_system(foundation, system_modifiers, _symmetry.get());
 
         build_report = fmt::format("Built system with {} lattice sites, {}",

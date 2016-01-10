@@ -36,6 +36,7 @@ class Model(_cpp.Model):
         super().__init__(lattice)
 
         self._lattice = lattice
+        self._shape = None
         self.add(*args)
 
     def add(self, *args):
@@ -52,6 +53,8 @@ class Model(_cpp.Model):
                 self.add(*arg)
             else:
                 super().add(arg)
+                if isinstance(arg, _cpp.Shape):
+                    self._shape = arg
 
     @property
     def system(self) -> System:
@@ -68,6 +71,11 @@ class Model(_cpp.Model):
     def lattice(self) -> Lattice:
         """:class:`.Lattice` specification"""
         return self._lattice
+
+    @property
+    def shape(self):
+        """:class:`.Polygon` or :class:`.FreeformShape`"""
+        return self._shape
 
     @property
     def modifiers(self) -> list:

@@ -17,7 +17,7 @@ public:
 
 public: // set parameters
     void set_primitive(Primitive primitive);
-    void set_shape(const std::shared_ptr<Shape>& lattice);
+    void set_shape(Shape const& shape);
     void set_symmetry(const std::shared_ptr<Symmetry>& symmetry);
 
     void add_site_state_modifier(SiteStateModifier const& m);
@@ -29,7 +29,7 @@ public: // set parameters
 
 public: // get parameters
     Lattice const& get_lattice() const { return lattice; }
-    std::shared_ptr<const Shape> shape() const { return _shape; }
+    Shape const& get_shape() const { return shape; }
     std::shared_ptr<const Symmetry> symmetry() const { return _symmetry; }
 
     std::vector<SiteStateModifier> state_modifiers() const { return system_modifiers.state; }
@@ -53,7 +53,7 @@ public:
 
 private:
     Lattice lattice;
-    mutable std::shared_ptr<const Shape> _shape; ///< defines the shape of the system
+    Shape shape;
     std::shared_ptr<const Symmetry> _symmetry;
     Primitive primitive;
 

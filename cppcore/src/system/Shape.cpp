@@ -1,39 +1,31 @@
 #include "system/Shape.hpp"
 
-
 namespace tbm {
 
-Primitive::Primitive(int a1, int a2, int a3)
-    : size(a1, a2, a3)
-{
+Primitive::Primitive(int a1, int a2, int a3) : size(a1, a2, a3) {
     if (any_of(size.array() <= 0)) {
         throw std::logic_error("Primitive: The size must be at least 1 in every direction.");
     }
 }
 
-
-Shape::Shape(std::vector<Cartesian> const& bbox_vertices, Cartesian offset)
-    : bbox_vertices(bbox_vertices), offset(offset)
-{
-    if (bbox_vertices.size() < 2)
+Shape::Shape(Vertices const& vertices, Contains const& contains, Cartesian offset)
+    : vertices(vertices), contains(contains), offset(offset) {
+    if (vertices.size() < 2)
         throw std::logic_error("Shape: The bounding box must contain at least two vertices.");
 }
 
 
-Polygon::Polygon(std::vector<Cartesian> const& vertices, Cartesian offset)
-    : Shape(vertices, offset)
-{
-    auto const size = vertices.size();
-    x.resize(size);
-    y.resize(size);
+namespace detail {
 
-    for (auto i = 0u; i < size; ++i) {
+WithinPolygon::WithinPolygon(Shape::Vertices const& vertices)
+    : x(vertices.size()), y(vertices.size()) {
+    for (auto i = 0u; i < vertices.size(); ++i) {
         x[i] = vertices[i].x();
         y[i] = vertices[i].y();
     }
 }
 
-ArrayX<bool> Polygon::contains(CartesianArray const& positions) const {
+ArrayX<bool> WithinPolygon::operator()(CartesianArray const& positions) const {
     // Raycasting algorithm checks if `positions` are inside this polygon
     ArrayX<bool> is_within = ArrayX<bool>::Constant(positions.size(), false);
 
@@ -65,16 +57,21 @@ ArrayX<bool> Polygon::contains(CartesianArray const& positions) const {
     return is_within;
 }
 
-FreeformShape::FreeformShape(ContainsFunc contains_func, Cartesian width,
+} // namespace detail
+
+Polygon::Polygon(Vertices const& vertices, Cartesian offset)
+    : Shape(vertices, detail::WithinPolygon(vertices), offset) {}
+
+
+FreeformShape::FreeformShape(Contains const& contains, Cartesian width,
                              Cartesian center, Cartesian offset)
-    : Shape({}, offset), contains_func(contains_func)
-{
+    : Shape({}, contains, offset) {
     Cartesian base_vertex = center + 0.5 * width;
     auto const x = base_vertex.x();
     auto const y = base_vertex.y();
     auto const z = base_vertex.z();
 
-    bbox_vertices = {
+    vertices = {
         {x,   y,  z},
         {-x,  y,  z},
         {x,  -y,  z},
@@ -84,10 +81,6 @@ FreeformShape::FreeformShape(ContainsFunc contains_func, Cartesian width,
         {x,  -y, -z},
         {-x, -y, -z}
     };
-}
-
-ArrayX<bool> FreeformShape::contains(CartesianArray const& positions) const {
-    return contains_func(positions);
 }
 
 } // namespace tbm

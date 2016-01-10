@@ -60,7 +60,7 @@ std::pair<Index3D, Index3D> Foundation::find_bounds(Lattice const& lattice,
 
     Array3i lower_bound = Array3i::Constant(std::numeric_limits<int>::max());
     Array3i upper_bound = Array3i::Constant(std::numeric_limits<int>::min());
-    for (auto const& point : shape.bbox_vertices) {
+    for (auto const& point : shape.vertices) {
         // Translate Cartesian coordinates `p` into lattice vector coordinates `v`
         // -> solve `A*v = p`, where A is `lattice_matrix`
         auto const& p = point.head(ndim);

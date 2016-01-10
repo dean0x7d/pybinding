@@ -42,13 +42,12 @@ public:
 
 class PyShape : public tbm::Shape, public wrapper<tbm::Shape> {
 public:
-    using tbm::Shape::Shape;
-
-    ArrayX<bool> contains(CartesianArray const& p) const final {
-        object result = get_override("contains")(
-            DenseURef{p.x}, DenseURef{p.y}, DenseURef{p.z}
-        );
-        return extract<ArrayX<bool>>{result}();
+    PyShape(Vertices const& vertices, object py_contains, Cartesian offset)
+        : Shape(vertices, {}, offset) {
+        contains = [py_contains](CartesianArray const& p) {
+            object result = py_contains(DenseURef(p.x), DenseURef(p.y), DenseURef(p.z));
+            return extract<ArrayX<bool>>(result)();
+        };
     }
 };
 
@@ -137,22 +136,19 @@ void export_system() {
         init<int, int, int> {args("self", "a1"_kw=1, "a2"_kw=1, "a3"_kw=1)}
     };
 
-    using tbm::Shape;
-    class_<PyShape, noncopyable> {"Shape",
-        init<std::vector<Cartesian> const&, Cartesian> {args("self", "bbox_vertices", "offset")}
+    class_<PyShape, noncopyable>{"Shape",
+        init<PyShape::Vertices const&, object, Cartesian>{
+            args("self", "vertices", "contains", "offset")
+        }
     }
-    .add_property("bbox_vertices", copy_value(&PyShape::bbox_vertices))
-    .add_property("offset", copy_value(&PyShape::bbox_vertices))
+    .add_property("vertices", copy_value(&PyShape::vertices))
+    .add_property("offset", copy_value(&PyShape::offset))
     ;
 
     using tbm::Polygon;
-    class_<Polygon, bases<Shape>, noncopyable> {
-        "Polygon", "Shape defined by a list of vertices",
-        init<std::vector<Cartesian> const&, Cartesian> {args("self", "bbox_vertices", "offset")}
-    }
-    .add_property("x", copy_value(&Polygon::x), &Polygon::x)
-    .add_property("y", copy_value(&Polygon::y), &Polygon::y)
-    ;
+    class_<Polygon, bases<tbm::Shape>, noncopyable> {"Polygon",
+        init<Polygon::Vertices const&, Cartesian> {args("self", "vertices", "offset")}
+    };
 
     using tbm::Symmetry;
     class_<Symmetry, noncopyable> {"Symmetry", no_init};

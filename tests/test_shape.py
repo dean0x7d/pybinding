@@ -43,7 +43,7 @@ def test_freeform(baseline, plot_if_fails):
         return pb.FreeformShape(contains, width=[2 * outer_radius, 2 * outer_radius])
 
     assert pytest.fuzzy_equal(
-        donut(0.5, 1).bbox_vertices,
+        donut(0.5, 1).vertices,
         [[ 1, 1, 0], [ 1, 1, 0], [ 1, -1, 0], [ 1, -1, 0],
          [-1, 1, 0], [-1, 1, 0], [-1, -1, 0], [-1, -1, 0]]
     )

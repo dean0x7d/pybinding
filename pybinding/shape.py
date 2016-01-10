@@ -28,7 +28,7 @@ class Polygon(_cpp.Polygon):
 
     @property
     def vertices(self):
-        return list(zip(self.x, self.y))
+        return [(x, y) for x, y, _ in super().vertices]
 
     def plot(self, **kwargs):
         """Line plot of the polygon
@@ -38,8 +38,8 @@ class Polygon(_cpp.Polygon):
         **kwargs
             Forwarded to `plt.plot()`.
         """
-        plt.plot(np.append(self.x, self.x[0]), np.append(self.y, self.y[0]),
-                 **with_defaults(kwargs, color='black'))
+        x, y = zip(*self.vertices)
+        plt.plot(np.append(x, x[0]), np.append(y, y[0]), **with_defaults(kwargs, color='black'))
         plt.axis('scaled')
         plt.xlabel("x (nm)")
         plt.ylabel("y (nm)")
@@ -68,24 +68,11 @@ class FreeformShape(_cpp.Shape):
         center.resize(3)
         # e.g. vertex == [x0, y0]
         vertex = center + width / 2
-        # e.g. bbox_vertices == [(x0, y0), (x0, -y0), (-x0, y0), (-x0, -y0)]
-        bbox_vertices = list(itertools.product(*zip(vertex, -vertex)))
+        # e.g. vertices == [(x0, y0), (x0, -y0), (-x0, y0), (-x0, -y0)]
+        vertices = list(itertools.product(*zip(vertex, -vertex)))
 
-        super().__init__(bbox_vertices, np.atleast_1d(offset))
-        self._contains = contains
-
-    def contains(self, x, y, z):
-        """Is the lattice site a position (x, y, z) located within the shape?
-
-        Parameters
-        ----------
-        x, y, z : np.ndarray
-
-        Returns
-        -------
-        np.ndarray
-        """
-        return self._contains(x, y, z)
+        super().__init__(vertices, contains, np.atleast_1d(offset))
+        self.contains = contains
 
     def plot(self, resolution=(1000, 1000), **kwargs):
         """Plot an lightly shaded silhouette of the freeform shape
@@ -99,10 +86,10 @@ class FreeformShape(_cpp.Shape):
         **kwargs
             Forwarded to `plt.imshow()`.
         """
-        if any(z != 0 for _, _, z in self.bbox_vertices):
+        if any(z != 0 for _, _, z in self.vertices):
             raise RuntimeError("This method only works for 2D shapes.")
 
-        x, y, *_ = zip(*self.bbox_vertices)
+        x, y, *_ = zip(*self.vertices)
         xx, yy = np.meshgrid(np.linspace(min(x), max(x), resolution[0]),
                              np.linspace(min(y), max(y), resolution[1]))
         img = self.contains(xx, yy, 0)

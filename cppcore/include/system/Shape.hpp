@@ -1,6 +1,7 @@
 #pragma once
-#include <vector>
 #include "support/dense.hpp"
+#include <vector>
+#include <functional>
 
 namespace tbm {
 
@@ -16,36 +17,51 @@ public:
 
 
 /**
- Abstract base shape
+ Shape defined by bounding vertices and `contains` function
 
- The bounding box (bbox) specifies the maximum area (or volume) where the shape will be
- located. The entire bbox is filled with lattice sites and then the `contains` function
- decides which of those sites are actually located within the desired shape.
- It's like carving a sculpture from a block of stone.
+ The bounding vertices specify the maximum area (or volume) where the shape will be located.
+ The entire volume is filled with lattice sites and then the `contains` function decides which
+ of those sites are actually located within the desired shape. It's like carving a sculpture
+ from a block of stone.
  */
 class Shape {
 public:
-    Shape(std::vector<Cartesian> const& bbox_vertices, Cartesian offset);
+    using Vertices = std::vector<Cartesian>;
+    using Contains = std::function<ArrayX<bool>(CartesianArray const&)>;
 
-    /// Return `true` for `positions` located within the shape
-    virtual ArrayX<bool> contains(CartesianArray const& positions) const = 0;
+    Shape() = default;
+    Shape(Vertices const& vertices, Contains const& contains, Cartesian offset);
 
-    std::vector<Cartesian> bbox_vertices; ///< bounding box defined by its vertices
+    /// A shape is valid if it has a `contains` function
+    explicit operator bool() const { return static_cast<bool>(contains); }
+
+    Vertices vertices; ///< bounding vertices which define the initial volume
+    Contains contains; ///< return `true` for `positions` located within the shape
     Cartesian offset; ///< offset of the lattice origin from the shape origin
 };
 
 
 /**
  Polygon shape defined by a list of points
+
+ Strictly 2D within the xy plane.
  */
 class Polygon : public Shape {
 public:
-    Polygon(std::vector<Cartesian> const& vertices, Cartesian offset = Cartesian::Zero());
-
-    ArrayX<bool> contains(CartesianArray const& positions) const final;
-
-    ArrayX<float> x, y;
+    Polygon(Vertices const& vertices, Cartesian offset = Cartesian::Zero());
 };
+
+namespace detail {
+    /// Function object which determines if a point is within a polygon
+    class WithinPolygon {
+    public:
+        WithinPolygon(Shape::Vertices const& vertices);
+        ArrayX<bool> operator()(CartesianArray const& positions) const;
+
+    private:
+        ArrayX<float> x, y;
+    };
+} // namespace detail
 
 
 /**
@@ -53,16 +69,9 @@ public:
  */
 class FreeformShape : public Shape {
 public:
-    using ContainsFunc = std::function<ArrayX<bool>(CartesianArray const&)>;
-
-    FreeformShape(ContainsFunc contains_func, Cartesian width,
+    FreeformShape(Contains const& contains, Cartesian width,
                   Cartesian center = Cartesian::Zero(),
                   Cartesian offset = Cartesian::Zero());
-
-    ArrayX<bool> contains(CartesianArray const& positions) const override;
-
-private:
-    ContainsFunc contains_func;
 };
 
 } // namespace tbm
