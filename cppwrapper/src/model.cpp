@@ -1,13 +1,14 @@
 #include "Model.hpp"
 #include "hamiltonian/Hamiltonian.hpp"
-#include <boost/python/class.hpp>
-using namespace boost::python;
-using tbm::Model;
 
+#include "python_support.hpp"
+#include <boost/python/class.hpp>
+
+using namespace boost::python;
 
 void export_core() {
-    class_<Model>{"Model", "The main tight-binding interface object."}
-    .def("add", &Model::set_lattice)
+    using tbm::Model;
+    class_<Model>{"Model", init<tbm::Lattice const&>(args("self", "lattice"))}
     .def("add", &Model::set_primitive)
     .def("add", &Model::set_shape)
     .def("add", &Model::set_symmetry)
@@ -16,7 +17,6 @@ void export_core() {
     .def("add", &Model::add_onsite_modifier)
     .def("add", &Model::add_hopping_modifier)
     .def("set_wave_vector", &Model::set_wave_vector, args("self", "wave_vector"))
-    .add_property("lattice", &Model::lattice, &Model::set_lattice)
     .add_property("shape", &Model::shape, &Model::set_shape)
     .add_property("symmetry", &Model::symmetry, &Model::set_symmetry)
     .add_property("state_modifiers", &Model::state_modifiers)

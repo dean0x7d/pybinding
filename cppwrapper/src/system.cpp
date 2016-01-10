@@ -104,9 +104,8 @@ void export_system() {
     ;
 
     using tbm::Lattice;
-    class_<Lattice, noncopyable>{
-        "Lattice", init<Cartesian, optional<Cartesian, Cartesian>>{args("v1", "v2", "v3")}
-    }
+    class_<Lattice>{"Lattice",
+                    init<Cartesian, optional<Cartesian, Cartesian>>(args("a1", "a2", "a3"))}
     .def("_add_sublattice", &Lattice::add_sublattice,
          args("self", "offset", "onsite_potential"_kw=.0f, "alias"_kw=-1))
     .def("_add_hopping", &Lattice::add_hopping,

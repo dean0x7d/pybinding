@@ -10,61 +10,64 @@ from .support.sparse import SparseMatrix
 
 
 class Model(_cpp.Model):
-    """Takes tight-binding model parameters and creates a Hamiltonian matrix
+    """Builds a tight-binding Hamiltonian from a model description
 
-    The class is initialized with parameters which can be any of: lattice, shape,
-    symmetry or various modifiers. Note that:
-
-    * A `Model` must have one and only one lattice. If multiple are added, only
-      the last one is considered.
-    * There can be at most one shape and at most one symmetry. Shape and symmetry
-      can be composed as desired, but physically impossible scenarios will result
-      in an empty system and Hamiltonian.
-    * Any number of modifiers can be added. Duplicates are also allowed: the usual
-      result being a doubling of the modifier's effect.
-
-    The main properties are `system` and `hamiltonian` which are constructed based
-    on the parameters. The Hamiltonian is a sparse matrix in the `scipy.csr_matrix`
-    format. The `System` contains structural data of the model. See the `System`
-    class for more details.
+    The most important properties are :attr:`.system` and :attr:`.hamiltonian` which are
+    constructed based on the input parameters. The :class:`.System` contains structural
+    data like site positions. The tight-binding Hamiltonian is a sparse matrix in the
+    :class:`.scipy.csr_matrix` format.
 
     The main class implementation is in C++ via the `_cpp.Model` base class.
-    """
-    def __init__(self, *params):
-        super().__init__()
-        self.add(*params)
 
-    def add(self, *params):
+    Parameters
+    ----------
+    lattice : Lattice
+        The lattice specification.
+    *args
+        Can be any of: shape, symmetry or various modifiers. Note that:
+
+        * There can be at most one shape and at most one symmetry. Shape and symmetry
+          can be composed as desired, but physically impossible scenarios will result
+          in an empty system and Hamiltonian.
+        * Any number of modifiers can be added. Adding the same modifier more than once
+          is allowed: this will usually multiply the modifier's effect.
+    """
+    def __init__(self, lattice, *args):
+        super().__init__(lattice)
+
+        self._lattice = lattice
+        self.add(*args)
+
+    def add(self, *args):
         """Add parameter(s) to the model
 
         Parameters
         ----------
-        *params
-            Any of: lattice, shape, symmetry, modifiers. Tuples and lists of
-            parameters are expanded automatically, so `M.add(p0, [p1, p2])`
-            is equivalent to `M.add(p0, p1, p2)`.
+        *args
+            Any of: shape, symmetry, modifiers. Tuples and lists of parameters are expanded
+            automatically, so `M.add(p0, [p1, p2])` is equivalent to `M.add(p0, p1, p2)`.
         """
-        for param in filter(None, params):
-            if isinstance(param, (tuple, list)):
-                self.add(*param)
+        for arg in filter(None, args):
+            if isinstance(arg, (tuple, list)):
+                self.add(*arg)
             else:
-                super().add(param)
+                super().add(arg)
 
     @property
     def system(self) -> System:
-        """Tight-binding system structure"""
+        """:class:`.System` site positions and other structural data"""
         return System(super().system)
 
     @property
     def hamiltonian(self) -> csr_matrix:
-        """Hamiltonian sparse matrix"""
+        """Hamiltonian sparse matrix in the :class:`.scipy.csr_matrix` format"""
         matrix = SparseMatrix(super().hamiltonian.matrix)
         return matrix.tocsr()
 
     @property
     def lattice(self) -> Lattice:
-        """Lattice specification"""
-        return super().lattice
+        """:class:`.Lattice` specification"""
+        return self._lattice
 
     @property
     def modifiers(self) -> list:
@@ -74,6 +77,6 @@ class Model(_cpp.Model):
 
     @property
     def onsite_map(self) -> results.StructureMap:
-        """`StructureMap` of the onsite energy"""
+        """:class:`.StructureMap` of the onsite energy"""
         onsite_energy = np.real(self.hamiltonian.tocsr().diagonal())
         return results.StructureMap.from_system(onsite_energy, self.system)

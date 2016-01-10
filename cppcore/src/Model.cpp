@@ -6,21 +6,6 @@
 
 namespace tbm {
 
-void Model::set_lattice(const std::shared_ptr<Lattice>& new_lattice)
-{
-    if (_lattice == new_lattice)
-        return;
-
-    if (!new_lattice || new_lattice->sublattices.size() < 1)
-        throw std::logic_error{"At least 1 sublattice must be specified."};
-    if (new_lattice->vectors.size() < 1)
-        throw std::logic_error{"At least 1 lattice vector must be specified."};
-
-    _lattice = new_lattice;
-    _system.reset();
-    _hamiltonian.reset();
-}
-
 void Model::set_primitive(Primitive new_primitive) {
     primitive = new_primitive;
 }
@@ -77,14 +62,10 @@ void Model::add_hopping_modifier(HoppingModifier const& m) {
 
 std::shared_ptr<const System> Model::system() const {
     if (!_system) {
-        // check for all the required parameters
-        if (!_lattice)
-            throw std::logic_error{"A lattice must be defined."};
-
         auto build_time = Chrono{};
 
-        auto foundation = _shape ? Foundation(*_lattice, *_shape)
-                                 : Foundation(*_lattice, primitive);
+        auto foundation = _shape ? Foundation(lattice, *_shape)
+                                 : Foundation(lattice, primitive);
         _system = build_system(foundation, system_modifiers, _symmetry.get());
 
         build_report = fmt::format("Built system with {} lattice sites, {}",
