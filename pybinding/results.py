@@ -713,11 +713,21 @@ class NDSweep:
         The parameters being swept.
     data : np.ndarray
         Main result array with `shape == [len(v) for v in variables]`.
+    labels : dict
+        Plot labels: 'title', 'x', 'y' and 'data'.
+    tags : dict
+        Any additional user defined variables.
     """
-
-    def __init__(self, variables: tuple, data: np.ndarray):
+    def __init__(self, variables, data, labels=None, tags=None):
         self.variables = variables
         self.data = np.reshape(data, [len(v) for v in variables])
+
+        self.labels = with_defaults(labels, title="", axes=[], data="data")
+        # alias the first 3 axes to x, y, z for compatibility with Sweep labels
+        for axis, label in zip('xyz', self.labels['axes']):
+            self.labels[axis] = label
+
+        self.tags = tags
 
     def copy(self) -> 'NDSweep':
         return deepcopy(self)

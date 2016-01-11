@@ -388,7 +388,7 @@ def sweep(factory, plot=lambda r: r.plot(), labels=None, tags=None, silent=False
     return parallel_for(factory, make_result)
 
 
-def ndsweep(factory, plot=None, silent=False):
+def ndsweep(factory, plot=None, labels=None, tags=None, silent=False):
     """Do a multi-threaded n-dimensional parameter sweep
 
     Parameters
@@ -397,6 +397,8 @@ def ndsweep(factory, plot=None, silent=False):
         Factory function created with the :func:`parallelize` decorator.
     plot : callable
         Plotting functions which takes a :class:`.NDSweep` result as its only argument.
+    labels, tags : dict
+        Forwarded to :class:`.NDSweep` object.
     silent : bool
         Don't print status messages.
 
@@ -410,7 +412,7 @@ def ndsweep(factory, plot=None, silent=False):
 
     def make_result(data):
         sweep_data = np.vstack(v if v is not None else zero for v in data)
-        return NDSweep(variables, sweep_data)
+        return NDSweep(variables, sweep_data, labels, tags)
 
     if silent:
         factory.hooks.status.clear()

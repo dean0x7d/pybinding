@@ -48,5 +48,10 @@ def test_ndsweep(baseline):
     silence_parallel_output(factory)
     result = pb.parallel.ndsweep(factory)
 
+    # The following lines keep the test compatible with old baseline data
+    # TODO: Remove these lines when NDSweep is finalized and new baseline data is made
+    del result.labels
+    del result.tags
+
     expected = baseline(result)
     assert pytest.fuzzy_equal(result, expected, rtol=1e-3, atol=1e-6)
