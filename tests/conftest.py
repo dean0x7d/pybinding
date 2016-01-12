@@ -2,16 +2,24 @@ import pytest
 
 from contextlib import suppress
 
-import numpy as np
 import matplotlib as mpl
 mpl.use('Agg')  # disable `plt.show()` popup window during testing
 import matplotlib.pyplot as plt
-from scipy.sparse import csr_matrix
 
 import pybinding as pb
 
 from .utils.path import path_from_fixture
 from .utils.compare_figures import CompareFigure
+from .utils.fuzzy_equal import FuzzyEqual, FuzzyReport
+
+
+def pytest_namespace():
+    return {'fuzzy_equal': FuzzyEqual}
+
+
+def pytest_assertrepr_compare(op, left, right):
+    if isinstance(left, FuzzyReport) and right is not None and op == "==":
+        return left.explanation
 
 
 def pytest_addoption(parser):
@@ -90,30 +98,3 @@ def plot_if_fails(request):
     elif figure_path.exists():
         with suppress(OSError):
             figure_path.unlink()
-
-
-def fuzzy_equal(data, expected, rtol=1e-05, atol=1e-08):
-    """Recursively compares structures of ndarrays using np.allclose()"""
-    tol = rtol, atol
-    if isinstance(data, np.ndarray):
-        return np.allclose(data, expected, *tol)
-    if isinstance(data, csr_matrix):
-        return all(fuzzy_equal(getattr(data, s), getattr(expected, s), *tol)
-                   for s in ['shape', 'data', 'indices', 'indptr'])
-    if isinstance(data, (tuple, list)):
-        return (len(data) == len(expected) and
-                all(fuzzy_equal(a, b, *tol) for a, b in zip(data, expected)))
-    if isinstance(data, dict):
-        return (len(data) == len(expected) and
-                all(fuzzy_equal(data[k], expected[k], *tol) for k in data.keys()))
-    else:
-        specials = [s for s in ['__getstate__', '__getinitargs__'] if hasattr(data, s)]
-        if specials:
-            return all(fuzzy_equal(getattr(data, s)(), getattr(expected, s)(), *tol)
-                       for s in specials)
-        else:
-            return data == expected
-
-
-def pytest_namespace():
-    return {'fuzzy_equal': fuzzy_equal}
