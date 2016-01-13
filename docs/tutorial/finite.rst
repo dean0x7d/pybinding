@@ -17,14 +17,46 @@ Note the high intensity states on the inner and outer edges of the graphene ring
 .. plot:: tutorial/finite_example.py
     :include-source:
 
-Polygon
-*******
 
-Finite sized systems require a shape. The simplest way to create a 2D shape is with the
-:class:`.Polygon` class. For example, a simple rectangle:
+Primitive
+*********
+
+The simplest finite sized system is just the unit cell of the crystal lattice.
 
 .. plot::
     :context: reset
+
+    from pybinding.repository import graphene
+
+    model = pb.Model(graphene.lattice.monolayer())
+    model.system.plot()
+
+The unit cell can also be replicated a number of times to create a bigger system.
+
+.. plot::
+    :context: close-figs
+
+    model = pb.Model(
+        graphene.lattice.monolayer(),
+        pb.primitive(a1=4, a2=3)
+    )
+
+    model.system.plot()
+    model.lattice.plot_vectors(position=[0.4, -0.25])
+
+The :func:`.primitive` parameter tells the model to replicate the unit cell 4 times in the
+:math:`a_1` vector direction and 3 times in the :math:`a_2` direction. However, to model
+realistic systems we need proper shapes.
+
+
+Polygon
+*******
+
+The easiest way to create a 2D shape is with the :class:`.Polygon` class. For example,
+a simple rectangle:
+
+.. plot::
+    :context: close-figs
 
     def rectangle(width, height):
         x0 = width / 2
@@ -39,8 +71,6 @@ counterclockwise order. When added to a :class:`.Model` the lattice will expand 
 
 .. plot::
     :context: close-figs
-
-    from pybinding.repository import graphene
 
     model = pb.Model(
         graphene.lattice.monolayer(),
