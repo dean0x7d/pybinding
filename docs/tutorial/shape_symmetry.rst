@@ -60,15 +60,97 @@ The band structure calculations work just as before.
     bands.plot()
 
 
-.. todo::
-    Translations symmetry with `float` arguments
+This is the characteristic band structure for zigzag nanoribbons with zero-energy edge states.
+If we change the direction of the translational symmetry to :math:`a_2`, the orientation will
+change, but we will still have a zigzag nanoribbon.
 
-.. todo::
-    4 atom unit cell
+.. plot::
+    :context: close-figs
+
+    model = pb.Model(
+        graphene.lattice.monolayer(),
+        pb.rectangle(1.2),  # nm
+        pb.translational_symmetry(a1=False, a2=True)
+    )
+    model.system.plot()
+    model.lattice.plot_vectors(position=[0.6, -0.25])  # nm
+
+Because of the nature of graphene's 2-atom unit cell and lattice vector, only zigzag edges can
+be created. In order to create armchair edges, we must introduce a different unit cell with 4
+atoms.
+
+.. plot::
+    :context: close-figs
+
+    model = pb.Model(graphene.lattice.monolayer_4atom())
+    model.system.plot()
+    model.lattice.plot_vectors(position=[-0.13, -0.13])
+
+Note that the lattice vectors :math:`a_1` and :math:`a_2` are at a right angle, unlike the sharp
+angle of the base 2-atom cell. The lattice properties are identical for the 2 and 4 atom cells,
+but the new geometry helps create armchair edges.
+
+.. plot::
+    :context: close-figs
+
+    model = pb.Model(
+        graphene.lattice.monolayer_4atom(),
+        pb.primitive(a1=5),
+        pb.translational_symmetry(a1=False, a2=True)
+    )
+    model.system.plot()
+    model.lattice.plot_vectors(position=[-0.59, -0.6])
+
+To calculate the band structure we must enter at least two points in k-space between which the
+energy will be calculated. Note that because the periodicity is in the direction of the second
+lattice vector :math:`a_2`, the points in k-space are given as `[0, pi/d]` instead of just
+`pi/d` (which would be equivalent to `[pi/d, 0]`).
+
+.. plot::
+    :context: close-figs
+
+    solver = pb.solver.lapack(model)
+    d = 3 * graphene.a_cc  # ribbon unit cell length
+    bands = solver.calc_bands([0, -pi/d], [0, pi/d])
+    bands.plot(point_labels=['$-\pi / 3 a_{cc}$', '$\pi / 3 a_{cc}$'])
 
 
 Complex structures
 ******************
+
+Up to now, we used :func:`.translational_symmetry` with `True` or `False` parameters to enable
+or disable periodicity in certain directions. We can also pass a number to indicate the desired
+period length.
+
+.. plot::
+    :context: close-figs
+
+    model = pb.Model(
+        graphene.lattice.monolayer_4atom(),
+        pb.rectangle(x=2, y=2),
+        pb.translational_symmetry(a1=1.2, a2=False)
+    )
+    model.system.plot()
+
+The period length is given in nanometers. Note that our base shape is square with 2 nm sides.
+The base shape forms the supercell of the periodic structure, but because the period length
+(1.2 nm) is smaller than the shape (2 nm), the extra length is cut off by the periodic boundary.
+
+If you specify a periodic length which is bigger than the base shape, the periodic conditions
+not be applied because the periodic boundary will not have anything to bind to.
+
+.. plot::
+    :context: close-figs
+
+    model = pb.Model(
+        graphene.lattice.monolayer_4atom(),
+        pb.rectangle(x=1.5, y=1.5),  # don't combine a small shape
+        pb.translational_symmetry(a1=1.7, a2=False)  # with large period length
+    )
+    model.system.plot()
+
+As you can see, making the period bigger than the shape (1.7 nm vs. 1.5 nm), results in just the
+finite sized part of the system. Don't do this.
 
 The combination of shape and symmetry can be more complex as shown here with a nanoribbon ring
 structure.
