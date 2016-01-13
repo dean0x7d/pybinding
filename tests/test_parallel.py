@@ -15,8 +15,8 @@ def test_sweep(baseline, plot_if_fails):
     @pb.parallelize(v=np.linspace(0, 0.1, 10))
     def factory(v, energy=np.linspace(0, 0.1, 10)):
         model = pb.Model(
-            graphene.lattice.monolayer(),
-            graphene.shape.hexagon_ac(side_width=20),
+            graphene.monolayer(),
+            graphene.hexagon_ac(side_width=20),
             pb.constant_potential(v)
         )
 
@@ -36,8 +36,8 @@ def test_ndsweep(baseline):
     @pb.parallelize(v1=np.linspace(0, 0.1, 5), v2=np.linspace(-0.2, 0.2, 4))
     def factory(v1, v2, energy=np.linspace(0, 0.1, 10)):
         model = pb.Model(
-            graphene.lattice.monolayer(),
-            graphene.shape.hexagon_ac(side_width=20),
+            graphene.monolayer(),
+            graphene.hexagon_ac(side_width=20),
             pb.constant_potential(v1),
             pb.constant_potential(v2)
         )

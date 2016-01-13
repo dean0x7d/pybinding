@@ -18,7 +18,7 @@ def ring(inner_radius, outer_radius):
 
 
 model = pb.Model(
-    graphene.lattice.monolayer_4atom(),
+    graphene.monolayer_4atom(),
     ring(inner_radius=1.4, outer_radius=2),  # length in nanometers
     pb.translational_symmetry(a1=3.8, a2=False)  # period in nanometers
 )

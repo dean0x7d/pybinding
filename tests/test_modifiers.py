@@ -10,7 +10,7 @@ complex_one = np.ones(1, dtype=np.complex64)
 
 
 def build_model(*params):
-    model = pb.Model(graphene.lattice.monolayer(), *params)
+    model = pb.Model(graphene.monolayer(), *params)
     model.report()
 
 

@@ -5,11 +5,11 @@ import pybinding as pb
 from pybinding.repository import graphene
 
 models = {
-    'graphene-pristine': [graphene.lattice.monolayer(), pb.rectangle(30)],
-    'graphene-pristine-oversized': [graphene.lattice.monolayer(), pb.rectangle(45)],
-    'graphene-const_potential': [graphene.lattice.monolayer(), pb.rectangle(30),
+    'graphene-pristine': [graphene.monolayer(), pb.rectangle(30)],
+    'graphene-pristine-oversized': [graphene.monolayer(), pb.rectangle(45)],
+    'graphene-const_potential': [graphene.monolayer(), pb.rectangle(30),
                                  pb.constant_potential(0.5)],
-    'graphene-magnetic_field': [graphene.lattice.monolayer(), pb.rectangle(30),
+    'graphene-magnetic_field': [graphene.monolayer(), pb.rectangle(30),
                                 graphene.constant_magnetic_field(800)],
 }
 

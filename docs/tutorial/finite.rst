@@ -17,7 +17,7 @@ The simplest finite sized system is just the unit cell of the crystal lattice.
 
     from pybinding.repository import graphene
 
-    model = pb.Model(graphene.lattice.monolayer())
+    model = pb.Model(graphene.monolayer())
     model.system.plot()
 
 The unit cell can also be replicated a number of times to create a bigger system.
@@ -26,7 +26,7 @@ The unit cell can also be replicated a number of times to create a bigger system
     :context: close-figs
 
     model = pb.Model(
-        graphene.lattice.monolayer(),
+        graphene.monolayer(),
         pb.primitive(a1=4, a2=3)
     )
 
@@ -62,7 +62,7 @@ counterclockwise order. When added to a :class:`.Model` the lattice will expand 
     :context: close-figs
 
     model = pb.Model(
-        graphene.lattice.monolayer(),
+        graphene.monolayer(),
         rectangle(width=1.6, height=1.2)
     )
     model.system.plot()
@@ -77,7 +77,7 @@ of the system by calling both plot methods one after another.
         return pb.Polygon([[-a/2, 0], [-b/2, h], [b/2, h], [a/2, 0]])
 
     model = pb.Model(
-        graphene.lattice.monolayer(),
+        graphene.monolayer(),
         trapezoid(a=3.2, b=1.4, h=1.5)
     )
     model.system.plot()
@@ -100,7 +100,7 @@ defined by a `contains` function which determines if a lattice site is inside th
         return pb.FreeformShape(contains, width=[2 * radius, 2 * radius])
 
     model = pb.Model(
-        graphene.lattice.monolayer(),
+        graphene.monolayer(),
         circle(radius=2.5)
     )
     model.system.plot()
@@ -132,7 +132,7 @@ will cause the lattice to fill in the shape.
     :context: close-figs
 
     model = pb.Model(
-        graphene.lattice.monolayer(),
+        graphene.monolayer(),
         ring(inner_radius=1.4, outer_radius=2)
     )
     model.system.plot()
@@ -166,7 +166,7 @@ case, we are interested only in the 20 lowest energy states.
     :context: close-figs
 
     model = pb.Model(
-        graphene.lattice.monolayer(),
+        graphene.monolayer(),
         ring(inner_radius=1.4, outer_radius=2)
     )
     solver = pb.solver.arpack(model, num_eigenvalues=20)

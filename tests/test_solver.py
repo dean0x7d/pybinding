@@ -10,10 +10,10 @@ if hasattr(pb._cpp, 'FEAST'):
     solvers.append('feast')
 
 models = {
-    'graphene-pristine': {'model': [graphene.lattice.monolayer(), pb.rectangle(10)],
+    'graphene-pristine': {'model': [graphene.monolayer(), pb.rectangle(10)],
                           'arpack': [30],
                           'feast': [(-0.1, 0.1), 28]},
-    'graphene-magnetic_field': {'model': [graphene.lattice.monolayer(), pb.rectangle(6),
+    'graphene-magnetic_field': {'model': [graphene.monolayer(), pb.rectangle(6),
                                           graphene.constant_magnetic_field(10)],
                                 'arpack': [30],
                                 'feast': [(-0.1, 0.1), 18]},
@@ -74,7 +74,7 @@ def test_spatial_ldos(solver, baseline, plot_if_fails):
 
 
 def test_lapack(baseline, plot_if_fails):
-    model = pb.Model(graphene.lattice.monolayer(), pb.translational_symmetry())
+    model = pb.Model(graphene.monolayer(), pb.translational_symmetry())
     solver = pb.solver.lapack(model)
     assert pytest.fuzzy_equal(solver.eigenvalues, [-3*abs(graphene.t), 3*abs(graphene.t)])
 

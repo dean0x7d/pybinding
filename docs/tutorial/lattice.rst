@@ -173,7 +173,7 @@ Some commmon lattices are included in pybinding's material repository. For examp
 .. plot::
 
     from pybinding.repository import graphene
-    lattice = graphene.lattice.bilayer()
+    lattice = graphene.bilayer()
     lattice.plot()
 
 

@@ -2,6 +2,8 @@ import math
 import pybinding as pb
 from .constants import a, a_cc
 
+__all__ = ['hexagon_ac']
+
 
 def hexagon_ac(side_width, offset=(-a/2, 0)):
     """Hexagon aligned with the armchair edges of graphene

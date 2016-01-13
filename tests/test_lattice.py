@@ -5,11 +5,11 @@ from pybinding.repository import graphene, mos2, examples
 
 lattices = {
     'square': examples.square_lattice(d=0.2, t=1),
-    'graphene-monolayer': graphene.lattice.monolayer(),
-    'graphene-monolayer-alt': graphene.lattice.monolayer_alt(),
-    'graphene-monolayer-4atom': graphene.lattice.monolayer_4atom(),
-    'graphene-monolayer-nn': graphene.lattice.monolayer_nn(),
-    'graphene-bilayer': graphene.lattice.bilayer(),
+    'graphene-monolayer': graphene.monolayer(),
+    'graphene-monolayer-alt': graphene.monolayer_alt(),
+    'graphene-monolayer-4atom': graphene.monolayer_4atom(),
+    'graphene-monolayer-nn': graphene.monolayer_nn(),
+    'graphene-bilayer': graphene.bilayer(),
     'mos2': mos2.three_band_lattice(),
 }
 

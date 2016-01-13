@@ -17,7 +17,7 @@ while the infinite length is achieved with translational symmetry.
     from pybinding.repository import graphene
 
     model = pb.Model(
-        graphene.lattice.monolayer(),
+        graphene.monolayer(),
         pb.rectangle(1.2),  # nm
         pb.translational_symmetry(a1=True, a2=False)
     )
@@ -54,7 +54,7 @@ change, but we will still have a zigzag nanoribbon.
     :context: close-figs
 
     model = pb.Model(
-        graphene.lattice.monolayer(),
+        graphene.monolayer(),
         pb.rectangle(1.2),  # nm
         pb.translational_symmetry(a1=False, a2=True)
     )
@@ -68,7 +68,7 @@ atoms.
 .. plot::
     :context: close-figs
 
-    model = pb.Model(graphene.lattice.monolayer_4atom())
+    model = pb.Model(graphene.monolayer_4atom())
     model.system.plot()
     model.lattice.plot_vectors(position=[-0.13, -0.13])
 
@@ -80,7 +80,7 @@ but the new geometry helps create armchair edges.
     :context: close-figs
 
     model = pb.Model(
-        graphene.lattice.monolayer_4atom(),
+        graphene.monolayer_4atom(),
         pb.primitive(a1=5),
         pb.translational_symmetry(a1=False, a2=True)
     )
@@ -112,7 +112,7 @@ period length.
     :context: close-figs
 
     model = pb.Model(
-        graphene.lattice.monolayer_4atom(),
+        graphene.monolayer_4atom(),
         pb.rectangle(x=2, y=2),
         pb.translational_symmetry(a1=1.2, a2=False)
     )
@@ -129,7 +129,7 @@ not be applied because the periodic boundary will not have anything to bind to.
     :context: close-figs
 
     model = pb.Model(
-        graphene.lattice.monolayer_4atom(),
+        graphene.monolayer_4atom(),
         pb.rectangle(x=1.5, y=1.5),  # don't combine a small shape
         pb.translational_symmetry(a1=1.7, a2=False)  # with large period length
     )
@@ -153,7 +153,7 @@ structure.
 
 
     model = pb.Model(
-        graphene.lattice.monolayer_4atom(),
+        graphene.monolayer_4atom(),
         ring(inner_radius=1.4, outer_radius=2),
         pb.translational_symmetry(a1=3.8, a2=False)
     )

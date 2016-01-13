@@ -27,7 +27,7 @@ def test_polygon_api():
 
 
 def test_polygon(polygon, baseline, plot_if_fails):
-    model = pb.Model(graphene.lattice.monolayer(), polygon)
+    model = pb.Model(graphene.monolayer(), polygon)
     expected = baseline(model.system)
     plot_if_fails(model.system, expected, 'plot')
     plot_if_fails(polygon, polygon, 'plot')
@@ -49,7 +49,7 @@ def test_freeform(baseline, plot_if_fails):
     )
 
     shape = donut(0.6, 1.1)
-    model = pb.Model(graphene.lattice.monolayer(), shape)
+    model = pb.Model(graphene.monolayer(), shape)
     expected = baseline(model.system)
     plot_if_fails(model.system, expected, 'plot')
     plot_if_fails(shape, shape, 'plot')

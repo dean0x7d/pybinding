@@ -8,7 +8,7 @@ pb.pltutils.use_style()
 
 
 model = pb.Model(
-    graphene.lattice.monolayer(),  # predefined lattice from the material repository
+    graphene.monolayer(),  # predefined lattice from the material repository
     pb.translational_symmetry()    # creates an infinite sheet of graphene
 )
 solver = pb.solver.lapack(model)  # eigensolver from the LAPACK library

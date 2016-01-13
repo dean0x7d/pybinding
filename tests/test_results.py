@@ -7,7 +7,7 @@ from pybinding.repository import graphene
 
 @pytest.fixture(scope='module')
 def model():
-    return pb.Model(graphene.lattice.monolayer(), pb.rectangle(1))
+    return pb.Model(graphene.monolayer(), pb.rectangle(1))
 
 
 def test_sweep():
@@ -77,7 +77,7 @@ def test_structure_map(model):
 
 
 def test_structure_map_plot(compare_figure):
-    model = pb.Model(graphene.lattice.monolayer(), pb.rectangle(0.8))
+    model = pb.Model(graphene.monolayer(), pb.rectangle(0.8))
     system = model.system
     data = np.arange(system.num_sites)
     structure_map = pb.results.StructureMap.from_system(data, system)

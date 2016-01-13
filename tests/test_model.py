@@ -7,18 +7,17 @@ models = {
     'square': [examples.square_lattice(d=0.2, t=1), pb.rectangle(1)],
     'square-periodic-2d': [examples.square_lattice(d=0.2, t=1), pb.rectangle(2),
                            pb.translational_symmetry(a1=0.6, a2=0.6)],
-    'graphene-monolayer': [graphene.lattice.monolayer(), graphene.shape.hexagon_ac(1)],
-    'graphene-monolayer-alt': [graphene.lattice.monolayer_alt(), pb.rectangle(1.6, 1.4)],
-    'graphene-monolayer-4atom': [graphene.lattice.monolayer_4atom()],
-    'graphene-monolayer-nn': [graphene.lattice.monolayer_nn(), pb.regular_polygon(6, 0.9)],
-    'graphene-monolayer-periodic-1d': [graphene.lattice.monolayer(), pb.primitive(5, 5),
+    'graphene-monolayer': [graphene.monolayer(), graphene.hexagon_ac(1)],
+    'graphene-monolayer-alt': [graphene.monolayer_alt(), pb.rectangle(1.6, 1.4)],
+    'graphene-monolayer-4atom': [graphene.monolayer_4atom()],
+    'graphene-monolayer-nn': [graphene.monolayer_nn(), pb.regular_polygon(6, 0.9)],
+    'graphene-monolayer-periodic-1d': [graphene.monolayer(), pb.primitive(5, 5),
                                        pb.translational_symmetry(a1=True, a2=False)],
-    'graphene-monolayer-periodic-1d-alt': [graphene.lattice.monolayer_4atom(),
-                                           pb.rectangle(1),
+    'graphene-monolayer-periodic-1d-alt': [graphene.monolayer_4atom(), pb.rectangle(1),
                                            pb.translational_symmetry(a1=False, a2=0.6)],
-    'graphene-monolayer-periodic-2d': [graphene.lattice.monolayer_4atom(), pb.rectangle(1),
+    'graphene-monolayer-periodic-2d': [graphene.monolayer_4atom(), pb.rectangle(1),
                                        pb.translational_symmetry(a1=0.6, a2=0.6)],
-    'graphene-bilayer': [graphene.lattice.bilayer(), graphene.shape.hexagon_ac(0.6)],
+    'graphene-bilayer': [graphene.bilayer(), graphene.hexagon_ac(0.6)],
 }
 
 
@@ -50,7 +49,7 @@ def test_system(model, baseline, plot_if_fails):
 
 
 def test_system_plot(compare_figure):
-    model = pb.Model(graphene.lattice.bilayer(), graphene.shape.hexagon_ac(0.1))
+    model = pb.Model(graphene.bilayer(), graphene.hexagon_ac(0.1))
     with compare_figure() as chk:
         model.system.plot()
     assert chk.passed

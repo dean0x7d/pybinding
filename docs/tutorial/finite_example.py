@@ -17,7 +17,7 @@ def ring(inner_radius, outer_radius):
 
 
 model = pb.Model(
-    graphene.lattice.monolayer(),
+    graphene.monolayer(),
     ring(inner_radius=1.4, outer_radius=2)  # length in nanometers
 )
 

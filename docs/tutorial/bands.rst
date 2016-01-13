@@ -17,7 +17,7 @@ material repository.
 
     from pybinding.repository import graphene
 
-    model = pb.Model(graphene.lattice.monolayer())
+    model = pb.Model(graphene.monolayer())
     model.system.plot()
 
 The result is not very exciting: just a single graphene unit cell, with 2 atoms and a single
@@ -46,7 +46,7 @@ Next, we include :func:`.translational_symmetry` to create an infinite graphene 
     :context: close-figs
 
     model = pb.Model(
-        graphene.lattice.monolayer(),
+        graphene.monolayer(),
         pb.translational_symmetry()
     )
     model.system.plot()
@@ -63,7 +63,7 @@ A :class:`.Solver` can exactly calculate the eigenvalues and eigenvectors of a H
 We'll start by using a :func:`.lapack` solver which is the simplest and most appropriate for small
 systems.
 
-    >>> model = pb.Model(graphene.lattice.monolayer())
+    >>> model = pb.Model(graphene.monolayer())
     >>> solver = pb.solver.lapack(model)
     >>> solver.eigenvalues
     [-2.8 2.8]
@@ -80,7 +80,7 @@ Beyond just the `eigenvalues` and `eigenvectors` attributes, :class:`.Solver` ha
     from math import sqrt, pi
 
     model = pb.Model(
-        graphene.lattice.monolayer(),
+        graphene.monolayer(),
         pb.translational_symmetry()
     )
     solver = pb.solver.lapack(model)

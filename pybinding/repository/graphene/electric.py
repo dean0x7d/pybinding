@@ -1,10 +1,11 @@
 import numpy as _np
 import pybinding as pb
 
+__all__ = ['coulomb_potential']
 
-def coulomb(beta, r_const=.0, offset=(0, 0, 0)):
-    """A Coulomb potential created by an impurity in graphene.
 
+def coulomb_potential(beta, r_const=.0, offset=(0, 0, 0)):
+    """A Coulomb potential created by an impurity in graphene
 
     Parameters
     ----------

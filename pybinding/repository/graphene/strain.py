@@ -2,6 +2,8 @@ import numpy as _np
 import pybinding as pb
 from .constants import a_cc, beta, hbar
 
+__all__ = ['gaussian_bump', 'triaxial_strain']
+
 
 @pb.hopping_energy_modifier
 def strained_hopping(energy, x1, y1, z1, x2, y2, z2):
@@ -27,7 +29,7 @@ def gaussian_bump(h0, r_limit):
     return displacement, strained_hopping
 
 
-def triaxial(magnetic_field):
+def triaxial_strain(magnetic_field):
     def field_to_strain(field):
         return field * a_cc / (4 * hbar * beta) * 10**-18
 
