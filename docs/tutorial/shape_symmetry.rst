@@ -5,20 +5,6 @@ The last two sections showed how to model shape and symmetry individually, but w
 creative and combine the two.
 
 
-Example
-*******
-
-Note the zero-energy mode in the band structure. For wave vector :math:`k = 0`, states on the
-outer edge of the ring have the highest LDOS intensity, but for :math:`k = \pi / a` the inner
-edge states dominate.
-
-
-:download:`Source code </tutorial/shape_symmetry_example.py>`
-
-.. plot:: tutorial/shape_symmetry_example.py
-    :include-source:
-
-
 Nanoribbons
 ***********
 
@@ -190,6 +176,20 @@ that the inner ring shape is preserved and the periodic boundaries are placed on
 
 .. todo::
     2D periodic structure
+
+
+Example
+*******
+
+Note the zero-energy mode in the band structure. For wave vector :math:`k = 0`, states on the
+outer edge of the ring have the highest LDOS intensity, but for :math:`k = \pi / a` the inner
+edge states dominate.
+
+
+:download:`Download source code </tutorial/shape_symmetry_example.py>`
+
+.. plot:: tutorial/shape_symmetry_example.py
+    :include-source:
 
 
 Further reading

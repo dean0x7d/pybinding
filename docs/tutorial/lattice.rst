@@ -6,18 +6,6 @@ primitive vectors, positions of sublattice sites and hopping parameters which co
 All of this structural information is used to build-up a larger system by translation.
 
 
-Example
-*******
-
-The following code shows the basic steps for creating and inspecting a lattice. The text below
-will explain things in more detail, this is just a quick preview.
-
-:download:`Source code </tutorial/lattice_example.py>`
-
-.. plot:: tutorial/lattice_example.py
-    :include-source:
-
-
 Square lattice
 **************
 
@@ -26,6 +14,8 @@ Starting from the basics, we'll create a simple square lattice.
 .. plot::
     :context: reset
     :nofigs:
+
+    import pybinding as pb
 
     d = 0.2  # [nm] unit cell length
     t = 1    # [eV] hopping energy
@@ -44,8 +34,8 @@ Starting from the basics, we'll create a simple square lattice.
     )
 
 
-This code may not be immediately obvious. Fortunately, :class:`.Lattice` objects have a convenient
-:meth:`.Lattice.plot()` method to easily visualize the constructed lattice.
+It may not be immediately obvious what this code does. Fortunately, :class:`.Lattice` objects
+have a convenient :meth:`.Lattice.plot()` method to easily visualize the constructed lattice.
 
 .. plot::
     :context:
@@ -58,11 +48,11 @@ In the figure we see lattice vectors :math:`a_1` and :math:`a_2` which were used
 :meth:`.Lattice.add_sublattices()` method. The slightly faded out circles represent translations
 of the lattice in the primitive vector directions.
 
-The hoppings are specified using the :meth:`.Lattice.add_hoppings()` method and each one consists of
-`(relative_index, from_sublattice, to_sublattice, energy)`:
+The hoppings are specified using the :meth:`.Lattice.add_hoppings()` method and each one consists
+of `(relative_index, from_sublattice, to_sublattice, energy)`:
 
 * The main cell always has the index [0, 0]. The `relative_index` represents the number of steps
-  needed to reach another cell starting from the main one. Each cell is labeled with their
+  needed to reach another cell starting from the main one. Each cell is labeled with its
   `relative_index`, as seen in the figure.
 
 * A hopping is created between the main cell and a neighboring cell specified by `relative_index`.
@@ -84,18 +74,14 @@ are function arguments, which makes the lattice easily configurable.
 
     def square_lattice(d, t):
         lat = pb.Lattice(a1=[d, 0], a2=[0, d])
-
-        lat.add_sublattices(
-            ('A', [0, 0])
-        )
-
+        lat.add_sublattices(('A', [0, 0]))
         lat.add_hoppings(
             ([0, 1], 'A', 'A', t),
             ([1, 0], 'A', 'A', t),
         )
-
         return lat
 
+    # configure the lattice with vector length `d` and hopping energy `t`
     lattice = square_lattice(d=0.1, t=1)
     lattice.plot()
     plt.show()
@@ -150,7 +136,7 @@ The hoppings are defined as follows:
 * `([1, -1], 'A', 'B', t)` specifies the hopping between [0, 0] and [1, -1], from A to B. The
   opposite hopping is added automatically: [-1, 1], from B to A. In the tight-binding matrix
   representation, the opposite hopping is the Hermitian conjugate of the first one. The lattice
-  specification always requires explicitly mentioning just one half of the hoppings while the
+  specification always requires explicitly mentioning only one half of the hoppings while the
   other half is automatically added to guarantee hermiticity.
 * `([0, -1], 'A', 'B', t)` is handled in the very same way.
 
@@ -161,7 +147,7 @@ It serves as a handy visual inspection tool.
 Brillouin zone
 **************
 
-The method :meth:`.Lattice.plot_brillouin_zone()` is another handy tool that does just as it's
+The method :meth:`.Lattice.plot_brillouin_zone()` is another handy tool that does just as its
 name implies.
 
 .. plot::
@@ -189,6 +175,17 @@ Some commmon lattices are included in pybinding's material repository. For examp
     from pybinding.repository import graphene
     lattice = graphene.lattice.bilayer()
     lattice.plot()
+
+
+Example
+*******
+
+This is a full example file which you can download and run with `python lattice_example.py`.
+
+:download:`Download source code</tutorial/lattice_example.py>`
+
+.. plot:: tutorial/lattice_example.py
+    :include-source:
 
 
 Further reading

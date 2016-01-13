@@ -7,17 +7,6 @@ eigensolver :func:`.arpack` is also introduced as a good tool for exactly solvin
 larger Hamiltonian matrices.
 
 
-Example
-*******
-
-Note the high intensity states on the inner and outer edges of the graphene ring.
-
-:download:`Source code </tutorial/finite_example.py>`
-
-.. plot:: tutorial/finite_example.py
-    :include-source:
-
-
 Primitive
 *********
 
@@ -193,6 +182,15 @@ value at each lattice site. In addition, the `site_radius` argument specifies a 
 which will cause the low intensity sites to appear as small circles while high intensity ones
 become large. The states with a high LDOS are clearly visible on the outer and inner edges of the
 graphene ring structure.
+
+
+Example
+*******
+
+:download:`Donwload source code </tutorial/finite_example.py>`
+
+.. plot:: tutorial/finite_example.py
+    :include-source:
 
 
 Further reading

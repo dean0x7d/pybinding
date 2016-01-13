@@ -5,18 +5,6 @@ In order to calculate the band structure of a crystal lattice, this section is g
 the concepts of a :class:`.Model` and a :class:`.Solver`.
 
 
-Example
-*******
-
-This is a complete example of calculating the band structure. A more detailed explanation is
-included below. Note that this example uses an existing lattice from `pybinding.repository`.
-
-:download:`Source code </tutorial/bands_example.py>`
-
-.. plot:: tutorial/bands_example.py
-    :include-source:
-
-
 Model
 *****
 
@@ -36,8 +24,9 @@ The result is not very exciting: just a single graphene unit cell, with 2 atoms 
 hopping between them. The model does not assume translational symmetry or any other physical
 property. Given a lattice it will just create a single unit cell. The model has a :class:`.System`
 attribute which keeps track of structural properties like the positions of lattice sites and the
-way they are connected, as seen in the figure above. The model also has a :attr:`.hamiltonian`
-attribute::
+way they are connected, as seen in the figure above.
+
+The model also has a :attr:`.hamiltonian` attribute::
 
     >>> model.hamiltonian
     (0, 1)   -2.8
@@ -108,6 +97,15 @@ Beyond just the `eigenvalues` and `eigenvectors` attributes, :class:`.Solver` ha
 The points :math:`\Gamma, K` and :math:`M` are used to draw a path in the reciprocal space of
 graphene's Brillouin zone and :meth:`.calc_bands` calculates the band structure along that path.
 The return value of the method is a :class:`.Bands` result object.
+
+
+Example
+*******
+
+:download:`Download source code </tutorial/bands_example.py>`
+
+.. plot:: tutorial/bands_example.py
+    :include-source:
 
 
 Further reading
