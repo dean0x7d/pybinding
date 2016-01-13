@@ -218,7 +218,7 @@ class SpatialMap:
             Forwarded to `plt.tripcolor()`.
         """
         x, y, _ = self.pos
-        kwargs = with_defaults(kwargs, cmap='YlGnBu', shading='gouraud', rasterized=True)
+        kwargs = with_defaults(kwargs, shading='gouraud', rasterized=True)
         pcolor = plt.tripcolor(x, y, self.data, **kwargs)
         self._decorate_plot()
         return pcolor
@@ -235,7 +235,7 @@ class SpatialMap:
         """
         levels = np.linspace(self.data.min(), self.data.max(), num=num_levels)
         x, y, _ = self.pos
-        kwargs = with_defaults(kwargs, cmap='YlGnBu', levels=levels, rasterized=True)
+        kwargs = with_defaults(kwargs, levels=levels, rasterized=True)
         contourf = plt.tricontourf(x, y, self.data, **kwargs)
         self._decorate_plot()
         return contourf
