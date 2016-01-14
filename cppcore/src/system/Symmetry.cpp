@@ -50,12 +50,12 @@ std::vector<Translation> Symmetry::translations(Foundation const& foundation) co
                 return;
         }
 
-        Index3D boundary = Index3D::Constant(-1);
+        auto boundary_slice = SliceIndex3D();
         for (auto n = 0u; n < lattice.vectors.size(); ++n) {
             if (direction[n] > 0)
-                boundary[n] = symmetry_area.left[n];
+                boundary_slice[n] = symmetry_area.left[n];
             else if (direction[n] < 0)
-                boundary[n] = symmetry_area.right[n];
+                boundary_slice[n] = symmetry_area.right[n];
         }
 
         auto const shift_index = direction.cwiseProduct(symmetry_area.middle);
@@ -66,7 +66,7 @@ std::vector<Translation> Symmetry::translations(Foundation const& foundation) co
             shift_lenght += shift * lattice.vectors[n];
         }
 
-        translations.push_back({direction, boundary, shift_index, shift_lenght});
+        translations.push_back({direction, boundary_slice, shift_index, shift_lenght});
     };
 
     // add translations in the hopping directions

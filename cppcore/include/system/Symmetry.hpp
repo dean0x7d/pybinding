@@ -1,6 +1,7 @@
 #pragma once
-#include <vector>
+#include "detail/slice.hpp"
 #include "support/dense.hpp"
+#include <vector>
 
 namespace tbm {
 
@@ -15,7 +16,7 @@ struct SymmetryArea {
 
 struct Translation {
     Index3D direction; ///< translation direction in number of unit cell
-    Index3D boundary; ///< indices of the boundary sites - to be used with for_sites method
+    SliceIndex3D boundary_slice; ///< Foundation slice which has the boundary sites
     Index3D shift_index; ///< width of a translation unit in lattice sites
     Cartesian shift_lenght; ///< width of a translation unit in nanometers
 };

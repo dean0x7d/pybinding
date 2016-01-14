@@ -53,6 +53,14 @@ FoundationIterator Foundation::end() {
     return {this, num_sites};
 }
 
+SliceIterator Foundation::Slice::begin() {
+    return {foundation, index};
+}
+
+SliceIterator Foundation::Slice::end() {
+    return {foundation};
+}
+
 std::pair<Index3D, Index3D> Foundation::find_bounds(Lattice const& lattice,
                                                     Shape const& shape) {
     auto const ndim = lattice.vectors.size();

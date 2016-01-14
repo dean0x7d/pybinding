@@ -1,6 +1,9 @@
 #pragma once
-#include "support/dense.hpp"
 #include "system/Lattice.hpp"
+
+#include "detail/slice.hpp"
+#include "support/dense.hpp"
+
 #include <array>
 #include <vector>
 #include <cstdint>
@@ -11,7 +14,7 @@ class Primitive;
 class Shape;
 class Site;
 class FoundationIterator;
-
+class SliceIterator;
 
 /**
  The foundation class creates a lattice-vector-aligned set of sites. The number of sites is high
@@ -19,12 +22,23 @@ class FoundationIterator;
  */
 class Foundation {
 public:
+    struct Slice {
+        Foundation* const foundation;
+        SliceIndex3D index;
+
+        SliceIterator begin();
+        SliceIterator end();
+    };
+
+public:
     Foundation(Lattice const& lattice, Primitive const& shape);
     Foundation(Lattice const& lattice, Shape const& shape);
 
 public:
     FoundationIterator begin();
     FoundationIterator end();
+
+    Slice operator[](SliceIndex3D const& index) { return {this, index}; }
 
 private:
     /// Return the lower and upper bound of the shape in lattice vector coordinates
@@ -44,10 +58,6 @@ public:
     /// Assign Hamiltonian indices to all valid sites. Returns final number of valid sites.
     int finalize();
 
-    /// Loop only over sites with the specified indices.
-    /// A negative index will result in a loop over all indices in that direction.
-    template<class Fn>
-    void for_sites(const Index3D& indices, Fn lambda);
     /// Loop over all neighbours of a site
     template<class Fn>
     void for_each_neighbour(const Site& site, Fn lambda);
@@ -128,32 +138,73 @@ public:
     }
 };
 
+class SliceIterator {
+    Site site;
+    SliceIndex3D slice_index;
+
+    static int calc_idx(Site const& site) {
+        auto const& index = site.index;
+        auto const& size = site.foundation->size;
+        auto const& size_n = site.foundation->size_n;
+        return ((index[0] * size[1] + index[1]) * size[2] + index[2]) * size_n + site.sublattice;
+    }
+
+    static SliceIndex3D normalize(SliceIndex3D const& index, Index3D const& size) {
+        auto ret = index;
+        for (auto i = 0u; i < 3; ++i) {
+            if (ret[i].end < 0) {
+                ret[i].end = size[i];
+            }
+        }
+        return ret;
+    }
+
+public:
+    SliceIterator(Foundation* foundation) : site{foundation, {}, 0, -1} {}
+    SliceIterator(Foundation* foundation, SliceIndex3D index)
+        : site(foundation->make_site({index[0].start, index[1].start, index[2].start}, 0)),
+          slice_index(normalize(index, foundation->size)) {}
+
+    Site& operator*() { return site; }
+
+    SliceIterator& operator++() {
+        ++site.sublattice;
+        if (site.sublattice == site.foundation->size_n) {
+            ++site.index[2];
+            if (site.index[2] == slice_index[2].end) {
+                ++site.index[1];
+                if (site.index[1] == slice_index[1].end) {
+                    ++site.index[0];
+                    if (site.index[0] == slice_index[0].end) {
+                        site.idx = -1;
+                        return *this;
+                    }
+                    site.index[1] = slice_index[1].start;
+                }
+                site.index[2] = slice_index[2].start;
+            }
+            site.sublattice = 0;
+        }
+
+        site.idx = calc_idx(site);
+        return *this;
+    }
+
+    SliceIterator operator++(int) {
+        auto const copy = *this;
+        this->operator++();
+        return copy;
+    }
+
+    friend bool operator==(SliceIterator const& l, SliceIterator const& r) {
+        return l.site.idx == r.site.idx;
+    }
+    friend bool operator!=(SliceIterator const& l, SliceIterator const& r) { return !(l == r); }
+};
+
 inline Site Foundation::make_site(Index3D index, int sublattice) {
     auto i = ((index[0]*size[1] + index[1])*size[2] + index[2])*size_n + sublattice;
     return {this, index, sublattice, i};
-}
-
-template<class Fn>
-void Foundation::for_sites(const Index3D& indices, Fn lambda) {
-    constexpr auto dims = 3;
-    std::array<std::pair<int, int>, dims> arr;
-
-    for (int i = 0; i < dims; ++i) {
-        if (indices[i] < 0)
-            arr[i] = {0, size[i]};
-        else
-            arr[i] = {indices[i], indices[i] + 1};
-    }
-
-    for (int a = arr[0].first; a < arr[0].second; ++a) {
-        for (int b = arr[1].first; b < arr[1].second; ++b) {
-            for (int c = arr[2].first; c < arr[2].second; ++c) {
-                for (int n = 0; n < size_n; ++n) {
-                    lambda(make_site({a, b, c}, n));
-                } // for n
-            } // for c
-        } // for b
-    } // for a
 }
 
 template<class Fn>

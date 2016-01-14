@@ -105,8 +105,8 @@ void populate_boundaries(System& system, Foundation& foundation, Symmetry const&
 
         // preallocate data (overestimated)
         auto reserve_nonzeros = foundation.size_n * foundation.lattice.max_hoppings() / 2;
-        for (int n = 0; n < translation.boundary.size(); ++n) {
-            if (translation.boundary[n] < 0)
+        for (int n = 0; n < translation.boundary_slice.size(); ++n) {
+            if (translation.boundary_slice[n].end < 0)
                 reserve_nonzeros *= foundation.size[n];
         }
 
@@ -115,9 +115,9 @@ void populate_boundaries(System& system, Foundation& foundation, Symmetry const&
         auto boundary_matrix_view = compressed_inserter(boundary.hoppings, reserve_nonzeros);
 
         // loop over all periodic boundary sites
-        foundation.for_sites(translation.boundary, [&](Site site) {
+        for (auto const& site : foundation[translation.boundary_slice]) {
             if (!site.is_valid())
-                return;
+                continue;
             boundary_matrix_view.start_row(site.hamiltonian_index());
 
             // shift site by a translation unit
@@ -130,7 +130,7 @@ void populate_boundaries(System& system, Foundation& foundation, Symmetry const&
 
                 boundary_matrix_view.insert(neighbour_index, hop.id);
             });
-        });
+        }
         boundary_matrix_view.compress();
 
         if (boundary.hoppings.nonZeros() > 0)

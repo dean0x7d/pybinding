@@ -14,6 +14,7 @@ add_library(pybinding_cppcore
     include/compute/kernel_polynomial.hpp
     include/compute/lanczos.hpp
     include/compute/linear_algebra.hpp
+    include/detail/slice.hpp
     include/detail/strategy.hpp
     include/greens/Greens.hpp
     include/greens/KPM.hpp
