@@ -37,9 +37,9 @@ std::unique_ptr<System> build_system(Foundation& foundation,
 
     if (!system_modifers.empty()) {
         ArrayX<sub_id> sublattices{foundation.num_sites};
-        foundation.for_each_site([&](Site site) {
-            sublattices[site.i] = site.sublattice;
-        });
+        for (auto const& site : foundation) {
+            sublattices[site.idx] = site.sublattice;
+        }
 
         for (auto const& site_state_modifier : system_modifers.state) {
             site_state_modifier->apply(foundation.is_valid, foundation.positions, sublattices);
@@ -72,10 +72,10 @@ void populate_body(System& system, Foundation& foundation) {
     auto matrix_view = compressed_inserter(system.hoppings, reserve_nonzeros);
 
     // populate
-    foundation.for_each_site([&](Site site) {
+    for (auto const& site : foundation) {
         auto const index = site.hamiltonian_index();
         if (index < 0)
-            return; // invalid site
+            continue; // invalid site
 
         system.positions[index] = site.position();
         system.sublattices[index] = foundation.lattice[site.sublattice].alias;
@@ -89,7 +89,7 @@ void populate_body(System& system, Foundation& foundation) {
             if (!hopping.is_conjugate) // only make half the matrix, other half is the conjugate
                 matrix_view.insert(neighbour_index, hopping.id);
         });
-    });
+    }
     matrix_view.compress();
 }
 

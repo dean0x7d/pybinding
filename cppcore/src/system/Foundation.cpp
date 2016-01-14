@@ -45,6 +45,14 @@ Foundation::Foundation(Lattice const& lattice, Shape const& shape)
     trim_edges();
 }
 
+FoundationIterator Foundation::begin() {
+    return {this, 0};
+}
+
+FoundationIterator Foundation::end() {
+    return {this, num_sites};
+}
+
 std::pair<Index3D, Index3D> Foundation::find_bounds(Lattice const& lattice,
                                                     Shape const& shape) {
     auto const ndim = lattice.vectors.size();
@@ -78,15 +86,15 @@ std::pair<Index3D, Index3D> Foundation::find_bounds(Lattice const& lattice,
 
 void Foundation::init_positions(Cartesian origin) {
     positions.resize(num_sites);
-    for_each_site([&](Site site) {
-        positions[site.i] = calculate_position(site, origin);
-    });
+    for (auto& site : *this) {
+        positions[site.idx] = calculate_position(site, origin);
+    }
 }
 
 void Foundation::init_neighbor_count() {
     neighbour_count.resize(num_sites);
 
-    for_each_site([&](Site site) {
+    for (auto& site : *this) {
         auto const& sublattice = lattice[site.sublattice];
         auto num_neighbors = static_cast<int16_t>(sublattice.hoppings.size());
 
@@ -97,15 +105,15 @@ void Foundation::init_neighbor_count() {
                 num_neighbors -= 1;
         }
 
-        neighbour_count[site.i] = num_neighbors;
-    });
+        neighbour_count[site.idx] = num_neighbors;
+    }
 }
 
 void Foundation::trim_edges() {
-    for_each_site([&](Site site) {
+    for (auto& site : *this) {
         if (!site.is_valid())
             clear_neighbors(site);
-    });
+    }
 }
 
 Cartesian Foundation::calculate_position(Site const& site, Cartesian origin) const {

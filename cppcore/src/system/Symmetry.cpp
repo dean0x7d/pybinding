@@ -83,7 +83,7 @@ std::vector<Translation> Symmetry::translations(Foundation const& foundation) co
 void Symmetry::apply(Foundation& foundation) const {
     auto symmetry_area = area(foundation);
 
-    foundation.for_each_site([&](Site site) {
+    for (auto& site : foundation) {
         site.set_valid(site.is_valid() && symmetry_area.contains(site.index));
-    });
+    }
 }

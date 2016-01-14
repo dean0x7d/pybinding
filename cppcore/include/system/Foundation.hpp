@@ -9,7 +9,9 @@ namespace tbm {
 
 class Primitive;
 class Shape;
-struct Site;
+class Site;
+class FoundationIterator;
+
 
 /**
  The foundation class creates a lattice-vector-aligned set of sites. The number of sites is high
@@ -19,6 +21,10 @@ class Foundation {
 public:
     Foundation(Lattice const& lattice, Primitive const& shape);
     Foundation(Lattice const& lattice, Shape const& shape);
+
+public:
+    FoundationIterator begin();
+    FoundationIterator end();
 
 private:
     /// Return the lower and upper bound of the shape in lattice vector coordinates
@@ -38,9 +44,6 @@ public:
     /// Assign Hamiltonian indices to all valid sites. Returns final number of valid sites.
     int finalize();
 
-    /// Loop over all sites in the foundation
-    template<class Fn>
-    void for_each_site(Fn lambda);
     /// Loop only over sites with the specified indices.
     /// A negative index will result in a loop over all indices in that direction.
     template<class Fn>
@@ -67,41 +70,67 @@ public:
 };
 
 /// Describes a site on the lattice foundation
-struct Site {
+class Site {
+public:
     Foundation* const foundation; ///< the site's parent foundation
-    const Index3D index; ///< unit cell index in 3 directions
-    const int sublattice; ///< sublattice index
-    const int i; ///< absolute single number index
+    Index3D index; ///< unit cell index in 3 directions
+    int sublattice; ///< sublattice index
+    int idx; ///< absolute single number index
 
-    Cartesian position() const { return foundation->positions[i]; }
-    bool is_valid() const { return foundation->is_valid[i]; }
-    int16_t num_neighbors() const { return foundation->neighbour_count[i]; }
-    int32_t hamiltonian_index() const { return foundation->hamiltonian_indices[i]; }
+    Cartesian position() const { return foundation->positions[idx]; }
+    bool is_valid() const { return foundation->is_valid[idx]; }
+    int16_t num_neighbors() const { return foundation->neighbour_count[idx]; }
+    int32_t hamiltonian_index() const { return foundation->hamiltonian_indices[idx]; }
 
-    void set_valid(bool state) { foundation->is_valid[i] = state; }
-    void set_neighbors(int16_t n) { foundation->neighbour_count[i] = n; }
+    void set_valid(bool state) { foundation->is_valid[idx] = state; }
+    void set_neighbors(int16_t n) { foundation->neighbour_count[idx] = n; }
 
     Site shift(Index3D shft) const { return foundation->make_site(index + shft, sublattice); }
+};
+
+class FoundationIterator {
+    Site site;
+
+public:
+    FoundationIterator(Foundation* foundation, int idx) : site{foundation, {0, 0, 0}, 0, idx} {}
+
+    Site& operator*() { return site; }
+
+    FoundationIterator& operator++() {
+        ++site.idx;
+        ++site.sublattice;
+        if (site.sublattice == site.foundation->size_n) {
+            ++site.index[2];
+            if (site.index[2] == site.foundation->size[2]) {
+                ++site.index[1];
+                if (site.index[1] == site.foundation->size[1]) {
+                    ++site.index[0];
+                    site.index[1] = 0;
+                }
+                site.index[2] = 0;
+            }
+            site.sublattice = 0;
+        }
+        return *this;
+    }
+
+    FoundationIterator operator++(int) {
+        auto const copy = *this;
+        this->operator++();
+        return copy;
+    }
+
+    friend bool operator==(FoundationIterator const& l, FoundationIterator const& r) {
+        return l.site.idx == r.site.idx;
+    }
+    friend bool operator!=(FoundationIterator const& l, FoundationIterator const& r) {
+        return !(l == r);
+    }
 };
 
 inline Site Foundation::make_site(Index3D index, int sublattice) {
     auto i = ((index[0]*size[1] + index[1])*size[2] + index[2])*size_n + sublattice;
     return {this, index, sublattice, i};
-}
-
-template<class Fn>
-void Foundation::for_each_site(Fn lambda) {
-    // loop over all indices: lattice sites (a, b, c) + sublattices (n)
-    int i = 0;
-    for (int a = 0; a < size[0]; ++a) {
-        for (int b = 0; b < size[1]; ++b) {
-            for (int c = 0; c < size[2]; ++c) {
-                for (int n = 0; n < size_n; ++n, ++i) {
-                    lambda(Site{this, {a, b, c}, n, i});
-                } // for n
-            } // for c
-        } // for b
-    } // for a
 }
 
 template<class Fn>
