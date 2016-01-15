@@ -97,4 +97,14 @@ void Sublattice::add_hopping(Index3D relative_index, sub_id to_sub, hop_id hop, 
     hoppings.push_back({relative_index, to_sub, hop, is_conj});
 }
 
+Cartesian Lattice::calculate_position(Index3D index, sub_id sub, Cartesian origin) const {
+    auto position = origin;
+    // Bravais lattice position
+    for (auto i = 0u; i < vectors.size(); ++i) {
+        position += static_cast<float>(index[i]) * vectors[i];
+    }
+    position += sublattices[sub].offset;
+    return position;
+}
+
 } // namespace tbm

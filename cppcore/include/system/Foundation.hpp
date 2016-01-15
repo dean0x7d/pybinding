@@ -51,8 +51,6 @@ private:
     void trim_edges();
 
 public:
-    /// Calculate the spacial position of a lattice site
-    Cartesian calculate_position(Site const& site, Cartesian origin) const;
     /// Reduce this site's neighbor count to zero and inform its neighbors of the change
     void clear_neighbors(Site& site);
     /// Assign Hamiltonian indices to all valid sites. Returns final number of valid sites.

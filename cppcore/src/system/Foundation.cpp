@@ -93,10 +93,24 @@ std::pair<Index3D, Index3D> Foundation::find_bounds(Lattice const& lattice,
 }
 
 void Foundation::init_positions(Cartesian origin) {
+    // The nested loops look messy, but it's the fastest way to calculate all the positions
+    // because the intermediate a, b, c positions are reused.
     positions.resize(num_sites);
-    for (auto& site : *this) {
-        positions[site.idx] = calculate_position(site, origin);
-    }
+
+    auto idx = 0;
+    for (auto a = 0; a < size[0]; ++a) {
+        Cartesian pos_a = origin + static_cast<float>(a) * lattice.vectors[0];
+        for (auto b = 0; b < size[1]; ++b) {
+            Cartesian pos_b = pos_a + static_cast<float>(b) * lattice.vectors[1];
+            for (auto c = 0; c < size[2]; ++c) {
+                Cartesian pos_c = pos_b + static_cast<float>(c) * lattice.vectors[2];
+                for (auto n = 0; n < size_n; ++n) {
+                    positions[idx] = pos_c + lattice[n].offset;
+                    ++idx;
+                } // n
+            } // c
+        } // b
+    } // a
 }
 
 void Foundation::init_neighbor_count() {
@@ -122,17 +136,6 @@ void Foundation::trim_edges() {
         if (!site.is_valid())
             clear_neighbors(site);
     }
-}
-
-Cartesian Foundation::calculate_position(Site const& site, Cartesian origin) const {
-    Cartesian position = origin;
-    // + unit cell position (Bravais lattice)
-    for (std::size_t i = 0; i < lattice.vectors.size(); ++i) {
-        position += static_cast<float>(site.index[i]) * lattice.vectors[i];
-    }
-    // + sublattice offset
-    position += lattice[site.sublattice].offset;
-    return position;
 }
 
 void Foundation::clear_neighbors(Site& site) {

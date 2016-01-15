@@ -58,7 +58,11 @@ public:
     const Sublattice& operator[](int n) const {
         return sublattices[n];
     }
-    
+
+    /// Calculate the spacial position of a lattice site
+    Cartesian calculate_position(Index3D index, sub_id sublattice,
+                                 Cartesian origin = Cartesian::Zero()) const;
+
 public:
     std::vector<Cartesian> vectors; ///< primitive vectors that define the lattice
     std::vector<Sublattice> sublattices; ///< all the sites that belong to the primitive cell
