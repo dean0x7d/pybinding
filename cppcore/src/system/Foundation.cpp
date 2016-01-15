@@ -136,21 +136,21 @@ Cartesian Foundation::calculate_position(Site const& site, Cartesian origin) con
 }
 
 void Foundation::clear_neighbors(Site& site) {
-    if (site.num_neighbors() == 0)
+    if (site.get_neighbor_count() == 0)
         return;
 
-    for_each_neighbour(site, [&](Site neighbour, Hopping) {
-        if (!neighbour.is_valid())
+    site.for_each_neighbour([&](Site neighbor, Hopping) {
+        if (!neighbor.is_valid())
             return;
 
-        neighbour.set_neighbors(neighbour.num_neighbors() - 1);
-        if (neighbour.num_neighbors() < lattice.min_neighbours) {
-            neighbour.set_valid(false);
-            clear_neighbors(neighbour); // recursive call... but it will not be very deep
+        neighbor.set_neighbor_count(neighbor.get_neighbor_count() - 1);
+        if (neighbor.get_neighbor_count() < lattice.min_neighbours) {
+            neighbor.set_valid(false);
+            clear_neighbors(neighbor); // recursive call... but it will not be very deep
         }
     });
 
-    site.set_neighbors(0);
+    site.set_neighbor_count(0);
 }
 
 int Foundation::finalize()
@@ -166,6 +166,19 @@ int Foundation::finalize()
     }
 
     return num_valid_sites;
+}
+
+ArrayX<sub_id> Foundation::make_sublattice_ids() const {
+    ArrayX<sub_id> sublattice_ids(num_sites);
+
+    auto const max_id = static_cast<sub_id>(lattice.sublattices.size());
+    for (auto i = 0; i < num_sites;) {
+        for (auto id = sub_id{0}; id < max_id; ++id, ++i) {
+            sublattice_ids[i] = id;
+        }
+    }
+
+    return sublattice_ids;
 }
 
 } // namespace tbm

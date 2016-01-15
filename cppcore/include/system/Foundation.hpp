@@ -57,13 +57,8 @@ public:
     void clear_neighbors(Site& site);
     /// Assign Hamiltonian indices to all valid sites. Returns final number of valid sites.
     int finalize();
-
-    /// Loop over all neighbours of a site
-    template<class Fn>
-    void for_each_neighbour(const Site& site, Fn lambda);
-    
-public:
-    Site make_site(Index3D index, int sublattice);
+    /// Make an array of sublattice ids for the entire foundation
+    ArrayX<sub_id> make_sublattice_ids() const;
 
 public:
     Index3D size; ///< number of unit cells in each lattice vector direction
@@ -79,23 +74,62 @@ public:
     Lattice const& lattice; ///< lattice specification
 };
 
-/// Describes a site on the lattice foundation
+/**
+ Describes a site on the lattice foundation
+
+ Proxy type for a single index in the foundation arrays.
+ */
 class Site {
-public:
-    Foundation* const foundation; ///< the site's parent foundation
-    Index3D index; ///< unit cell index in 3 directions
+    Foundation* foundation; ///< the site's parent foundation
+    Index3D index; ///< unit cell spatial index
     int sublattice; ///< sublattice index
-    int idx; ///< absolute single number index
+    int idx; ///< flat index for array addressing
 
-    Cartesian position() const { return foundation->positions[idx]; }
+    /// Recalculate flat `idx` from spatial `index` and `sublattice`
+    void reset_idx() {
+        auto const& size = foundation->size;
+        auto const& size_n = foundation->size_n;
+        idx = ((index[0] * size[1] + index[1]) * size[2] + index[2]) * size_n + sublattice;
+    }
+
+    friend class Foundation;
+    friend class FoundationIterator;
+    friend class SliceIterator;
+
+public:
+    Site(Foundation* foundation, Index3D index, int sublattice, int idx)
+        : foundation(foundation), index(index), sublattice(sublattice), idx(idx) {}
+    Site(Foundation* foundation, Index3D index, int sublattice)
+        : foundation(foundation), index(index), sublattice(sublattice) {
+        reset_idx();
+    }
+
+    Index3D const& get_index() const { return index; }
+    int get_sublattice() const { return sublattice; }
+    int get_idx() const { return idx; }
+
+    Cartesian get_position() const { return foundation->positions[idx]; }
+    int32_t get_hamiltonian_index() const { return foundation->hamiltonian_indices[idx]; }
+
     bool is_valid() const { return foundation->is_valid[idx]; }
-    int16_t num_neighbors() const { return foundation->neighbour_count[idx]; }
-    int32_t hamiltonian_index() const { return foundation->hamiltonian_indices[idx]; }
+    void set_valid(bool state) {foundation->is_valid[idx] = state; }
 
-    void set_valid(bool state) { foundation->is_valid[idx] = state; }
-    void set_neighbors(int16_t n) { foundation->neighbour_count[idx] = n; }
+    int16_t get_neighbor_count() const { return foundation->neighbour_count[idx]; }
+    void set_neighbor_count(int16_t n) {foundation->neighbour_count[idx] = n; }
 
-    Site shift(Index3D shft) const { return foundation->make_site(index + shft, sublattice); }
+    Site shifted(Index3D shift) const { return {foundation, index + shift, sublattice}; }
+
+    /// Loop over all neighbours of this site
+    template<class Fn>
+    void for_each_neighbour(Fn lambda) const  {
+        for (auto const& hopping : foundation->lattice[sublattice].hoppings) {
+            Array3i const neighbor_index = (index + hopping.relative_index).array();
+            if (any_of(neighbor_index < 0) || any_of(neighbor_index >= foundation->size.array()))
+                continue; // out of bounds
+
+            lambda(Site(foundation, neighbor_index, hopping.to_sublattice), hopping);
+        }
+    }
 };
 
 class FoundationIterator {
@@ -131,7 +165,7 @@ public:
     }
 
     friend bool operator==(FoundationIterator const& l, FoundationIterator const& r) {
-        return l.site.idx == r.site.idx;
+        return l.site.get_idx() == r.site.get_idx();
     }
     friend bool operator!=(FoundationIterator const& l, FoundationIterator const& r) {
         return !(l == r);
@@ -141,13 +175,6 @@ public:
 class SliceIterator {
     Site site;
     SliceIndex3D slice_index;
-
-    static int calc_idx(Site const& site) {
-        auto const& index = site.index;
-        auto const& size = site.foundation->size;
-        auto const& size_n = site.foundation->size_n;
-        return ((index[0] * size[1] + index[1]) * size[2] + index[2]) * size_n + site.sublattice;
-    }
 
     static SliceIndex3D normalize(SliceIndex3D const& index, Index3D const& size) {
         auto ret = index;
@@ -162,7 +189,7 @@ class SliceIterator {
 public:
     SliceIterator(Foundation* foundation) : site{foundation, {}, 0, -1} {}
     SliceIterator(Foundation* foundation, SliceIndex3D index)
-        : site(foundation->make_site({index[0].start, index[1].start, index[2].start}, 0)),
+        : site(foundation, {index[0].start, index[1].start, index[2].start}, 0),
           slice_index(normalize(index, foundation->size)) {}
 
     Site& operator*() { return site; }
@@ -186,7 +213,7 @@ public:
             site.sublattice = 0;
         }
 
-        site.idx = calc_idx(site);
+        site.reset_idx();
         return *this;
     }
 
@@ -197,26 +224,9 @@ public:
     }
 
     friend bool operator==(SliceIterator const& l, SliceIterator const& r) {
-        return l.site.idx == r.site.idx;
+        return l.site.get_idx() == r.site.get_idx();
     }
     friend bool operator!=(SliceIterator const& l, SliceIterator const& r) { return !(l == r); }
 };
-
-inline Site Foundation::make_site(Index3D index, int sublattice) {
-    auto i = ((index[0]*size[1] + index[1])*size[2] + index[2])*size_n + sublattice;
-    return {this, index, sublattice, i};
-}
-
-template<class Fn>
-void Foundation::for_each_neighbour(const Site& site, Fn lambda) {
-    // loop over all hoppings from this site's sublattice
-    for (const auto& hopping : lattice[site.sublattice].hoppings) {
-        const auto neighbour_index = (site.index + hopping.relative_index).array();
-        if (any_of(neighbour_index < 0) || any_of(neighbour_index >= size.array()))
-            continue; // out of bounds
-
-        lambda(make_site(neighbour_index, hopping.to_sublattice), hopping);
-    }
-}
 
 } // namespace tbm

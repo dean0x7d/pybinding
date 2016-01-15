@@ -84,6 +84,6 @@ void Symmetry::apply(Foundation& foundation) const {
     auto symmetry_area = area(foundation);
 
     for (auto& site : foundation) {
-        site.set_valid(site.is_valid() && symmetry_area.contains(site.index));
+        site.set_valid(site.is_valid() && symmetry_area.contains(site.get_index()));
     }
 }

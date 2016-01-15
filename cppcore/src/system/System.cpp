@@ -36,16 +36,13 @@ std::unique_ptr<System> build_system(Foundation& foundation,
         symmetry.apply(foundation);
 
     if (!system_modifers.empty()) {
-        ArrayX<sub_id> sublattices{foundation.num_sites};
-        for (auto const& site : foundation) {
-            sublattices[site.idx] = site.sublattice;
-        }
+        auto const sublattices_ids = foundation.make_sublattice_ids();
 
         for (auto const& site_state_modifier : system_modifers.state) {
-            site_state_modifier->apply(foundation.is_valid, foundation.positions, sublattices);
+            site_state_modifier->apply(foundation.is_valid, foundation.positions, sublattices_ids);
         }
         for (auto const& position_modifier : system_modifers.position) {
-            position_modifier->apply(foundation.positions, sublattices);
+            position_modifier->apply(foundation.positions, sublattices_ids);
         }
     }
 
@@ -73,21 +70,21 @@ void populate_body(System& system, Foundation& foundation) {
 
     // populate
     for (auto const& site : foundation) {
-        auto const index = site.hamiltonian_index();
+        auto const index = site.get_hamiltonian_index();
         if (index < 0)
             continue; // invalid site
 
-        system.positions[index] = site.position();
-        system.sublattices[index] = foundation.lattice[site.sublattice].alias;
+        system.positions[index] = site.get_position();
+        system.sublattices[index] = foundation.lattice[site.get_sublattice()].alias;
 
         matrix_view.start_row(index);
-        foundation.for_each_neighbour(site, [&](Site neighbour, Hopping const& hopping) {
-            auto const neighbour_index = neighbour.hamiltonian_index();
-            if (neighbour_index < 0)
+        site.for_each_neighbour([&](Site neighbor, Hopping hopping) {
+            auto const neighbor_index = neighbor.get_hamiltonian_index();
+            if (neighbor_index < 0)
                 return; // invalid
 
             if (!hopping.is_conjugate) // only make half the matrix, other half is the conjugate
-                matrix_view.insert(neighbour_index, hopping.id);
+                matrix_view.insert(neighbor_index, hopping.id);
         });
     }
     matrix_view.compress();
@@ -114,21 +111,20 @@ void populate_boundaries(System& system, Foundation& foundation, Symmetry const&
         boundary.hoppings.resize(num_valid_sites, num_valid_sites);
         auto boundary_matrix_view = compressed_inserter(boundary.hoppings, reserve_nonzeros);
 
-        // loop over all periodic boundary sites
         for (auto const& site : foundation[translation.boundary_slice]) {
             if (!site.is_valid())
                 continue;
-            boundary_matrix_view.start_row(site.hamiltonian_index());
 
-            // shift site by a translation unit
-            auto shifted_site = site.shift(translation.shift_index);
-            // and see if it has valid neighbours
-            foundation.for_each_neighbour(shifted_site, [&](Site neighbour, Hopping const& hop) {
-                auto const neighbour_index = neighbour.hamiltonian_index();
+            boundary_matrix_view.start_row(site.get_hamiltonian_index());
+
+            auto const shifted_site = site.shifted(translation.shift_index);
+            // the site is shifted to the opposite edge of the translation unit
+            shifted_site.for_each_neighbour([&](Site neighbour, Hopping hopping) {
+                auto const neighbour_index = neighbour.get_hamiltonian_index();
                 if (neighbour_index < 0)
                     return; // invalid
 
-                boundary_matrix_view.insert(neighbour_index, hop.id);
+                boundary_matrix_view.insert(neighbour_index, hopping.id);
             });
         }
         boundary_matrix_view.compress();
