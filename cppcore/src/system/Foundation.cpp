@@ -99,13 +99,13 @@ void Foundation::init_positions(Cartesian origin) {
 
     auto idx = 0;
     for (auto a = 0; a < size[0]; ++a) {
-        Cartesian pos_a = origin + static_cast<float>(a) * lattice.vectors[0];
+        Cartesian pa = origin + static_cast<float>(a) * lattice.vectors[0];
         for (auto b = 0; b < size[1]; ++b) {
-            Cartesian pos_b = pos_a + static_cast<float>(b) * lattice.vectors[1];
+            Cartesian pb = (b == 0) ? pa : pa + static_cast<float>(b) * lattice.vectors[1];
             for (auto c = 0; c < size[2]; ++c) {
-                Cartesian pos_c = pos_b + static_cast<float>(c) * lattice.vectors[2];
+                Cartesian pc = (c == 0) ? pb : pb + static_cast<float>(c) * lattice.vectors[2];
                 for (auto n = 0; n < size_n; ++n) {
-                    positions[idx] = pos_c + lattice[n].offset;
+                    positions[idx] = pc + lattice[n].offset;
                     ++idx;
                 } // n
             } // c
