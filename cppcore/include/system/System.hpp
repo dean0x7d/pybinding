@@ -11,6 +11,7 @@ namespace tbm {
 
 class Shape;
 class Foundation;
+class HamiltonianIndices;
 class Symmetry;
 class SystemModifiers;
 
@@ -53,7 +54,7 @@ public:
 };
 
 std::unique_ptr<System> build_system(Foundation&, SystemModifiers const&, Symmetry const&);
-void populate_body(System&, Foundation&);
-void populate_boundaries(System&, Foundation&, Symmetry const&);
+void populate_body(System&, Foundation&, HamiltonianIndices const&);
+void populate_boundaries(System&, Foundation&, HamiltonianIndices const&, Symmetry const&);
 
 } // namespace tbm

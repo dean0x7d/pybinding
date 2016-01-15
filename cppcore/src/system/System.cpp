@@ -36,7 +36,7 @@ std::unique_ptr<System> build_system(Foundation& foundation,
         symmetry.apply(foundation);
 
     if (!system_modifers.empty()) {
-        auto const sublattices_ids = foundation.make_sublattice_ids();
+        auto const sublattices_ids = detail::make_sublattice_ids(foundation);
 
         for (auto const& site_state_modifier : system_modifers.state) {
             site_state_modifier->apply(foundation.is_valid, foundation.positions, sublattices_ids);
@@ -46,9 +46,10 @@ std::unique_ptr<System> build_system(Foundation& foundation,
         }
     }
 
-    populate_body(*system, foundation);
+    auto const hamiltonian_indices = HamiltonianIndices(foundation);
+    populate_body(*system, foundation, hamiltonian_indices);
     if (symmetry)
-        populate_boundaries(*system, foundation, symmetry);
+        populate_boundaries(*system, foundation, hamiltonian_indices, symmetry);
 
     if (system->num_sites() == 0) // sanity check
         throw std::runtime_error{"Sanity fail: the system was built with 0 lattice sites."};
@@ -56,21 +57,18 @@ std::unique_ptr<System> build_system(Foundation& foundation,
     return system;
 }
 
-void populate_body(System& system, Foundation& foundation) {
-    // count the number of valid sites and assign a Hamiltonian index to them
-    auto const num_valid_sites = foundation.finalize();
+void populate_body(System& system, Foundation& foundation,
+                   HamiltonianIndices const& hamiltonian_indices) {
+    auto const size = hamiltonian_indices.size();
+    system.positions.resize(size);
+    system.sublattices.resize(size);
+    system.hoppings.resize(size, size);
 
-    // allocate
-    system.positions.resize(num_valid_sites);
-    system.sublattices.resize(num_valid_sites);
-    system.hoppings.resize(num_valid_sites, num_valid_sites);
-
-    auto const reserve_nonzeros = (foundation.lattice.max_hoppings() * num_valid_sites) / 2;
+    auto const reserve_nonzeros = (foundation.lattice.max_hoppings() * size) / 2;
     auto matrix_view = compressed_inserter(system.hoppings, reserve_nonzeros);
 
-    // populate
     for (auto const& site : foundation) {
-        auto const index = site.get_hamiltonian_index();
+        auto const index = hamiltonian_indices[site];
         if (index < 0)
             continue; // invalid site
 
@@ -79,7 +77,7 @@ void populate_body(System& system, Foundation& foundation) {
 
         matrix_view.start_row(index);
         site.for_each_neighbour([&](Site neighbor, Hopping hopping) {
-            auto const neighbor_index = neighbor.get_hamiltonian_index();
+            auto const neighbor_index = hamiltonian_indices[neighbor];
             if (neighbor_index < 0)
                 return; // invalid
 
@@ -90,12 +88,13 @@ void populate_body(System& system, Foundation& foundation) {
     matrix_view.compress();
 }
 
-void populate_boundaries(System& system, Foundation& foundation, Symmetry const& symmetry) {
-    auto const num_valid_sites = foundation.finalize();
-
+void populate_boundaries(System& system, Foundation& foundation,
+                         HamiltonianIndices const& hamiltonian_indices,
+                         Symmetry const& symmetry) {
     // a boundary is added first to prevent copying of Eigen::SparseMatrix
     // --> revise when Eigen types become movable
 
+    auto const size = hamiltonian_indices.size();
     system.boundaries.emplace_back(system);
     for (const auto& translation : symmetry.translations(foundation)) {
         auto& boundary = system.boundaries.back();
@@ -108,23 +107,23 @@ void populate_boundaries(System& system, Foundation& foundation, Symmetry const&
         }
 
         boundary.shift = translation.shift_lenght;
-        boundary.hoppings.resize(num_valid_sites, num_valid_sites);
+        boundary.hoppings.resize(size, size);
         auto boundary_matrix_view = compressed_inserter(boundary.hoppings, reserve_nonzeros);
 
         for (auto const& site : foundation[translation.boundary_slice]) {
             if (!site.is_valid())
                 continue;
 
-            boundary_matrix_view.start_row(site.get_hamiltonian_index());
+            boundary_matrix_view.start_row(hamiltonian_indices[site]);
 
             auto const shifted_site = site.shifted(translation.shift_index);
             // the site is shifted to the opposite edge of the translation unit
-            shifted_site.for_each_neighbour([&](Site neighbour, Hopping hopping) {
-                auto const neighbour_index = neighbour.get_hamiltonian_index();
-                if (neighbour_index < 0)
+            shifted_site.for_each_neighbour([&](Site neighbor, Hopping hopping) {
+                auto const neighbor_index = hamiltonian_indices[neighbor];
+                if (neighbor_index < 0)
                     return; // invalid
 
-                boundary_matrix_view.insert(neighbour_index, hopping.id);
+                boundary_matrix_view.insert(neighbor_index, hopping.id);
             });
         }
         boundary_matrix_view.compress();

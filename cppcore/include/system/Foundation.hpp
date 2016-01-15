@@ -13,14 +13,40 @@ namespace tbm {
 class Primitive;
 class Shape;
 class Site;
+class Foundation;
+class FoundationConstIterator;
 class FoundationIterator;
 class SliceIterator;
+
+namespace detail {
+    /// Return the lower and upper bounds of the shape in lattice vector coordinates
+    std::pair<Index3D, Index3D> find_bounds(Shape const& shape, Lattice const& lattice);
+    /// Generate real space coordinates for a block of lattice sites
+    CartesianArray generate_positions(Cartesian origin, Index3D size, Lattice const& lattice);
+    /// Initialize the neighbor count for each site
+    ArrayX<int16_t> count_neighbors(Foundation const& foundation);
+    /// Reduce this site's neighbor count to zero and inform its neighbors of the change
+    void clear_neighbors(Site& site, ArrayX<int16_t>& neighbor_count);
+    /// Remove edge sites which have a neighbor count lower than the lattice minimum
+    void trim_edges(Foundation& foundation);
+    /// Make an array of sublattice ids for the entire foundation
+    ArrayX<sub_id> make_sublattice_ids(Foundation const& foundation);
+} // namespace detail
 
 /**
  The foundation class creates a lattice-vector-aligned set of sites. The number of sites is high
  enough to encompass the given shape. After creation, the foundation can be cut down to the shape.
  */
 class Foundation {
+public:
+    Lattice const& lattice;
+    Index3D size; ///< number of unit cells in each lattice vector direction
+    int size_n; ///< sublattice size (number of sites in each unit cell)
+    int num_sites; ///< total number of sites: product of all sizes (3D and sublattice)
+
+    CartesianArray positions; ///< real space coordinates of lattice sites
+    ArrayX<bool> is_valid; ///< indicates if the site should be included in the final system
+
 public:
     struct Slice {
         Foundation* const foundation;
@@ -34,42 +60,12 @@ public:
     Foundation(Lattice const& lattice, Primitive const& shape);
     Foundation(Lattice const& lattice, Shape const& shape);
 
-public:
+    FoundationConstIterator begin() const;
+    FoundationConstIterator end() const;
     FoundationIterator begin();
     FoundationIterator end();
 
     Slice operator[](SliceIndex3D const& index) { return {this, index}; }
-
-private:
-    /// Return the lower and upper bound of the shape in lattice vector coordinates
-    static std::pair<Index3D, Index3D> find_bounds(Lattice const& lattice, Shape const& shape);
-    /// Initialize the coordinates for each site
-    void init_positions(Cartesian origin);
-    /// Initialize the neighbor count for each site
-    void init_neighbor_count();
-    /// Remove edge sites which have a neighbor count lower than the lattice minimum
-    void trim_edges();
-
-public:
-    /// Reduce this site's neighbor count to zero and inform its neighbors of the change
-    void clear_neighbors(Site& site);
-    /// Assign Hamiltonian indices to all valid sites. Returns final number of valid sites.
-    int finalize();
-    /// Make an array of sublattice ids for the entire foundation
-    ArrayX<sub_id> make_sublattice_ids() const;
-
-public:
-    Index3D size; ///< number of unit cells in each lattice vector direction
-    int size_n; ///< sublattice size (number of sites in each unit cell)
-    int num_sites; ///< total number of sites: product of all sizes (3D and sublattice)
-
-    // arrays of length num_sites which track various properties
-    CartesianArray positions; ///< coordinates
-    ArrayX<bool> is_valid; ///< indicates if the site should be included in the final system
-    ArrayX<int16_t> neighbour_count; ///< number sites which have a hopping to this one
-    ArrayX<int32_t> hamiltonian_indices; ///< Hamiltonian index (single number) for the final system
-
-    Lattice const& lattice; ///< lattice specification
 };
 
 /**
@@ -91,6 +87,7 @@ class Site {
     }
 
     friend class Foundation;
+    friend class FoundationConstIterator;
     friend class FoundationIterator;
     friend class SliceIterator;
 
@@ -105,15 +102,12 @@ public:
     Index3D const& get_index() const { return index; }
     int get_sublattice() const { return sublattice; }
     int get_idx() const { return idx; }
+    Lattice const& get_lattice() const { return foundation->lattice; }
 
     Cartesian get_position() const { return foundation->positions[idx]; }
-    int32_t get_hamiltonian_index() const { return foundation->hamiltonian_indices[idx]; }
 
     bool is_valid() const { return foundation->is_valid[idx]; }
     void set_valid(bool state) {foundation->is_valid[idx] = state; }
-
-    int16_t get_neighbor_count() const { return foundation->neighbour_count[idx]; }
-    void set_neighbor_count(int16_t n) {foundation->neighbour_count[idx] = n; }
 
     Site shifted(Index3D shift) const { return {foundation, index + shift, sublattice}; }
 
@@ -130,15 +124,33 @@ public:
     }
 };
 
-class FoundationIterator {
+/**
+ Hamiltonian indices of valid Foundation sites
+ */
+class HamiltonianIndices {
+    ArrayX<int> indices;
+    int num_valid_sites;
+
+public:
+    HamiltonianIndices(Foundation const& foundation);
+
+    /// Return the Hamiltonian matrix index for the given site
+    int operator[](Site const& site) const { return indices[site.get_idx()]; }
+    /// Size of the Hamiltonian matrix
+    int size() const { return num_valid_sites; }
+};
+
+class FoundationConstIterator {
+protected:
     Site site;
 
 public:
-    FoundationIterator(Foundation* foundation, int idx) : site{foundation, {0, 0, 0}, 0, idx} {}
+    FoundationConstIterator(Foundation* foundation, int idx)
+        : site{foundation, {0, 0, 0}, 0, idx} {}
 
-    Site& operator*() { return site; }
+    Site const& operator*() const { return site; }
 
-    FoundationIterator& operator++() {
+    FoundationConstIterator& operator++() {
         ++site.idx;
         ++site.sublattice;
         if (site.sublattice == site.foundation->size_n) {
@@ -156,18 +168,25 @@ public:
         return *this;
     }
 
-    FoundationIterator operator++(int) {
+    FoundationConstIterator operator++(int) {
         auto const copy = *this;
         this->operator++();
         return copy;
     }
 
-    friend bool operator==(FoundationIterator const& l, FoundationIterator const& r) {
+    friend bool operator==(FoundationConstIterator const& l, FoundationConstIterator const& r) {
         return l.site.get_idx() == r.site.get_idx();
     }
-    friend bool operator!=(FoundationIterator const& l, FoundationIterator const& r) {
+    friend bool operator!=(FoundationConstIterator const& l, FoundationConstIterator const& r) {
         return !(l == r);
     }
+};
+
+class FoundationIterator : public FoundationConstIterator {
+public:
+    using FoundationConstIterator::FoundationConstIterator;
+
+    Site& operator*() { return site; }
 };
 
 class SliceIterator {
