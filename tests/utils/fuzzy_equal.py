@@ -55,7 +55,7 @@ class FuzzyReport:
         self.explanation = []
 
     def __eq__(self, other):
-        actual, expected = self.value, other
+        actual, expected = map(np.atleast_1d, (self.value, other))
         isclose = np.isclose(actual, expected, self.rtol, self.atol)
         if np.all(isclose):
             return True
