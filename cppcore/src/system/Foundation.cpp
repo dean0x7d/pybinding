@@ -160,30 +160,6 @@ Foundation::Foundation(Lattice const& lattice, Shape const& shape)
     detail::trim_edges(*this);
 }
 
-FoundationConstIterator Foundation::begin() const {
-    return {const_cast<Foundation*>(this), 0};
-}
-
-FoundationConstIterator Foundation::end() const {
-    return {const_cast<Foundation*>(this), num_sites};
-}
-
-FoundationIterator Foundation::begin() {
-    return {this, 0};
-}
-
-FoundationIterator Foundation::end() {
-    return {this, num_sites};
-}
-
-SliceIterator Foundation::Slice::begin() {
-    return {foundation, index};
-}
-
-SliceIterator Foundation::Slice::end() {
-    return {foundation};
-}
-
 HamiltonianIndices::HamiltonianIndices(Foundation const& foundation)
     : indices(ArrayX<int>::Constant(foundation.num_sites, -1)), num_valid_sites(0) {
     // Assign Hamiltonian indices to all valid sites

@@ -14,9 +14,6 @@ class Primitive;
 class Shape;
 class Site;
 class Foundation;
-class FoundationConstIterator;
-class FoundationIterator;
-class SliceIterator;
 
 namespace detail {
     /// Return the lower and upper bounds of the shape in lattice vector coordinates
@@ -47,25 +44,26 @@ public:
     CartesianArray positions; ///< real space coordinates of lattice sites
     ArrayX<bool> is_valid; ///< indicates if the site should be included in the final system
 
-public:
-    struct Slice {
-        Foundation* const foundation;
-        SliceIndex3D index;
+private:
+    template<bool is_const> class Iterator;
+    using ConstIterator = Iterator<true>;
+    using NonConstIterator = Iterator<false>;
 
-        SliceIterator begin();
-        SliceIterator end();
-    };
+    template<bool is_const> class Slice;
+    using ConstSlice = Slice<true>;
+    using NonConstSlice = Slice<false>;
 
 public:
     Foundation(Lattice const& lattice, Primitive const& shape);
     Foundation(Lattice const& lattice, Shape const& shape);
 
-    FoundationConstIterator begin() const;
-    FoundationConstIterator end() const;
-    FoundationIterator begin();
-    FoundationIterator end();
+    ConstIterator begin() const;
+    ConstIterator end() const;
+    NonConstIterator begin();
+    NonConstIterator end();
 
-    Slice operator[](SliceIndex3D const& index) { return {this, index}; }
+    ConstSlice operator[](SliceIndex3D const& index) const;
+    NonConstSlice operator[](SliceIndex3D const& index);
 };
 
 /**
@@ -74,6 +72,7 @@ public:
  Proxy type for a single index in the foundation arrays.
  */
 class Site {
+protected:
     Foundation* foundation; ///< the site's parent foundation
     Index3D index; ///< unit cell spatial index
     int sublattice; ///< sublattice index
@@ -85,11 +84,6 @@ class Site {
         auto const& size_n = foundation->size_n;
         idx = ((index[0] * size[1] + index[1]) * size[2] + index[2]) * size_n + sublattice;
     }
-
-    friend class Foundation;
-    friend class FoundationConstIterator;
-    friend class FoundationIterator;
-    friend class SliceIterator;
 
 public:
     Site(Foundation* foundation, Index3D index, int sublattice, int idx)
@@ -122,6 +116,9 @@ public:
             lambda(Site(foundation, neighbor_index, hopping.to_sublattice), hopping);
         }
     }
+
+    friend bool operator==(Site const& l, Site const& r) { return l.idx == r.idx; }
+    friend bool operator!=(Site const& l, Site const& r) { return !(l == r); }
 };
 
 /**
@@ -140,110 +137,118 @@ public:
     int size() const { return num_valid_sites; }
 };
 
-class FoundationConstIterator {
-protected:
-    Site site;
+template<bool is_const>
+class Foundation::Iterator : public Site {
+    using Ref = typename std::conditional<is_const, Site const&, Site&>::type;
 
 public:
-    FoundationConstIterator(Foundation* foundation, int idx)
-        : site{foundation, {0, 0, 0}, 0, idx} {}
+    Iterator(Foundation* foundation, int idx) : Site(foundation, {0, 0, 0}, 0, idx) {}
 
-    Site const& operator*() const { return site; }
+    Ref operator*() { return *this; }
 
-    FoundationConstIterator& operator++() {
-        ++site.idx;
-        ++site.sublattice;
-        if (site.sublattice == site.foundation->size_n) {
-            ++site.index[2];
-            if (site.index[2] == site.foundation->size[2]) {
-                ++site.index[1];
-                if (site.index[1] == site.foundation->size[1]) {
-                    ++site.index[0];
-                    site.index[1] = 0;
+    Iterator& operator++() {
+        ++idx;
+        ++sublattice;
+        if (sublattice == foundation->size_n) {
+            ++index[2];
+            if (index[2] == foundation->size[2]) {
+                ++index[1];
+                if (index[1] == foundation->size[1]) {
+                    ++index[0];
+                    index[1] = 0;
                 }
-                site.index[2] = 0;
+                index[2] = 0;
             }
-            site.sublattice = 0;
+            sublattice = 0;
         }
         return *this;
     }
-
-    FoundationConstIterator operator++(int) {
-        auto const copy = *this;
-        this->operator++();
-        return copy;
-    }
-
-    friend bool operator==(FoundationConstIterator const& l, FoundationConstIterator const& r) {
-        return l.site.get_idx() == r.site.get_idx();
-    }
-    friend bool operator!=(FoundationConstIterator const& l, FoundationConstIterator const& r) {
-        return !(l == r);
-    }
 };
 
-class FoundationIterator : public FoundationConstIterator {
-public:
-    using FoundationConstIterator::FoundationConstIterator;
+template<bool is_const>
+class Foundation::Slice {
+    Foundation* foundation;
+    SliceIndex3D index;
 
-    Site& operator*() { return site; }
-};
+private:
+    class Iterator : public Site {
+        using Ref = typename std::conditional<is_const, Site const&, Site&>::type;
 
-class SliceIterator {
-    Site site;
-    SliceIndex3D slice_index;
+        SliceIndex3D slice_index;
 
-    static SliceIndex3D normalize(SliceIndex3D const& index, Index3D const& size) {
-        auto ret = index;
-        for (auto i = 0u; i < 3; ++i) {
-            if (ret[i].end < 0) {
-                ret[i].end = size[i];
+        static SliceIndex3D normalize(SliceIndex3D const& index, Index3D const& size) {
+            auto ret = index;
+            for (auto i = 0; i < index.size(); ++i) {
+                if (ret[i].end < 0) {
+                    ret[i].end = size[i];
+                }
             }
+            return ret;
         }
-        return ret;
-    }
 
-public:
-    SliceIterator(Foundation* foundation) : site{foundation, {}, 0, -1} {}
-    SliceIterator(Foundation* foundation, SliceIndex3D index)
-        : site(foundation, {index[0].start, index[1].start, index[2].start}, 0),
-          slice_index(normalize(index, foundation->size)) {}
+    public:
+        Iterator(Foundation* foundation) : Site(foundation, {}, 0, -1) {}
+        Iterator(Foundation* foundation, SliceIndex3D index)
+            : Site(foundation, {index[0].start, index[1].start, index[2].start}, 0),
+              slice_index(normalize(index, foundation->size)) {}
 
-    Site& operator*() { return site; }
+        Ref operator*() { return *this; }
 
-    SliceIterator& operator++() {
-        ++site.sublattice;
-        if (site.sublattice == site.foundation->size_n) {
-            ++site.index[2];
-            if (site.index[2] == slice_index[2].end) {
-                ++site.index[1];
-                if (site.index[1] == slice_index[1].end) {
-                    ++site.index[0];
-                    if (site.index[0] == slice_index[0].end) {
-                        site.idx = -1;
-                        return *this;
+        Iterator& operator++() {
+            ++sublattice;
+            if (sublattice == foundation->size_n) {
+                ++index[2];
+                if (index[2] == slice_index[2].end) {
+                    ++index[1];
+                    if (index[1] == slice_index[1].end) {
+                        ++index[0];
+                        if (index[0] == slice_index[0].end) {
+                            idx = -1;
+                            return *this;
+                        }
+                        index[1] = slice_index[1].start;
                     }
-                    site.index[1] = slice_index[1].start;
+                    index[2] = slice_index[2].start;
                 }
-                site.index[2] = slice_index[2].start;
+                sublattice = 0;
             }
-            site.sublattice = 0;
+
+            reset_idx();
+            return *this;
         }
+    };
 
-        site.reset_idx();
-        return *this;
-    }
+public:
+    Slice(Foundation* foundation, SliceIndex3D const& index)
+        : foundation(foundation), index(index) {}
 
-    SliceIterator operator++(int) {
-        auto const copy = *this;
-        this->operator++();
-        return copy;
-    }
-
-    friend bool operator==(SliceIterator const& l, SliceIterator const& r) {
-        return l.site.get_idx() == r.site.get_idx();
-    }
-    friend bool operator!=(SliceIterator const& l, SliceIterator const& r) { return !(l == r); }
+    Iterator begin() { return {foundation, index}; }
+    Iterator end() { return {foundation}; }
 };
+
+
+inline Foundation::ConstIterator Foundation::begin() const {
+    return {const_cast<Foundation*>(this), 0};
+}
+
+inline Foundation::ConstIterator Foundation::end() const {
+    return {const_cast<Foundation*>(this), num_sites};
+}
+
+inline Foundation::NonConstIterator Foundation::begin() {
+    return {this, 0};
+}
+
+inline Foundation::NonConstIterator Foundation::end() {
+    return {this, num_sites};
+}
+
+inline Foundation::ConstSlice Foundation::operator[](SliceIndex3D const& index) const {
+    return {const_cast<Foundation*>(this), index};
+}
+
+inline Foundation::NonConstSlice Foundation::operator[](SliceIndex3D const& index) {
+    return {this, index};
+}
 
 } // namespace tbm
