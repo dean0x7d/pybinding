@@ -35,6 +35,12 @@ ArrayX<bool> WithinPolygon::operator()(CartesianArray const& positions) const {
         // Aliases for readability
         auto const& x1 = x[i]; auto const& x2 = x[j];
         auto const& y1 = y[i]; auto const& y2 = y[j];
+
+        // Check if ray is parallel to this side of the polygon
+        if (num::approx_equal(y1, y2)) {
+            continue; // avoid division by zero in the next step
+        }
+
         // The slope of this side
         auto const k = (x2 - x1) / (y2 - y1);
 
