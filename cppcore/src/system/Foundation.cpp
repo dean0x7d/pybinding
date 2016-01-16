@@ -60,16 +60,19 @@ CartesianArray generate_positions(Cartesian origin, Index3D size, Lattice const&
 }
 
 ArrayX<int16_t> count_neighbors(Foundation const& foundation) {
-    ArrayX<int16_t> neighbor_count(foundation.num_sites);
+    ArrayX<int16_t> neighbor_count(foundation.get_num_sites());
+
+    auto const& lattice = foundation.get_lattice();
+    auto const size = foundation.get_size().array();
 
     for (auto const& site : foundation) {
-        auto const& sublattice = foundation.lattice[site.get_sublattice()];
+        auto const& sublattice = lattice[site.get_sublattice()];
         auto num_neighbors = static_cast<int16_t>(sublattice.hoppings.size());
 
         // Reduce the neighbor count for sites on the edges
         for (auto const& hopping : sublattice.hoppings) {
             auto const index = (site.get_index() + hopping.relative_index).array();
-            if (any_of(index < 0) || any_of(index >= foundation.size.array()))
+            if (any_of(index < 0) || any_of(index >= size))
                 num_neighbors -= 1;
         }
 
@@ -109,10 +112,10 @@ void trim_edges(Foundation& foundation) {
 }
 
 ArrayX<sub_id> make_sublattice_ids(Foundation const& foundation) {
-    ArrayX<sub_id> sublattice_ids(foundation.num_sites);
+    ArrayX<sub_id> sublattice_ids(foundation.get_num_sites());
 
-    auto const max_id = static_cast<sub_id>(foundation.lattice.sublattices.size());
-    for (auto i = 0; i < foundation.num_sites;) {
+    auto const max_id = static_cast<sub_id>(foundation.get_num_sublattices());
+    for (auto i = 0; i < foundation.get_num_sites();) {
         for (auto id = sub_id{0}; id < max_id; ++id, ++i) {
             sublattice_ids[i] = id;
         }
@@ -161,10 +164,11 @@ Foundation::Foundation(Lattice const& lattice, Shape const& shape)
 }
 
 HamiltonianIndices::HamiltonianIndices(Foundation const& foundation)
-    : indices(ArrayX<int>::Constant(foundation.num_sites, -1)), num_valid_sites(0) {
+    : indices(ArrayX<int>::Constant(foundation.get_num_sites(), -1)), num_valid_sites(0) {
     // Assign Hamiltonian indices to all valid sites
-    for (int i = 0; i < foundation.num_sites; ++i) {
-        if (foundation.is_valid[i])
+    auto& is_valid = foundation.get_states();
+    for (auto i = 0; i < foundation.get_num_sites(); ++i) {
+        if (is_valid[i])
             indices[i] = num_valid_sites++;
     }
 }

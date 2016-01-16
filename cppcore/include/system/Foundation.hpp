@@ -35,7 +35,6 @@ namespace detail {
  enough to encompass the given shape. After creation, the foundation can be cut down to the shape.
  */
 class Foundation {
-public:
     Lattice const& lattice;
     Index3D size; ///< number of unit cells in each lattice vector direction
     int size_n; ///< sublattice size (number of sites in each unit cell)
@@ -43,6 +42,8 @@ public:
 
     CartesianArray positions; ///< real space coordinates of lattice sites
     ArrayX<bool> is_valid; ///< indicates if the site should be included in the final system
+
+    friend class Site;
 
 private:
     template<bool is_const> class Iterator;
@@ -64,6 +65,16 @@ public:
 
     ConstSlice operator[](SliceIndex3D const& index) const;
     NonConstSlice operator[](SliceIndex3D const& index);
+
+    Lattice const& get_lattice() const { return lattice; }
+    Index3D const& get_size() const { return size; }
+    int get_num_sublattices() const { return size_n; }
+    int get_num_sites() const { return num_sites; }
+
+    CartesianArray const& get_positions() const { return positions; }
+    CartesianArray& get_positions() { return positions; }
+    ArrayX<bool> const& get_states() const { return is_valid; }
+    ArrayX<bool>& get_states() { return is_valid; }
 };
 
 /**

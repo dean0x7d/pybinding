@@ -6,8 +6,7 @@
 
 namespace tbm {
 
-class HamiltonianVisitor;
-class System;
+struct System;
 class HamiltonianModifiers;
 
 /**

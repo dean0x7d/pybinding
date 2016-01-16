@@ -8,25 +8,28 @@ bool SymmetryArea::contains(Index3D const& index) const {
 }
 
 SymmetryArea Symmetry::area(Foundation const& foundation) const {
+    auto const& lattice = foundation.get_lattice();
+    auto const size = static_cast<Array3i>(foundation.get_size());
+
     SymmetryArea a;
     a.left.setZero();
-    a.right = foundation.size.array() - 1;
+    a.right = size - 1;
     a.middle.setZero();
 
     // see if we have periodicities in any of the lattice vector directions
-    for (auto n = 0u; n < foundation.lattice.vectors.size(); ++n) {
+    for (auto n = 0u; n < lattice.vectors.size(); ++n) {
         if (length[n] < 0)
             continue; // not periodic
 
         // number of lattice sites in one period length
         auto num_lattice_sites = static_cast<int>(std::round(
-            length[n] / foundation.lattice.vectors[n].norm()
+            length[n] / lattice.vectors[n].norm()
         ));
         if (num_lattice_sites == 0)
             num_lattice_sites = 1;
 
         // left and right borders of the periodic cell
-        a.left[n] = (foundation.size[n] - num_lattice_sites) / 2;
+        a.left[n] = (size[n] - num_lattice_sites) / 2;
         a.right[n] = a.left[n] + num_lattice_sites - 1;
         // length of the periodic cell
         a.middle[n] = num_lattice_sites;
@@ -36,7 +39,7 @@ SymmetryArea Symmetry::area(Foundation const& foundation) const {
 }
 
 std::vector<Translation> Symmetry::translations(Foundation const& foundation) const {
-    auto const& lattice = foundation.lattice;
+    auto const& lattice = foundation.get_lattice();
     auto const symmetry_area = area(foundation);
 
     std::vector<Translation> translations;
@@ -70,7 +73,7 @@ std::vector<Translation> Symmetry::translations(Foundation const& foundation) co
     };
 
     // add translations in the hopping directions
-    for (auto const& sublattice : foundation.lattice.sublattices) {
+    for (auto const& sublattice : lattice.sublattices) {
         for (auto const& hopping : sublattice.hoppings) {
             // only take the directions which have a non-negative period length
             add_translation((length.array() >= 0).select(hopping.relative_index, 0));

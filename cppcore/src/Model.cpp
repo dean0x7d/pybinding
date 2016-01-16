@@ -56,16 +56,12 @@ void Model::add_hopping_modifier(HoppingModifier const& m) {
 
 std::shared_ptr<const System> Model::system() const {
     if (!_system) {
-        auto build_time = Chrono{};
-
-        auto foundation = shape ? Foundation(lattice, shape)
-                                : Foundation(lattice, primitive);
-        _system = build_system(foundation, system_modifiers, symmetry);
-
+        auto build_time = Chrono();
+        _system = make_system();
         build_report = fmt::format("Built system with {} lattice sites, {}",
                                    fmt::with_suffix(_system->num_sites()), build_time.toc());
     }
-    
+
     return _system;
 }
 
@@ -89,6 +85,27 @@ std::string Model::report() {
     auto ret = build_report + '\n';
     ret += hamiltonian()->report;
     return ret;
+}
+
+std::shared_ptr<System> Model::make_system() const {
+    auto foundation = shape ? Foundation(lattice, shape)
+                            : Foundation(lattice, primitive);
+    if (symmetry)
+        symmetry.apply(foundation);
+
+    if (!system_modifiers.empty()) {
+        auto const sublattices_ids = detail::make_sublattice_ids(foundation);
+
+        for (auto const& site_state_modifier : system_modifiers.state) {
+            site_state_modifier->apply(foundation.get_states(), foundation.get_positions(),
+                                       sublattices_ids);
+        }
+        for (auto const& position_modifier : system_modifiers.position) {
+            position_modifier->apply(foundation.get_positions(), sublattices_ids);
+        }
+    }
+
+    return std::make_shared<System>(foundation, symmetry);
 }
 
 } // namespace tbm

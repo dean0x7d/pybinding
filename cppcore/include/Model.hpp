@@ -52,6 +52,9 @@ public:
     void clear_all_modifiers() { clear_system_modifiers(); clear_hamiltonian_modifiers(); }
 
 private:
+    std::shared_ptr<System> make_system() const;
+
+private:
     Lattice lattice;
     Primitive primitive;
     Shape shape;
