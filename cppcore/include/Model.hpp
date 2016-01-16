@@ -5,6 +5,9 @@
 #include "system/Symmetry.hpp"
 #include "system/SystemModifiers.hpp"
 #include "hamiltonian/HamiltonianModifiers.hpp"
+
+#include "utils/Chrono.hpp"
+
 #include <string>
 
 namespace tbm {
@@ -39,8 +42,8 @@ public: // get parameters
     std::vector<HoppingModifier> hopping_modifiers() const { return hamiltonian_modifiers.hopping; }
 
 public: // get results
-    std::shared_ptr<const System> system() const;
-    std::shared_ptr<const Hamiltonian> hamiltonian() const;
+    std::shared_ptr<System const> const& system() const;
+    std::shared_ptr<Hamiltonian const> const& hamiltonian() const;
 
 public: // get information
     /// Report of the last build operation: system and Hamiltonian
@@ -53,22 +56,22 @@ public:
 
 private:
     std::shared_ptr<System> make_system() const;
+    std::shared_ptr<Hamiltonian> make_hamiltonian() const;
 
 private:
     Lattice lattice;
     Primitive primitive;
     Shape shape;
     Symmetry symmetry;
+    Cartesian wave_vector = Cartesian::Zero();
 
     SystemModifiers system_modifiers;
     HamiltonianModifiers hamiltonian_modifiers;
 
-    Cartesian wave_vector = Cartesian::Zero();
-
-    mutable std::shared_ptr<const System> _system; ///< holds system data: atom coordinates and hoppings
-    mutable std::shared_ptr<const Hamiltonian> _hamiltonian; ///< the Hamiltonian matrix
-
-    mutable std::string build_report;
+    mutable std::shared_ptr<System const> _system;
+    mutable std::shared_ptr<Hamiltonian const> _hamiltonian;
+    mutable Chrono system_build_time;
+    mutable Chrono hamiltonian_build_time;
 };
 
 } // namespace tbm

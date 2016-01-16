@@ -2,10 +2,8 @@
 #include "hamiltonian/HamiltonianModifiers.hpp"
 
 #include "utils/Log.hpp"
-#include "utils/Chrono.hpp"
 #include "support/cpp14.hpp"
 #include "support/physics.hpp"
-#include "support/format.hpp"
 
 using namespace tbm;
 using physics::i1;
@@ -19,12 +17,9 @@ HamiltonianT<scalar_t>::~HamiltonianT()
 template<class scalar_t>
 HamiltonianT<scalar_t>::HamiltonianT(System const& system, HamiltonianModifiers const& modifiers,
                                      Cartesian k_vector) {
-    auto build_time = Chrono{};
     build_main(system, modifiers);
     build_periodic(system, modifiers);
     set(k_vector);
-    report = fmt::format("The Hamiltonian has {} non-zero values, {}",
-                         fmt::with_suffix(non_zeros()), build_time.toc());
 }
 
 template<class scalar_t>

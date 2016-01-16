@@ -21,8 +21,8 @@ void export_core() {
     .add_property("position_modifiers", &Model::position_modifiers)
     .add_property("onsite_modifiers", &Model::onsite_modifiers)
     .add_property("hopping_modifiers", &Model::hopping_modifiers)
-    .add_property("system", &Model::system)
-    .add_property("hamiltonian", &Model::hamiltonian)
+    .add_property("system", copy_value(&Model::system))
+    .add_property("hamiltonian", copy_value(&Model::hamiltonian))
     .def("report", &Model::report,
          "Report of the last build operation: system and Hamiltonian")
     .def("clear_system_modifiers", &Model::clear_system_modifiers)

@@ -60,7 +60,7 @@ void export_system() {
     .add_property("hoppings", sparse_uref(&Boundary::hoppings))
     ;
 
-    class_<System>{"System", no_init}
+    class_<System, std::shared_ptr<System>, noncopyable>{"System", no_init}
     .def("find_nearest", &System::find_nearest, args("self", "position", "sublattice"_kw=-1),
          "Find the index of the atom closest to the given coordiantes.")
     .add_property("num_sites", &System::num_sites)

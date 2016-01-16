@@ -69,9 +69,8 @@ public:
 
 void export_modifiers() {
     using tbm::Hamiltonian;
-    class_<Hamiltonian, noncopyable>{"Hamiltonian", no_init}
+    class_<Hamiltonian, std::shared_ptr<Hamiltonian>, noncopyable>{"Hamiltonian", no_init}
     .add_property("matrix", internal_ref(&Hamiltonian::matrix_union))
-    .def_readonly("report", &Hamiltonian::report)
     ;
 
     class_<PyOnsite, noncopyable>{"OnsiteModifier"};

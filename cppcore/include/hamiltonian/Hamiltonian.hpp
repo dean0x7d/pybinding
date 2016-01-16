@@ -20,8 +20,6 @@ public:
     virtual int non_zeros() const = 0;
     virtual int rows() const = 0;
     virtual int cols() const = 0;
-
-    std::string report;
 };
 
 

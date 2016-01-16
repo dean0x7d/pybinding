@@ -13,6 +13,12 @@ object copy_value(Function f) {
     return make_function(f, return_value_policy<return_by_value>());
 }
 
+template<class Class, class Data>
+object copy_value(Data (Class::*pmf)() const) {
+    return make_function([pmf](Class& c) -> Data { return (c.*pmf)(); },
+                         return_value_policy<return_by_value>());
+}
+
 template<class Class, class Data, class = cpp14::enable_if_t<!std::is_function<Data>::value>>
 object copy_value(Data Class::* d) {
     return make_getter(d, return_value_policy<return_by_value>());

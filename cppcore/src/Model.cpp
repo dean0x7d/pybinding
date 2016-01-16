@@ -1,8 +1,9 @@
 #include "Model.hpp"
+
 #include "system/Foundation.hpp"
 #include "hamiltonian/Hamiltonian.hpp"
+
 #include "support/format.hpp"
-#include "utils/Chrono.hpp"
 
 namespace tbm {
 
@@ -54,37 +55,34 @@ void Model::add_hopping_modifier(HoppingModifier const& m) {
         _hamiltonian.reset();
 }
 
-std::shared_ptr<const System> Model::system() const {
+std::shared_ptr<System const> const& Model::system() const {
     if (!_system) {
-        auto build_time = Chrono();
-        _system = make_system();
-        build_report = fmt::format("Built system with {} lattice sites, {}",
-                                   fmt::with_suffix(_system->num_sites()), build_time.toc());
+        system_build_time.timeit([&]{
+            _system = make_system();
+        });
     }
-
     return _system;
 }
 
-std::shared_ptr<const Hamiltonian> Model::hamiltonian() const {
+std::shared_ptr<Hamiltonian const> const& Model::hamiltonian() const {
     if (!_hamiltonian) {
-        // create a new Hamiltonian of suitable type
-        if (hamiltonian_modifiers.any_complex() ||
-            system()->lattice.has_complex_hopping ||
-            !system()->boundaries.empty())
-            _hamiltonian = std::make_shared<HamiltonianT<std::complex<float>>>(*system(), hamiltonian_modifiers, wave_vector);
-        else
-            _hamiltonian = std::make_shared<HamiltonianT<float>>(*system(), hamiltonian_modifiers, wave_vector);
+        hamiltonian_build_time.timeit([&]{
+            _hamiltonian = make_hamiltonian();
+        });
     }
-    
     return _hamiltonian;
 }
 
 std::string Model::report() {
-    system();
-    // this could be a single line, but GCC 4.8 produces a runtime error otherwise
-    auto ret = build_report + '\n';
-    ret += hamiltonian()->report;
-    return ret;
+    auto const& built_system = *system();
+    auto report = fmt::format("Built system with {} lattice sites, {}\n",
+                              fmt::with_suffix(built_system.num_sites()), system_build_time);
+
+    auto const& built_hamiltonian = *hamiltonian();
+    report += fmt::format("The Hamiltonian has {} non-zero values, {}",
+                          fmt::with_suffix(built_hamiltonian.non_zeros()), hamiltonian_build_time);
+
+    return report;
 }
 
 std::shared_ptr<System> Model::make_system() const {
@@ -106,6 +104,22 @@ std::shared_ptr<System> Model::make_system() const {
     }
 
     return std::make_shared<System>(foundation, symmetry);
+}
+
+std::shared_ptr<Hamiltonian> Model::make_hamiltonian() const {
+    auto const& built_system = *system();
+    auto const is_complex = lattice.has_complex_hopping
+                            || hamiltonian_modifiers.any_complex()
+                            || !built_system.boundaries.empty();
+    if (is_complex) {
+        return std::make_shared<HamiltonianT<std::complex<float>>>(
+            built_system, hamiltonian_modifiers, wave_vector
+        );
+    } else {
+        return std::make_shared<HamiltonianT<float>>(
+            built_system, hamiltonian_modifiers, wave_vector
+        );
+    }
 }
 
 } // namespace tbm
