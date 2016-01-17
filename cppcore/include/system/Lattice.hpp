@@ -59,9 +59,9 @@ public:
         return sublattices[n];
     }
 
-    /// Calculate the spacial position of a lattice site
-    Cartesian calculate_position(Index3D index, sub_id sublattice,
-                                 Cartesian origin = Cartesian::Zero()) const;
+    /// Calculate the spatial position of a unit cell or a sublattice site if specified
+    Cartesian calc_position(Index3D index, Cartesian origin = Cartesian::Zero(),
+                            sub_id sublattice = -1) const;
 
 public:
     std::vector<Cartesian> vectors; ///< primitive vectors that define the lattice

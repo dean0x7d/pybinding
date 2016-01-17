@@ -128,38 +128,22 @@ ArrayX<sub_id> make_sublattice_ids(Foundation const& foundation) {
 
 Foundation::Foundation(Lattice const& lattice, Primitive const& primitive)
     : lattice(lattice),
+      bounds(-primitive.size.array() / 2, (primitive.size.array() - 1) / 2),
       size(primitive.size),
       size_n(static_cast<int>(lattice.sublattices.size())),
       num_sites(size.prod() * size_n),
-      is_valid(ArrayX<bool>::Constant(num_sites, true)) {
-    auto const origin = [&]{
-        Cartesian width = Cartesian::Zero();
-        for (auto i = 0u; i < lattice.vectors.size(); ++i) {
-            width += static_cast<float>(size[i] - 1) * lattice.vectors[i];
-        }
-        return Cartesian{-width / 2};
-    }();
-
-    positions = detail::generate_positions(origin, size, lattice);
-}
+      positions(detail::generate_positions(lattice.calc_position(bounds.first), size, lattice)),
+      is_valid(ArrayX<bool>::Constant(num_sites, true)) {}
 
 Foundation::Foundation(Lattice const& lattice, Shape const& shape)
     : lattice(lattice),
-      size_n(static_cast<int>(lattice.sublattices.size())) {
-    auto const bounds = detail::find_bounds(shape, lattice);
-    size = (bounds.second - bounds.first) + Index3D::Ones();
-    num_sites = size.prod() * size_n;
-
-    auto const origin = [&]{
-        Cartesian p = shape.offset;
-        for (auto i = 0u; i < lattice.vectors.size(); ++i) {
-            p += static_cast<float>(bounds.first[i]) * lattice.vectors[i];
-        }
-        return p;
-    }();
-
-    positions = detail::generate_positions(origin, size, lattice);
-    is_valid = shape.contains(positions);
+      bounds(detail::find_bounds(shape, lattice)),
+      size((bounds.second - bounds.first) + Index3D::Ones()),
+      size_n(static_cast<int>(lattice.sublattices.size())),
+      num_sites(size.prod() * size_n),
+      positions(detail::generate_positions(lattice.calc_position(bounds.first, shape.offset),
+                                           size, lattice)),
+      is_valid(shape.contains(positions)) {
     detail::trim_edges(*this);
 }
 

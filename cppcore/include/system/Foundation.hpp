@@ -36,6 +36,7 @@ namespace detail {
  */
 class Foundation {
     Lattice const& lattice;
+    std::pair<Index3D, Index3D> bounds; ///< in lattice vector coordinates
     Index3D size; ///< number of unit cells in each lattice vector direction
     int size_n; ///< sublattice size (number of sites in each unit cell)
     int num_sites; ///< total number of sites: product of all sizes (3D and sublattice)
@@ -67,6 +68,7 @@ public:
     NonConstSlice operator[](SliceIndex3D const& index);
 
     Lattice const& get_lattice() const { return lattice; }
+    std::pair<Index3D, Index3D> const& get_bounds() const { return bounds; }
     Index3D const& get_size() const { return size; }
     int get_num_sublattices() const { return size_n; }
     int get_num_sites() const { return num_sites; }
