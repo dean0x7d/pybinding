@@ -145,6 +145,10 @@ void export_system() {
     .add_property("offset", copy_value(&PyShape::offset))
     ;
 
+    class_<tbm::Line, bases<tbm::Shape>, noncopyable>{"Line",
+        init<Cartesian, Cartesian, optional<Cartesian>>{args("self", "a", "b", "offset")}
+    };
+
     using tbm::Polygon;
     class_<Polygon, bases<tbm::Shape>, noncopyable> {"Polygon",
         init<Polygon::Vertices const&, Cartesian> {args("self", "vertices", "offset")}

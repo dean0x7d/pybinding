@@ -40,6 +40,13 @@ public:
     Cartesian offset; ///< offset of the lattice origin from the shape origin
 };
 
+/**
+ 1D line
+ */
+class Line : public Shape {
+public:
+    Line(Cartesian a, Cartesian b, Cartesian offset = Cartesian::Zero());
+};
 
 /**
  Polygon shape defined by a list of points
@@ -51,7 +58,20 @@ public:
     Polygon(Vertices const& vertices, Cartesian offset = Cartesian::Zero());
 };
 
+/**
+ Shape defined by a bounding box and a function
+ */
+class FreeformShape : public Shape {
+public:
+    FreeformShape(Contains const& contains, Cartesian width,
+                  Cartesian center = Cartesian::Zero(),
+                  Cartesian offset = Cartesian::Zero());
+};
+
 namespace detail {
+    // Is the angle formed by three points acute? The vertex is `b`.
+    ArrayX<bool> is_acute_angle(Cartesian a, Cartesian b, CartesianArray const& c);
+
     /// Function object which determines if a point is within a polygon
     class WithinPolygon {
     public:
@@ -62,16 +82,5 @@ namespace detail {
         ArrayX<float> x, y;
     };
 } // namespace detail
-
-
-/**
- Shape defined by a bounding box and a function
- */
-class FreeformShape : public Shape {
-public:
-    FreeformShape(Contains const& contains, Cartesian width,
-                  Cartesian center = Cartesian::Zero(),
-                  Cartesian offset = Cartesian::Zero());
-};
 
 } // namespace tbm

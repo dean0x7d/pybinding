@@ -14,8 +14,32 @@ Shape::Shape(Vertices const& vertices, Contains const& contains, Cartesian offse
         throw std::logic_error("Shape: The bounding box must contain at least two vertices.");
 }
 
+Line::Line(Cartesian a, Cartesian b, Cartesian offset) : Shape({a, b}, {}, offset) {
+    contains = [a, b](CartesianArray const& positions) -> ArrayX<bool> {
+        // Return `true` for all `positions` which are in the perpendicular space
+        // between the two end points of the line
+        return detail::is_acute_angle(a, b, positions)
+               && detail::is_acute_angle(b, a, positions);
+    };
+}
 
 namespace detail {
+
+ArrayX<bool> is_acute_angle(Cartesian a, Cartesian b, CartesianArray const& c) {
+    // Vectors BA and BC which make the angle
+    auto const ba = Cartesian{a - b};
+    auto const bc_x = ArrayXf{c.x - b.x()};
+    auto const bc_y = ArrayXf{c.y - b.y()};
+    auto const bc_z = ArrayXf{c.z - b.z()};
+
+    // Compute the cosine between the two vectors based on the dot product
+    auto const ba_dot_bc = ba.x() * bc_x + ba.y() * bc_y + ba.z() * bc_z;
+    auto const ba_length = ba.norm();
+    auto const bc_length = sqrt(bc_x.cwiseAbs2() + bc_y.cwiseAbs2() + bc_z.cwiseAbs2());
+    auto const cos_theta = ba_dot_bc / (ba_length * bc_length);
+
+    return cos_theta >= 0; // acute angle
+};
 
 WithinPolygon::WithinPolygon(Shape::Vertices const& vertices)
     : x(vertices.size()), y(vertices.size()) {
