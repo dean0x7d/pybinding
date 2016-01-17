@@ -4,11 +4,13 @@
 #include "system/Shape.hpp"
 #include "system/Symmetry.hpp"
 #include "system/SystemModifiers.hpp"
+#include "system/Lead.hpp"
 #include "hamiltonian/HamiltonianModifiers.hpp"
 
 #include "utils/Chrono.hpp"
 
 #include <string>
+#include <vector>
 
 namespace tbm {
 
@@ -22,6 +24,8 @@ public: // set parameters
     void set_primitive(Primitive primitive);
     void set_shape(Shape const& shape);
     void set_symmetry(Symmetry const& symmetry);
+
+    void attach_lead(int direction, Shape const& shape);
 
     void add_site_state_modifier(SiteStateModifier const& m);
     void add_position_modifier(PositionModifier const& m);
@@ -64,6 +68,8 @@ private:
     Shape shape;
     Symmetry symmetry;
     Cartesian wave_vector = Cartesian::Zero();
+
+    std::vector<Lead> leads;
 
     SystemModifiers system_modifiers;
     HamiltonianModifiers hamiltonian_modifiers;

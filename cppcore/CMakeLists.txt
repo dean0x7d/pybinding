@@ -33,6 +33,7 @@ add_library(pybinding_cppcore
     include/support/uref.hpp
     include/system/Foundation.hpp
     include/system/Lattice.hpp
+    include/system/Lead.hpp
     include/system/Shape.hpp
     include/system/Symmetry.hpp
     include/system/System.hpp
@@ -48,6 +49,7 @@ add_library(pybinding_cppcore
     src/solver/Solver.cpp
     src/system/Foundation.cpp
     src/system/Lattice.cpp
+    src/system/Lead.cpp
     src/system/Shape.cpp
     src/system/Symmetry.cpp
     src/system/System.cpp

@@ -56,6 +56,31 @@ class Model(_cpp.Model):
                 if isinstance(arg, _cpp.Shape):
                     self._shape = arg
 
+    def attach_lead(self, direction, *where):
+        """Attach a lead to the main system region
+
+        Not valid for 1D lattices.
+
+        Parameters
+        ----------
+        direction : int
+            Lattice vector direction of the lead. Must be one of: 1, 2, 3, -1, -2, -3.
+            For example, `direction=2` would create a lead which intersects the main system
+            in the :math:`a_2` lattice vector direction. Setting `direction=-2` would create
+            a lead on the opposite side of the system, but along the same lattice vector.
+        *where
+            Where the lead should be placed:
+
+            * For 2D lattices: Two points between which the lead should pass.
+            * For 3D lattices: A :class:`.FreeformShape` defining the 2D area of the lead.
+        """
+        if len(where) == 1 and isinstance(where[0], _cpp.Shape):
+            super().attach_lead(direction, where[0])
+        elif len(where) == 2:
+            super().attach_lead(direction, _cpp.Line(*where))
+        else:
+            raise RuntimeError("Bad arguments")
+
     @property
     def system(self) -> System:
         """:class:`.System` site positions and other structural data"""
