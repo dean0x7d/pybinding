@@ -183,29 +183,22 @@ class Foundation::Slice {
 
 private:
     class Iterator : public Site {
-        using Ref = typename std::conditional<is_const, Site const&, Site&>::type;
+        using Ref = typename std::conditional<is_const, Iterator const&, Iterator&>::type;
 
         SliceIndex3D slice_index;
-
-        static SliceIndex3D normalize(SliceIndex3D const& index, Index3D const& size) {
-            auto ret = index;
-            for (auto i = 0; i < index.size(); ++i) {
-                if (ret[i].end < 0) {
-                    ret[i].end = size[i];
-                }
-            }
-            return ret;
-        }
+        int slice_idx;
 
     public:
-        Iterator(Foundation* foundation) : Site(foundation, {}, 0, -1) {}
-        Iterator(Foundation* foundation, SliceIndex3D index)
+        Iterator(Foundation* foundation, SliceIndex3D index, int slice_idx)
             : Site(foundation, {index[0].start, index[1].start, index[2].start}, 0),
-              slice_index(normalize(index, foundation->size)) {}
+              slice_index(index), slice_idx(slice_idx) {}
+
+        int get_slice_idx() const { return slice_idx; }
 
         Ref operator*() { return *this; }
 
         Iterator& operator++() {
+            ++slice_idx;
             ++sublattice;
             if (sublattice == foundation->size_n) {
                 ++index[2];
@@ -213,28 +206,43 @@ private:
                     ++index[1];
                     if (index[1] == slice_index[1].end) {
                         ++index[0];
-                        if (index[0] == slice_index[0].end) {
-                            idx = -1;
-                            return *this;
-                        }
                         index[1] = slice_index[1].start;
                     }
                     index[2] = slice_index[2].start;
                 }
                 sublattice = 0;
             }
-
             reset_idx();
             return *this;
         }
+
+        friend bool operator==(Iterator const& l, Iterator const& r) {
+            return l.slice_idx == r.slice_idx;
+        }
+        friend bool operator!=(Iterator const& l, Iterator const& r) { return !(l == r); }
     };
 
 public:
     Slice(Foundation* foundation, SliceIndex3D const& index)
-        : foundation(foundation), index(index) {}
+        : foundation(foundation), index(index) {
+        normalize();
+    }
 
-    Iterator begin() { return {foundation, index}; }
-    Iterator end() { return {foundation}; }
+    Iterator begin() { return {foundation, index, 0}; }
+    Iterator end() { return {foundation, index, size()}; }
+
+    int size() const { return index.size() * foundation->get_num_sublattices(); }
+    SliceIndex const& operator[](int n) const { return index[n]; }
+    SliceIndex& operator[](int n) { return index[n]; }
+
+    /// Replace open ended indices [0, -1) with proper [0, size) indices
+    void normalize() {
+        for (auto i = 0; i < index.ndims(); ++i) {
+            if (index[i].end < 0) {
+                index[i].end = foundation->get_size()[i];
+            }
+        }
+    }
 };
 
 
