@@ -27,13 +27,13 @@ The unit cell can also be replicated a number of times to create a bigger system
 
     model = pb.Model(
         graphene.monolayer(),
-        pb.primitive(a1=4, a2=3)
+        pb.primitive(a1=5, a2=3)
     )
 
     model.system.plot()
-    model.lattice.plot_vectors(position=[0.4, -0.25])
+    model.lattice.plot_vectors(position=[0.6, -0.25])
 
-The :func:`.primitive` parameter tells the model to replicate the unit cell 4 times in the
+The :func:`.primitive` parameter tells the model to replicate the unit cell 5 times in the
 :math:`a_1` vector direction and 3 times in the :math:`a_2` direction. However, to model
 realistic systems we need proper shapes.
 
