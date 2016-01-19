@@ -11,7 +11,7 @@ from scipy.sparse import csr_matrix
 
 from . import pltutils
 from .utils import with_defaults, x_pi
-from .system import Positions, plot_sites, plot_hoppings
+from .system import Positions, plot_sites, plot_hoppings, plot_periodic_structure
 from .support.pickle import pickleable
 
 __all__ = ['make_path', 'DOS', 'LDOS', 'SpatialMap', 'StructureMap',
@@ -297,18 +297,20 @@ class StructureMap(SpatialMap):
         for boundary in self.boundaries:
             boundary.hoppings = self._filter_csr_matrix(boundary.hoppings, idx)
 
-    def plot_structure(self, site_radius=(0.03, 0.05), site_props=None, hopping_width=1,
-                       hopping_props=None, cbar_props=None):
+    def plot_structure(self, site_radius=(0.03, 0.05), hopping_width=1, num_periods=1,
+                       site_props=None, hopping_props=None, cbar_props=None):
         """Plot the spatial structure with a colormap of `data` at the lattice sites
 
         Parameters
         ----------
         site_radius : Tuple[float, float]
             Min and max radius of the lattice sites
-        site_props : dict
-            Forwarded to :func:`.plot_sites`.
         hopping_width : float
             Width of the lines representing the hoppings.
+        num_periods : int
+            Number of times to repeat the periodic boundaries.
+        site_props : dict
+            Forwarded to :func:`.plot_sites`.
         hopping_props : dict
             Forwarded to :func:`.plot_hoppings`.
         cbar_props : dict
@@ -336,13 +338,9 @@ class StructureMap(SpatialMap):
         hopping_props = with_defaults(hopping_props, colors='#bbbbbb')
         plot_hoppings(self.pos, hop, hopping_width, **hopping_props)
 
-        for boundary in self.boundaries:
-            for shift in [boundary.shift, -boundary.shift]:
-                plot_sites(self.pos, self.data, radius, shift, alpha=0.5, **site_props)
-                plot_hoppings(self.pos, hop, hopping_width, shift, alpha=0.5, **hopping_props)
-
-            plot_hoppings(self.pos, boundary.hoppings.tocoo(), hopping_width,
-                          boundary.shift, boundary=True, alpha=0.5, **hopping_props)
+        site_props['alpha'] = hopping_props['alpha'] = 0.5
+        plot_periodic_structure(self.pos, hop, self.boundaries, self.data, radius, hopping_width,
+                                num_periods, site_props, hopping_props)
 
         if cbar_props is not False:
             pltutils.colorbar(collection, **with_defaults(cbar_props))

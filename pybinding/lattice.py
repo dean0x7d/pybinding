@@ -307,7 +307,7 @@ class Lattice(_cpp.Lattice):
         import pybinding as pb
         # reuse model plotting code (kind of meta)
         model = pb.Model(self, pb.translational_symmetry())
-        model.system.plot(boundary_color=None, **kwargs)
+        model.system.plot(**with_defaults(kwargs, hopping_props=dict(colors='#777777')))
 
         # by default, plot the lattice vectors from the center of the unit cell
         sub_center = sum(s.offset for s in self.sublattices) / len(self.sublattices)

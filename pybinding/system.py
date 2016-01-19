@@ -1,3 +1,4 @@
+import itertools
 from collections import namedtuple
 
 import numpy as np
@@ -8,11 +9,13 @@ from . import pltutils
 from .utils import with_defaults
 from .support.sparse import SparseMatrix
 from .support.pickle import pickleable
+from .support.fuzzy_set import FuzzySet
 
 __all__ = ['Positions', 'Boundary', 'System', 'plot_hoppings', 'plot_sites']
 
 
 Positions = namedtuple('Positions', 'x y z')
+# noinspection PyUnresolvedReferences
 Positions.__doc__ = """
 Named tuple of arrays
 
@@ -125,67 +128,55 @@ class System:
                 masked_distance = ma.array(distance, mask=self.sublattices != at_sublattice)
                 return ma.argmin(masked_distance)
 
-    def plot(self, site_radius=0.025, site_props=None, hopping_width=1.0, hopping_props=None,
-             boundary_color='#ff4444', rotate=(0, 1, 2)):
+    def plot(self, site_radius=0.025, hopping_width=1.0, num_periods=1, rotate=(0, 1, 2),
+             site_props=None, hopping_props=None, boundary_props=None):
         """Plot the structure of the system: sites and hoppings
 
         Parameters
         ----------
         site_radius : float
             Radius (in data units) of the circle representing a lattice site.
-        site_props : Optional[dict]
-            Forwarded to :class:`.CircleCollection`: additional site plotting options.
         hopping_width : float
             Width (in figure units) of the hopping lines.
-        hopping_props : Optional[dict]
-            Forwarded to :class:`.LineCollection`: additional hopping line options.
-        boundary_color : color
-            Color of the hopping lines on the boundaries.
+        num_periods : int
+            Number of times to repeat the periodic boundaries.
         rotate : Tuple[int, int, int]
             Axes mapping:
 
             * (0, 1, 2) -> (x, y, z) plots xy-plane
             * (1, 2, 0) -> (y, z, x) plots yz-plane
+        site_props : Optional[dict]
+            Forwarded to :class:`.CircleCollection`: additional site plotting options.
+        hopping_props : Optional[dict]
+            Forwarded to :class:`.LineCollection`: additional hopping line options.
+        boundary_props : Optional[dict]
+            Forwarded to :class:`.LineCollection`: additional boundary hopping line options.
         """
         ax = plt.gca()
         ax.set_aspect('equal')
         ax.set_xlabel("x (nm)")
         ax.set_ylabel("y (nm)")
 
-        # position, sublattice and hopping
-        pos = self.x, self.y, self.z
-        pos = tuple(pos[i] for i in rotate)
-        sub = self.sublattices
-        hop = self.hoppings.tocoo()
-        site_props = site_props if site_props else {}
-        hopping_props = hopping_props if hopping_props else {}
+        site_props = site_props or {}
+        hopping_props = hopping_props or {}
 
-        # plot main part
+        pos = tuple(self.positions[i] for i in rotate)
+        hop = self.hoppings.tocoo()
+        sub = self.sublattices
+        boundary_props = with_defaults(boundary_props, hopping_props, colors='#d40a0c')
+
         plot_hoppings(pos, hop, hopping_width, **hopping_props)
         plot_sites(pos, sub, site_radius, **site_props)
 
-        # plot periodic part
-        for boundary in self.boundaries:
-            # shift the main sites and hoppings with lowered alpha
-            for shift in [boundary.shift, -boundary.shift]:
-                plot_sites(pos, sub, site_radius, shift, blend=0.5, **site_props)
-                plot_hoppings(pos, hop, hopping_width, shift, blend=0.5, **hopping_props)
-
-            # special color for the boundary hoppings
-            if boundary_color:
-                kwargs = dict(hopping_props, colors=boundary_color)
-            else:
-                kwargs = hopping_props
-            b_hop = boundary.hoppings.tocoo()
-            plot_hoppings(pos, b_hop, hopping_width, boundary.shift, boundary=True, **kwargs)
+        plot_periodic_structure(pos, hop, self.boundaries, sub, site_radius, hopping_width,
+                                num_periods, site_props, hopping_props, boundary_props)
 
         pltutils.set_min_axis_length(0.5)
         pltutils.despine(trim=True)
         pltutils.add_margin()
 
 
-def plot_hoppings(positions, hoppings, width, offset=(0, 0, 0),
-                  boundary=False, blend=1.0, **kwargs):
+def plot_hoppings(positions, hoppings, width, offset=(0, 0, 0), blend=1.0, boundary=(), **kwargs):
     """Plot hopping lines between sites
 
     Parameters
@@ -198,10 +189,10 @@ def plot_hoppings(positions, hoppings, width, offset=(0, 0, 0),
         Width of the hopping plot lines.
     offset : Tuple[float, float, float]
         Offset all positions by a constant value.
-    boundary : bool
-        The offset is applied differently at boundaries.
     blend : float
         Blend all colors to white (fake alpha blending): expected values between 0 and 1.
+    boundary : Tuple[int, array_like]
+        If given, apply the boundary (sign, shift).
     **kwargs
         Forwarded to matplotlib's :class:`.LineCollection`.
 
@@ -222,18 +213,16 @@ def plot_hoppings(positions, hoppings, width, offset=(0, 0, 0),
 
     ax = plt.gca()
     ndims = 3 if ax.name == '3d' else 2
-    offset = np.array(offset[:ndims])
-    positions = np.array(positions[:ndims]).T
+    pos = np.array(positions[:ndims]).T + np.array(offset[:ndims])
 
     if not boundary:
-        pos = positions + offset
         lines = ((pos[i], pos[j]) for i, j in zip(hoppings.row, hoppings.col))
     else:
-        from itertools import chain
-        lines = chain(
-            ((positions[i] + offset, positions[j]) for i, j in zip(hoppings.row, hoppings.col)),
-            ((positions[i], positions[j] - offset) for i, j in zip(hoppings.row, hoppings.col))
-        )
+        sign, shift = boundary[0], np.array(boundary[1][:ndims])
+        if sign > 0:
+            lines = ((pos[i] + shift, pos[j]) for i, j in zip(hoppings.row, hoppings.col))
+        else:
+            lines = ((pos[i], pos[j] - shift) for i, j in zip(hoppings.row, hoppings.col))
 
     if ndims == 2:
         from matplotlib.collections import LineCollection
@@ -249,7 +238,7 @@ def plot_hoppings(positions, hoppings, width, offset=(0, 0, 0),
         ax.add_collection3d(col)
 
         ax.set_zmargin(0.5)
-        minmax = np.vstack((positions.min(axis=0), positions.max(axis=0))).T
+        minmax = np.vstack((pos.min(axis=0), pos.max(axis=0))).T
         ax.auto_scale_xyz(*minmax, had_data=had_data)
 
     return col
@@ -281,7 +270,7 @@ def plot_sites(positions, data, radius, offset=(0, 0, 0), blend=1.0, **kwargs):
     if np.all(radius == 0):
         return
 
-    kwargs = with_defaults(kwargs, alpha=0.95, lw=0.1)
+    kwargs = with_defaults(kwargs, alpha=0.97, lw=0.1, edgecolor=str(1-blend))
 
     # create colormap from discrete colors
     if 'cmap' not in kwargs:
@@ -324,6 +313,49 @@ def plot_sites(positions, data, radius, offset=(0, 0, 0), blend=1.0, **kwargs):
         ax.auto_scale_xyz(*minmax, had_data=had_data)
 
     return col
+
+
+def _make_shift_set(boundaries, level):
+    """Return a set of boundary shift combinations for the given repetition level"""
+    if level == 0:
+        return FuzzySet([np.zeros(3)])
+
+    base_shifts = [b.shift for b in boundaries] + [-b.shift for b in boundaries]
+    all_shifts = (sum(c) for c in itertools.combinations_with_replacement(base_shifts, level))
+
+    blacklist = sum(_make_shift_set(boundaries, l) for l in range(level))
+    exclusive_shifts = (s for s in all_shifts if s not in blacklist)
+    return FuzzySet(exclusive_shifts)
+
+
+def plot_periodic_structure(positions, hoppings, boundaries, data, site_radius, hopping_width,
+                            num_periods, site_props=None, hopping_props=None, boundary_props=None):
+    site_props = site_props or {}
+    hopping_props = hopping_props or {}
+    boundary_props = with_defaults(boundary_props, hopping_props)
+
+    # the periodic parts will fade out gradually at each level of repetition
+    blend_gradient = np.linspace(0.5, 0.15, num_periods)
+
+    # periodic unit cells
+    for level, blend in enumerate(blend_gradient, start=1):
+        shift_set = _make_shift_set(boundaries, level)
+        for shift in shift_set:
+            plot_sites(positions, data, site_radius, shift, blend, **site_props)
+            plot_hoppings(positions, hoppings, hopping_width, shift, blend, **hopping_props)
+
+    # periodic boundary hoppings
+    for level, blend in enumerate(blend_gradient, start=1):
+        shift_set = _make_shift_set(boundaries, level)
+        prev_shift_set = _make_shift_set(boundaries, level - 1)
+        boundary_set = itertools.product(shift_set + prev_shift_set, (1, -1), boundaries)
+
+        for shift, sign, boundary in boundary_set:
+            if (shift + sign * boundary.shift) not in prev_shift_set:
+                continue  # skip existing
+
+            plot_hoppings(positions, boundary.hoppings.tocoo(), hopping_width * 1.4, shift, blend,
+                          boundary=(sign, boundary.shift), **boundary_props)
 
 
 def plot_site_indices(system):
