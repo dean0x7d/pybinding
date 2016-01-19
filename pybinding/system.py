@@ -1,3 +1,4 @@
+import functools
 import itertools
 from collections import namedtuple
 
@@ -128,7 +129,7 @@ class System:
                 masked_distance = ma.array(distance, mask=self.sublattices != at_sublattice)
                 return ma.argmin(masked_distance)
 
-    def plot(self, site_radius=0.025, hopping_width=1.0, num_periods=1, rotate=(0, 1, 2),
+    def plot(self, site_radius=0.025, hopping_width=1.0, num_periods=1, axes='xy',
              site_props=None, hopping_props=None, boundary_props=None):
         """Plot the structure of the system: sites and hoppings
 
@@ -140,11 +141,8 @@ class System:
             Width (in figure units) of the hopping lines.
         num_periods : int
             Number of times to repeat the periodic boundaries.
-        rotate : Tuple[int, int, int]
-            Axes mapping:
-
-            * (0, 1, 2) -> (x, y, z) plots xy-plane
-            * (1, 2, 0) -> (y, z, x) plots yz-plane
+        axes : str
+            The spatial axes to plot. E.g. 'xy', 'yz', etc.
         site_props : Optional[dict]
             Forwarded to :class:`.CircleCollection`: additional site plotting options.
         hopping_props : Optional[dict]
@@ -154,26 +152,34 @@ class System:
         """
         ax = plt.gca()
         ax.set_aspect('equal')
-        ax.set_xlabel("x (nm)")
-        ax.set_ylabel("y (nm)")
+        ax.set_xlabel("{} (nm)".format(axes[0]))
+        ax.set_ylabel("{} (nm)".format(axes[1]))
 
-        site_props = site_props or {}
-        hopping_props = hopping_props or {}
-
-        pos = tuple(self.positions[i] for i in rotate)
-        hop = self.hoppings.tocoo()
-        sub = self.sublattices
+        site_props = with_defaults(site_props, axes=axes)
+        hopping_props = with_defaults(hopping_props, axes=axes)
         boundary_props = with_defaults(boundary_props, hopping_props, colors='#d40a0c')
 
-        plot_hoppings(pos, hop, hopping_width, **hopping_props)
-        plot_sites(pos, sub, site_radius, **site_props)
+        plot_hoppings(self.positions, self.hoppings.tocoo(), hopping_width, **hopping_props)
+        plot_sites(self.positions, self.sublattices, site_radius, **site_props)
 
-        plot_periodic_structure(pos, hop, self.boundaries, sub, site_radius, hopping_width,
-                                num_periods, site_props, hopping_props, boundary_props)
+        plot_periodic_structure(self.positions, self.hoppings.tocoo(), self.boundaries,
+                                self.sublattices, site_radius, hopping_width, num_periods,
+                                site_props, hopping_props, boundary_props)
 
         pltutils.set_min_axis_length(0.5)
         pltutils.despine(trim=True)
         pltutils.add_margin()
+
+
+def _rotate(position, axes):
+    """Rotate axes in position"""
+    missing_axes = set('xyz') - set(axes)
+    for a in missing_axes:
+        axes += a
+    assert len(axes) == 3
+
+    mapping = dict(x=0, y=1, z=2)
+    return tuple(position[mapping[a]] for a in axes)
 
 
 def plot_hoppings(positions, hoppings, width, offset=(0, 0, 0), blend=1.0, boundary=(), **kwargs):
@@ -211,6 +217,9 @@ def plot_hoppings(positions, hoppings, width, offset=(0, 0, 0), blend=1.0, bound
     unique_hop_ids = np.arange(hoppings.data.max() + 1)
     kwargs['cmap'], kwargs['norm'] = pltutils.direct_cmap_norm(unique_hop_ids, colors, blend)
 
+    rotate = functools.partial(_rotate, axes=kwargs.pop('axes', 'xyz'))
+    positions, offset = map(rotate, (positions, offset))
+
     ax = plt.gca()
     ndims = 3 if ax.name == '3d' else 2
     pos = np.array(positions[:ndims]).T + np.array(offset[:ndims])
@@ -218,7 +227,8 @@ def plot_hoppings(positions, hoppings, width, offset=(0, 0, 0), blend=1.0, bound
     if not boundary:
         lines = ((pos[i], pos[j]) for i, j in zip(hoppings.row, hoppings.col))
     else:
-        sign, shift = boundary[0], np.array(boundary[1][:ndims])
+        sign, shift = boundary
+        shift = rotate(shift)[:ndims]
         if sign > 0:
             lines = ((pos[i] + shift, pos[j]) for i, j in zip(hoppings.row, hoppings.col))
         else:
@@ -282,6 +292,9 @@ def plot_sites(positions, data, radius, offset=(0, 0, 0), blend=1.0, **kwargs):
             colors = ["#a6cee3", "#1f78b4", "#b2df8a", "#33a02c", "#fb9a99", "#e31a1c",
                       "#fdbf6f", "#ff7f00", "#cab2d6", "#6a3d9a"]
         kwargs['cmap'], kwargs['norm'] = pltutils.direct_cmap_norm(data, colors, blend)
+
+    rotate = functools.partial(_rotate, axes=kwargs.pop('axes', 'xyz'))
+    positions, offset = map(rotate, (positions, offset))
 
     # create array of (x, y) points
     points = np.array(positions[:2]).T + offset[:2]
