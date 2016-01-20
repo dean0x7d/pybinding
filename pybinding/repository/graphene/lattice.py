@@ -7,6 +7,13 @@ __all__ = ['monolayer', 'monolayer_alt', 'monolayer_4atom', 'monolayer_nn', 'bil
 
 
 def monolayer(onsite_a=0, onsite_b=0):
+    """Nearest-neighbor monolayer graphene lattice
+
+    Parameters
+    ----------
+    onsite_a, onsite_b : float
+        Onsite energy for sublattices A and B.
+    """
     lat = pb.Lattice(a1=[a, 0], a2=[a/2, a/2 * sqrt(3)])
 
     lat.add_sublattices(
@@ -25,7 +32,14 @@ def monolayer(onsite_a=0, onsite_b=0):
 
 
 def monolayer_alt(onsite_a=0, onsite_b=0):
-    """ Alternative graphene lattice specification: different lattice vectors """
+    """Nearest-neighbor lattice with alternative lattice vectors
+
+    Parameters
+    ----------
+    onsite_a, onsite_b : float
+        Onsite energy for sublattices A and B.
+    """
+
     lat = pb.Lattice(
         a1=[ a/2, a/2 * sqrt(3)],
         a2=[-a/2, a/2 * sqrt(3)],
@@ -54,7 +68,13 @@ def monolayer_alt(onsite_a=0, onsite_b=0):
 
 
 def monolayer_4atom(onsite_a=0, onsite_b=0):
-    """ Graphene with 4 atoms per unit cell: square lattice instead of triangular """
+    """Nearest-neighbor with 4 atoms per unit cell: square lattice instead of triangular
+
+    Parameters
+    ----------
+    onsite_a, onsite_b : float
+        Onsite energy for sublattices A and B.
+    """
     lat = pb.Lattice(a1=[a, 0], a2=[0, 3*a_cc])
 
     lat.add_sublattices(
@@ -80,7 +100,15 @@ def monolayer_4atom(onsite_a=0, onsite_b=0):
 
 
 def monolayer_nn(onsite_a=0, onsite_b=0, t_nn=0.1):
-    """ Next-nearest neighbour model of graphene """
+    """Next-nearest neighbor monolayer lattice
+
+    Parameters
+    ----------
+    onsite_a, onsite_b : float
+        Onsite energy for sublattices A and B.
+    t_nn : float
+        Next-nearest hopping energy.
+    """
     lat = pb.Lattice(a1=[a, 0], a2=[a/2, a/2 * sqrt(3)])
 
     lat.add_sublattices(
@@ -107,6 +135,17 @@ def monolayer_nn(onsite_a=0, onsite_b=0, t_nn=0.1):
 
 
 def bilayer(gammas=(), onsite=(0, 0, 0, 0)):
+    """Bilayer lattice with optional :math:`\gamma_3` and :math:`\gamma_4` hoppings
+
+    Parameters
+    ----------
+    gammas : tuple
+        By default, only the :math:`\gamma_1` interlayer hopping is used. One or both
+        :math:`\gamma_3` and :math:`\gamma_4` can be added with `gammas=(3,)`,
+        `gammas=(4,)` or `gammas=(3, 4)`.
+    onsite : tuple
+        Onsite energy for A1, B1, A2, B2
+    """
     lat = pb.Lattice(
         a1=[ a/2, a/2 * sqrt(3)],
         a2=[-a/2, a/2 * sqrt(3)]

@@ -11,9 +11,10 @@ def hexagon_ac(side_width, offset=(-a/2, 0)):
     Parameters
     ----------
     side_width : float
-        Hexagon side width. It may be adjusted to make perfect armchair edges.
+        Hexagon side width. It will be adjusted to make perfect armchair edges.
     offset : array_like
-        The default value makes sure that a carbon hexagon is at the center.
+        The default value makes sure that a carbon hexagon is at the center
+        if the :func:`.monolayer()` lattice is used.
     """
     # expected number of atoms on an armchair edge
     side_atoms = math.ceil((side_width / a_cc + 1) * 2/3)

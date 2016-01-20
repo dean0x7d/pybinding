@@ -1,9 +1,9 @@
-"""Phosphorene: a single layer of black phosphorus"""
+"""A single layer of black phosphorus"""
 from math import pi, sin, cos
 import pybinding as pb
 
 
-def monolayer_four_band():
+def monolayer_4band():
     """Monolayer phosphorene lattice using the four-band model"""
     a = 0.222
     ax = 0.438

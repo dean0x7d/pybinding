@@ -6,7 +6,7 @@ __all__ = ['constant_magnetic_field']
 
 
 def constant_magnetic_field(magnitude):
-    """Constant magnetic field directed along the z-axis, perpendicular to graphene
+    """Constant magnetic field in the z-direction, perpendicular to the graphene plane
 
     Parameters
     ----------

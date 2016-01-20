@@ -20,6 +20,7 @@ Table of Contents
     install/index
     tutorial/index
     examples/index
+    materials/index
     api/index
 
 * :ref:`genindex`

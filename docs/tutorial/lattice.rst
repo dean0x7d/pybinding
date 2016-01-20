@@ -165,10 +165,8 @@ the vertices of the Brillouin zone.
 Material repository
 *******************
 
-.. todo::
-    * link to material repository
-
-Some commmon lattices are included in pybinding's material repository. For example:
+A few common lattices are included in pybinding's :doc:`/materials/index`. You can get started
+quickly by importing one of them. For example:
 
 .. plot::
 
