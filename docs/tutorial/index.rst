@@ -20,3 +20,4 @@ pick up on the fly.
     bands
     finite
     shape_symmetry
+    fields
