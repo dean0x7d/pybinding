@@ -206,8 +206,7 @@ class SpatialMap:
         ax.set_aspect('equal')
         ax.set_xlabel('x (nm)')
         ax.set_ylabel('y (nm)')
-        ax.set_xticks(ax.get_xticks()[1:-1])
-        ax.set_yticks(ax.get_yticks()[1:-1])
+        pltutils.despine(trim=True)
 
     def plot_pcolor(self, **kwargs):
         """Color plot of the xy plane
@@ -297,18 +296,23 @@ class StructureMap(SpatialMap):
         for boundary in self.boundaries:
             boundary.hoppings = self._filter_csr_matrix(boundary.hoppings, idx)
 
-    def plot_structure(self, site_radius=(0.03, 0.05), hopping_width=1, num_periods=1,
-                       site_props=None, hopping_props=None, cbar_props=None):
-        """Plot the spatial structure with a colormap of `data` at the lattice sites
+    def plot_structure(self, cmap='YlGnBu', site_radius=(0.03, 0.05), hopping_width=1,
+                       num_periods=1, site_props=None, hopping_props=None, cbar_props=None):
+        """Plot the spatial structure with a colormap of :attr:`data` at the lattice sites
+
+        Both the site size and color are used to display the data.
 
         Parameters
         ----------
+        cmap : str
+            Matplotlib colormap to be used for the data.
         site_radius : Tuple[float, float]
-            Min and max radius of the lattice sites
+            Min and max radius of lattice sites. This range will be used to visually
+            represent the magnitude of the data.
         hopping_width : float
             Width of the lines representing the hoppings.
         num_periods : int
-            Number of times to repeat the periodic boundaries.
+            Number of times to repeat periodic boundaries.
         site_props : dict
             Forwarded to :func:`.plot_sites`.
         hopping_props : dict
@@ -321,7 +325,10 @@ class StructureMap(SpatialMap):
         ax.set_xlabel('x (nm)')
         ax.set_ylabel('y (nm)')
 
-        def to_radius(data):
+        def to_radii(data):
+            if not isinstance(site_radius, (tuple, list)):
+                return site_radius
+
             positive_data = data - data.min()
             maximum = positive_data.max()
             if not np.allclose(maximum, 0):
@@ -330,17 +337,17 @@ class StructureMap(SpatialMap):
             else:
                 return site_radius[1]
 
-        radius = to_radius(self.data)
-        site_props = with_defaults(site_props, cmap='YlGnBu')
-        collection = plot_sites(self.pos, self.data, radius, **site_props)
+        radii = to_radii(self.data)
+        site_props = with_defaults(site_props, cmap=cmap)
+        collection = plot_sites(self.pos, self.data, radii, **site_props)
 
         hop = self.hoppings.tocoo()
         hopping_props = with_defaults(hopping_props, colors='#bbbbbb')
         plot_hoppings(self.pos, hop, hopping_width, **hopping_props)
 
         site_props['alpha'] = hopping_props['alpha'] = 0.5
-        plot_periodic_structure(self.pos, hop, self.boundaries, self.data, radius, hopping_width,
-                                num_periods, site_props, hopping_props)
+        plot_periodic_structure(self.pos, hop, self.boundaries, self.data, radii,
+                                hopping_width, num_periods, site_props, hopping_props)
 
         if cbar_props is not False:
             pltutils.colorbar(collection, **with_defaults(cbar_props))

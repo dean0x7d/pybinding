@@ -41,6 +41,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 """
 plot_rcparams = pb.pltutils.pb_style
+plot_apply_rcparams = True
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']

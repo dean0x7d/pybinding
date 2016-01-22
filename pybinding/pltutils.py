@@ -391,7 +391,7 @@ def _make_style():
         'figure.figsize': (3.4, 2.8),  # [(8, 6) inch] (3.4, 2.8) inch == (8.6, 7.1) cm
         'figure.dpi': dpi,  # [80] figure dots per inch
         'figure.facecolor': 'white',  # [0.75] figure facecolor
-        'image.cmap': 'inferno',  # [jet...]
+        'image.cmap': 'viridis',  # [jet...]
         'savefig.dpi': dpi,  # [100] figure dots per inch
         'savefig.bbox': 'tight',  # ['standard']
         'savefig.pad_inches': 0.04,  # [0.1] padding to be used when bbox is set to 'tight'
