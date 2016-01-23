@@ -10,7 +10,7 @@ models = {
     'graphene-monolayer': [graphene.monolayer(), graphene.hexagon_ac(1)],
     'graphene-monolayer-alt': [graphene.monolayer_alt(), pb.rectangle(1.6, 1.4)],
     'graphene-monolayer-4atom': [graphene.monolayer_4atom()],
-    'graphene-monolayer-nn': [graphene.monolayer_nn(), pb.regular_polygon(6, 0.9)],
+    'graphene-monolayer-nn': [graphene.monolayer(2), pb.regular_polygon(6, 0.9)],
     'graphene-monolayer-periodic-1d': [graphene.monolayer(), pb.primitive(5, 5),
                                        pb.translational_symmetry(a1=True, a2=False)],
     'graphene-monolayer-periodic-1d-alt': [graphene.monolayer_4atom(), pb.rectangle(1),

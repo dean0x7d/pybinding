@@ -1,44 +1,83 @@
-from math import sqrt
-
 import pybinding as pb
-from .constants import *
 
-__all__ = ['monolayer', 'monolayer_alt', 'monolayer_4atom', 'monolayer_nn', 'bilayer']
+__all__ = ['monolayer', 'monolayer_alt', 'monolayer_4atom', 'bilayer']
 
 
-def monolayer(onsite_a=0, onsite_b=0):
-    """Nearest-neighbor monolayer graphene lattice
+def monolayer(nearest_neighbors=1, onsite=(0, 0), **kwargs):
+    """Monolayer graphene lattice up to `nearest_neighbors` hoppings
 
     Parameters
     ----------
-    onsite_a, onsite_b : float
+    nearest_neighbors : int
+        Number of nearest neighbors to consider.
+    onsite : Tuple[float, float]
         Onsite energy for sublattices A and B.
+    **kwargs
+        Specify the hopping parameters `t`, `t_nn` and `t_nnn`.
+        If not given, the default values from :mod:`.constants` will be used.
     """
+    from math import sqrt
+    from .constants import a_cc, a, t, t_nn
+
     lat = pb.Lattice(a1=[a, 0], a2=[a/2, a/2 * sqrt(3)])
 
+    # The next-nearest hoppings shift the Dirac point away from zero energy.
+    # This will push it back to zero for consistency with the first-nearest model.
+    onsite_offset = 0 if nearest_neighbors < 2 else 3 * kwargs.get('t_nn', t_nn)
+
     lat.add_sublattices(
-        ('A', [0, -a_cc/2], onsite_a),
-        ('B', [0,  a_cc/2], onsite_b)
+        ('A', [0, -a_cc/2], onsite[0] + onsite_offset),
+        ('B', [0,  a_cc/2], onsite[1] + onsite_offset)
     )
 
+    lat.register_hopping_energies({
+        't': kwargs.get('t', t),
+        't_nn': kwargs.get('t_nn', t_nn),
+        't_nnn': kwargs.get('t_nnn', 0.05),
+    })
+
     lat.add_hoppings(
-        ([0,  0], 'A', 'B', t),
-        ([1, -1], 'A', 'B', t),
-        ([0, -1], 'A', 'B', t)
+        ([0,  0], 'A', 'B', 't'),
+        ([1, -1], 'A', 'B', 't'),
+        ([0, -1], 'A', 'B', 't')
     )
+
+    if nearest_neighbors >= 2:
+        lat.add_hoppings(
+            ([0, -1], 'A', 'A', 't_nn'),
+            ([0, -1], 'B', 'B', 't_nn'),
+            ([1, -1], 'A', 'A', 't_nn'),
+            ([1, -1], 'B', 'B', 't_nn'),
+            ([1,  0], 'A', 'A', 't_nn'),
+            ([1,  0], 'B', 'B', 't_nn'),
+        )
+
+    if nearest_neighbors >= 3:
+        lat.add_hoppings(
+            [( 1, -2), 'A', 'B', 't_nnn'],
+            [( 1,  0), 'A', 'B', 't_nnn'],
+            [(-1,  0), 'A', 'B', 't_nnn'],
+        )
+
+    if nearest_neighbors >= 4:
+        raise RuntimeError("No more")
 
     lat.min_neighbors = 2
     return lat
 
 
-def monolayer_alt(onsite_a=0, onsite_b=0):
+def monolayer_alt(onsite=(0, 0)):
     """Nearest-neighbor lattice with alternative lattice vectors
+
+    This lattice is mainly here to demonstrate specifying hoppings in matrix form.
 
     Parameters
     ----------
-    onsite_a, onsite_b : float
+    onsite : Tuple[float, float]
         Onsite energy for sublattices A and B.
     """
+    from math import sqrt
+    from .constants import a_cc, a, t
 
     lat = pb.Lattice(
         a1=[ a/2, a/2 * sqrt(3)],
@@ -46,8 +85,8 @@ def monolayer_alt(onsite_a=0, onsite_b=0):
     )
 
     lat.add_sublattices(
-        ('A', [0,    0], onsite_a),
-        ('B', [0, a_cc], onsite_b)
+        ('A', [0,    0], onsite[0]),
+        ('B', [0, a_cc], onsite[1])
     )
 
     # matrix hopping specification
@@ -67,21 +106,23 @@ def monolayer_alt(onsite_a=0, onsite_b=0):
     return lat
 
 
-def monolayer_4atom(onsite_a=0, onsite_b=0):
-    """Nearest-neighbor with 4 atoms per unit cell: square lattice instead of triangular
+def monolayer_4atom(onsite=(0, 0)):
+    """Nearest-neighbor with 4 atoms per unit cell: square lattice instead of oblique
 
     Parameters
     ----------
-    onsite_a, onsite_b : float
+    onsite : Tuple[float, float]
         Onsite energy for sublattices A and B.
     """
+    from .constants import a_cc, a, t
+
     lat = pb.Lattice(a1=[a, 0], a2=[0, 3*a_cc])
 
     lat.add_sublattices(
-        ('A',  [  0, -a_cc/2], onsite_a),
-        ('B',  [  0,  a_cc/2], onsite_b),
-        ('A2', [a/2,    a_cc], onsite_a, 'A'),
-        ('B2', [a/2,  2*a_cc], onsite_b, 'B')
+        ('A',  [  0, -a_cc/2], onsite[0]),
+        ('B',  [  0,  a_cc/2], onsite[1]),
+        ('A2', [a/2,    a_cc], onsite[0], 'A'),
+        ('B2', [a/2,  2*a_cc], onsite[1], 'B')
     )
 
     lat.add_hoppings(
@@ -99,41 +140,6 @@ def monolayer_4atom(onsite_a=0, onsite_b=0):
     return lat
 
 
-def monolayer_nn(onsite_a=0, onsite_b=0, t_nn=0.1):
-    """Next-nearest neighbor monolayer lattice
-
-    Parameters
-    ----------
-    onsite_a, onsite_b : float
-        Onsite energy for sublattices A and B.
-    t_nn : float
-        Next-nearest hopping energy.
-    """
-    lat = pb.Lattice(a1=[a, 0], a2=[a/2, a/2 * sqrt(3)])
-
-    lat.add_sublattices(
-        ('A', [0, -a_cc/2], onsite_a),
-        ('B', [0,  a_cc/2], onsite_b)
-    )
-
-    lat.add_hoppings(
-        # nearest
-        ([0,  0], 'A', 'B', t),
-        ([1, -1], 'A', 'B', t),
-        ([0, -1], 'A', 'B', t),
-        # next-nearest
-        ([0, -1], 'A', 'A', t_nn),
-        ([0, -1], 'B', 'B', t_nn),
-        ([1, -1], 'A', 'A', t_nn),
-        ([1, -1], 'B', 'B', t_nn),
-        ([1,  0], 'A', 'A', t_nn),
-        ([1,  0], 'B', 'B', t_nn),
-    )
-
-    lat.min_neighbors = 2
-    return lat
-
-
 def bilayer(gammas=(), onsite=(0, 0, 0, 0)):
     """Bilayer lattice with optional :math:`\gamma_3` and :math:`\gamma_4` hoppings
 
@@ -143,9 +149,12 @@ def bilayer(gammas=(), onsite=(0, 0, 0, 0)):
         By default, only the :math:`\gamma_1` interlayer hopping is used. One or both
         :math:`\gamma_3` and :math:`\gamma_4` can be added with `gammas=(3,)`,
         `gammas=(4,)` or `gammas=(3, 4)`.
-    onsite : tuple
+    onsite : Tuple[float, float, float, float]
         Onsite energy for A1, B1, A2, B2
     """
+    from math import sqrt
+    from .constants import a_cc, a, t
+
     lat = pb.Lattice(
         a1=[ a/2, a/2 * sqrt(3)],
         a2=[-a/2, a/2 * sqrt(3)]

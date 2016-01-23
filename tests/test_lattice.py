@@ -8,7 +8,7 @@ lattices = {
     'graphene-monolayer': graphene.monolayer(),
     'graphene-monolayer-alt': graphene.monolayer_alt(),
     'graphene-monolayer-4atom': graphene.monolayer_4atom(),
-    'graphene-monolayer-nn': graphene.monolayer_nn(),
+    'graphene-monolayer-nn': graphene.monolayer(2),
     'graphene-bilayer': graphene.bilayer(),
     'mos2': mos2.three_band_lattice(),
 }

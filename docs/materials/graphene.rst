@@ -22,17 +22,23 @@ Lattices
             :context: close-figs
             :include-source: False
 
-            monolayer().plot()
-
-
-    .. autofunction:: monolayer_alt
+            monolayer(nearest_neighbors=1).plot()
+            plt.title('monolayer(nearest_neighbors=1)')
 
         .. plot::
             :context: close-figs
             :include-source: False
 
-            monolayer_alt().plot()
+            monolayer(nearest_neighbors=2).plot()
+            plt.title('monolayer(nearest_neighbors=2)')
 
+        .. plot::
+            :context: close-figs
+            :include-source: False
+
+            plt.figure(figsize=(5, 5.5))
+            monolayer(nearest_neighbors=3).plot()
+            plt.title('monolayer(nearest_neighbors=3)')
 
     .. autofunction:: monolayer_4atom
 
@@ -44,14 +50,6 @@ Lattices
             monolayer_4atom().plot()
             plt.xlim(-0.5, 0.5)
             plt.xticks([-0.4, -0.2, 0, 0.2, 0.4])
-
-    .. autofunction:: monolayer_nn
-
-        .. plot::
-            :context: close-figs
-            :include-source: False
-
-            monolayer_nn().plot()
 
     .. autofunction:: bilayer
 
@@ -75,17 +73,8 @@ Shapes
     :members:
 
 
-Fields
-------
+Modifiers
+---------
 
-.. automodule:: pybinding.repository.graphene.electric
-    :members:
-
-.. automodule:: pybinding.repository.graphene.magnetic
-    :members:
-
-Strain
-------
-
-.. automodule:: pybinding.repository.graphene.strain
+.. automodule:: pybinding.repository.graphene.modifiers
     :members:
