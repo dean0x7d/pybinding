@@ -23,4 +23,7 @@ auto cend(const T& t) -> decltype(t.cend()) {
 template <bool condition, class T = void>
 using enable_if_t = typename std::enable_if<condition, T>::type;
 
+template<bool condition, class If, class Else>
+using conditional_t = typename std::conditional<condition, If, Else>::type;
+
 }} // end namespace tbm::cpp14

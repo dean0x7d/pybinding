@@ -3,6 +3,7 @@
 
 #include "detail/slice.hpp"
 #include "support/dense.hpp"
+#include "support/cpp14.hpp"
 
 #include <array>
 #include <vector>
@@ -151,8 +152,11 @@ public:
 };
 
 template<bool is_const>
-class Foundation::Iterator : public Site {
-    using Ref = typename std::conditional<is_const, Site const&, Site&>::type;
+class Foundation::Iterator
+    : public Site,
+      public std::iterator<std::input_iterator_tag,
+                           cpp14::conditional_t<is_const, Site const, Site>> {
+    using Ref = cpp14::conditional_t<is_const, Site const&, Site&>;
 
 public:
     Iterator(Foundation* foundation, int idx) : Site(foundation, {0, 0, 0}, 0, idx) {}
@@ -184,8 +188,11 @@ class Foundation::Slice {
     SliceIndex3D index;
 
 private:
-    class Iterator : public Site {
-        using Ref = typename std::conditional<is_const, Iterator const&, Iterator&>::type;
+    class Iterator
+        : public Site,
+          public std::iterator<std::input_iterator_tag,
+                               cpp14::conditional_t<is_const, Iterator const, Iterator>> {
+        using Ref = cpp14::conditional_t<is_const, Iterator const&, Iterator&>;
 
         SliceIndex3D slice_index;
         int slice_idx;
@@ -230,8 +237,8 @@ public:
         normalize();
     }
 
-    Iterator begin() { return {foundation, index, 0}; }
-    Iterator end() { return {foundation, index, size()}; }
+    Iterator begin() const { return {foundation, index, 0}; }
+    Iterator end() const { return {foundation, index, size()}; }
 
     int size() const { return index.size() * foundation->get_num_sublattices(); }
     SliceIndex const& operator[](int n) const { return index[n]; }
