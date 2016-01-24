@@ -14,7 +14,7 @@ def monolayer(nearest_neighbors=1, onsite=(0, 0), **kwargs):
         Onsite energy for sublattices A and B.
     **kwargs
         Specify the hopping parameters `t`, `t_nn` and `t_nnn`.
-        If not given, the default values from :mod:`.constants` will be used.
+        If not given, the default values from :mod:`.graphene.constants` will be used.
     """
     from math import sqrt
     from .constants import a_cc, a, t, t_nn
