@@ -357,9 +357,10 @@ The full signature of a :func:`@hopping_energy_modifier <.hopping_energy_modifie
     def function(energy, x1, y1, z1, x2, y2, z2, hop_id):
         return ... # some function of the arguments
 
-The `hop_id` argument corresponds the the `lattice.hopping_ids['<hopping_name>']` which can be
-specified during the creation of a lattice. This can be used to apply functions only to specific
-hoppings. However, as with all the modifier arguments, it's optional, so we only take what we need.
+The `hop_id` argument tells us which type of hopping it is. Hopping types can be specifically
+named during the creation of a lattice and retrieved in the form `lattice('<hopping_name>')`.
+This can be used to apply functions only to specific hoppings. However, as with all the modifier
+arguments, it's optional, so we only take what we need.
 
 To test out our `constant_magnetic_field`, we'll calculate the local density of states (LDOS),
 where we expect to see peaks corresponding to Landau levels. The computation method used here

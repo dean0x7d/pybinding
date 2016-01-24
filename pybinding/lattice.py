@@ -26,13 +26,11 @@ class Lattice(_cpp.Lattice):
 
     Attributes
     ----------
-    sublattice_ids : OrderedDict
-        Map from user-friendly sublattice names to unique IDs. This may also be
-        accessed as `lattice[sublattice_name]`.
+    sublattice_ids : dict
+        Map from sublattice names to unique IDs. Shortcut: `lattice[sublattice_name]`
     hopping_ids : dict
-        Map from user-friendly hopping names to unique IDs.
+        Map from hopping names to unique IDs. Shortcut: `lattice(hopping_name)`
     """
-
     def __init__(self, a1, a2=None, a3=None):
         vectors = (np.atleast_1d(v) for v in (a1, a2, a3) if v is not None)
         super().__init__(*vectors)
@@ -50,6 +48,12 @@ class Lattice(_cpp.Lattice):
             if sub_id not in self.sublattice_ids.values():
                 raise KeyError("There is no sublattice with ID = {}".format(sub_id))
             return sub_id
+
+    def __call__(self, name):
+        """Get the hopping ID from its user-friendly `name`"""
+        if name not in self.hopping_ids:
+            raise KeyError("There is no hopping named '{}'".format(name))
+        return self.hopping_ids[name]
 
     @property
     def ndim(self):

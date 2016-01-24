@@ -147,7 +147,7 @@ def site_state_modifier(func):
         x, y, z : ndarray
             Lattice site position.
         sub_id : ndarray of int
-            Sublattice ID. Can be checked for equality with `Lattice[sublattice_name]`.
+            Sublattice ID. Can be checked for equality with `lattice[sublattice_name]`.
 
         Modifier returns:
 
@@ -172,7 +172,7 @@ def site_position_modifier(func):
         x, y, z : ndarray
             Lattice site position.
         sub_id : ndarray of int
-            Sublattice ID. Can be checked for equality with `Lattice[sublattice_name]`.
+            Sublattice ID. Can be checked for equality with `lattice[sublattice_name]`.
 
         Modifier returns:
 
@@ -199,7 +199,7 @@ def onsite_energy_modifier(func):
         x, y, z : ndarray
             Lattice site position.
         sub_id : ndarray of int
-            Sublattice ID. Can be checked for equality with `Lattice[sublattice_name]`.
+            Sublattice ID. Can be checked for equality with `lattice[sublattice_name]`.
 
         Modifier returns:
 
@@ -226,7 +226,7 @@ def hopping_energy_modifier(func):
         x1, y1, z1, x2, y2, z2 : ndarray
             Positions of the two lattice sites connected by the hopping parameter.
         hop_id : ndarray of int
-            Hopping ID. Check for equality with `Lattice.hopping_ids[hopping_name]`.
+            Hopping ID. Check for equality with `lattice(hopping_name)`.
 
         Modifier returns:
 

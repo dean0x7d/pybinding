@@ -82,10 +82,17 @@ def test_add_hopping(mock_lattice):
         mock_lattice.add_one_hopping((0, 0), 'c', 'a', 1)
     assert "There is no sublattice named 'c'" in str(excinfo.value)
 
+    with pytest.raises(KeyError) as excinfo:
+        assert mock_lattice('t_nn')
+    assert "There is no hopping named 't_nn'" in str(excinfo.value)
+
     mock_lattice.register_hopping_energies({
         't_nn': 0.1,
         't_nnn': 0.01
     })
+    assert mock_lattice('t_nn') == 1
+    assert mock_lattice('t_nnn') == 2
+
     mock_lattice.add_one_hopping((0, 1), 'a', 'a', 't_nn')
 
     with pytest.raises(KeyError) as excinfo:
