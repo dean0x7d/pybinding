@@ -302,10 +302,12 @@ def plot_sites(positions, data, radius, offset=(0, 0, 0), blend=1.0, **kwargs):
     ax = plt.gca()
     if ax.name != '3d':
         # sort based on z position to get proper 2D z-order
-        idx = positions[2].argsort()
-        if not np.isscalar(radius):
-            radius = radius[idx]
-        points, data = points[idx], data[idx]
+        z = positions[2]
+        if len(np.unique(z)) > 1:
+            idx = z.argsort()
+            if not np.isscalar(radius):
+                radius = radius[idx]
+            points, data = points[idx], data[idx]
 
         from pybinding.support.collections import CircleCollection
         col = CircleCollection(radius, offsets=points, transOffset=ax.transData, **kwargs)
