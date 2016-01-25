@@ -69,7 +69,7 @@ private:
     Symmetry symmetry;
     Cartesian wave_vector = Cartesian::Zero();
 
-    std::vector<Lead> leads;
+    Leads leads;
 
     SystemModifiers system_modifiers;
     HamiltonianModifiers hamiltonian_modifiers;

@@ -252,6 +252,14 @@ public:
             }
         }
     }
+
+    CartesianArray positions() const {
+        auto positions = CartesianArray(size());
+        for (auto const& site : *this) {
+            positions[site.get_slice_idx()] = site.get_position();
+        }
+        return positions;
+    }
 };
 
 

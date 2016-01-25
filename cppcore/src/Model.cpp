@@ -111,7 +111,7 @@ std::shared_ptr<System> Model::make_system() const {
         attach(foundation, lead);
     }
 
-    return std::make_shared<System>(foundation, symmetry);
+    return std::make_shared<System>(foundation, symmetry, leads);
 }
 
 std::shared_ptr<Hamiltonian> Model::make_hamiltonian() const {

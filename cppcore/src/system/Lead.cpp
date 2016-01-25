@@ -3,7 +3,7 @@
 
 namespace tbm { namespace lead {
 
-SliceIndex3D slice_index(Foundation const& foundation, Lead const& lead) {
+SliceIndex3D passthrough_slice(Foundation const& foundation, Lead const& lead) {
     auto const size = foundation.get_size();
     auto const foundation_bounds = foundation.get_bounds();
     auto const lead_bounds = detail::find_bounds(lead.shape, foundation.get_lattice());
@@ -17,51 +17,54 @@ SliceIndex3D slice_index(Foundation const& foundation, Lead const& lead) {
     return slice_index;
 }
 
-} // namespace lead
-
-Lead::Lead(int direction, Shape const& shape) : direction(direction), shape(shape) {
-    if (direction == 0 || abs(direction) > 3) {
-        throw std::logic_error("Lead direction must be one of: : 1, 2, 3, -1, -2, -3");
-    }
-}
-
-void attach(Foundation& foundation, Lead const& lead) {
+SliceIndex3D attachment_slice(Foundation const& foundation, Lead const& lead) {
     auto const size = foundation.get_size();
-    auto const axis = abs(lead.direction) - 1;
-    auto const start = (lead.direction > 0) ? 0 : size[axis] - 1;
-    auto const end = (lead.direction > 0) ? size[axis] : -1;
-    auto const step = lead.direction / abs(lead.direction);
+    auto const start = (lead.sign > 0) ? 0 : size[lead.axis] - 1;
+    auto const end = (lead.sign > 0) ? size[lead.axis] : -1;
 
-    auto slice = foundation[lead::slice_index(foundation, lead)];
+    auto slice_index = lead::passthrough_slice(foundation, lead);
+    auto slice = foundation[slice_index];
 
     // The first index on the lead's axis where there are any existing valid sites
     auto const lead_start = [&]{
-        for (slice[axis] = start; slice[axis] != end; slice[axis] += step) {
+        for (slice[lead.axis] = start; slice[lead.axis] != end; slice[lead.axis] += lead.sign) {
             for (auto& site : slice) {
                 if (site.is_valid()) {
-                    return slice[axis];
+                    return slice[lead.axis];
                 }
             }
         }
-        return slice[axis];
+        return slice[lead.axis];
     }();
 
     if (lead_start == end) {
         throw std::runtime_error("Can't attach lead: completely misses main structure");
     }
 
-    // Use the shape to determine which slice sites are within the lead
-    auto within_lead = [&]{
-        slice[axis] = lead_start;
-        auto positions = CartesianArray(slice.size());
-        for (auto& site : slice) {
-            positions[site.get_slice_idx()] = site.get_position();
-        }
-        return lead.shape.contains(positions);
-    }();
+    slice_index[lead.axis] = lead_start;
+    return slice_index;
+}
+
+} // namespace lead
+
+Lead::Lead(int direction, Shape const& shape)
+    : axis(abs(direction) - 1),
+      sign(direction != 0 ? direction / abs(direction) : 0),
+      shape(shape) {
+    if (direction == 0 || abs(direction) > 3) {
+        throw std::logic_error("Lead direction must be one of: 1, 2, 3, -1, -2, -3");
+    }
+}
+
+void attach(Foundation& foundation, Lead const& lead) {
+    auto const size = foundation.get_size();
+    auto const end = (lead.sign > 0) ? size[lead.axis] : -1;
+
+    auto slice = foundation[lead::attachment_slice(foundation, lead)];
+    auto within_lead = lead.shape.contains(slice.positions());
 
     // Fill in the foundation until all lead sites can be connected to foundation sites
-    for (slice[axis] = lead_start; slice[axis] != end; slice[axis] += step) {
+    for (; slice[lead.axis] != end; slice[lead.axis] += lead.sign) {
         for (auto& site : slice) {
             if (!within_lead[site.get_slice_idx()])
                 continue;
@@ -80,7 +83,7 @@ void attach(Foundation& foundation, Lead const& lead) {
         }
     }
 
-    if (slice[axis] == end) {
+    if (slice[lead.axis] == end) {
         throw std::runtime_error("Can't attach lead: partially misses main structure");
     }
 }
