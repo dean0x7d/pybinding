@@ -61,7 +61,7 @@ void export_system() {
     using Port = tbm::System::Port;
     class_<Port>{"Port", no_init}
     .add_property("shift", copy_value(&Port::shift))
-    .add_property("sites", copy_value(&Port::indices))
+    .add_property("indices", copy_value(&Port::indices))
     .add_property("outer_hoppings", sparse_uref(&Port::outer_hoppings))
     .add_property("inner_hoppings", sparse_uref(&Port::inner_hoppings))
     ;
