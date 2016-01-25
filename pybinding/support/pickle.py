@@ -3,6 +3,7 @@ import os
 import pathlib
 import pickle
 from collections import namedtuple
+from itertools import zip_longest
 
 from ..utils import decorator_decorator
 
@@ -78,8 +79,8 @@ def pickleable(props='', impl='', version: int=0):
     props = props.split()
 
     tokens = {
-        '.': lambda x: x.impl,
-        '[]': lambda x: [v.impl for v in x]
+        '.': lambda x: x.impl if x else None,
+        '[]': lambda x: [v.impl for v in x] if x else []
     }
 
     impl_names, conversions = [], []
@@ -113,7 +114,7 @@ def pickleable(props='', impl='', version: int=0):
             setattr(self, prop, value)
 
         if impl_names:
-            impl_state = (convert(v) for convert, v in zip(conversions, data['impl']))
+            impl_state = (convert(v) for convert, v in zip_longest(conversions, data['impl']))
             self.impl = mock_impl(*impl_state)
 
     def decorator(cls):
