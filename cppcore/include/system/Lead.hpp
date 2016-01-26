@@ -28,12 +28,20 @@ struct Lead {
 
 using Leads = std::vector<Lead>;
 
+/// Describes the area where the lead should be attached to the foundation
+struct LeadJunction {
+    SliceIndex3D slice_index; ///< slice of the foundation where the lead can be attached
+    ArrayX<bool> is_valid; ///< valid lead sites within the slice (determined from the lead shape)
+
+    LeadJunction(Foundation const& foundation, Lead const& lead);
+};
+
 /// Create a lead attachment area in the foundation
 void attach(Foundation& foundation, Lead const& lead);
 
 namespace lead {
-    /// Compute the slice through which the lead penetrates the foundation, end to end
-    SliceIndex3D passthrough_slice(Foundation const& foundation, Lead const& lead);
+    /// Return the slice of the foundation which contains the shape
+    SliceIndex3D shape_slice(Foundation const& foundation, Shape const& shape);
     /// Compute the slice where the lead can be attached to the foundation
     SliceIndex3D attachment_slice(Foundation const& foundation, Lead const& lead);
 }

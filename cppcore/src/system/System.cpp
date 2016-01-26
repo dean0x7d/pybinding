@@ -44,15 +44,15 @@ System::Port::Port(Foundation const& foundation,
     auto const& lattice = foundation.get_lattice();
     shift = static_cast<float>(-lead.sign) * lattice.vectors[lead.axis];
 
-    auto const slice = foundation[lead::attachment_slice(foundation, lead)];
-    auto const within_lead = lead.shape.contains(slice.positions());
+    auto const junction = LeadJunction(foundation, lead);
+    auto const slice = foundation[junction.slice_index];
 
     indices = [&]{
         auto indices = std::vector<int>();
-        indices.reserve(within_lead.count());
+        indices.reserve(junction.is_valid.count());
 
         for (auto const& site : slice) {
-            if (within_lead[site.get_slice_idx()]) {
+            if (junction.is_valid[site.get_slice_idx()]) {
                 indices.push_back(hamiltonian_indices[site]);
             }
         }
@@ -65,7 +65,7 @@ System::Port::Port(Foundation const& foundation,
         auto matrix_view = compressed_inserter(matrix, size * lattice.max_hoppings());
 
         for (auto const& site : slice) {
-            if (!within_lead[site.get_slice_idx()]) {
+            if (!junction.is_valid[site.get_slice_idx()]) {
                 continue;
             }
 
@@ -88,7 +88,7 @@ System::Port::Port(Foundation const& foundation,
         auto matrix_view = compressed_inserter(matrix, size * lattice.max_hoppings());
 
         for (auto const& site : slice) {
-            if (!within_lead[site.get_slice_idx()]) {
+            if (!junction.is_valid[site.get_slice_idx()]) {
                 continue;
             }
 
