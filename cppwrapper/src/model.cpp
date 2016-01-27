@@ -16,6 +16,7 @@ void export_core() {
     .def("add", &Model::add_position_modifier)
     .def("add", &Model::add_onsite_modifier)
     .def("add", &Model::add_hopping_modifier)
+    .def("attach_lead", &Model::attach_lead)
     .def("set_wave_vector", &Model::set_wave_vector, args("self", "wave_vector"))
     .add_property("state_modifiers", &Model::state_modifiers)
     .add_property("position_modifiers", &Model::position_modifiers)

@@ -45,7 +45,35 @@ class Boundary:
         return SparseMatrix(self.impl.hoppings)
 
 
-@pickleable(impl='positions sublattices hoppings. boundaries[]')
+@pickleable(impl='shift indices inner_hoppings. outer_hoppings.')
+class Port:
+    """Port for a lead to plug into"""
+
+    def __init__(self, impl: _cpp.Port):
+        self.impl = impl
+
+    @property
+    def shift(self) -> np.ndarray:
+        """Position shift of the periodic boundary condition"""
+        return self.impl.shift
+
+    @property
+    def indices(self) -> np.ndarray:
+        """Map of lead indices to main system indices"""
+        return np.array(self.impl.indices)
+
+    @property
+    def inner_hoppings(self) -> SparseMatrix:
+        """Sparse matrix of the inner lead hoppings"""
+        return SparseMatrix(self.impl.inner_hoppings)
+
+    @property
+    def outer_hoppings(self) -> SparseMatrix:
+        """Sparse matrix of the outer (boundary) hoppings"""
+        return SparseMatrix(self.impl.outer_hoppings)
+
+
+@pickleable(impl='positions sublattices hoppings. boundaries[] ports[]')
 class System:
     """Structural data of the model
 
@@ -100,6 +128,11 @@ class System:
         """List of :class:`.Boundary`"""
         return [Boundary(b) for b in self.impl.boundaries]
 
+    @property
+    def ports(self):
+        """List of :class:`.Port`"""
+        return [Port(p) for p in self.impl.ports]
+
     def find_nearest(self, position, at_sublattice=-1):
         """Find the index of the atom closest to the given position
 
@@ -129,7 +162,7 @@ class System:
                 masked_distance = ma.array(distance, mask=self.sublattices != at_sublattice)
                 return ma.argmin(masked_distance)
 
-    def plot(self, site_radius=0.025, hopping_width=1.0, num_periods=1, axes='xy',
+    def plot(self, site_radius=0.025, hopping_width=1.0, num_periods=1, lead_length=6, axes='xy',
              site_props=None, hopping_props=None, boundary_props=None):
         """Plot the structure of the system: sites and hoppings
 
@@ -141,6 +174,8 @@ class System:
             Width (in figure units) of the hopping lines.
         num_periods : int
             Number of times to repeat the periodic boundaries.
+        lead_length : int
+            Number of times to repeat the lead structure.
         axes : str
             The spatial axes to plot. E.g. 'xy', 'yz', etc.
         site_props : Optional[dict]
@@ -165,6 +200,9 @@ class System:
         plot_periodic_structure(self.positions, self.hoppings.tocoo(), self.boundaries,
                                 self.sublattices, site_radius, hopping_width, num_periods,
                                 site_props, hopping_props, boundary_props)
+
+        properties = dict(site=site_props, hopping=hopping_props, boundary=boundary_props)
+        plot_lead_structure(self, site_radius, hopping_width, lead_length, **properties)
 
         pltutils.set_min_axis_length(0.5)
         pltutils.despine(trim=True)
@@ -371,6 +409,36 @@ def plot_periodic_structure(positions, hoppings, boundaries, data, site_radius, 
 
             plot_hoppings(positions, boundary.hoppings.tocoo(), hopping_width * 1.4, shift, blend,
                           boundary=(sign, boundary.shift), **boundary_props)
+
+
+def plot_lead_structure(system, site_radius, hopping_width, lead_length=6, **properties):
+    """Plot the sites, hoppings and periodic boundaries of the systems leads
+
+    Parameters
+    ----------
+    system : System
+        Needs to have `positions`, `sublattices` and `ports` attributes.
+    site_radius : float
+        Radius (in data units) of the circle representing a lattice site.
+    hopping_width : float
+        Width (in figure units) of the hopping lines.
+    lead_length : int
+        Number of times to repeat the lead's periodic boundaries.
+    **properties
+        Site, hopping and boundary properties: to be forwarded to their respective plots.
+    """
+    blend_gradient = np.linspace(0.5, 0.1, lead_length)
+    for port in system.ports:
+        for i, blend in enumerate(blend_gradient, start=1):
+            pos = tuple(v[port.indices] for v in system.positions)
+            sub = system.sublattices[port.indices]
+            offset = i * port.shift
+
+            plot_sites(pos, sub, site_radius, offset, blend, **properties.get('site', {}))
+            plot_hoppings(pos, port.inner_hoppings.tocoo(), hopping_width, offset, blend,
+                          **properties.get('hopping', {}))
+            plot_hoppings(pos, port.outer_hoppings.tocoo(), hopping_width * 1.6, offset, blend,
+                          boundary=(1, -port.shift), **properties.get('boundary', {}))
 
 
 def plot_site_indices(system):

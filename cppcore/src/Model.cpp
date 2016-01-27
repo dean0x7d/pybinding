@@ -31,6 +31,10 @@ void Model::set_symmetry(Symmetry const& new_symmetry) {
     _hamiltonian.reset();
 }
 
+void Model::attach_lead(int direction, Shape const& shape) {
+    leads.emplace_back(direction, shape);
+}
+
 void Model::add_site_state_modifier(SiteStateModifier const& m) {
     if (system_modifiers.add_unique(m)) {
         _system.reset();
@@ -103,7 +107,11 @@ std::shared_ptr<System> Model::make_system() const {
         }
     }
 
-    return std::make_shared<System>(foundation, symmetry);
+    for (auto const& lead : leads) {
+        attach(foundation, lead);
+    }
+
+    return std::make_shared<System>(foundation, symmetry, leads);
 }
 
 std::shared_ptr<Hamiltonian> Model::make_hamiltonian() const {

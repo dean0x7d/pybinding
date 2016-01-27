@@ -16,6 +16,10 @@ public:
     CompressedInserter(SparseMatrixX<scalar_t>& mat, int size)
         : matrix(mat) { matrix.reserve(size); }
 
+    void start_row() {
+        matrix.outerIndexPtr()[row++] = idx;
+    }
+
     void start_row(int row_index) {
         while (row <= row_index)
             matrix.outerIndexPtr()[row++] = idx;

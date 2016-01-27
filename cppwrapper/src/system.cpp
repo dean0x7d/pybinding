@@ -52,22 +52,30 @@ public:
 };
 
 void export_system() {
-    using tbm::System;
     using Boundary = tbm::System::Boundary;
-
     class_<Boundary>{"Boundary", no_init}
     .add_property("shift", copy_value(&Boundary::shift))
     .add_property("hoppings", sparse_uref(&Boundary::hoppings))
     ;
 
+    using Port = tbm::System::Port;
+    class_<Port>{"Port", no_init}
+    .add_property("shift", copy_value(&Port::shift))
+    .add_property("indices", copy_value(&Port::indices))
+    .add_property("outer_hoppings", sparse_uref(&Port::outer_hoppings))
+    .add_property("inner_hoppings", sparse_uref(&Port::inner_hoppings))
+    ;
+
+    using tbm::System;
     class_<System, std::shared_ptr<System>, noncopyable>{"System", no_init}
     .def("find_nearest", &System::find_nearest, args("self", "position", "sublattice"_kw=-1),
          "Find the index of the atom closest to the given coordiantes.")
     .add_property("num_sites", &System::num_sites)
     .add_property("positions", internal_ref(&System::positions))
     .add_property("sublattices", dense_uref(&System::sublattices))
-    .add_property("boundaries", &System::boundaries)
     .add_property("hoppings", sparse_uref(&System::hoppings))
+    .add_property("boundaries", &System::boundaries)
+    .add_property("ports", &System::ports)
     ;
 
     using tbm::Hopping;
@@ -144,6 +152,10 @@ void export_system() {
     .add_property("vertices", copy_value(&PyShape::vertices))
     .add_property("offset", copy_value(&PyShape::offset))
     ;
+
+    class_<tbm::Line, bases<tbm::Shape>, noncopyable>{"Line",
+        init<Cartesian, Cartesian, optional<Cartesian>>{args("self", "a", "b", "offset")}
+    };
 
     using tbm::Polygon;
     class_<Polygon, bases<tbm::Shape>, noncopyable> {"Polygon",
