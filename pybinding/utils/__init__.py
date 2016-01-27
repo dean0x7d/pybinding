@@ -1,2 +1,3 @@
-from . import cpuinfo, misc, progressbar, time
+from . import cpuinfo, progressbar
 from .misc import *
+from .time import *

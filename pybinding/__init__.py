@@ -23,4 +23,4 @@ from .results import make_path
 from .support.pickle import save, load
 from .parallel import parallel_for, parallelize
 
-from . import (constants, greens, model, parallel, pltutils, results, solver, system)
+from . import (constants, greens, parallel, pltutils, results, solver, system, utils)

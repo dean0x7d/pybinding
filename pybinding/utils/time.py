@@ -1,36 +1,70 @@
 import time
-import contextlib
+
+__all__ = ['tic', 'toc', 'timed', 'pretty_duration']
 
 _tic_times = []
 
 
-def tic(message=""):
-    if message:
-        print(message)
-
+def tic():
+    """Set a start time"""
     global _tic_times
     _tic_times.append(time.time())
 
 
 def toc(message=""):
+    """Print the elapsed time from the last :func:`.tic`
+
+    Parameters
+    ----------
+    message : str
+        Print this in front of the elapsed time.
+    """
     if not _tic_times:
-        return
+        raise RuntimeError("Called toc() without a tic()")
 
     if message:
         print(message, end=" ")
     print(pretty_duration(time.time() - _tic_times.pop()))
 
 
-@contextlib.contextmanager
-def timed(end_msg="", start_msg=""):
-    tic(start_msg)
-    yield
-    toc(end_msg)
+class _Timed:
+    def __init__(self, message=""):
+        self.message = message
+
+    def __enter__(self):
+        self._enter_time = time.time()
+        return self
+
+    def __exit__(self, *_):
+        self.elapsed = time.time() - self._enter_time
+        if self.message:
+            print(self.message, self)
+
+    def __str__(self):
+        return pretty_duration(self.elapsed)
 
 
-def pretty_duration(seconds: float):
+def timed(message=""):
+    """Context manager which times its code block
+
+    Parameters
+    ----------
+    message : str
+        Message to print on block exit, followed by the elapsed time.
+    """
+    return _Timed(message)
+
+
+def pretty_duration(seconds):
     """Return a pretty duration string
 
+    Parameters
+    ----------
+    seconds : float
+        Duration in seconds
+
+    Examples
+    --------
     >>> pretty_duration(2.1e-6)
     '0.00ms'
     >>> pretty_duration(2.1e-5)
