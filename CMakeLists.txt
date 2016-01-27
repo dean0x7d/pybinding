@@ -22,3 +22,5 @@ endif()
 if(EXISTS ${CMAKE_SOURCE_DIR}/docs)
     add_subdirectory(docs EXCLUDE_FROM_ALL)
 endif()
+
+add_custom_target(pytest COMMAND py.test \${ARGS} WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
