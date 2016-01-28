@@ -27,6 +27,10 @@ BOOST_PYTHON_MODULE(_pybinding) {
     eigen3_numpy_register_type<Index3D>();
     to_python_converter<DenseURef, denseuref_to_python>{};
 
+    register_arrayref_converter<ArrayRef>();
+    register_arrayref_converter<RealArrayRef>();
+    register_arrayref_converter<ComplexArrayRef>();
+
     class_<CartesianArray>{
         "CartesianArray",
         init<ArrayXf const&, ArrayXf const&, ArrayXf const&>{args("self", "x", "y", "z")}

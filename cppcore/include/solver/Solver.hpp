@@ -88,8 +88,8 @@ public:
     Model const& get_model() const { return model; }
     std::shared_ptr<System const> system() const { return model.system(); }
 
-    DenseURef eigenvalues();
-    DenseURef eigenvectors();
+    RealArrayRef eigenvalues();
+    ComplexArrayRef eigenvectors();
 
     ArrayXd calc_dos(ArrayXf energies, float broadening);
     ArrayXd calc_spatial_ldos(float energy, float broadening);

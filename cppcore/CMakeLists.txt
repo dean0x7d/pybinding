@@ -16,12 +16,14 @@ add_library(pybinding_cppcore
     include/compute/linear_algebra.hpp
     include/detail/slice.hpp
     include/detail/strategy.hpp
+    include/detail/typelist.hpp
     include/greens/Greens.hpp
     include/greens/KPM.hpp
     include/hamiltonian/Hamiltonian.hpp
     include/hamiltonian/HamiltonianModifiers.hpp
     include/solver/FEAST.hpp
     include/solver/Solver.hpp
+    include/support/arrayref.hpp
     include/support/config.hpp
     include/support/cpp14.hpp
     include/support/dense.hpp

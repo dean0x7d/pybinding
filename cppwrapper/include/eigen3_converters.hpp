@@ -46,19 +46,20 @@ struct denseuref_to_python {
             shape[1] = u.cols;
         }
 
+        using tbm::num::Tag;
         auto const type = [&]{
             switch (u.type) {
-                case ScalarType::f: return NPY_FLOAT;
-                case ScalarType::cf: return NPY_CFLOAT;
-                case ScalarType::d: return NPY_DOUBLE;
-                case ScalarType::cd: return NPY_CDOUBLE;
-                case ScalarType::b: return NPY_BOOL;
-                case ScalarType::i8: return NPY_INT8;
-                case ScalarType::i16: return NPY_INT16;
-                case ScalarType::i32: return NPY_INT32;
-                case ScalarType::u8: return NPY_UINT8;
-                case ScalarType::u16: return NPY_UINT16;
-                case ScalarType::u32: return NPY_UINT32;
+                case Tag::f32: return NPY_FLOAT;
+                case Tag::cf32: return NPY_CFLOAT;
+                case Tag::f64: return NPY_DOUBLE;
+                case Tag::cf64: return NPY_CDOUBLE;
+                case Tag::b: return NPY_BOOL;
+                case Tag::i8: return NPY_INT8;
+                case Tag::i16: return NPY_INT16;
+                case Tag::i32: return NPY_INT32;
+                case Tag::u8: return NPY_UINT8;
+                case Tag::u16: return NPY_UINT16;
+                case Tag::u32: return NPY_UINT32;
                 default: return NPY_VOID;
             }
         }();
@@ -72,6 +73,52 @@ struct denseuref_to_python {
 
     static const PyTypeObject* get_pytype() { return &PyArray_Type; }
 };
+
+template<class ArrayVariant>
+struct arrayref_to_python {
+    static PyObject* convert(ArrayVariant const& ref) {
+        auto const ndim = (ref.rows == 1 || ref.cols == 1) ? 1 : 2;
+
+        npy_intp shape[2];
+        if (ndim == 1) {
+            shape[0] = ref.is_row_major ? ref.cols : ref.rows;
+        } else {
+            shape[0] = ref.rows;
+            shape[1] = ref.cols;
+        }
+
+        using tbm::num::Tag;
+        auto const type = [&]{
+            switch (ref.tag) {
+                case Tag::f32:  return NPY_FLOAT;
+                case Tag::cf32: return NPY_CFLOAT;
+                case Tag::f64:  return NPY_DOUBLE;
+                case Tag::cf64: return NPY_CDOUBLE;
+                case Tag::b:    return NPY_BOOL;
+                case Tag::i8:   return NPY_INT8;
+                case Tag::i16:  return NPY_INT16;
+                case Tag::i32:  return NPY_INT32;
+                case Tag::u8:   return NPY_UINT8;
+                case Tag::u16:  return NPY_UINT16;
+                case Tag::u32:  return NPY_UINT32;
+                default: return NPY_VOID;
+            }
+        }();
+
+        int flags = ref.is_row_major ? NPY_ARRAY_CARRAY : NPY_ARRAY_FARRAY;
+
+        // ndarray from existing data -> it does not own the data and will not delete it
+        return PyArray_New(&PyArray_Type, ndim, shape, type, nullptr,
+                           const_cast<void*>(ref.data), 0, flags, nullptr);
+    }
+
+    static const PyTypeObject* get_pytype() { return &PyArray_Type; }
+};
+
+template<class T>
+inline void register_arrayref_converter() {
+    bp::to_python_converter<T, arrayref_to_python<T>>{};
+}
 
 template<class EigenType>
 struct eigen3_to_numpy {

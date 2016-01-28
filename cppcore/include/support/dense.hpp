@@ -1,6 +1,7 @@
 #pragma once
 #include "support/config.hpp"
 #include "support/traits.hpp"
+#include "support/arrayref.hpp"
 #include <Eigen/Core>
 #include <algorithm>
 #include <vector>
@@ -41,6 +42,11 @@ template<class T> using ArrayX = Eigen::Array<T, Eigen::Dynamic, 1>;
 template<class T> using ArrayXX = Eigen::Array<T, Eigen::Dynamic, Eigen::Dynamic>;
 template<class T> using VectorX = Eigen::Matrix<T, Eigen::Dynamic, 1>;
 template<class T> using MatrixX = Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic>;
+
+// array variants
+using num::ArrayRef;
+using num::RealArrayRef;
+using num::ComplexArrayRef;
 
 } // namespace tbm
 
@@ -131,5 +137,36 @@ public:
 public:
     ArrayX<float> x, y, z;
 };
+
+namespace num {
+    // ArrayRef's MakeContainer specializations for Eigen types
+    template<template<class, int...> class EigenType, class scalar_t, int cols, int... options>
+    struct MakeContainer<EigenType<scalar_t, 1, cols, options...>> {
+        using Map = Eigen::Map<const EigenType<scalar_t, 1, cols, options...>>;
+
+        static Map make(ArrayRef const& ref) {
+            return Map{static_cast<scalar_t const*>(ref.data), ref.cols};
+        }
+    };
+
+    template<template<class, int...> class EigenType, class scalar_t, int rows, int... options>
+    struct MakeContainer<EigenType<scalar_t, rows, 1, options...>> {
+        using Map = Eigen::Map<const EigenType<scalar_t, rows, 1, options...>>;
+
+        static Map make(ArrayRef const& ref) {
+            return Map{static_cast<scalar_t const*>(ref.data), ref.rows};
+        }
+    };
+
+    template<template<class, int...> class EigenType,
+             class scalar_t, int rows, int cols, int... options>
+    struct MakeContainer<EigenType<scalar_t, rows, cols, options...>> {
+        using Map = Eigen::Map<const EigenType<scalar_t, rows, cols, options...>>;
+
+        static Map make(ArrayRef const& ref) {
+            return Map{static_cast<scalar_t const*>(ref.data), ref.rows, ref.cols};
+        }
+    };
+} // namespace num
 
 } // namespace tbm
