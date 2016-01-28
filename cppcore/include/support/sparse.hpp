@@ -2,6 +2,8 @@
 #include "support/config.hpp"
 #include <Eigen/SparseCore>
 
+namespace tbm {
+
 template <class scalar_t>
 using SparseMatrixX = Eigen::SparseMatrix<scalar_t, Eigen::RowMajor, int>;
 
@@ -146,4 +148,4 @@ private:
 template<class scalar_t>
 inline Loop<scalar_t> make_loop(SparseMatrixX<scalar_t> const& m) { return {m}; }
 
-} // namespace sparse
+}} // namespace tbm::sparse

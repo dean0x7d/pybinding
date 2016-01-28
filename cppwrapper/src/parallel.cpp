@@ -5,6 +5,7 @@
 #include <boost/python/class.hpp>
 
 using namespace boost::python;
+using namespace tbm;
 
 
 void export_parallel() {

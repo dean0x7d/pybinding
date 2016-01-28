@@ -5,6 +5,8 @@
 #include <algorithm>
 #include <vector>
 
+namespace tbm {
+
 // add common math functions to the global namespace
 using std::abs;
 using std::exp;
@@ -40,6 +42,8 @@ template<class T> using ArrayXX = Eigen::Array<T, Eigen::Dynamic, Eigen::Dynamic
 template<class T> using VectorX = Eigen::Matrix<T, Eigen::Dynamic, 1>;
 template<class T> using MatrixX = Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic>;
 
+} // namespace tbm
+
 namespace Eigen {
     // add being() and end() to Eigen namespace
     // this will enable using Eigen objects in ranged for loops
@@ -63,6 +67,8 @@ namespace Eigen {
         return v.derived().data() + v.size();
     }
 } // namespace Eigen
+
+namespace tbm {
 
 template<template<class> class EigenType, class scalar_t>
 Eigen::Map<const EigenType<scalar_t>> eigen_cast(const std::vector<scalar_t>& v) {
@@ -125,3 +131,5 @@ public:
 public:
     ArrayX<float> x, y, z;
 };
+
+} // namespace tbm

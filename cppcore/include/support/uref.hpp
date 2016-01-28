@@ -68,10 +68,10 @@ struct SparseURef {
     const int rows, cols;
 
     template<class scalar_t>
-    SparseURef(const SparseMatrixX<scalar_t>& v)
-        : values{Eigen::Map<const ArrayX<scalar_t>>(v.valuePtr(), v.nonZeros())},
-          inner_indices{Eigen::Map<const ArrayXi>(v.innerIndexPtr(), v.nonZeros())},
-          outer_starts{Eigen::Map<const ArrayXi>(v.outerIndexPtr(), v.outerSize() + 1)},
+    SparseURef(const tbm::SparseMatrixX<scalar_t>& v)
+        : values{Eigen::Map<const tbm::ArrayX<scalar_t>>(v.valuePtr(), v.nonZeros())},
+          inner_indices{Eigen::Map<const tbm::ArrayXi>(v.innerIndexPtr(), v.nonZeros())},
+          outer_starts{Eigen::Map<const tbm::ArrayXi>(v.outerIndexPtr(), v.outerSize() + 1)},
           rows(v.rows()), cols(v.cols())
     {}
 };

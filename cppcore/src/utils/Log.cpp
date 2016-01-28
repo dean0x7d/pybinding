@@ -1,6 +1,7 @@
 #include "utils/Log.hpp"
 #include <iostream>
 #include <iomanip>
+using namespace tbm;
 
 void Log::i(const std::string& str, bool new_line, int width)
 {

@@ -2,6 +2,8 @@
 #include <string>
 #include <chrono>
 
+namespace tbm {
+
 /**
  High resolution timer (below 1 microsecond accuracy).
  */
@@ -37,3 +39,5 @@ private:
     std::chrono::time_point<std::chrono::high_resolution_clock> tic_time;
     std::chrono::nanoseconds elapsed;
 };
+
+} // namespace tbm

@@ -2,7 +2,7 @@
 #include "support/dense.hpp"
 #include <Eigen/Jacobi>
 
-namespace compute {
+namespace tbm { namespace compute {
 
 namespace detail {
     template<class real_t>
@@ -89,4 +89,4 @@ inline ArrayX<scalar_t> tridiagonal_eigenvalues(const DenseBase<Derived>& alpha,
     return eigenvalues;
 }
 
-} // namespace compute
+}} // namespace tbm::compute

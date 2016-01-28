@@ -4,7 +4,7 @@
 #include <type_traits>
 #include <limits>
 
-namespace num {
+namespace tbm { namespace num {
 
 namespace detail {
     template<class scalar_t>
@@ -65,4 +65,4 @@ bool approx_equal(T x, T y, int ulp = 1) {
            || diff <= std::numeric_limits<T>::min(); // subnormal case
 }
 
-} // namespace num
+}} // namespace tbm::num

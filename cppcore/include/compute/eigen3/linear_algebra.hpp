@@ -2,7 +2,7 @@
 #include "support/dense.hpp"
 #include "support/sparse.hpp"
 
-namespace compute {
+namespace tbm { namespace compute {
 
 template<class scalar_t>
 inline scalar_t dot_product(const VectorX<scalar_t>& x, const VectorX<scalar_t>& y) {
@@ -21,4 +21,4 @@ inline void matrix_vector_mul(const SparseMatrixX<scalar_t>& matrix,
     y_vector = matrix * x_vector;
 }
 
-} // namespace compute
+}} // namespace tbm::compute

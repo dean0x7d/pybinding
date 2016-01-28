@@ -1,7 +1,7 @@
 #pragma once
 #include "support/dense.hpp"
 
-namespace compute {
+namespace tbm { namespace compute {
 
 template<class Derived, class scalar_t = typename Derived::Scalar>
 inline ArrayX<scalar_t> tridiagonal_eigenvalues(const DenseBase<Derived>& alpha,
@@ -18,4 +18,4 @@ inline ArrayX<scalar_t> tridiagonal_eigenvalues(const DenseBase<Derived>& alpha,
     return eigenvalues;
 }
 
-} // namespace compute
+}} // namespace tbm::compute

@@ -2,7 +2,7 @@
 #include <complex>
 
 /// Physics constants
-namespace physics {
+namespace tbm { namespace physics {
     // imaginary one
     const std::complex<float> i1(0, 1);
     // the omnipresent pi
@@ -17,4 +17,4 @@ namespace physics {
     constexpr float epsilon0 = 8.854e-12f;
     // magnetic flux quantum (h/e)
     constexpr float phi0 = 2 * pi*hbar;
-}
+}} // namespace tbm::physics

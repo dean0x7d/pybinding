@@ -2,7 +2,7 @@
 #include "support/dense.hpp"
 #include "support/sparse.hpp"
 
-namespace compute {
+namespace tbm { namespace compute {
 
 namespace detail {
     template<class scalar_t> struct mkl_typemap;
@@ -59,4 +59,4 @@ inline void kpm_kernel(int start, int end, SparseMatrixX<scalar_t> const& matrix
     );
 }
 
-} // namespace compute
+}} // namespace tbm::compute

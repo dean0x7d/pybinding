@@ -11,6 +11,7 @@
 #include <boost/python/pure_virtual.hpp>
 
 using namespace boost::python;
+using namespace tbm;
 
 
 class PySiteStateModifier : public tbm::SiteStateModifierImpl,

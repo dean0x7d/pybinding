@@ -7,6 +7,7 @@
 #include <boost/python/tuple.hpp>
 
 using namespace boost::python;
+using namespace tbm;
 
 void export_core();
 void export_system();

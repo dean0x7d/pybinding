@@ -2,7 +2,7 @@
 #include "support/dense.hpp"
 #include "support/sparse.hpp"
 
-namespace compute {
+namespace tbm { namespace compute {
 /**
  dot product
 */
@@ -87,4 +87,4 @@ inline void matrix_vector_mul<std::complex<float>>(const SparseMatrixXcf& matrix
     );
 }
 
-} // namespace compute
+}} // namespace tbm::compute

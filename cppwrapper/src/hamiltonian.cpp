@@ -9,6 +9,7 @@
 #include <boost/python/tuple.hpp>
 
 using namespace boost::python;
+using namespace tbm;
 
 class PyOnsite : public tbm::OnsiteModifierImpl,
                  public wrapper<tbm::OnsiteModifierImpl> {

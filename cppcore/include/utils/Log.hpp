@@ -1,6 +1,8 @@
 #pragma once
 #include <string>
 
+namespace tbm {
+
 class Log {
 public:
     /// info
@@ -14,3 +16,5 @@ public:
     static void d(const std::string&, bool = true, int = 0) { /* pass */ }
 #endif
 };
+
+} // namespace tbm

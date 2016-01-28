@@ -1,6 +1,7 @@
 #include "utils/Chrono.hpp"
 #include "support/format.hpp"
 using namespace std::chrono;
+using namespace tbm;
 
 std::string Chrono::str() const {
     using fmt::format;

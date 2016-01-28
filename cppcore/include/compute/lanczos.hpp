@@ -10,7 +10,7 @@
 #include "compute/linear_algebra.hpp"
 #include <tuple>
 
-namespace compute {
+namespace tbm { namespace compute {
 
 /**
  Use the Lanczos algorithm to find the min and max eigenvalues at given precision (%)
@@ -91,4 +91,4 @@ std::tuple<real_t, real_t, int>
     return {};
 }
 
-} // namespace compute
+}} // namespace tbm::compute
