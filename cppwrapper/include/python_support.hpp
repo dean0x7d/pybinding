@@ -4,7 +4,8 @@
 #include <boost/python/copy_const_reference.hpp>
 #include <boost/python/return_by_value.hpp>
 
-#include "support/uref.hpp"
+#include "support/dense.hpp"
+#include "support/sparseref.hpp"
 
 namespace boost { namespace python {
 
@@ -41,23 +42,26 @@ object internal_ref(Data Class::* d) {
 
 template<class Class, class Data>
 object dense_uref(Data (Class::*pmf)() const) {
-    return make_function([pmf](Class& c) { return DenseURef{(c.*pmf)()}; }, return_value_policy<
-        return_by_value, with_custodian_and_ward_postcall<0, 1>
-    >{});
+    return make_function(
+        [pmf](Class& c) { return tbm::arrayref((c.*pmf)()); },
+        return_value_policy<return_by_value, with_custodian_and_ward_postcall<0, 1>>{}
+    );
 }
 
 template<class Class, class Data, class = cpp14::enable_if_t<!std::is_function<Data>::value>>
 object dense_uref(Data Class::* d) {
-    return make_function([d](Class& c) { return DenseURef{c.*d}; }, return_value_policy<
-        return_by_value, with_custodian_and_ward_postcall<0, 1>
-    >{});
+    return make_function(
+        [d](Class& c) { return tbm::arrayref(c.*d); },
+        return_value_policy<return_by_value, with_custodian_and_ward_postcall<0, 1>>{}
+    );
 }
 
 template<class Class, class Data, class = cpp14::enable_if_t<!std::is_function<Data>::value>>
 object sparse_uref(Data Class::* d) {
-    return make_function([d](Class& c) { return SparseURef{c.*d}; }, return_value_policy<
-        return_by_value, with_custodian_and_ward_postcall<0, 1>
-    >{});
+    return make_function(
+        [d](Class& c) { return tbm::SparseURef{c.*d}; },
+        return_value_policy<return_by_value, with_custodian_and_ward_postcall<0, 1>>{}
+    );
 }
 
 }}

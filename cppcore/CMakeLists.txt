@@ -30,9 +30,9 @@ add_library(pybinding_cppcore
     include/support/format.hpp
     include/support/physics.hpp
     include/support/sparse.hpp
+    include/support/sparseref.hpp
     include/support/thread.hpp
     include/support/traits.hpp
-    include/support/uref.hpp
     include/system/Foundation.hpp
     include/system/Lattice.hpp
     include/system/Lead.hpp

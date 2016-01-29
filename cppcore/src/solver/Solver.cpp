@@ -77,12 +77,12 @@ void BaseSolver::solve() {
 
 RealArrayRef BaseSolver::eigenvalues() {
     solve();
-    return make_arrayvariant(strategy->eigenvalues());
+    return strategy->eigenvalues();
 }
 
 ComplexArrayRef BaseSolver::eigenvectors() {
     solve();
-    return make_arrayvariant(strategy->eigenvectors());
+    return strategy->eigenvectors();
 }
 
 ArrayXd BaseSolver::calc_dos(ArrayXf target_energies, float broadening) {

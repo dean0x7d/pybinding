@@ -9,7 +9,6 @@
 #include "utils/Log.hpp"
 
 #include "support/dense.hpp"
-#include "support/uref.hpp"
 
 #include <memory>
 
@@ -26,8 +25,8 @@ public:
     virtual bool set_hamiltonian(const std::shared_ptr<const Hamiltonian>&) = 0;
     
     virtual void solve() = 0;
-    virtual DenseURef eigenvalues() const = 0;
-    virtual DenseURef eigenvectors() const = 0;
+    virtual RealArrayRef eigenvalues() const = 0;
+    virtual ComplexArrayRef eigenvectors() const = 0;
 
     virtual std::string report(bool shortform) const = 0;
 };
@@ -57,8 +56,8 @@ public:
     }
 
 public:
-    virtual DenseURef eigenvalues() const override { return _eigenvalues; }
-    virtual DenseURef eigenvectors() const override { return _eigenvectors; }
+    virtual RealArrayRef eigenvalues() const override { return arrayref(_eigenvalues); }
+    virtual ComplexArrayRef eigenvectors() const override { return arrayref(_eigenvectors); }
 
 protected:
     /// possible post-processing that may be defined by derived classes

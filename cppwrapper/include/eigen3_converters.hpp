@@ -1,5 +1,5 @@
 #pragma once
-#include "support/uref.hpp"
+#include "support/dense.hpp"
 
 #include <boost/python/to_python_converter.hpp>
 #include <boost/python/extract.hpp>
@@ -32,47 +32,6 @@ template<> struct dtype<std::uint64_t> { static constexpr auto value = NPY_UINT6
 namespace boost { namespace python {
     template<> struct base_type_traits<PyArrayObject> : std::true_type {};
 }}
-
-struct denseuref_to_python {
-    static PyObject* convert(const DenseURef& u) {
-        auto const ndim = (u.rows == 1 || u.cols == 1) ? 1 : 2;
-
-        npy_intp shape[2];
-        if (ndim == 1) { // row or column vector
-            shape[0] = u.is_row_major ? u.cols : u.rows;
-        }
-        else { // matrix
-            shape[0] = u.rows;
-            shape[1] = u.cols;
-        }
-
-        using tbm::num::Tag;
-        auto const type = [&]{
-            switch (u.type) {
-                case Tag::f32: return NPY_FLOAT;
-                case Tag::cf32: return NPY_CFLOAT;
-                case Tag::f64: return NPY_DOUBLE;
-                case Tag::cf64: return NPY_CDOUBLE;
-                case Tag::b: return NPY_BOOL;
-                case Tag::i8: return NPY_INT8;
-                case Tag::i16: return NPY_INT16;
-                case Tag::i32: return NPY_INT32;
-                case Tag::u8: return NPY_UINT8;
-                case Tag::u16: return NPY_UINT16;
-                case Tag::u32: return NPY_UINT32;
-                default: return NPY_VOID;
-            }
-        }();
-
-        int flags = u.is_row_major ? NPY_ARRAY_CARRAY : NPY_ARRAY_FARRAY;
-
-        // ndarray from existing data -> it does not own the data and will not delete it
-        return PyArray_New(&PyArray_Type, ndim, shape, type, nullptr,
-                           (void*)u.data, 0, flags, nullptr);
-    }
-
-    static const PyTypeObject* get_pytype() { return &PyArray_Type; }
-};
 
 template<class ArrayVariant>
 struct arrayref_to_python {

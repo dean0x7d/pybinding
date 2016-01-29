@@ -1,6 +1,6 @@
 #pragma once
 #include "utils/Chrono.hpp"
-#include "support/uref.hpp"
+#include "support/dense.hpp"
 
 #include <thread>
 #include <queue>
@@ -119,7 +119,7 @@ class DeferredBase {
 public:
     virtual void compute() = 0;
     virtual std::string report() = 0;
-    virtual DenseURef result_uref() = 0;
+    virtual ArrayRef result_uref() = 0;
 };
 
 template<class Result>
@@ -151,9 +151,9 @@ public:
         return _result;
     }
 
-    DenseURef result_uref() final {
+    ArrayRef result_uref() final {
         compute();
-        return _result;
+        return arrayref(_result);
     }
 
 private:

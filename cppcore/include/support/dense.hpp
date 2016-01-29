@@ -169,4 +169,18 @@ namespace num {
     };
 } // namespace num
 
+template<class Derived>
+inline ArrayRef arrayref(DenseBase<Derived> const& v) {
+    return {num::detail::get_tag<typename Derived::Scalar>(),
+            Derived::IsRowMajor,
+            v.derived().data(),
+            static_cast<int>(v.derived().rows()),
+            static_cast<int>(v.derived().cols())};
+};
+
+template<class scalar_t>
+inline ArrayRef arrayref(scalar_t const* data, int size) {
+    return {num::detail::get_tag<scalar_t>(), true, data, 1, size};
+};
+
 } // namespace tbm

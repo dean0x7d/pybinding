@@ -27,7 +27,7 @@ public:
     template<class Array>
     void apply_(Array& potential, CA p, SA s) const {
         object result = get_override("apply")(
-            DenseURef{potential}, DenseURef{p.x}, DenseURef{p.y}, DenseURef{p.z}, DenseURef{s}
+            arrayref(potential), arrayref(p.x), arrayref(p.y), arrayref(p.z), arrayref(s)
         );
         extract_array(potential, result);
     }
@@ -54,10 +54,10 @@ public:
     template<class Array>
     void apply_(Array& hopping, CA p1, CA p2, HA id) const {
         object result = get_override("apply")(
-            DenseURef{hopping},
-            DenseURef{p1.x}, DenseURef{p1.y}, DenseURef{p1.z},
-            DenseURef{p2.x}, DenseURef{p2.y}, DenseURef{p2.z},
-            DenseURef{id}
+            arrayref(hopping),
+            arrayref(p1.x), arrayref(p1.y), arrayref(p1.z),
+            arrayref(p2.x), arrayref(p2.y), arrayref(p2.z),
+            arrayref(id)
         );
         extract_array(hopping, result);
     }

@@ -25,7 +25,6 @@ BOOST_PYTHON_MODULE(_pybinding) {
     eigen3_numpy_register_type<ArrayX<bool>>();
     eigen3_numpy_register_type<Cartesian>();
     eigen3_numpy_register_type<Index3D>();
-    to_python_converter<DenseURef, denseuref_to_python>{};
 
     register_arrayref_converter<ArrayRef>();
     register_arrayref_converter<RealArrayRef>();

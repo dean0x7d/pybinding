@@ -20,9 +20,9 @@ public:
     virtual void apply(ArrayX<bool>& is_valid, CartesianArray const& p,
                        ArrayX<tbm::sub_id> const& s) const override {
         object result = get_override("apply")(
-            DenseURef{is_valid},
-            DenseURef{p.x}, DenseURef{p.y}, DenseURef{p.z},
-            DenseURef{s}
+            arrayref(is_valid),
+            arrayref(p.x), arrayref(p.y), arrayref(p.z),
+            arrayref(s)
         );
         extract_array(is_valid, result);
     }
@@ -33,7 +33,7 @@ class PyPositionModifier : public tbm::PositionModifierImpl,
 public:
     virtual void apply(CartesianArray& p, ArrayX<tbm::sub_id> const& s) const override {
         tuple result = get_override("apply")(
-            DenseURef{p.x}, DenseURef{p.y}, DenseURef{p.z}, DenseURef{s}
+            arrayref(p.x), arrayref(p.y), arrayref(p.z), arrayref(s)
         );
         extract_array(p.x, result[0]);
         extract_array(p.y, result[1]);
@@ -46,7 +46,7 @@ public:
     PyShape(Vertices const& vertices, object py_contains, Cartesian offset)
         : Shape(vertices, {}, offset) {
         contains = [py_contains](CartesianArray const& p) {
-            object result = py_contains(DenseURef(p.x), DenseURef(p.y), DenseURef(p.z));
+            object result = py_contains(arrayref(p.x), arrayref(p.y), arrayref(p.z));
             return extract<ArrayX<bool>>(result)();
         };
     }
