@@ -492,6 +492,38 @@ class Bands:
             ymax = plt.gca().transLimits.transform([0, max(self.bands[idx])])[1]
             plt.axvline(idx, ymax=ymax, color='0.4', ls=':', zorder=-1)
 
+    def plot_kpath(self, point_labels=None, **kwargs):
+        """Quiver plot of path in k-space along which the bands were computed
+
+        Combine with :meth:`.Lattice.plot_brillouin_zone` to see the path in context.
+
+        Parameters
+        ----------
+        point_labels : List[str]
+            Labels for the `k_points`.
+        **kwargs
+            Forwarded to `plt.quiver()`.
+        """
+        ax = plt.gca()
+        ax.set_aspect('equal')
+
+        default_color = pltutils.get_palette('Set1')[1]
+        kwargs = with_defaults(kwargs, scale_units='xy', angles='xy', scale=1, zorder=2,
+                               lw=1.5, color=default_color, edgecolor=default_color)
+
+        x, y = map(np.array, zip(*self.k_points))
+        plt.quiver(x[:-1], y[:-1], np.diff(x), np.diff(y), **kwargs)
+
+        ax.autoscale_view()
+        pltutils.add_margin(0.5)
+        pltutils.despine(trim=True)
+
+        if point_labels:
+            for k_point, label in zip(self.k_points, point_labels):
+                ha, va = pltutils.align(*(-k_point))
+                pltutils.annotate_box(label, k_point * 1.05, fontsize='large',
+                                      ha=ha, va=va, bbox=dict(lw=0))
+
 
 @pickleable
 class Sweep:

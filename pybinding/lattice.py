@@ -347,11 +347,13 @@ class Lattice(_cpp.Lattice):
         pltutils.set_min_axis_length(abs(max(x) - min(x)), 'x')
         pltutils.set_min_axis_length(abs(max(y) - min(y)), 'y')
 
-    def plot_brillouin_zone(self, **kwargs):
+    def plot_brillouin_zone(self, decorate=True, **kwargs):
         """Plot the Brillouin zone and reciprocal lattice vectors
 
         Parameters
         ----------
+        decorate : bool
+            Label the vertices of the Brillouin zone and show the reciprocal vectors
         **kwargs
             Forwarded to `plt.plot()`.
         """
@@ -374,19 +376,19 @@ class Lattice(_cpp.Lattice):
             plt.yticks([])
             ax.spines['left'].set_visible(False)
         else:
-            from matplotlib.patches import Polygon
-            ax.add_patch(Polygon(
+            ax.add_patch(plt.Polygon(
                 vertices, **with_defaults(kwargs, fill=False, color=default_color)
             ))
 
-            self._plot_vectors(self.reciprocal_vectors(), name="b",
-                               head_width=0.05, head_length=0.12)
+            if decorate:
+                self._plot_vectors(self.reciprocal_vectors(), name="b",
+                                   head_width=0.05, head_length=0.12)
 
-            for vertex in vertices:
-                text = "[" + ", ".join(map(x_pi, vertex)) + "]"
-                # align the text so that it goes away from the origin
-                ha, va = pltutils.align(*(-vertex))
-                pltutils.annotate_box(text, vertex * 1.05, ha=ha, va=va, bbox=dict(lw=0))
+                for vertex in vertices:
+                    text = "[" + ", ".join(map(x_pi, vertex)) + "]"
+                    # align the text so that it goes away from the origin
+                    ha, va = pltutils.align(*(-vertex))
+                    pltutils.annotate_box(text, vertex * 1.05, ha=ha, va=va, bbox=dict(lw=0))
 
             x, y = zip(*vertices)
             pltutils.set_min_axis_length(abs(max(x) - min(x)) * 2, 'x')
