@@ -1,30 +1,36 @@
 #pragma once
 #include "greens/Greens.hpp"
 #include "support/sparse.hpp"
+#include "compute/lanczos.hpp"
 
 namespace tbm { namespace kpm {
 
 /**
- Computes and stores the energy bounds (min and max energy)
- of the Hamiltonian and KPM scaling parameters `a` and `b`
+ Computes and stores the KPM scaling parameters `a` and `b` based on the energy
+ bounds (min and max eigenvalue) of the Hamiltonian. The bounds are determined
+ automatically with the Lanczos procedure, or set manually by the user.
+
+ Note: `compute` must be called before `a` and `b` are used. This is slightly awkward
+ but necessary because the computation is relatively expensive and should not be done
+ at construction time.
  */
 template<class scalar_t>
-class Bounds {
+class Scale {
     using real_t = num::get_real_t<scalar_t>;
     static constexpr auto scaling_tolerance = 0.01f; ///< the eigenvalue bounds are not precise
 
 public:
-    // Compute the bounds of Hamiltonian `H` using the Lanczos procedure
-    void compute(SparseMatrixX<scalar_t> const& H, real_t lanczos_tolerance);
-    // Set the bounds manually
-    void set(real_t min_energy, real_t max_energy);
+    Scale() = default;
+    /// Set the energy bounds manually, therefore skipping the Lanczos procedure at `compute` time
+    Scale(real_t min_energy, real_t max_energy) : bounds{min_energy, max_energy, 0} {}
+
+    // Compute the scaling params of the Hamiltonian `matrix` using the Lanczos procedure
+    void compute(SparseMatrixX<scalar_t> const& matrix, real_t lanczos_tolerance);
 
 public:
     real_t a = 0;
     real_t b = 0;
-
-    int lanczos_loops = 0;
-    real_t min_energy, max_energy;
+    compute::LanczosBounds<real_t> bounds = {0, 0, 0};
 };
 
 /**
@@ -47,7 +53,7 @@ class OptimizedHamiltonian {
 public:
     /// Create the optimized Hamiltonian from `H` targeting index pair `idx`
     void create(SparseMatrixX<scalar_t> const& H, IndexPair idx,
-                Bounds<scalar_t> bounds, bool use_reordering);
+                Scale<scalar_t> scale, bool use_reordering);
 
     /// Return an index into `optimized_sizes`, indicating the optimal system size
     /// for the calculation of KPM moment number `n` out of total `num_moments`
@@ -86,9 +92,9 @@ public:
 
 private:
     /// Fill H2 with scaled Hamiltonian: H2 = (H - I*b) * (2/a)
-    void create_scaled(SparseMatrixX<scalar_t> const& H, IndexPair idx, Bounds<scalar_t> b);
+    void create_scaled(SparseMatrixX<scalar_t> const& H, IndexPair idx, Scale<scalar_t> scale);
     /// Scale and reorder the Hamiltonian so that idx is at the start of the H2 matrix
-    void create_reordered(SparseMatrixX<scalar_t> const& H, IndexPair idx, Bounds<scalar_t> b);
+    void create_reordered(SparseMatrixX<scalar_t> const& H, IndexPair idx, Scale<scalar_t> scale);
 };
 
 /**
@@ -98,7 +104,8 @@ class Stats {
 public:
     std::string report(bool shortform) const;
 
-    void lanczos(double min_energy, double max_energy, int loops, Chrono const& time);
+    template<class real_t>
+    void lanczos(compute::LanczosBounds<real_t> const& bounds, Chrono const& time);
     template<class scalar_t>
     void reordering(OptimizedHamiltonian<scalar_t> const& oh, int num_moments, Chrono const& time);
     template<class scalar_t>
@@ -159,7 +166,7 @@ private:
 
 private:
     Config const config;
-    kpm::Bounds<scalar_t> bounds;
+    kpm::Scale<scalar_t> scale;
     kpm::OptimizedHamiltonian<scalar_t> optimized_hamiltonian;
     kpm::Stats stats;
 

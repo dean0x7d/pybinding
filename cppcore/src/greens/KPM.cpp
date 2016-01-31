@@ -1,6 +1,5 @@
 #include "greens/KPM.hpp"
 
-#include "compute/lanczos.hpp"
 #include "compute/kernel_polynomial.hpp"
 #include "support/format.hpp"
 #include "support/physics.hpp"
@@ -10,23 +9,16 @@ using namespace tbm::kpm;
 
 
 template<class scalar_t>
-void Bounds<scalar_t>::compute(SparseMatrixX<scalar_t> const& H, real_t lanczos_tolerance) {
+void Scale<scalar_t>::compute(SparseMatrixX<scalar_t> const& matrix, real_t lanczos_tolerance) {
     if (a != 0)
         return; // already computed
 
-    std::tie(min_energy, max_energy, lanczos_loops)
-        = compute::minmax_eigenvalues(H, lanczos_tolerance);
+    if (bounds.min == bounds.max) {
+        bounds = compute::minmax_eigenvalues(matrix, lanczos_tolerance);
+    }
 
-    set(min_energy, max_energy);
-}
-
-template<class scalar_t>
-void Bounds<scalar_t>::set(real_t min_, real_t max_) {
-    min_energy = min_;
-    max_energy = max_;
-
-    a = 0.5f * (max_energy - min_energy) * (1 + scaling_tolerance);
-    b = 0.5f * (max_energy + min_energy);
+    a = 0.5f * (bounds.max - bounds.min) * (1 + scaling_tolerance);
+    b = 0.5f * (bounds.max + bounds.min);
 
     // Round to zero if b is very small in order to make the the sparse matrix smaller
     if (std::abs(b / a) < 0.01f * scaling_tolerance)
@@ -36,34 +28,34 @@ void Bounds<scalar_t>::set(real_t min_, real_t max_) {
 
 template<class scalar_t>
 void OptimizedHamiltonian<scalar_t>::create(SparseMatrixX<scalar_t> const& H,
-                                            IndexPair idx, Bounds<scalar_t> bounds,
+                                            IndexPair idx, Scale<scalar_t> scale,
                                             bool use_reordering) {
     if (original_idx.i == idx.i && original_idx.j == idx.j)
         return; // already optimized for this idx
 
     if (use_reordering)
-        create_reordered(H, idx, bounds);
+        create_reordered(H, idx, scale);
     else
-        create_scaled(H, idx, bounds);
+        create_scaled(H, idx, scale);
 }
 
 template<class scalar_t>
 void OptimizedHamiltonian<scalar_t>::create_scaled(SparseMatrixX<scalar_t> const& H,
-                                                   IndexPair idx, Bounds<scalar_t> bounds) {
+                                                   IndexPair idx, Scale<scalar_t> scale) {
     original_idx = idx;
     optimized_idx = idx;
 
     if (H2.rows() != 0)
         return; // already optimal
 
-    if (bounds.b == 0) {
+    if (scale.b == 0) {
         // just scale, no b offset
-        H2 = H * (2 / bounds.a);
+        H2 = H * (2 / scale.a);
     } else {
         // scale and offset
         auto I = SparseMatrixX<scalar_t>{H.rows(), H.cols()};
         I.setIdentity();
-        H2 = (H - I * bounds.b) * (2 / bounds.a);
+        H2 = (H - I * scale.b) * (2 / scale.a);
     }
 
     H2.makeCompressed();
@@ -71,10 +63,10 @@ void OptimizedHamiltonian<scalar_t>::create_scaled(SparseMatrixX<scalar_t> const
 
 template<class scalar_t>
 void OptimizedHamiltonian<scalar_t>::create_reordered(SparseMatrixX<scalar_t> const& H,
-                                                      IndexPair idx, Bounds<scalar_t> bounds) {
+                                                      IndexPair idx, Scale<scalar_t> scale) {
     auto const target_index = idx.j; // this one will be relocated to position 0
     auto const system_size = H.rows();
-    auto const inverted_a = real_t{2 / bounds.a};
+    auto const inverted_a = real_t{2 / scale.a};
 
     // Find the maximum number of non-zero elements in the original matrix
     auto max_nonzeros = 1;
@@ -117,8 +109,8 @@ void OptimizedHamiltonian<scalar_t>::create_reordered(SparseMatrixX<scalar_t> co
         H_view.for_each_in_row(row, [&](int col, scalar_t value) {
             // A diagonal element may need to be inserted into the reordered matrix
             // even if the original matrix doesn't have an element on the main diagonal
-            if (bounds.b != 0 && !diagonal_inserted && col > row) {
-                H2.insert(h2_row, h2_row) = -bounds.b * inverted_a;
+            if (scale.b != 0 && !diagonal_inserted && col > row) {
+                H2.insert(h2_row, h2_row) = -scale.b * inverted_a;
                 diagonal_inserted = true;
             }
 
@@ -134,7 +126,7 @@ void OptimizedHamiltonian<scalar_t>::create_reordered(SparseMatrixX<scalar_t> co
             // Calculate the new value that will be inserted into the scaled/reordered matrix
             auto h2_value = value * inverted_a;
             if (row == col) { // diagonal elements
-                h2_value -= bounds.b * inverted_a;
+                h2_value -= scale.b * inverted_a;
                 diagonal_inserted = true;
             }
 
@@ -177,26 +169,34 @@ KPM<scalar_t>::KPM(Config const& config) : config(config) {
 }
 
 template<class scalar_t>
+void KPM<scalar_t>::hamiltonian_changed() {
+    optimized_hamiltonian = {};
+
+    if (config.min_energy == config.max_energy) {
+        scale = {}; // will be automatically computed
+    } else {
+        scale = {config.min_energy, config.max_energy}; // user-defined bounds
+    }
+}
+
+template<class scalar_t>
 ArrayXcf KPM<scalar_t>::calculate(int i, int j, ArrayXf energy, float broadening) {
     stats = {};
     auto timer = Chrono{};
 
-    // Determine the energy bounds of the Hamiltonian (fast)
+    // Determine the scaling parameters of the Hamiltonian (fast)
     timer.tic();
-    if (config.min_energy == config.max_energy) // automatically computed
-        bounds.compute(hamiltonian->get_matrix(), config.lanczos_precision);
-    else // manually set user-defined bounds
-        bounds.set(config.min_energy, config.max_energy);
-    stats.lanczos(bounds.min_energy, bounds.max_energy, bounds.lanczos_loops, timer.toc());
+    scale.compute(hamiltonian->get_matrix(), config.lanczos_precision);
+    stats.lanczos(scale.bounds, timer.toc());
 
     // Scale parameters
-    energy = (energy - bounds.b) / bounds.a;
-    broadening = broadening / bounds.a;
+    energy = (energy - scale.b) / scale.a;
+    broadening = broadening / scale.a;
     auto const num_moments = static_cast<int>(config.lambda / broadening) + 1;
 
     // Scale and optimize Hamiltonian (fast)
     timer.tic();
-    optimized_hamiltonian.create(hamiltonian->get_matrix(), {i, j}, bounds,
+    optimized_hamiltonian.create(hamiltonian->get_matrix(), {i, j}, scale,
                                  /*use_reordering*/config.optimization_level >= 1);
     stats.reordering(optimized_hamiltonian, num_moments, timer.toc());
 
@@ -217,6 +217,11 @@ ArrayXcf KPM<scalar_t>::calculate(int i, int j, ArrayXf energy, float broadening
     stats.greens(timer.toc());
 
     return greens;
+}
+
+template<class scalar_t>
+std::string KPM<scalar_t>::report(bool is_shortform) const {
+    return stats.report(is_shortform);
 }
 
 template<class scalar_t>
@@ -332,18 +337,6 @@ auto KPM<scalar_t>::calculate_greens(ArrayX<real_t> const& energy, ArrayX<scalar
     return greens;
 }
 
-template<class scalar_t>
-void KPM<scalar_t>::hamiltonian_changed() {
-    bounds = {};
-    optimized_hamiltonian = {};
-}
-
-template<class scalar_t>
-std::string KPM<scalar_t>::report(bool is_shortform) const {
-    return stats.report(is_shortform);
-}
-
-
 std::string Stats::report(bool shortform) const {
     if (shortform)
         return short_report + "|";
@@ -351,12 +344,13 @@ std::string Stats::report(bool shortform) const {
         return long_report + "Total time:";
 }
 
-void Stats::lanczos(double min_energy, double max_energy, int loops, Chrono const& time) {
+template<class real_t>
+void Stats::lanczos(compute::LanczosBounds<real_t> const& bounds, Chrono const& time) {
     append(fmt::format("{min_energy:.2f}, {max_energy:.2f}, {loops}",
-                       min_energy, max_energy, loops),
+                       bounds.min, bounds.max, bounds.loops),
            fmt::format("Spectrum bounds found ({min_energy:.2f}, {max_energy:.2f} eV) "
                        "using Lanczos procedure with {loops} loops",
-                       min_energy, max_energy, loops),
+                       bounds.min, bounds.max, bounds.loops),
            time);
 }
 

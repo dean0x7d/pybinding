@@ -12,14 +12,17 @@
 
 namespace tbm { namespace compute {
 
-/**
- Use the Lanczos algorithm to find the min and max eigenvalues at given precision (%)
- @return (min, max, iteration_count)
-*/
+template<class real_t>
+struct LanczosBounds {
+    real_t min; ///< the lowest eigenvalue
+    real_t max; ///< the highest eigenvalue
+    int loops;  ///< number of iterations needed to converge
+};
+
+/// Use the Lanczos algorithm to find the min and max eigenvalues at given precision (%)
 template<class scalar_t, class real_t = num::get_real_t<scalar_t>>
-std::tuple<real_t, real_t, int>
-    minmax_eigenvalues(const SparseMatrixX<scalar_t>& matrix, real_t precision_percent)
-{
+LanczosBounds<real_t> minmax_eigenvalues(SparseMatrixX<scalar_t> const& matrix,
+                                         real_t precision_percent) {
     auto precision = precision_percent / 100;
     const auto matrix_size = static_cast<int>(matrix.rows());
 
@@ -84,11 +87,10 @@ std::tuple<real_t, real_t, int>
         previous_max = max;
 
         if (is_converged_min && is_converged_max)
-            return std::make_tuple(min, max, i);
+            return {min, max, i};
     };
 
     throw std::runtime_error{"Lanczos algorithm did not converge for the min/max eigenvalues."};
-    return {};
 }
 
 }} // namespace tbm::compute
