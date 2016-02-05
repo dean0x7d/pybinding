@@ -11,6 +11,7 @@ add_library(pybinding_cppcore
     include/compute/mkl/kernel_polynomial.hpp
     include/compute/mkl/lanczos.hpp
     include/compute/mkl/linear_algebra.hpp
+    include/compute/mkl/wrapper.hpp
     include/compute/kernel_polynomial.hpp
     include/compute/lanczos.hpp
     include/compute/linear_algebra.hpp
