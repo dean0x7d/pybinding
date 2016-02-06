@@ -13,7 +13,7 @@ dependencies:
 - matplotlib=1.5.1=np110py34_0
 - numpy=1.10.4=py34_nomkl_0
 - openblas=0.2.14=3
-- openssl=1.0.2d=0
+- openssl=1.0.2f=0
 - pip=8.0.2=py34_0
 - pyparsing=2.0.3=py34_0
 - pyqt=4.11.4=py34_1
@@ -26,7 +26,8 @@ dependencies:
 - setuptools=19.6.2=py34_0
 - sip=4.16.9=py34_0
 - six=1.10.0=py34_0
-- sqlite=3.8.4.1=1
+- sphinx_rtd_theme=0.1.9=py34_0
+- sqlite=3.9.2=0
 - tk=8.5.18=0
 - wheel=0.26.0=py34_1
 - xz=5.0.5=0
