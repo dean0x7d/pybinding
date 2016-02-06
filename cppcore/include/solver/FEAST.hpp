@@ -8,8 +8,8 @@ namespace tbm {
 
 struct FEASTConfig {
     // required user config
-    float energy_min = 0; ///< lowest eigenvalue
-    float energy_max = 0; ///< highest eigenvalue
+    double energy_min = 0; ///< lowest eigenvalue
+    double energy_max = 0; ///< highest eigenvalue
     int initial_size_guess = 0; ///< initial user guess for the subspace size
 
     // optional user config
@@ -89,8 +89,8 @@ protected: // declared used inherited members (template class requirement)
 
 extern template class tbm::FEAST<float>;
 extern template class tbm::FEAST<std::complex<float>>;
-//extern template class tbm::FEAST<double>;
-//extern template class tbm::FEAST<std::complex<double>>;
+extern template class tbm::FEAST<double>;
+extern template class tbm::FEAST<std::complex<double>>;
 
 } // namespace tbm
 #endif // TBM_USE_FEAST

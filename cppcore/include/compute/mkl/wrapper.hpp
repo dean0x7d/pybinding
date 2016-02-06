@@ -47,4 +47,11 @@ template<> struct csrgemv<double> { static constexpr auto call = mkl_cspblas_dcs
 template<> struct csrgemv<std::complex<float>> { static constexpr auto call = mkl_cspblas_ccsrgemv; };
 template<> struct csrgemv<std::complex<double>> { static constexpr auto call = mkl_cspblas_zcsrgemv; };
 
+
+template<class scalar_t> struct feast_hcsrev;
+template<> struct feast_hcsrev<float> { static constexpr auto call = sfeast_scsrev; };
+template<> struct feast_hcsrev<double> { static constexpr auto call = dfeast_scsrev; };
+template<> struct feast_hcsrev<std::complex<float>> { static constexpr auto call = cfeast_hcsrev; };
+template<> struct feast_hcsrev<std::complex<double>> { static constexpr auto call = zfeast_hcsrev; };
+
 }} // namespace tbm::mkl

@@ -4,7 +4,7 @@
 /// Physics constants
 namespace tbm { namespace physics {
     // imaginary one
-    const std::complex<float> i1(0, 1);
+    constexpr std::complex<float> i1(0, 1);
     // the omnipresent pi
     constexpr float pi = 3.14159265358979323846f;
     // electron charge [C]

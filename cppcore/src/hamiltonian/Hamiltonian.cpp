@@ -88,11 +88,11 @@ set_helper(Args...)
 
 template<class scalar_t, class SparseMatrix, class M, class L>
 cpp14::enable_if_t<num::is_complex<scalar_t>(), void>
-set_helper(SparseMatrix& matrix, const M& boundary_matrices, const L& lengths, Cartesian k)
-{
+set_helper(SparseMatrix& matrix, const M& boundary_matrices, const L& lengths, Cartesian k) {
     // sum boundary matrices in all periodic directions
     for (std::size_t i = 0; i < boundary_matrices.size(); ++i) {
-        auto b_matrix1 = boundary_matrices[i] * exp(i1 * k.dot(lengths[i]));
+        auto const phase = static_cast<scalar_t>(exp(i1 * k.dot(lengths[i])));
+        auto b_matrix1 = boundary_matrices[i] * phase;
         auto b_matrix2 = static_cast<SparseMatrix>(b_matrix1.adjoint());
         matrix += b_matrix1 + b_matrix2;
     }
@@ -107,5 +107,5 @@ void HamiltonianT<scalar_t>::set(Cartesian k_vector)
 
 template class tbm::HamiltonianT<float>;
 template class tbm::HamiltonianT<std::complex<float>>;
-//template class tbm::HamiltonianT<double>;
-//template class tbm::HamiltonianT<std::complex<double>>;
+template class tbm::HamiltonianT<double>;
+template class tbm::HamiltonianT<std::complex<double>>;

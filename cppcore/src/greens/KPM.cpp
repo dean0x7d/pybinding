@@ -180,7 +180,7 @@ void KPM<scalar_t>::hamiltonian_changed() {
 }
 
 template<class scalar_t>
-ArrayXcf KPM<scalar_t>::calculate(int i, int j, ArrayXf energy, float broadening) {
+ArrayXcd KPM<scalar_t>::calculate(int i, int j, ArrayXd const& energy, double broadening) {
     stats = {};
     auto timer = Chrono{};
 
@@ -189,10 +189,10 @@ ArrayXcf KPM<scalar_t>::calculate(int i, int j, ArrayXf energy, float broadening
     scale.compute(hamiltonian->get_matrix(), config.lanczos_precision);
     stats.lanczos(scale.bounds, timer.toc());
 
-    // Scale parameters
-    energy = (energy - scale.b) / scale.a;
-    broadening = broadening / scale.a;
-    auto const num_moments = static_cast<int>(config.lambda / broadening) + 1;
+    auto const num_moments = [&] {
+        auto const scaled_broadening = broadening / scale.a;
+        return static_cast<int>(config.lambda / scaled_broadening) + 1;
+    }();
 
     // Scale and optimize Hamiltonian (fast)
     timer.tic();
@@ -213,10 +213,11 @@ ArrayXcf KPM<scalar_t>::calculate(int i, int j, ArrayXf energy, float broadening
 
     // Final Green's function (fast)
     timer.tic();
-    auto greens = calculate_greens(energy, moments);
+    auto const scaled_energy = (energy.template cast<real_t>() - scale.b) / scale.a;
+    auto const greens = calculate_greens(scaled_energy, moments);
     stats.greens(timer.toc());
 
-    return greens;
+    return greens.template cast<std::complex<double>>();
 }
 
 template<class scalar_t>
@@ -319,19 +320,22 @@ void KPM<scalar_t>::apply_lorentz_kernel(ArrayX<scalar_t>& moments, float lambda
 }
 
 template<class scalar_t>
-auto KPM<scalar_t>::calculate_greens(ArrayX<real_t> const& energy, ArrayX<scalar_t> const& moments)
+auto KPM<scalar_t>::calculate_greens(ArrayX<real_t> const& scaled_energy,
+                                     ArrayX<scalar_t> const& moments)
                                      -> ArrayX<complex_t> {
     // Note that this integer array has real type values
     ArrayX<real_t> ns{moments.size()};
     for (auto n = 0; n < ns.size(); ++n)
         ns[n] = static_cast<real_t>(n);
 
-    ArrayX<complex_t> greens{energy.size()};
+    ArrayX<complex_t> greens{scaled_energy.size()};
 
     // G = -2*i / sqrt(1 - E^2) * sum( moments * exp(-i*ns*acos(E)) )
-    transform(energy, greens, [&](const real_t& E) {
-        using physics::i1; using std::acos;
-        return -real_t{2}*i1 / sqrt(1 - E*E) * sum( moments * exp(-i1 * ns * acos(E)) );
+    transform(scaled_energy, greens, [&](real_t E) {
+        using std::acos;
+        auto const i1 = complex_t{physics::i1};
+        auto const norm = -real_t{2} * i1 / sqrt(1 - E*E);
+        return norm * sum(moments * exp(-i1 * ns * acos(E)));
     });
 
     return greens;
@@ -397,5 +401,5 @@ void Stats::append(std::string short_str, std::string long_str, Chrono const& ti
 
 template class tbm::KPM<float>;
 template class tbm::KPM<std::complex<float>>;
-//template class tbm::KPM<double>;
-//template class tbm::KPM<std::complex<double>>;
+template class tbm::KPM<double>;
+template class tbm::KPM<std::complex<double>>;

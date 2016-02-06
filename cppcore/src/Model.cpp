@@ -116,17 +116,31 @@ std::shared_ptr<System> Model::make_system() const {
 
 std::shared_ptr<Hamiltonian> Model::make_hamiltonian() const {
     auto const& built_system = *system();
+    auto const is_double = hamiltonian_modifiers.any_double();
     auto const is_complex = lattice.has_complex_hopping
                             || hamiltonian_modifiers.any_complex()
                             || !built_system.boundaries.empty();
-    if (is_complex) {
-        return std::make_shared<HamiltonianT<std::complex<float>>>(
-            built_system, hamiltonian_modifiers, wave_vector
-        );
+
+    if (is_double) {
+        if (is_complex) {
+            return std::make_shared<HamiltonianT<std::complex<double>>>(
+                built_system, hamiltonian_modifiers, wave_vector
+            );
+        } else {
+            return std::make_shared<HamiltonianT<double>>(
+                built_system, hamiltonian_modifiers, wave_vector
+            );
+        }
     } else {
-        return std::make_shared<HamiltonianT<float>>(
-            built_system, hamiltonian_modifiers, wave_vector
-        );
+        if (is_complex) {
+            return std::make_shared<HamiltonianT<std::complex<float>>>(
+                built_system, hamiltonian_modifiers, wave_vector
+            );
+        } else {
+            return std::make_shared<HamiltonianT<float>>(
+                built_system, hamiltonian_modifiers, wave_vector
+            );
+        }
     }
 }
 

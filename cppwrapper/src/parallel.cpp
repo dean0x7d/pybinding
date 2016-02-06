@@ -18,6 +18,7 @@ void export_parallel() {
 
     using tbm::Deferred;
     class_<Deferred<ArrayXf>, bases<DeferredBase>>{"DeferredXf", no_init};
+    class_<Deferred<ArrayXd>, bases<DeferredBase>>{"DeferredXd", no_init};
 
 
     def("parallel_for", [](object sequence, object produce, object retire,

@@ -23,7 +23,7 @@ void BaseGreens::set_model(Model const& new_model) {
         strategy = make_strategy(model);
 }
 
-ArrayXcf BaseGreens::calc_greens(int i, int j, ArrayXf energy, float broadening) const {
+ArrayXcd BaseGreens::calc_greens(int i, int j, ArrayXd const& energy, double broadening) const {
     auto const size = model.hamiltonian()->rows();
     if (i < 0 || i > size || j < 0 || j > size)
         throw std::logic_error{"KPM::calc_greens(i,j): invalid value for i or j."};
@@ -35,7 +35,7 @@ ArrayXcf BaseGreens::calc_greens(int i, int j, ArrayXf energy, float broadening)
     return greens_function;
 }
 
-ArrayXf BaseGreens::calc_ldos(ArrayXf energy, float broadening,
+ArrayXd BaseGreens::calc_ldos(ArrayXd const& energy, double broadening,
                               Cartesian position, sub_id sublattice) const {
     auto i = model.system()->find_nearest(position, sublattice);
     auto greens_function = calc_greens(i, i, energy, broadening);
@@ -43,13 +43,13 @@ ArrayXf BaseGreens::calc_ldos(ArrayXf energy, float broadening,
     return -1/pi * greens_function.imag();
 }
 
-Deferred<ArrayXf> BaseGreens::deferred_ldos(ArrayXf energy, float broadening,
+Deferred<ArrayXd> BaseGreens::deferred_ldos(ArrayXd const& energy, double broadening,
                                             Cartesian position, sub_id sublattice) const {
     auto shared_strategy = std::shared_ptr<GreensStrategy>{make_strategy(model)};
     auto& model = this->model;
 
     return {
-        [shared_strategy, model, position, sublattice, energy, broadening](ArrayXf& ldos) {
+        [shared_strategy, model, position, sublattice, energy, broadening](ArrayXd& ldos) {
             auto i = model.system()->find_nearest(position, sublattice);
             auto greens_function = shared_strategy->calculate(i, i, energy, broadening);
             ldos = -1/pi * greens_function.imag();

@@ -12,6 +12,7 @@ complex_one = np.ones(1, dtype=np.complex64)
 def build_model(*params):
     model = pb.Model(graphene.monolayer(), *params)
     model.report()
+    return model
 
 
 def test_decorator():
@@ -104,7 +105,9 @@ def test_site_state():
         capture[:] = (v.copy() for v in (state, x, y, z, sub_id))
         return state
 
-    build_model(check_args)
+    model = build_model(check_args)
+    assert model.hamiltonian.dtype == np.float32
+
     state, x, y, z, sub_id = capture
     assert np.all(state == [True, True])
     assert np.allclose(x, [0, 0])
@@ -127,7 +130,9 @@ def test_site_position():
         capture[:] = (v.copy() for v in (x, y, z, sub_id))
         return x, y, z
 
-    build_model(check_args)
+    model = build_model(check_args)
+    assert model.hamiltonian.dtype == np.float32
+
     x, y, z, sub_id = capture
     assert np.allclose(x, [0, 0])
     assert np.allclose(y, [-graphene.a_cc / 2, graphene.a_cc / 2])
@@ -149,13 +154,22 @@ def test_onsite():
         capture[:] = (v.copy() for v in (energy, x, y, z, sub_id))
         return energy
 
-    build_model(check_args)
+    model = build_model(check_args)
+    assert model.hamiltonian.dtype == np.float32
+
     energy, x, y, z, sub_id = capture
     assert np.allclose(energy, [0, 0])
     assert np.allclose(x, [0, 0])
     assert np.allclose(y, [-graphene.a_cc / 2, graphene.a_cc / 2])
     assert np.allclose(z, [0, 0])
     assert np.allclose(sub_id, [0, 1])
+
+    @pb.onsite_energy_modifier(double=True)
+    def make_double(energy):
+        return energy
+
+    model = build_model(make_double)
+    assert model.hamiltonian.dtype == np.float64
 
 
 def test_hopping_energy():
@@ -172,7 +186,9 @@ def test_hopping_energy():
         capture[:] = (v.copy() for v in (energy, hop_id, x1, y1, z1, x2, y2, z2))
         return energy
 
-    build_model(check_args)
+    model = build_model(check_args)
+    assert model.hamiltonian.dtype == np.float32
+
     energy, hop_id, x1, y1, z1, x2, y2, z2 = capture
     assert np.allclose(energy, graphene.t)
     assert np.allclose(hop_id, 0)
@@ -182,6 +198,27 @@ def test_hopping_energy():
     assert np.allclose(x2, 0)
     assert np.allclose(y2, graphene.a_cc / 2)
     assert np.allclose(z2, 0)
+
+    @pb.hopping_energy_modifier(double=True)
+    def make_double(energy):
+        return energy
+
+    model = build_model(make_double)
+    assert model.hamiltonian.dtype == np.float64
+
+    @pb.hopping_energy_modifier
+    def make_complex(energy):
+        return energy * 1j
+
+    model = build_model(make_complex)
+    assert model.hamiltonian.dtype == np.complex64
+
+    @pb.hopping_energy_modifier(double=True)
+    def make_complex_double(energy):
+        return energy * 1j
+
+    model = build_model(make_complex_double)
+    assert model.hamiltonian.dtype == np.complex128
 
 
 # Disabled for now. It doesn't work when the 'fast math' compiler flag is set.

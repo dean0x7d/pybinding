@@ -27,6 +27,8 @@ public:
                        ArrayX<sub_id> const& sublattices) const = 0;
     virtual void apply(ArrayXcd& potential, CartesianArray const& position,
                        ArrayX<sub_id> const& sublattices) const = 0;
+
+    bool is_double = false;
 };
 
 /**
@@ -45,6 +47,8 @@ public:
                        ArrayX<hop_id> const& id) const = 0;
     virtual void apply(ArrayXcd& hopping,  CartesianArray const& pos1, CartesianArray const& pos2,
                        ArrayX<hop_id> const& id) const = 0;
+
+    bool is_double = false;
 };
 
 using OnsiteModifier = std::shared_ptr<OnsiteModifierImpl const>;
@@ -57,7 +61,10 @@ public:
 
     /// Do any of the modifiers require complex numbers?
     bool any_complex() const;
-    
+
+    /// Do any of the modifiers require double precision?
+    bool any_double() const;
+
     /// Apply onsite modifiers to the given system and pass results to function:
     ///     lambda(int i, scalar_t onsite)
     template<class scalar_t, class Fn>

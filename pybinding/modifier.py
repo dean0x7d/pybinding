@@ -4,13 +4,16 @@ Used to create functions which express some feature of a tight-binding model,
 such as various fields, defects or geometric deformations.
 """
 import inspect
+import functools
+
 import numpy as np
 
 from . import _cpp
 from .support.inspect import get_call_signature
+from .utils.misc import decorator_decorator
 
 __all__ = ['site_state_modifier', 'site_position_modifier', 'onsite_energy_modifier',
-           'hopping_energy_modifier', 'constant_potential']
+           'hopping_energy_modifier', 'constant_potential', 'force_double_precision']
 
 
 def _check_modifier_spec(func, keywords):
@@ -67,7 +70,7 @@ def _check_modifier_return(modifier, num_arguments, num_return, maybe_complex):
         raise RuntimeError("This modifier must not return complex values")
 
 
-def _make_modifier(func, kind, keywords, num_return=1, maybe_complex=False):
+def _make_modifier(func, kind, keywords, num_return=1, maybe_complex=False, double=False):
     """Turn a regular function into a modifier of the desired kind
 
     Parameters
@@ -82,6 +85,8 @@ def _make_modifier(func, kind, keywords, num_return=1, maybe_complex=False):
         Expected number of return values.
     maybe_complex : bool
         The modifier may return a complex result even if the input is real.
+    double : bool
+        The modifier requires double precision floating point.
 
     Returns
     -------
@@ -92,11 +97,14 @@ def _make_modifier(func, kind, keywords, num_return=1, maybe_complex=False):
 
     class Modifier(kind):
         argnames = tuple(inspect.signature(func).parameters.keys())
-        try:
-            callsig = get_call_signature(up=3)
-        except IndexError:
-            callsig = get_call_signature(up=0)
+        callsig = getattr(func, 'callsig', None)
+        if not callsig:
+            callsig = get_call_signature()
             callsig.function = func
+
+        def __init__(self):
+            super().__init__()
+            self.is_double = double
 
         def __str__(self):
             return str(self.callsig)
@@ -133,112 +141,111 @@ def _make_modifier(func, kind, keywords, num_return=1, maybe_complex=False):
     return modifier
 
 
-def site_state_modifier(func):
+@decorator_decorator
+def site_state_modifier():
     """Modify the state (valid or invalid) of lattice sites, e.g. to create vacancies
 
-    Parameters
-    ----------
-    func : callable
-        The function parameters must be a combination of any number of the following:
+    Notes
+    -----
+    The function parameters must be a combination of any number of the following:
 
-        state : ndarray of bool
-            Indicates if a lattice site is valid. Invalid sites will be removed from
-            the model after all modifiers have been applied.
-        x, y, z : ndarray
-            Lattice site position.
-        sub_id : ndarray of int
-            Sublattice ID. Can be checked for equality with `lattice[sublattice_name]`.
+    state : ndarray of bool
+        Indicates if a lattice site is valid. Invalid sites will be removed from
+        the model after all modifiers have been applied.
+    x, y, z : ndarray
+        Lattice site position.
+    sub_id : ndarray of int
+        Sublattice ID. Can be checked for equality with `lattice[sublattice_name]`.
 
-        Modifier returns:
+    The function must return:
 
-        ndarray
-            A modified `state` argument or an `ndarray` of the same dtype and shape.
-
-    Returns
-    -------
-    Modifier
+    ndarray
+        A modified `state` argument or an `ndarray` of the same dtype and shape.
     """
-    return _make_modifier(func, _cpp.SiteStateModifier, keywords="state, x, y, z, sub_id")
+    return functools.partial(_make_modifier, kind=_cpp.SiteStateModifier,
+                             keywords="state, x, y, z, sub_id")
 
 
-def site_position_modifier(func):
+@decorator_decorator
+def site_position_modifier():
     """Modify the position of lattice sites, e.g. to apply geometric deformations
 
-    Parameters
-    ----------
-    func : callable
-        The function parameters must be a combination of any number of the following:
+    Notes
+    -----
+    The function parameters must be a combination of any number of the following:
 
-        x, y, z : ndarray
-            Lattice site position.
-        sub_id : ndarray of int
-            Sublattice ID. Can be checked for equality with `lattice[sublattice_name]`.
+    x, y, z : ndarray
+        Lattice site position.
+    sub_id : ndarray of int
+        Sublattice ID. Can be checked for equality with `lattice[sublattice_name]`.
 
-        Modifier returns:
+    The function must return:
 
-        tuple of ndarray
-            Modified 'x, y, z' arguments or 3 `ndarray` objects of the same dtype and shape.
-
-    Returns
-    -------
-    Modifier
+    tuple of ndarray
+        Modified 'x, y, z' arguments or 3 `ndarray` objects of the same dtype and shape.
     """
-    return _make_modifier(func, _cpp.PositionModifier, keywords="x, y, z, sub_id", num_return=3)
+    return functools.partial(_make_modifier, kind=_cpp.PositionModifier,
+                             keywords="x, y, z, sub_id", num_return=3)
 
 
-def onsite_energy_modifier(func):
+@decorator_decorator
+def onsite_energy_modifier(double=False):
     """Modify the onsite energy, e.g. to apply an electric field
 
     Parameters
     ----------
-    func : callable
-        The function parameters must be a combination of any number of the following:
+    double : bool
+        Requires the model to use double precision floating point values.
+        Default to single precision otherwise.
 
-        energy : ndarray
-            The onsite energy.
-        x, y, z : ndarray
-            Lattice site position.
-        sub_id : ndarray of int
-            Sublattice ID. Can be checked for equality with `lattice[sublattice_name]`.
+    Notes
+    -----
+    The function parameters must be a combination of any number of the following:
 
-        Modifier returns:
+    energy : ndarray
+        The onsite energy.
+    x, y, z : ndarray
+        Lattice site position.
+    sub_id : ndarray of int
+        Sublattice ID. Can be checked for equality with `lattice[sublattice_name]`.
 
-        ndarray
-            A modified `potential` argument or an `ndarray` of the same dtype and shape.
+    The function must return:
 
-    Returns
-    -------
-    Modifier
+    ndarray
+        A modified `potential` argument or an `ndarray` of the same dtype and shape.
     """
-    return _make_modifier(func, _cpp.OnsiteModifier, keywords="energy, x, y, z, sub_id")
+    return functools.partial(_make_modifier, kind=_cpp.OnsiteModifier, double=double,
+                             keywords="energy, x, y, z, sub_id")
 
 
-def hopping_energy_modifier(func):
+@decorator_decorator
+def hopping_energy_modifier(double=False):
     """Modify the hopping energy, e.g. to apply a magnetic field
 
     Parameters
     ----------
-    func : callable
-        The function parameters must be a combination of any number of the following:
+    double : bool
+        Requires the model to use double precision floating point values.
+        Default to single precision otherwise.
 
-        energy : ndarray
-            The hopping energy between two sites.
-        x1, y1, z1, x2, y2, z2 : ndarray
-            Positions of the two lattice sites connected by the hopping parameter.
-        hop_id : ndarray of int
-            Hopping ID. Check for equality with `lattice(hopping_name)`.
+    Notes
+    -----
+    The function parameters must be a combination of any number of the following:
 
-        Modifier returns:
+    energy : ndarray
+        The hopping energy between two sites.
+    x1, y1, z1, x2, y2, z2 : ndarray
+        Positions of the two lattice sites connected by the hopping parameter.
+    hop_id : ndarray of int
+        Hopping ID. Check for equality with `lattice(hopping_name)`.
 
-        ndarray
-            A modified `hopping` argument or an `ndarray` of the same dtype and shape.
+    The function must return:
 
-    Returns
-    -------
-    Modifier
+    ndarray
+        A modified `hopping` argument or an `ndarray` of the same dtype and shape.
     """
-    return _make_modifier(func, _cpp.HoppingModifier, maybe_complex=True,
-                          keywords="energy, x1, y1, z1, x2, y2, z2, hop_id")
+    return functools.partial(_make_modifier, kind=_cpp.HoppingModifier, maybe_complex=True,
+                             double=double, keywords="energy, x1, y1, z1, x2, y2, z2, hop_id")
 
 
 def constant_potential(magnitude):
@@ -254,3 +261,12 @@ def constant_potential(magnitude):
         return energy + magnitude
 
     return function
+
+
+def force_double_precision():
+    """Forces the model to use double precision even if no other modifier requires it"""
+    @onsite_energy_modifier(double=True)
+    def mod(energy):
+        return energy
+
+    return mod

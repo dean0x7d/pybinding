@@ -148,7 +148,7 @@ public:
 
 protected: // required implementation
     void hamiltonian_changed() override;
-    ArrayXcf calculate(int i, int j, ArrayXf energy, float broadening) override;
+    ArrayXcd calculate(int i, int j, ArrayXd const& energy, double broadening) override;
     std::string report(bool shortform) const override;
     
 private:
@@ -161,7 +161,7 @@ private:
     /// Put the kernel in *Kernel* polynomial method
     static void apply_lorentz_kernel(ArrayX<scalar_t>& moments, float lambda);
     /// Calculate the final Green's function for `energy` using the KPM `moments`
-    static ArrayX<complex_t> calculate_greens(ArrayX<real_t> const& energy,
+    static ArrayX<complex_t> calculate_greens(ArrayX<real_t> const& scaled_energy,
                                               ArrayX<scalar_t> const& moments);
 
 private:

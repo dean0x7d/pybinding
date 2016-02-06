@@ -58,7 +58,7 @@ private:
 
 extern template class HamiltonianT<float>;
 extern template class HamiltonianT<std::complex<float>>;
-//extern template class HamiltonianT<double>;
-//extern template class HamiltonianT<std::complex<double>>;
+extern template class HamiltonianT<double>;
+extern template class HamiltonianT<std::complex<double>>;
 
 } // namespace tbm

@@ -74,6 +74,8 @@ void export_modifiers() {
     .add_property("matrix", internal_ref(&Hamiltonian::matrix_union))
     ;
 
-    class_<PyOnsite, noncopyable>{"OnsiteModifier"};
-    class_<PyHopping, noncopyable>{"HoppingModifier"};
+    class_<PyOnsite, noncopyable>{"OnsiteModifier"}
+    .def_readwrite("is_double", &PyOnsite::is_double);
+    class_<PyHopping, noncopyable>{"HoppingModifier"}
+    .def_readwrite("is_double", &PyHopping::is_double);
 }

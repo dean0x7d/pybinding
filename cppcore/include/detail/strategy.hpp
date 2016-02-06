@@ -29,8 +29,8 @@ public:
 
         if (!strategy) strategy = try_strategy<float>(model);
         if (!strategy) strategy = try_strategy<std::complex<float>>(model);
-//            if (!strategy) strategy = try_strategy<double>(model);
-//            if (!strategy) strategy = try_strategy<std::complex<double>>(model);
+        if (!strategy) strategy = try_strategy<double>(model);
+        if (!strategy) strategy = try_strategy<std::complex<double>>(model);
         if (!strategy)
             throw std::runtime_error{"MakeStrategy: unknown Hamiltonian type."};
 

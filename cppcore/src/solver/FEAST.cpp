@@ -2,6 +2,8 @@
 
 #ifdef TBM_USE_FEAST
 # include "support/format.hpp"
+# include "compute/mkl/wrapper.hpp"
+
 using namespace tbm;
 
 template<class scalar_t>
@@ -193,83 +195,45 @@ void FEAST<scalar_t>::call_feast()
 }
 
 template<class scalar_t>
-void FEAST<scalar_t>::call_feast_impl()
-{
-    
-}
+void FEAST<scalar_t>::call_feast_impl() {
+    auto const& h_matrix = hamiltonian->get_matrix();
 
-template<>
-void FEAST<float>::call_feast_impl()
-{
-    const auto& h_matrix = hamiltonian->get_matrix();
-    
     // convert to one-based index
-    ArrayX<int> cols(h_matrix.nonZeros());
-    ArrayX<int> rows(h_matrix.rows() + 1);
+    ArrayXi const outer_starts =
+        Map<ArrayXi const>(h_matrix.outerIndexPtr(), h_matrix.outerSize() + 1) + 1;
+    ArrayXi const inner_indices =
+        Map<ArrayXi const>(h_matrix.innerIndexPtr(), h_matrix.nonZeros()) + 1;
 
-    for (int i = 0; i < h_matrix.nonZeros(); i++)
-        cols[i] = h_matrix.innerIndexPtr()[i] + 1;
-    for (int i = 0; i < h_matrix.rows() + 1; i++)
-        rows[i] = h_matrix.outerIndexPtr()[i] + 1;
+    using mkl_scalar_t = mkl::type<scalar_t>;
+    auto const data = reinterpret_cast<mkl_scalar_t const*>(h_matrix.valuePtr());
+    auto eigvectors = reinterpret_cast<mkl_scalar_t*>(_eigenvectors.data());
+    auto const emin = static_cast<real_t>(config.energy_min);
+    auto const emax = static_cast<real_t>(config.energy_max);
 
-    sfeast_scsrev(
-        &config.matrix_format,      // (in) full matrix
-        &config.system_size,		// (in) size of the matrix
-        h_matrix.valuePtr(),        // (in) sparse matrix values
-        rows.data(),    		    // (in) rows (outer starts)
-        cols.data(),    		    // (in) cols (inner index)
-        fpm,		    		    // (in) FEAST parameters
-        &info.error_trace, 		    // (out) relative error on trace
-        &info.refinement_loops,	    // (out) the number of refinement loops executed
-        &config.energy_min,    	    // (in) lower bound
-        &config.energy_max,    	    // (in) upper bound
-        &info.suggested_size,       // (in/out) subspace size guess
-        _eigenvalues.data(),        // (out) eigenvalues
-        _eigenvectors.data(),       // (in/out) eigenvectors
-        &info.final_size,           // (out) total number of eigenvalues found
-        residual.data(),        	// (out) relative residual vector (must be length of M0)
-        &info.return_code           // (out) info or error code
-    );
-}
-
-template<>
-void FEAST<std::complex<float>>::call_feast_impl()
-{
-    const auto& h_matrix = hamiltonian->get_matrix();
-    
-    // convert to one-based index
-    ArrayX<int> cols(h_matrix.nonZeros());
-    ArrayX<int> rows(h_matrix.rows() + 1);
-
-    for (int i = 0; i < h_matrix.nonZeros(); i++)
-        cols[i] = h_matrix.innerIndexPtr()[i] + 1;
-    for (int i = 0; i < h_matrix.rows() + 1; i++)
-        rows[i] = h_matrix.outerIndexPtr()[i] + 1;
-
-    cfeast_hcsrev(
-        &config.matrix_format,      // (in) full matrix
-        &config.system_size,		// (in) size of the matrix
-        (MKL_Complex8*)h_matrix.valuePtr(), // (in) sparse matrix values
-        rows.data(),		        // (in) rows (outer starts)
-        cols.data(),		        // (in) cols (inner index)
-        fpm,				        // (in) FEAST parameters
-        &info.error_trace, 		    // (out) relative error on trace
-        &info.refinement_loops,      // (out) the number of refinement loops executed
-        &config.energy_min,	        // (in) lower bound
-        &config.energy_max,	        // (in) upper bound
-        &info.suggested_size,        // (in/out) subspace size guess
-        _eigenvalues.data(),         // (out) eigenvalues
-        (MKL_Complex8*)_eigenvectors.data(), // (in/out) eigenvectors
-        &info.final_size,            // (out) total number of eigenvalues found
-        residual.data(),	        // (out) relative residual vector (must be length of M0)
-        &info.return_code            // (out) info or error code
+    mkl::feast_hcsrev<scalar_t>::call(
+        &config.matrix_format,   // (in) full matrix
+        &config.system_size,     // (in) size of the matrix
+        data,                    // (in) sparse matrix values
+        outer_starts.data(),     // (in)
+        inner_indices.data(),    // (in)
+        fpm,                     // (in) FEAST parameters
+        &info.error_trace,       // (out) relative error on trace
+        &info.refinement_loops,  // (out) the number of refinement loops executed
+        &emin,                   // (in) lower bound
+        &emax,                   // (in) upper bound
+        &info.suggested_size,    // (in/out) subspace size guess
+        _eigenvalues.data(),     // (out) eigenvalues
+        eigvectors,              // (in/out) eigenvectors
+        &info.final_size,        // (out) total number of eigenvalues found
+        residual.data(),         // (out) relative residual vector (must be length of M0)
+        &info.return_code        // (out) info or error code
     );
 }
 
 template class tbm::FEAST<float>;
 template class tbm::FEAST<std::complex<float>>;
-//template class tbm::FEAST<double>;
-//template class tbm::FEAST<std::complex<double>>;
+template class tbm::FEAST<double>;
+template class tbm::FEAST<std::complex<double>>;
 
 #else // TBM_USE_FEAST
 void _suppress_FEAST_has_no_symbols_warning() {}

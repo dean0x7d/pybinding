@@ -2,6 +2,8 @@ from functools import wraps
 
 import numpy as np
 
+from ..support.inspect import get_call_signature
+
 
 def to_tuple(o):
     try:
@@ -85,9 +87,18 @@ def decorator_decorator(decorator_wrapper):
     """
     @wraps(decorator_wrapper)
     def new_wrapper(*args, **kwargs):
+        try:
+            callsig = get_call_signature(up=1)
+        except IndexError:
+            callsig = None
+
         if len(args) == 1 and not kwargs and (isinstance(args[0], type) or callable(args[0])):
+            args[0].callsig = callsig
             return decorator_wrapper()(args[0])
         else:
-            return lambda cls_or_func: decorator_wrapper(*args, **kwargs)(cls_or_func)
+            def deferred(cls_or_func):
+                cls_or_func.callsig = callsig
+                return decorator_wrapper(*args, **kwargs)(cls_or_func)
+            return deferred
 
     return new_wrapper
