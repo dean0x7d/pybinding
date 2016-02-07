@@ -17,5 +17,8 @@ rm miniconda.sh
 
 export PATH=$CONDA_DIR/bin:$PATH
 conda update --yes conda
-conda install --yes python=$PYTHON nomkl numpy scipy matplotlib wheel cmake
+conda install --yes python=$PYTHON nomkl numpy scipy matplotlib cmake
+
+# needed for deployment
+pip install -U wheel  # probably upgrades conda version
 pip install twine
