@@ -1,33 +1,39 @@
 language: cpp
 os:
-  - linux
-  - osx
+- linux
+- osx
 compiler:
-  - gcc
-  - clang
+- gcc
+- clang
 env:
+  global:
+  - secure: GmqIQsQ0VZT8AtmvrGSeIfr8LH/F1XlWAXkwYT4Duq4OrlOObcrdOnCie8CQm6NxLnUfZpVZQugEDrN9vX7/WTxx+SrHt5i/LGH7ZxYN6ihFujO/xgKkRmoXpqaMqfVtwEygKPeFRWvfpYorGeh+Zpwv0Mgc0iTBo2oQUec1QDk1+uebZISTYN4RhFJ8idmjIcO/9JwiNzWBwsKPjfgKXQmFGyofBtKOy5C9UWTuvwKqWeroUD7MruvWJb109aHcuCSuZfIO6MR7soY4Mfe4JyNyLRF6rwFpVOJQPR7fA0ACJy0jWllI5NcLxa38/oHL/M1xuc4gHaD9wzvbQdwK2h8Qc9nV/qv8DdzcLpEldFFrbgpPo+w56SOypNlBlDWQasXMODSo2iGmsusN8QOcSrkdaXFoNLpDhbxMujqozakdXWWtmGer+rhDuXg7tm2+WLnU2AUFYoLhwSZzSo1+TtblSC/Y1XvaP5HgimCWiLh8JPlptv6xRmEoGEhM9VdWquOmxnlcNRr6Bplti+f1pSEqYtqrihyNXC7KezFHQAP17A9fsw9lr+C4Ilp2R1Aob9DYLQ6xKbwZi8lZjqEPSGJO/xu/6OSVsqJ4k9GpmjZFSh36/0gZEwQHbwx/5RYm/U43zO/pXSKxR6OxbAIQrCke24MSf51317xAKlEtP3g=
+  - secure: a5KJzF5EB/kDXa0j0HM9wXDgUttDHMv1KPRsMKueCeXckGcnHkQ9Jx6Rtllhmk/8ZPJOA8gDqA5C9RVeP0GBmtq8xsS6/axKQQTnbs0IZp2SF+j2KhgH/1tV9y/npK3CWkZ93pQGP/ogBxrf7PBLU9ryEsSc3YD1jP0vQRynchUXN9rRbY7TffkLkDilpk8UsnKyeyWLKhtqTjrSS/+TAZ2k4gsykbAKOk+5V7kcvOnl5yHRZqPmVoeGf/yLyrGg1Pqh5L0XKXKsOZdmaZCTcIcPfksgNsIvUBlPnmo18ObyuuRXV01IbnHrzXqO/UKxmC/A4XRBdoZVm4cOLQy43b9RS/r/5d5qGd0KIoTwWZDQbnjZUS+CT0EDFcE/9JejcOMEHmLXrtsXUecWNeVhRhV97vSRi0F8axQnb7aTghRjVeftSJFLDHkMHj9ISsJcpqfkl5TmOslDPnwK+5uEHgRG2forqb/XC1iKUF6/PxKjwhS7vd3uwNSnb4RFe8bZWAeKsLIfSA1BnnKAFaBp1OW6K93zMySZyQkXXsMs5j1YctRdaj2HkZpniqGj7+6IwLlvadW79ZQL3s7fCQaH4KV/j57HMII8RT8rhsVBZoMcRc6M0/VQruHLMHFZGNk/lwsX5ZxiK5RysVNn4AYfrWSse933MuojlUUpergfC/g=
+  matrix:
   - PYTHON=3.4
-
 matrix:
   exclude:
-    - os: linux
-      compiler: clang
-    - os: osx
-      compiler: gcc
-
+  - os: linux
+    compiler: clang
+  - os: osx
+    compiler: gcc
 addons:
   apt:
     sources:
     - ubuntu-toolchain-r-test
     packages:
     - g++-4.8
-
 before_install:
-  - source ./support/travis_general.sh
-  - source ./support/travis_cmake.sh
-  - source ./support/travis_miniconda.sh
+- source ./support/travis_general.sh
+- source ./support/travis_miniconda.sh
 install:
-  - python setup.py build_ext
-  - python setup.py install
+- python setup.py build_ext
+- python setup.py install
 script:
-  - py.test
+- py.test
+deploy:
+  provider: script
+  script: support/travis_deploy.sh
+  skip_cleanup: true
+  on:
+    tags: true

@@ -8,3 +8,5 @@ fi
 
 export PB_WERROR=1  # make warnings into errors
 export MAKEFLAGS=-j2
+
+$CXX --version
