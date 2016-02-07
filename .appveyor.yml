@@ -3,13 +3,24 @@ os: Visual Studio 2015
 environment:
   PATH: C:\Miniconda35-x64\Scripts\;%PATH%
   PB_WERROR: 1
+  PYPI_USER:
+    secure: VNmO0xqOUrgWa0uT/HO/mg==
+  PYPI_PASS:
+    secure: gqNQRQIXkXmSul5JkOKj4owHUprr3Q4gJ6U6Mtlgm4M=
 install:
   - cmd: git submodule update -q --init --recursive
   - cmd: conda update -y -q conda
-  - cmd: conda create -y -q -n pb35 python=3.5 numpy scipy matplotlib
+  - cmd: conda create -y -q -n pb35 python=3.5 numpy scipy matplotlib wheel
   - cmd: activate pb35
+  - cmd: pip install -q twine
 build_script:
-- cmd: python setup.py build_ext
-- cmd: python setup.py install > nul
+  - cmd: python setup.py build_ext
+  - cmd: python setup.py install > nul
 test_script:
-- cmd: py.test
+  - cmd: py.test
+deploy_script:
+  - ps: >-
+      if ($env:APPVEYOR_REPO_TAG -eq "true") {
+        python setup.py bdist_wheel > $null
+        twine upload -u $env:PYPI_USER -p $env:PYPI_PASS --skip-existing dist\*.whl
+      }
