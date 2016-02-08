@@ -82,7 +82,10 @@ class CompareFigure:
             _remove_text(self.fig)
 
         with tempfile.TemporaryDirectory() as tmpdir:
-            actual_filename = str(path_from_fixture(self.request, prefix=tmpdir, ext=self.ext))
+            actual_file = path_from_fixture(self.request, prefix=tmpdir, ext=self.ext)
+            actual_filename = str(actual_file)
+            if not actual_file.parent.exists():
+                actual_file.parent.mkdir(parents=True)
             plt.savefig(actual_filename, **self.savefig_kwargs)
 
             baseline = path_from_fixture(self.request, prefix='baseline_plots', ext=self.ext)

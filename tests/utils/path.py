@@ -27,14 +27,10 @@ def path_from_fixture(request, prefix, variant='', ext='', override_group=''):
     test_dir = pathlib.Path(str(request.fspath.join('..')))
     module_name = request.module.__name__.split('.')[-1].replace('test_', '')
 
-    final_dir = test_dir / prefix / module_name
-    if not final_dir.exists():
-        final_dir.mkdir(parents=True)
-
     name = request.node.name.replace('test_', '') + variant
     if override_group:
         # 'test_name[fixture_param]' -> 'override_name[fixture_param]'
         part = name.partition('[')
         name = override_group + part[1] + part[2]
 
-    return (final_dir / name).with_suffix(ext)
+    return (test_dir / prefix / module_name / name).with_suffix(ext)

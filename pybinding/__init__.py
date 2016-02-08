@@ -24,3 +24,37 @@ from .support.pickle import save, load
 from .parallel import parallel_for, parallelize
 
 from . import (constants, greens, parallel, pltutils, results, solver, system, utils)
+
+
+def tests(options=None, plugins=None):
+    """Run the tests
+
+    Parameters
+    ----------
+    options : list or str
+        Command line options for pytest (excluding target file_or_dir).
+    plugins : list
+        Plugin objects to be auto-registered during initialization.
+    """
+    import pytest
+    import pathlib
+    from .utils.misc import cd
+
+    args = options or []
+    if isinstance(args, str):
+        args = args.split()
+    module_path = pathlib.Path(__file__).parent
+
+    if (module_path / 'tests').exists():
+        # tests are inside installed package -> use read-only mode
+        args.append('--failpath=' + os.getcwd() + '/failed')
+        with cd(module_path):
+            args += ['-c', str(module_path / 'tests/local.cfg'), str(module_path)]
+            pytest.main(args, plugins)
+    else:
+        # tests are in dev environment -> use development mode
+        import matplotlib as mpl
+        import matplotlib.pyplot as plt
+
+        with cd(module_path.parent), pltutils.backend('Agg'):
+            pytest.main(args, plugins)

@@ -34,6 +34,23 @@ def axes(ax):
     plt.sca(previous_ax)
 
 
+@contextmanager
+def backend(new_backend):
+    """Change the backend within this context
+
+    Parameters
+    ----------
+    new_backend : str
+        Name of a matplotlib backend.
+    """
+    old_backend = mpl.get_backend()
+    plt.switch_backend(new_backend)
+    try:
+        yield
+    finally:
+        plt.switch_backend(old_backend)
+
+
 def despine(trim=False):
     """Remove the top and right spines
 

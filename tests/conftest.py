@@ -25,8 +25,12 @@ def pytest_assertrepr_compare(op, left, right):
 def pytest_addoption(parser):
     parser.addoption("--alwaysplot", action="store_true",
                      help="Plot even for tests which pass.")
+    parser.addoption("--failpath", action="store", default="failed",
+                     help="Where to put failure plots. Relative to tests dir or absolute path.")
     parser.addoption("--savebaseline", action="store_true",
                      help="Save a new baseline for all tests.")
+    parser.addoption("--readonly", action="store_true",
+                     help="Don't save new baseline data.")
 
 
 @pytest.hookimpl(hookwrapper=True)
@@ -51,9 +55,13 @@ def baseline(request):
 
         if not request.config.getoption("--savebaseline") and file.exists():
             return pb.load(file)
-        else:
+        elif not request.config.getoption("--readonly"):
+            if not file.parent.exists():
+                file.parent.mkdir(parents=True)
             pb.save(result, file)
             return result
+        else:
+            raise RuntimeError("Missing baseline data: {}".format(file))
 
     return get_expected
 
@@ -84,7 +92,8 @@ def plot_if_fails(request):
     gather = Gather()
     yield gather
 
-    figure_path = path_from_fixture(request, prefix='failed', ext='.png')
+    prefix = request.config.getoption("--failpath")
+    figure_path = path_from_fixture(request, prefix, ext='.png')
     if request.config.getoption("--alwaysplot") or request.node.rep_call.failed:
         plt.figure(figsize=(6, 3))
         plt.subplot(121)
@@ -93,8 +102,12 @@ def plot_if_fails(request):
         plt.subplot(122)
         gather.plot('expected')
 
+        if not figure_path.parent.exists():
+            figure_path.parent.mkdir(parents=True)
+
         plt.savefig(str(figure_path))
         plt.close()
     elif figure_path.exists():
+        # test passed -> delete old fail figure file
         with suppress(OSError):
             figure_path.unlink()

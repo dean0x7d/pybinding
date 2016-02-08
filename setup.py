@@ -87,7 +87,9 @@ setup(
         'Programming Language :: Python :: Implementation :: CPython',
     ],
 
-    packages=find_packages(exclude=['cppcore', 'cppwrapper', 'test*']),
+    packages=find_packages(exclude=['cppcore', 'cppwrapper', 'test*']) + ['pybinding.tests'],
+    package_dir={'pybinding.tests': 'tests'},
+    include_package_data=True,
     ext_modules=[CMakeExtension('_pybinding')],
     install_requires=['numpy>=1.9.0', 'scipy>=0.15', 'matplotlib>=1.5.0',
                       'py-cpuinfo>=0.1.4', 'pytest>=2.8'],

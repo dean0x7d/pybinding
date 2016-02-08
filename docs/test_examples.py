@@ -2,13 +2,14 @@ import pytest
 import pathlib
 
 
-docs = (pathlib.Path(__file__) / "../../docs/").resolve()
+docs = pathlib.Path(__file__).parent
 examples = list(docs.glob('*/**/*.py'))
 assert len(examples) != 0
 
 
 @pytest.fixture(scope='module', ids=[e.stem for e in examples], params=examples)
 def example_file(request):
+    """An example file from the documentation directory"""
     return request.param
 
 

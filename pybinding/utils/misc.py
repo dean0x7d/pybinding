@@ -1,4 +1,6 @@
+import os
 from functools import wraps
+from contextlib import contextmanager
 
 import numpy as np
 
@@ -102,3 +104,19 @@ def decorator_decorator(decorator_wrapper):
             return deferred
 
     return new_wrapper
+
+
+@contextmanager
+def cd(directory):
+    """Change directory within this context
+
+    Parameters
+    ----------
+    directory : str or path
+    """
+    previous_dir = os.getcwd()
+    os.chdir(os.path.expanduser(str(directory)))
+    try:
+        yield
+    finally:
+        os.chdir(previous_dir)
