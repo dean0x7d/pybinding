@@ -56,6 +56,14 @@ class FuzzyReport:
 
     def __eq__(self, other):
         actual, expected = map(np.atleast_1d, (self.value, other))
+        if actual.shape != expected.shape:
+            self.explanation = [
+                "failed on shape mismatch",
+                "actual:   {}".format(actual.shape),
+                "expected: {}".format(expected.shape),
+            ]
+            return False
+
         isclose = np.isclose(actual, expected, self.rtol, self.atol)
         if np.all(isclose):
             return True
@@ -63,9 +71,10 @@ class FuzzyReport:
         notclose = np.logical_not(isclose)
         num_failed = np.sum(notclose)
         self.explanation = [
-            "failed on {} of {} values: {:.0f} percent".format(num_failed, len(actual),
-                                                               100 * num_failed / len(actual)),
-            "diff indices: {}".format(list(np.argwhere(notclose).flat)),
+            "failed on {} of {} values: {:.0f} percent".format(num_failed, actual.size,
+                                                               100 * num_failed / actual.size),
+            "diff indices: {}".format([idx[0] if idx.size == 1 else list(idx)
+                                       for idx in np.argwhere(notclose)]),
             "actual:   {}".format(actual[notclose]),
             "expected: {}".format(expected[notclose]),
         ]
