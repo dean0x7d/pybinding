@@ -1,17 +1,20 @@
 version: '{build}'
 os: Visual Studio 2015
 environment:
-  PATH: C:\Miniconda35-x64\Scripts\;%PATH%
   PB_WERROR: 1
   PYPI_USER:
     secure: VNmO0xqOUrgWa0uT/HO/mg==
   PYPI_PASS:
     secure: gqNQRQIXkXmSul5JkOKj4owHUprr3Q4gJ6U6Mtlgm4M=
+  matrix:
+  - PATH: C:\Miniconda35-x64\Scripts\;%PATH%
+  - PATH: C:\Miniconda35\Scripts\;%PATH%
 install:
   - cmd: git submodule update -q --init --recursive
   - cmd: conda update -y -q conda
-  - cmd: conda create -y -q -n pb35 python=3.5 numpy scipy matplotlib wheel
+  - cmd: conda create -y -q -n pb35 python=3.5 numpy scipy matplotlib
   - cmd: activate pb35
+  - cmd: pip install -U -q wheel
   - cmd: pip install -q twine
 build_script:
   - cmd: python setup.py build_ext
