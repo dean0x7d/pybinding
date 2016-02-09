@@ -3,6 +3,7 @@
 #include "support/traits.hpp"
 
 #include <algorithm>
+#include <stdexcept>
 
 namespace tbm { namespace num {
 
