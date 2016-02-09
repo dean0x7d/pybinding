@@ -1,4 +1,4 @@
-include readme.md license.md
+include readme.md license.md changelog.md
 recursive-include tests *.py *.pbz *.png *.cfg
 recursive-include docs *.py *.rst *.css
 global-include CMakeLists.txt *.cmake *.hpp *.cpp

@@ -3,7 +3,7 @@
 ### v0.7.1 | 2016-02-08
 
 * Added support for double-precision floating point. Single precision is used by default,
-  but it will be switched automatically to double if required by an onside or hopping modifier.
+  but it will be switched automatically to double if required by an onsite or hopping modifier.
 
 * Added support for the 32-bit version of Python
 
