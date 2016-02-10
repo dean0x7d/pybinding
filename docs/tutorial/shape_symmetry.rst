@@ -168,7 +168,7 @@ that the inner ring shape is preserved and the periodic boundaries are placed on
 .. plot::
     :context: close-figs
 
-    solver = pb.solver.arpack(model, num_eigenvalues=10)
+    solver = pb.solver.arpack(model, k=10) # for the 10 lowest energy eigenvalues
     a = 3.8  # [nm] unit cell length
     bands = solver.calc_bands(-pi/a, pi/a)
     bands.plot(point_labels=['$-\pi / a$', '$\pi / a$'])

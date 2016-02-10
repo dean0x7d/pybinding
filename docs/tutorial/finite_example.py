@@ -26,7 +26,7 @@ plt.show()
 
 
 # only solve for the 20 lowest energy eigenvalues
-solver = pb.solver.arpack(model, num_eigenvalues=20)
+solver = pb.solver.arpack(model, k=20)
 ldos = solver.calc_spatial_ldos(energy=0, broadening=0.05)  # LDOS around 0 eV
 ldos.plot_structure(site_radius=(0.03, 0.12))
 plt.show()

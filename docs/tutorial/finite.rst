@@ -169,7 +169,7 @@ case, we are interested only in the 20 lowest energy states.
         graphene.monolayer(),
         ring(inner_radius=1.4, outer_radius=2)
     )
-    solver = pb.solver.arpack(model, num_eigenvalues=20)
+    solver = pb.solver.arpack(model, k=20)  # for the 20 lowest energy eigenvalues
 
     ldos = solver.calc_spatial_ldos(energy=0, broadening=0.05)  # eV
     ldos.plot_structure(site_radius=(0.03, 0.12))

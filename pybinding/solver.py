@@ -365,7 +365,7 @@ def lapack(model, **kwargs):
     return Solver(_SolverPythonImpl(solver_func, model, **kwargs))
 
 
-def arpack(model, num_eigenvalues, sigma=1e-5, **kwargs):
+def arpack(model, k, sigma=1e-5, **kwargs):
     """ARPACK `Solver` implementation for sparse matrices
 
     This solver is intended for large models with sparse Hamiltonian matrices.
@@ -377,7 +377,7 @@ def arpack(model, num_eigenvalues, sigma=1e-5, **kwargs):
     ----------
     model : Model
         Model which will provide the Hamiltonian matrix.
-    num_eigenvalues : int
+    k : int
         The desired number of eigenvalues and eigenvectors. This number must be smaller
         than the size of the matrix, preferably much smaller for optimal performance.
         The computed eigenvalues are the ones closest to `sigma`.
@@ -391,7 +391,7 @@ def arpack(model, num_eigenvalues, sigma=1e-5, **kwargs):
     Solver
     """
     from scipy.sparse.linalg import eigsh
-    return Solver(_SolverPythonImpl(eigsh, model, k=num_eigenvalues, sigma=sigma, **kwargs))
+    return Solver(_SolverPythonImpl(eigsh, model, k=k, sigma=sigma, **kwargs))
 
 
 def feast(model, energy_range, initial_size_guess, recycle_subspace=False, is_verbose=False):
