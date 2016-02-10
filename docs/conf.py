@@ -23,11 +23,17 @@ extensions = [
     'sphinx.ext.autosummary',
     'sphinx.ext.mathjax',
     'sphinx.ext.todo',
+    'sphinx.ext.intersphinx',
     'numpydoc',
     'matplotlib.sphinxext.plot_directive',
 ]
 
 autodoc_member_order = 'groupwise'
+
+intersphinx_mapping = {'python': ('http://docs.python.org/3', None),
+                       'numpy': ('http://docs.scipy.org/doc/numpy/', None),
+                       'scipy': ('http://docs.scipy.org/doc/scipy/reference/', None),
+                       'matplotlib': ('http://www.matplotlib.org/', None)}
 
 numpydoc_class_members_toctree = False
 numpydoc_show_class_members = False

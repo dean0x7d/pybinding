@@ -21,3 +21,4 @@ pick up on the fly.
     finite
     shape_symmetry
     fields
+    solvers

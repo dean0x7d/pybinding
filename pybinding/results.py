@@ -422,7 +422,7 @@ class Eigenvalues:
         **kwargs
             Forwarded to plt.scatter().
         """
-        if self.probability is None:
+        if not np.any(self.probability):
             return self.plot(mark_degenerate, show_indices, **kwargs)
 
         # higher probability states should be drawn above lower ones
@@ -449,7 +449,7 @@ class Bands:
     bands : array_like
     """
     def __init__(self, k_points, k_path, bands):
-        self.k_points = k_points
+        self.k_points = [np.atleast_1d(k) for k in k_points]
         self.k_path = k_path
         self.bands = bands
 

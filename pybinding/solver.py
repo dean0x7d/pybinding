@@ -1,16 +1,16 @@
-"""Eigensolvers for pybinding models
+"""Eigensolvers with a few extra computation methods
 
-The `Solver` class is the main interface for dealing with eigenvalue problems. It
-is made to work specifically with pybinding's `Model` objects, but it may use any
+The :class:`.Solver` class is the main interface for dealing with eigenvalue problems. It
+is made to work specifically with pybinding's :class:`.Model` objects, but it may use any
 eigensolver algorithm under the hood.
 
-A few different algorithms are provided out of the box: the `lapack`, `arpack` and
-`feast` functions return concrete `Solver` implementation using the LAPACK, ARPACK
-and FEAST algorithms, respectively.
+A few different algorithms are provided out of the box: the :func:`.lapack`, :func:`.arpack`
+and :func:`.feast` functions return concrete :class:`.Solver` implementation using the LAPACK,
+ARPACK and FEAST algorithms, respectively.
 
-The `Solver` may easily be extended with new eigensolver algorithms. All that is
+The :class:`.Solver` may easily be extended with new eigensolver algorithms. All that is
 required is a function which takes a Hamiltonian matrix and returns the computed
-eigenvalues and eigenvectors. See `_SolverPythonImpl` for example.
+eigenvalues and eigenvectors. See :class:`._SolverPythonImpl` for example.
 """
 import time
 import math
@@ -30,10 +30,10 @@ __all__ = ['Solver', 'feast', 'lapack', 'arpack']
 class Solver:
     """Computes the eigenvalues and eigenvectors of a Hamiltonian matrix
 
-    This the common interface for various eigensolver implementations. It should
-    not be created directly, but via the specific functions: `lapack`, `arpack`
-    and `feast`. Those functions will set up their specific solver strategy and
-    return a properly configured `Solver` object.
+    This the common interface for various eigensolver implementations. It should not
+    be created directly, but via the specific functions: :func:`.lapack`, :func:`.arpack`
+    and :func:`.feast`. Those functions will set up their specific solver strategy and
+    return a properly configured :class:`.Solver` object.
     """
     def __init__(self, impl: _cpp.Solver):
         self.impl = impl
@@ -69,9 +69,9 @@ class Solver:
         """Explicitly solve the eigenvalue problem right now
 
         This method is usually not needed because the main result properties,
-        `eigenvalues` and `eigenvectors`, will call this implicitly the first
-        time they are accessed. However, since the `solve()` routine may be
-        computationally expensive, it is useful to have the ability to call it
+        :attr:`.eigenvalues` and :attr:`.eigenvectors`, will call this implicitly
+        the first time they are accessed. However, since the :meth:`solve()` routine
+        may be computationally expensive, it is useful to have the ability to call it
         ahead of time as needed.
         """
         self.impl.solve()
@@ -81,7 +81,7 @@ class Solver:
         self.impl.clear()
 
     def report(self, shortform=False) -> str:
-        """Return a report of the last `solve()` computation
+        """Return a report of the last :meth:`solve()` computation
 
         Parameters
         ----------
@@ -102,12 +102,12 @@ class Solver:
         self.model.set_wave_vector(np.atleast_1d(k))
 
     def calc_eigenvalues(self, map_probability_at=None):
-        """Return an `Eigenvalues` result object with an optional probability colormap
+        """Return an :class:`.Eigenvalues` result object with an optional probability colormap
 
-        While the `eigenvalues` property returns the raw values array, this method
-        returns a result object with more data. In addition to the energy states,
-        this result may show a colormap of the probability density for each state
-        at a single position.
+        While the :attr:`.eigenvalues` property returns the raw values array, this
+        method returns a result object with more data. In addition to the energy
+        states, this result may show a colormap of the probability density for each
+        state at a single position.
 
         Parameters
         ----------
@@ -340,19 +340,19 @@ class _SolverPythonImpl:
 
 
 def lapack(model, **kwargs):
-    """LAPACK `Solver` implementation for dense matrices
+    """LAPACK :class:`.Solver` implementation for dense matrices
 
     This solver is intended for small models which are best represented by
     dense matrices. Always solves for all the eigenvalues and eigenvectors.
-    Internally this solver uses the `scipy.linalg.eigh` function for dense
-    Hermitian matrices.
+    Internally this solver uses the :func:`scipy.linalg.eigh` function for
+    dense Hermitian matrices.
 
     Parameters
     ----------
     model : Model
         Model which will provide the Hamiltonian matrix.
     **kwargs
-        Advanced arguments -> forwarded to `scipy.linalg.eigh`.
+        Advanced arguments: forwarded to :func:`scipy.linalg.eigh`.
 
     Returns
     -------
@@ -366,12 +366,12 @@ def lapack(model, **kwargs):
 
 
 def arpack(model, k, sigma=1e-5, **kwargs):
-    """ARPACK `Solver` implementation for sparse matrices
+    """ARPACK :class:`.Solver` implementation for sparse matrices
 
     This solver is intended for large models with sparse Hamiltonian matrices.
     It only computes a small targeted subset of eigenvalues and eigenvectors.
-    Internally this solver uses the `scipy.sparse.linalg.eigsh` function for
-    sparse Hermitian matrices.
+    Internally this solver uses the :func:`scipy.sparse.linalg.eigsh` function
+    for sparse Hermitian matrices.
 
     Parameters
     ----------
@@ -384,7 +384,7 @@ def arpack(model, k, sigma=1e-5, **kwargs):
     sigma : float, optional
         Look for eigenvalues near `sigma`.
     **kwargs
-        Advanced arguments -> forwarded to `scipy.sparse.linalg.eigsh`.
+        Advanced arguments: forwarded to :func:`scipy.sparse.linalg.eigsh`.
 
     Returns
     -------
@@ -395,7 +395,7 @@ def arpack(model, k, sigma=1e-5, **kwargs):
 
 
 def feast(model, energy_range, initial_size_guess, recycle_subspace=False, is_verbose=False):
-    """FEAST `Solver` implementation for sparse matrices
+    """FEAST :class:`.Solver` implementation for sparse matrices
 
     This solver is only available if the C++ extension module was compiled with FEAST.
 
