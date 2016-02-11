@@ -1,8 +1,8 @@
 Lattice specification and bands
--------------------------------
+===============================
 
 Checkerboard
-************
+------------
 
 :download:`Source code </examples/lattice/checkerboard.py>`
 
@@ -11,7 +11,7 @@ Checkerboard
 
 
 Trestle
-*******
+-------
 
 :download:`Source code </examples/lattice/trestle.py>`
 
@@ -20,7 +20,7 @@ Trestle
 
 
 Monolayer graphene
-******************
+------------------
 
 :download:`Source code </examples/lattice/monolayer_graphene.py>`
 
@@ -29,9 +29,18 @@ Monolayer graphene
 
 
 Monolayer graphene NN
-*********************
+---------------------
 
 :download:`Source code </examples/lattice/monolayer_graphene_nn.py>`
 
 .. plot:: examples/lattice/monolayer_graphene_nn.py
+    :include-source:
+
+
+Phosphorene
+-----------
+
+:download:`Source code </examples/lattice/phosphorene.py>`
+
+.. plot:: examples/lattice/phosphorene.py
     :include-source:

@@ -1,12 +1,12 @@
 Band structure
---------------
+==============
 
 In order to calculate the band structure of a crystal lattice, this section is going to introduce
 the concepts of a :class:`.Model` and a :class:`.Solver`.
 
 
 Model
-*****
+-----
 
 A :class:`.Model` contains the full tight-binding description of the physical system that we wish
 to solve. We'll start by assigning a lattice to the model, and we'll use a pre-made one from the
@@ -32,9 +32,10 @@ The model also has a :attr:`.hamiltonian` attribute::
     (0, 1)   -2.8
     (1, 0)   -2.8
 
-It's a matrix (in the `scipy.sparse.csr_matrix` format) which corresponds to the tight-binding
+It's a sparse matrix (see :class:`.scipy.sparse.csr_matrix`) which corresponds to the tight-binding
 Hamiltonian of our model. The output above shows the default sparse representation of the data
-with `(row, col) value`. Alternatively, we can see the dense matrix output::
+where each line corresponds to `(row, col) value`. Alternatively, we can see the dense matrix
+output::
 
     >>> model.hamiltonian.todense()
     [[ 0.0 -2.8]
@@ -57,11 +58,12 @@ the first one in each lattice vector direction.
 
 
 Solver
-******
+------
 
 A :class:`.Solver` can exactly calculate the eigenvalues and eigenvectors of a Hamiltonian matrix.
-We'll start by using a :func:`.lapack` solver which is the simplest and most appropriate for small
-systems.
+We'll take a look at various :doc:`solvers` and their capabilities in a later section, but right
+now we'll just grab the :func:`.lapack` solver which is the simplest and most appropriate for
+small systems.
 
     >>> model = pb.Model(graphene.monolayer())
     >>> solver = pb.solver.lapack(model)
@@ -71,8 +73,9 @@ systems.
     [[-0.707 -0.707]
      [-0.707  0.707]]
 
-Beyond just the `eigenvalues` and `eigenvectors` attributes, :class:`.Solver` has a convenient
-:meth:`.calc_bands` method.
+Beyond just the :attr:`~.Solver.eigenvalues` and :attr:`~.Solver.eigenvectors` properties,
+:class:`.Solver` has a convenient :meth:`~.Solver.calc_bands` method which can be used to
+calculate the band structure of our model.
 
 .. plot::
     :context: close-figs
@@ -95,20 +98,37 @@ Beyond just the `eigenvalues` and `eigenvectors` attributes, :class:`.Solver` ha
     bands.plot(point_labels=['K', r'$\Gamma$', 'M', 'K'])
 
 The points :math:`\Gamma, K` and :math:`M` are used to draw a path in the reciprocal space of
-graphene's Brillouin zone and :meth:`.calc_bands` calculates the band structure along that path.
+graphene's Brillouin zone and :meth:`.calc_bands` calculates the band energy along that path.
 The return value of the method is a :class:`.Bands` result object.
+
+All result objects have built-in plotting methods. Aside from the basic :meth:`~.Bands.plot` seen
+above, :class:`.Bands` also has :meth:`~.Bands.plot_kpath` which presents the path in reciprocal
+space. Plots can easily be composed, so to see the path in the context of the Brillouin zone, we
+can simply plot both:
+
+.. plot::
+    :context: close-figs
+
+    model.lattice.plot_brillouin_zone(decorate=False)
+    bands.plot_kpath(point_labels=['K', r'$\Gamma$', 'M', 'K'])
+
+The extra argument for :meth:`.Lattice.plot_brillouin_zone` turns off the reciprocal lattice
+vectors and vertex coordinate labels (as seen in the previous section).
+
+
+Further reading
+---------------
+
+Check out the :doc:`examples section </examples/lattice/index>` for more band structure
+calculations with various other lattices. :doc:`solvers` will be covered in more detail at a
+later point in the tutorial, but this is enough information to get started. The next few sections
+are going to be dedicated to model building.
 
 
 Example
-*******
+-------
 
 :download:`Download source code </tutorial/bands_example.py>`
 
 .. plot:: tutorial/bands_example.py
     :include-source:
-
-
-Further reading
-***************
-
-For more band structure calculations check out the :doc:`examples section </examples/lattice/index>`.

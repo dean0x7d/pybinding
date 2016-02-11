@@ -1,4 +1,4 @@
-"""Create and plot a monolayer graphene lattice and it's Brillouin zone"""
+"""Create and plot a monolayer graphene lattice, its Brillouin zone and band structure"""
 import pybinding as pb
 import matplotlib.pyplot as plt
 from math import sqrt, pi
@@ -55,3 +55,6 @@ K2 = [2*pi / (3*sqrt(3)*a_cc), 2*pi / (3*a_cc)]
 bands = solver.calc_bands(K1, Gamma, M, K2)
 bands.plot(point_labels=['K', r'$\Gamma$', 'M', 'K'])
 plt.show()
+
+model.lattice.plot_brillouin_zone(decorate=False)
+bands.plot_kpath(point_labels=['K', r'$\Gamma$', 'M', 'K'])

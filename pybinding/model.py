@@ -15,7 +15,7 @@ class Model(_cpp.Model):
     The most important properties are :attr:`.system` and :attr:`.hamiltonian` which are
     constructed based on the input parameters. The :class:`.System` contains structural
     data like site positions. The tight-binding Hamiltonian is a sparse matrix in the
-    :class:`.scipy.csr_matrix` format.
+    :class:`.scipy.sparse.csr_matrix` format.
 
     The main class implementation is in C++ via the `_cpp.Model` base class.
 
@@ -88,7 +88,7 @@ class Model(_cpp.Model):
 
     @property
     def hamiltonian(self) -> csr_matrix:
-        """Hamiltonian sparse matrix in the :class:`.scipy.csr_matrix` format"""
+        """Hamiltonian sparse matrix in the :class:`.scipy.sparse.csr_matrix` format"""
         matrix = SparseMatrix(super().hamiltonian.matrix)
         return matrix.tocsr()
 
