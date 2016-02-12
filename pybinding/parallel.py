@@ -262,10 +262,11 @@ class ParallelFor:
             return
 
         try:
-            for f in self.hooks.plot:
-                f(result)
-            plt.savefig(self.config.filename + ".png")
-            plt.close()
+            if self.hooks.plot:
+                for f in self.hooks.plot:
+                    f(result)
+                plt.savefig(self.config.filename + ".png")
+                plt.close()
         except Exception as err:
             print(err)
 
