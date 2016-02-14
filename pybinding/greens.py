@@ -1,8 +1,8 @@
 """Green's function computation
 
 The main approach uses the Kernel Polynomial Method. This is the only approach
-which is implemented at this time, but the `Greens` interface it quite easy to
-extend with new algorithms.
+which is implemented at this time, but the :class:`Greens` interface is quite
+easy to extend with new algorithms.
 """
 from . import _cpp
 from . import results
@@ -16,7 +16,7 @@ class Greens:
     """Computes the Green's function of a Hamiltonian matrix
 
     This the common interface for various implementations. It should not be
-    created directly but via specific functions like `kpm`.
+    created directly but via specific functions like :func:`kpm`.
     """
     def __init__(self, impl: _cpp.Greens):
         self.impl = impl
@@ -91,7 +91,7 @@ class Greens:
         return results.LDOS(energy, ldos)
 
     def deferred_ldos(self, energy, broadening, position, sublattice=-1):
-        """Same as `calc_ldos` but for parallel computation: see the `parallel` module
+        """Same as :meth:`calc_ldos` but for parallel computation: see the :mod:`.parallel` module
 
         Parameters
         ----------
@@ -110,7 +110,7 @@ class Greens:
 
         Returns
         -------
-        DeferredXf
+        Deferred
         """
         deferred = self.impl.deferred_ldos(energy, broadening, position, sublattice)
         deferred.model = self.model

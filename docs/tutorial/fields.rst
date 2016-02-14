@@ -1,5 +1,5 @@
-Fields
-======
+Fields and effects
+==================
 
 This section will introduce :func:`@onsite_energy_modifier <.onsite_energy_modifier>` and
 :func:`@hopping_energy_modifier <.hopping_energy_modifier>` which can be used to add various
@@ -304,6 +304,7 @@ The square well affects the band structure by breaking electron-hole symmetry:
     bands.plot()
 
 
+.. _magnetic-field-modifier:
 
 Magnetic field
 --------------
@@ -364,7 +365,7 @@ arguments, it's optional, so we only take what we need.
 
 To test out our `constant_magnetic_field`, we'll calculate the local density of states (LDOS),
 where we expect to see peaks corresponding to Landau levels. The computation method used here
-is explained in detail on the next page of the tutorial.
+is explained in detail in the :doc:`greens` section of the tutorial.
 
 .. plot::
     :context: close-figs
@@ -384,6 +385,12 @@ The values of the magnetic field is exaggerated here (200 Tesla), but that is do
 computation time low for the tutorial (under 1 second for this LDOS calculation).
 
 
+Further reading
+---------------
+
+Take a look at the :doc:`/api/modifier` reference page for more information.
+
+
 Example
 -------
 
@@ -391,10 +398,3 @@ Example
 
 .. plot:: tutorial/fields_example.py
     :include-source:
-
-
-Further reading
----------------
-
-.. todo::
-    For more field examples check out ...

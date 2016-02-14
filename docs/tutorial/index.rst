@@ -22,3 +22,4 @@ pick up on the fly.
     shape_symmetry
     fields
     solvers
+    greens
