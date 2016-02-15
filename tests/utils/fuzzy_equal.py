@@ -70,13 +70,17 @@ class FuzzyReport:
 
         notclose = np.logical_not(isclose)
         num_failed = np.sum(notclose)
+        a = actual[notclose]
+        b = expected[notclose]
         self.explanation = [
             "failed on {} of {} values: {:.0f} percent".format(num_failed, actual.size,
                                                                100 * num_failed / actual.size),
+            "actual:   {}".format(a),
+            "expected: {}".format(b),
             "diff indices: {}".format([idx[0] if idx.size == 1 else list(idx)
                                        for idx in np.argwhere(notclose)]),
-            "actual:   {}".format(actual[notclose]),
-            "expected: {}".format(expected[notclose]),
+            "abs diff: {}".format(abs(a - b)),
+            "rel diff: {}".format(abs(a - b) / abs(b)),
         ]
         return False
 
