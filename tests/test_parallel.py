@@ -29,7 +29,7 @@ def test_sweep(baseline, plot_if_fails):
 
     expected = baseline(result)
     plot_if_fails(result, expected, 'plot')
-    assert pytest.fuzzy_equal(result, expected, rtol=1e-3, atol=1e-6)
+    assert pytest.fuzzy_equal(result, expected, rtol=2e-3, atol=1e-6)
 
 
 def test_ndsweep(baseline):

@@ -95,6 +95,7 @@ void OptimizedHamiltonian<scalar_t>::create_reordered(SparseMatrixX<scalar_t> co
     reorder_map[target_index] = 0;
 
     // As the reordered matrix is filled, the optimal size for the first few KPM steps is recorded
+    optimized_sizes.clear();
     optimized_sizes.push_back(0);
     optimized_sizes.push_back(1);
 

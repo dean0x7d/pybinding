@@ -1,5 +1,10 @@
 # Changelog
 
+### v0.7.2 | TBD
+
+* Fixed a bug where using a single KPM object for multiple calculations could return wrong results
+
+
 ### v0.7.1 | 2016-02-08
 
 * Added support for double-precision floating point. Single precision is used by default,
@@ -16,6 +21,7 @@
 
 * Available as a binary wheel for 32-bit and 64-bit Windows (Python 3.5 only)
   and OS X (Python 3.4 and 3.5)
+
 
 ### v0.7.0 | 2016-02-01
 
