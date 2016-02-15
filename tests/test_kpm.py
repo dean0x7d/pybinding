@@ -35,12 +35,12 @@ def test_ldos(kpm, baseline, plot_if_fails):
 
 def test_kpm_reuse():
     """KPM should return the same result when a single object is used for multiple calculations"""
-    model = pb.Model(graphene.monolayer(), graphene.hexagon_ac(5))
+    model = pb.Model(graphene.monolayer(), graphene.hexagon_ac(10))
     kpm = pb.greens.kpm(model)
     energy = np.linspace(-5, 5, 50)
     broadening = 0.1
 
-    for position in [0, 0], [5, 0]:
+    for position in [0, 0], [6, 0]:
         actual = kpm.calc_ldos(energy, broadening, position)
         expected = pb.greens.kpm(model).calc_ldos(energy, broadening, position)
         assert pytest.fuzzy_equal(actual, expected, rtol=1e-3, atol=1e-6)
