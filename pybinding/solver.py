@@ -365,7 +365,7 @@ def lapack(model, **kwargs):
     return Solver(_SolverPythonImpl(solver_func, model, **kwargs))
 
 
-def arpack(model, k, sigma=1e-5, **kwargs):
+def arpack(model, k, sigma=0, **kwargs):
     """ARPACK :class:`.Solver` implementation for sparse matrices
 
     This solver is intended for large models with sparse Hamiltonian matrices.
@@ -391,6 +391,9 @@ def arpack(model, k, sigma=1e-5, **kwargs):
     Solver
     """
     from scipy.sparse.linalg import eigsh
+    if sigma == 0:
+        # eigsh can cause problems when sigma is exactly zero
+        sigma = np.finfo(model.hamiltonian.dtype).eps
     return Solver(_SolverPythonImpl(eigsh, model, k=k, sigma=sigma, **kwargs))
 
 
