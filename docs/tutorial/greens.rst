@@ -1,7 +1,7 @@
 Green's function
 ================
 
-Green's function methods were used briefly in the :doc:`fields` section of the tutorial. As with
+Green's function methods were used briefly in the :doc:`fields` and :doc:`strain` sections. As with
 the eigensolvers, there is one common :class:`.Greens` interface while the underlying algorithm
 may be implemented in various ways. At this time, :func:`.kpm` is the only one that comes with
 the package.
@@ -96,5 +96,6 @@ antisymmetric around zero energy with respect to one another.
 Further reading
 ---------------
 
-For an additional example see the :ref:`magnetic-field-modifier` subsection of :doc:`fields`.
+For an additional example see the :ref:`magnetic-field-modifier` subsection of :doc:`fields` as
+well as the :ref:`Strain modifier <strain-modifier>` subsection of :doc:`strain`.
 The reference page for :doc:`/api/greens` contains more information.

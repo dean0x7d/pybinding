@@ -21,5 +21,6 @@ pick up on the fly.
     finite
     shape_symmetry
     fields
+    strain
     solvers
     greens
