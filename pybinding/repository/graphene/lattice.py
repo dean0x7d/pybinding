@@ -140,15 +140,20 @@ def monolayer_4atom(onsite=(0, 0)):
     return lat
 
 
-def bilayer(gammas=(), onsite=(0, 0, 0, 0)):
-    """Bilayer lattice with optional :math:`\gamma_3` and :math:`\gamma_4` hoppings
+def bilayer(gamma3=False, gamma4=False, onsite=(0, 0, 0, 0)):
+    """Bilayer lattice in the AB-stacked form (Bernal-stacked)
+
+    * :math:`\gamma_0` is the single-layer hopping within the top layer (A1/B1)
+      and bottom layer (A2/B2)
+    * :math:`\gamma_1` is the inter-layer hopping between B1 and A2
+      (where atom B1 lies directly over A2)
+    * Hoppings :math:`\gamma_3` and :math:`\gamma_4` are optional (see parameters)
 
     Parameters
     ----------
-    gammas : tuple
-        By default, only the :math:`\gamma_1` interlayer hopping is used. One or both
-        :math:`\gamma_3` and :math:`\gamma_4` can be added with `gammas=(3,)`,
-        `gammas=(4,)` or `gammas=(3, 4)`.
+    gamma3, gamma4 : bool
+        Enable :math:`\gamma_3` and/or :math:`\gamma_4` hoppings.
+        By default, only :math:`\gamma_0` and :math:`\gamma_1` are active.
     onsite : Tuple[float, float, float, float]
         Onsite energy for A1, B1, A2, B2
     """
@@ -188,14 +193,14 @@ def bilayer(gammas=(), onsite=(0, 0, 0, 0)):
         ([ 0,  0], 'B1', 'A2', 'gamma1')
     )
 
-    if 3 in gammas:
+    if gamma3:
         lat.add_hoppings(
             ([0, 1], 'B2', 'A1', 'gamma3'),
             ([1, 0], 'B2', 'A1', 'gamma3'),
             ([1, 1], 'B2', 'A1', 'gamma3')
         )
 
-    if 4 in gammas:
+    if gamma4:
         lat.add_hoppings(
             ([0, 0], 'A2', 'A1', 'gamma4'),
             ([0, 1], 'A2', 'A1', 'gamma4'),

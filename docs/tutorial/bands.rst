@@ -116,6 +116,55 @@ The extra argument for :meth:`.Lattice.plot_brillouin_zone` turns off the recipr
 vectors and vertex coordinate labels (as seen in the previous section).
 
 
+Switching lattices
+------------------
+
+We can easily switch to a different material, just by passing a different lattice to the model.
+For this example, we'll use our pre-made :func:`graphene.bilayer() <.graphene.lattice.bilayer>`
+from the :doc:`/materials/index`. But you can create any lattice as describe in the previous
+section: :doc:`/tutorial/lattice`.
+
+.. plot::
+    :context: close-figs
+
+    model = pb.Model(graphene.bilayer())
+    model.system.plot()
+
+Without :func:`.translational_symmetry`, the model is just a single unit cell with 4 atoms. Our
+bilayer lattice uses AB-stacking where a pair of atoms are positioned one on top of the another.
+By default, the :meth:`.System.plot` method shows the xy-plane, so one of the bottom atoms isn't
+visible. We can pass an additional plot argument to see the yz-plane:
+
+.. plot::
+    :context: close-figs
+
+    model = pb.Model(graphene.bilayer())
+    model.system.plot(axes='yz')
+
+To compute the band structure, we'll need to include :func:`.translational_symmetry`.
+
+.. plot::
+    :context: close-figs
+
+    model = pb.Model(
+        graphene.bilayer(),
+        pb.translational_symmetry()
+    )
+    model.system.plot()
+
+As before, the red hoppings indicate periodic boundaries and the lighter colored circles represent
+the first of an infinite number of translation units. We'll compute the band structure for the same
+:math:`\Gamma`, :math:`K` and :math:`M` points as monolayer graphene:
+
+.. plot::
+    :context: close-figs
+
+    solver = pb.solver.lapack(model)
+    bands = solver.calc_bands(K1, Gamma, M, K2)
+    bands.plot(point_labels=['K', r'$\Gamma$', 'M', 'K'])
+
+
+
 Further reading
 ---------------
 

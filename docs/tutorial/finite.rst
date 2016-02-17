@@ -83,6 +83,19 @@ of the system by calling both plot methods one after another.
     model.system.plot()
     model.shape.plot()
 
+In general, a shape does not depend on a specific material, so it can be easily reused. Here, we
+shall switch to a :func:`graphene.bilayer() <.graphene.lattice.bilayer>` lattice, but we'll keep
+the same `trapezoid` shape as defined earlier:
+
+.. plot::
+    :context: close-figs
+
+    model = pb.Model(
+        graphene.bilayer(),
+        trapezoid(a=3.2, b=1.4, h=1.5)
+    )
+    model.system.plot()
+
 
 Freeform shape
 **************
