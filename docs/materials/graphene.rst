@@ -1,6 +1,11 @@
 Graphene
 ========
 
+.. meta::
+   :description: Collection of graphene lattices, constants and fields for Pybinding
+   :keywords: tight-binding code, python, graphene, next-nearest neighbor, third-nearest neighbor,
+              bilayer graphene, magnetic field, strain
+
 .. automodule:: pybinding.repository.graphene
     :members:
 
@@ -21,6 +26,7 @@ Lattices
         .. plot::
             :context: close-figs
             :include-source: False
+            :alt: Graphene, nearest neighbor
 
             monolayer(nearest_neighbors=1).plot()
             plt.title('monolayer(nearest_neighbors=1)')
@@ -28,6 +34,7 @@ Lattices
         .. plot::
             :context: close-figs
             :include-source: False
+            :alt: Graphene, second-nearest neighbor (i.e. next-nearest)
 
             monolayer(nearest_neighbors=2).plot()
             plt.title('monolayer(nearest_neighbors=2)')
@@ -35,6 +42,7 @@ Lattices
         .. plot::
             :context: close-figs
             :include-source: False
+            :alt: Graphene, third-nearest neighbor (i.e. next-next-nearest)
 
             plt.figure(figsize=(5, 5.5))
             monolayer(nearest_neighbors=3).plot()
@@ -45,6 +53,7 @@ Lattices
         .. plot::
             :context: close-figs
             :include-source: False
+            :alt: Graphene, 4-atom unit cell
 
             plt.figure(figsize=(5, 5))
             monolayer_4atom().plot()
@@ -56,6 +65,7 @@ Lattices
         .. plot::
             :context: close-figs
             :include-source: False
+            :alt: Bilayer graphene unit cell
 
             plt.figure(figsize=(3.8, 3.8))
             bilayer().plot()

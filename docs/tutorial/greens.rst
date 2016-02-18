@@ -1,6 +1,11 @@
 Green's function
 ================
 
+.. meta::
+   :description: Computing Green's function of a tight-binding Hamiltonian matrix
+   :keywords: tight-binding code, Green's function, local density of states, LDOS,
+              kernel polynomial method, KPM, Chebyshev polynomials, graphene
+
 Green's function methods were used briefly in the :doc:`fields` and :doc:`strain` sections. As with
 the eigensolvers, there is one common :class:`.Greens` interface while the underlying algorithm
 may be implemented in various ways. At this time, :func:`.kpm` is the only one that comes with
@@ -43,6 +48,7 @@ density of states (LDOS). In the next example we'll use a large square sheet of 
 
 .. plot::
     :context: close-figs
+    :alt: Graphene density of states
 
     from pybinding.repository import graphene
 
@@ -73,6 +79,7 @@ system. We can try that on a graphene system with a mass term:
 
 .. plot::
     :context: close-figs
+    :alt: Graphene density of states (with mass term induced by a substrate)
 
     model = pb.Model(
         graphene.monolayer(),

@@ -1,6 +1,10 @@
 Eigensolvers
 ============
 
+.. meta::
+   :description: Computing the eigenvalues and eigenvectors of a tight-binding Hamiltonian matrix
+   :keywords: tight-binding code, solver, eigenvalues, eigenvectors, energy states, wavefunctions
+
 Solvers were first introduced in the :doc:`bands` section and then used throughout the tutorial to
 present the results of the various models we constructed. This section will take a more detailed
 look at the concrete :func:`.lapack` and :func:`.arpack` eigenvalue solvers and their common
@@ -78,6 +82,7 @@ These objects have convenient functions built in and they know how to plot their
 
 .. plot::
     :context: close-figs
+    :alt: Energy states of a graphene quantum dot
 
     solver = pb.solver.arpack(model, k=20)  # for the 20 lowest energy eigenvalues
     eigenvalues = solver.calc_eigenvalues()
@@ -90,6 +95,7 @@ eigenstate and we can view the result using :meth:`.Eigenvalues.plot_heatmap`:
 
 .. plot::
     :context: close-figs
+    :alt: Energy states of a graphene quantum dot with probability heatmap
 
     eigenvalues = solver.calc_eigenvalues(map_probability_at=[0.1, 0.6])  # position in [nm]
     eigenvalues.plot_heatmap(show_indices=True)
@@ -104,6 +110,7 @@ numbers 9 and 10. We can take a look at the spatial map of state 9 using the
 
 .. plot::
     :context: close-figs
+    :alt: Spatial map of the probability density of a graphene quantum dot
 
     probability_map = solver.calc_probability(9)
     probability_map.plot_structure()
@@ -119,6 +126,7 @@ function with the specified broadening:
 
 .. plot::
     :context: close-figs
+    :alt: Spatial LDOS of a graphene quantum dot
 
     ldos_map = solver.calc_spatial_ldos(energy=0, broadening=0.05)  # [eV]
     ldos_map.plot_structure()
@@ -127,6 +135,7 @@ The total density of states can be calculated with :meth:`~.Solver.calc_dos`:
 
 .. plot::
     :context: close-figs
+    :alt: Total density of states (DOS) of a graphene quantum dot
 
     dos = solver.calc_dos(energies=np.linspace(-1, 1, 200), broadening=0.05)  # [eV]
     dos.plot()
@@ -139,6 +148,7 @@ This allows us to compute the eigenvalues at various points in k-space. For exam
 
 .. plot::
     :context: close-figs
+    :alt: Graphene band structure
 
     from math import pi
 

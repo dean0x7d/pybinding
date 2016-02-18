@@ -1,6 +1,10 @@
 Shape and symmetry
 ------------------
 
+.. meta::
+   :description: Constructing periodic tight-binding systems
+   :keywords: tight-binding, nanoribbons, band structure, graphene
+
 The last two sections showed how to model shape and symmetry individually, but we can be more
 creative and combine the two.
 
@@ -13,6 +17,7 @@ while the infinite length is achieved with translational symmetry.
 
 .. plot::
     :context: reset
+    :alt: Zigzag graphene nanoribbon
 
     from pybinding.repository import graphene
 
@@ -37,6 +42,7 @@ The band structure calculations work just as before.
 
 .. plot::
     :context: close-figs
+    :alt: Zigzag graphene nanoribbon band structure
 
     from math import pi, sqrt
 
@@ -52,6 +58,7 @@ change, but we will still have a zigzag nanoribbon.
 
 .. plot::
     :context: close-figs
+    :alt: Zigzag graphene nanoribbon along different lattice vector direction
 
     model = pb.Model(
         graphene.monolayer(),
@@ -67,6 +74,7 @@ atoms.
 
 .. plot::
     :context: close-figs
+    :alt: Graphene lattice with 4-atom unit cell
 
     model = pb.Model(graphene.monolayer_4atom())
     model.system.plot()
@@ -78,6 +86,7 @@ but the new geometry helps create armchair edges.
 
 .. plot::
     :context: close-figs
+    :alt: Armchair graphene nanoribbon
 
     model = pb.Model(
         graphene.monolayer_4atom(),
@@ -94,6 +103,7 @@ lattice vector :math:`a_2`, the points in k-space are given as `[0, pi/d]` inste
 
 .. plot::
     :context: close-figs
+    :alt: Armchair graphene nanoribbon band structure
 
     solver = pb.solver.lapack(model)
     d = 3 * graphene.a_cc  # ribbon unit cell length
@@ -110,6 +120,7 @@ period length.
 
 .. plot::
     :context: close-figs
+    :alt: Zigzag graphene nanoribbon supercell
 
     model = pb.Model(
         graphene.monolayer_4atom(),
@@ -143,6 +154,7 @@ structure.
 
 .. plot::
     :context: close-figs
+    :alt: Graphene nanoribbon made up of rings
 
     def ring(inner_radius, outer_radius):
         def contains(x, y, z):
@@ -167,6 +179,7 @@ that the inner ring shape is preserved and the periodic boundaries are placed on
 
 .. plot::
     :context: close-figs
+    :alt: Graphene ring nanoribbon band structure
 
     solver = pb.solver.arpack(model, k=10) # for the 10 lowest energy eigenvalues
     a = 3.8  # [nm] unit cell length

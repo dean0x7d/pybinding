@@ -1,6 +1,11 @@
 About
 =====
 
+.. meta::
+   :description: Pybinding is a Python package for numerical tight-binding calculations.
+                 It features easy model construction, fast compute and result visualization tools.
+   :keywords: tight-binding code, python, condensed matter theory, solid state physics
+
 Pybinding is a Python package for numerical tight-binding calculations in solid state physics.
 The main features include:
 

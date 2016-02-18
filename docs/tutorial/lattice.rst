@@ -1,6 +1,10 @@
 Lattice
 -------
 
+.. meta::
+   :description: Crystal lattice definition in Pybinding
+   :keywords: tight-binding lattice, primitive vector, sublattice, hopping energy, Brillouin zone
+
 A :class:`.Lattice` object describes the unit cell of a crystal lattice. This includes the
 primitive vectors, positions of sublattice sites and hopping parameters which connect those sites.
 All of this structural information is used to build-up a larger system by translation.
@@ -39,6 +43,7 @@ have a convenient :meth:`.Lattice.plot()` method to easily visualize the constru
 
 .. plot::
     :context:
+    :alt: Unit cell of a simple square crystal lattice
 
     lattice.plot()  # plot the lattice that was just constructed
     plt.show()      # standard matplotlib show() function
@@ -71,6 +76,7 @@ are function arguments, which makes the lattice easily configurable.
 
 .. plot::
     :context: close-figs
+    :alt: Unit cell of a simple square crystal lattice
 
     def square_lattice(d, t):
         lat = pb.Lattice(a1=[d, 0], a2=[0, d])
@@ -94,6 +100,7 @@ The next example shows a slightly more complicate two-atom lattice of graphene.
 
 .. plot::
     :context: close-figs
+    :alt: Unit cell of graphene's crystal lattice
 
     from math import sqrt
 
@@ -152,6 +159,7 @@ name implies.
 
 .. plot::
     :context: close-figs
+    :alt: Brillouin zone of graphene
 
     lattice = monolayer_graphene()
     lattice.plot_brillouin_zone()
@@ -169,6 +177,7 @@ A few common lattices are included in pybinding's :doc:`/materials/index`. You c
 quickly by importing one of them. For example:
 
 .. plot::
+    :alt: Unit cell of bilayer graphene
 
     from pybinding.repository import graphene
     lattice = graphene.bilayer()

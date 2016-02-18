@@ -1,6 +1,10 @@
 Band structure
 ==============
 
+.. meta::
+   :description: Band structure calculations using the tight-binding model
+   :keywords: tight-binding, band structure, graphene, bilayer graphene, periodic structure
+
 In order to calculate the band structure of a crystal lattice, this section is going to introduce
 the concepts of a :class:`.Model` and a :class:`.Solver`.
 
@@ -79,6 +83,7 @@ calculate the band structure of our model.
 
 .. plot::
     :context: close-figs
+    :alt: Graphene band structure
 
     from math import sqrt, pi
 
@@ -108,6 +113,7 @@ can simply plot both:
 
 .. plot::
     :context: close-figs
+    :alt: Path in graphene's Brillouin zone
 
     model.lattice.plot_brillouin_zone(decorate=False)
     bands.plot_kpath(point_labels=['K', r'$\Gamma$', 'M', 'K'])
@@ -158,6 +164,7 @@ the first of an infinite number of translation units. We'll compute the band str
 
 .. plot::
     :context: close-figs
+    :alt: Bilayer graphene band structure
 
     solver = pb.solver.lapack(model)
     bands = solver.calc_bands(K1, Gamma, M, K2)

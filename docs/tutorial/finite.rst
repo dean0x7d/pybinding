@@ -1,6 +1,10 @@
 Finite size
 -----------
 
+.. meta::
+   :description: Constructing tight-binding systems of arbitrary shape
+   :keywords: tight-binding, quantum dots, arbitrary shape, graphene, local density of states
+
 This section introduces the concept of shapes with classes :class:`.Polygon` and
 :class:`.FreeformShape` which are used to model systems of finite size. The sparse
 eigensolver :func:`.arpack` is also introduced as a good tool for exactly solving
@@ -60,6 +64,7 @@ counterclockwise order. When added to a :class:`.Model` the lattice will expand 
 
 .. plot::
     :context: close-figs
+    :alt: Rectangular graphene quantum dot
 
     model = pb.Model(
         graphene.monolayer(),
@@ -72,6 +77,7 @@ of the system by calling both plot methods one after another.
 
 .. plot::
     :context: close-figs
+    :alt: Graphene quantum dot
 
     def trapezoid(a, b, h):
         return pb.Polygon([[-a/2, 0], [-b/2, h], [b/2, h], [a/2, 0]])
@@ -89,6 +95,7 @@ the same `trapezoid` shape as defined earlier:
 
 .. plot::
     :context: close-figs
+    :alt: Bilayer graphene quantum dot
 
     model = pb.Model(
         graphene.bilayer(),
@@ -105,6 +112,7 @@ defined by a `contains` function which determines if a lattice site is inside th
 
 .. plot::
     :context: close-figs
+    :alt: Circular graphene quantum dot
 
     def circle(radius):
         def contains(x, y, z):
@@ -143,6 +151,7 @@ will cause the lattice to fill in the shape.
 
 .. plot::
     :context: close-figs
+    :alt: Graphene ring
 
     model = pb.Model(
         graphene.monolayer(),
@@ -177,6 +186,7 @@ case, we are interested only in the 20 lowest energy states.
 
 .. plot::
     :context: close-figs
+    :alt: Spatial local density of states (LDOS) for a graphene ring
 
     model = pb.Model(
         graphene.monolayer(),

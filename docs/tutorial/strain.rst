@@ -1,6 +1,11 @@
 Defects and strain
 ==================
 
+.. meta::
+   :description: Adding defects and strain to a tight-binding model
+   :keywords: tight-binding code, defects, vacancies, strain, graphene, pseudo-Landau levels,
+              local density of states, LDOS
+
 This section will introduce :func:`@site_state_modifier <.site_state_modifier>` and
 :func:`@site_position_modifier <.site_position_modifier>` which can be used to add defects and
 strain to the model. These modifiers are applied to the structure of the system before the
@@ -42,6 +47,7 @@ it with any existing shapes:
 
 .. plot::
     :context: close-figs
+    :alt: Divacancy in graphene
 
     from pybinding.repository import graphene
 
@@ -62,6 +68,7 @@ take advantage of this and create four different vacancies, with 1 to 4 missing 
 
 .. plot::
     :context: close-figs
+    :alt: Graphene vacancies with 1 to 4 missing atoms
 
     model = pb.Model(
         graphene.monolayer(),
@@ -85,6 +92,7 @@ the bottom.
 
 .. plot::
     :context: close-figs
+    :alt: Local layer defect in bilayer graphene
 
     def scrape_top_layer(position, radius):
         """Remove the top layer of graphene in the area specified by position and radius"""
@@ -146,6 +154,7 @@ displacement caused by strain. Let's start with a simple triangular system:
 
 .. plot::
     :context: close-figs
+    :alt: Triangular graphene quantum dot
 
     from math import pi
 
@@ -178,6 +187,7 @@ we still need it here because the modifier is expected to always return all thre
 
 .. plot::
     :context: close-figs
+    :alt: Triaxialy strained graphene
 
     model = pb.Model(
         graphene.monolayer(),
@@ -260,6 +270,7 @@ A and B.
 
 .. plot::
     :context: close-figs
+    :alt: Pseudo-Landau levels in strained graphene
 
     model = pb.Model(
         graphene.monolayer(),

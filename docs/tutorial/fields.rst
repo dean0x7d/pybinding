@@ -1,6 +1,11 @@
 Fields and effects
 ==================
 
+.. meta::
+   :description: Adding electric and magnetic fields to a tight-binding model
+   :keywords: tight-binding code, electric field, pn-junction, magnetic field, graphene mass term,
+              Landau levels, local density of states, LDOS
+
 This section will introduce :func:`@onsite_energy_modifier <.onsite_energy_modifier>` and
 :func:`@hopping_energy_modifier <.hopping_energy_modifier>` which can be used to add various
 fields to the model. These functions can apply user-defined modifications to the Hamiltonian
@@ -191,6 +196,7 @@ just remind ourselves what a pristine zigzag nanoribbon looks like:
 
 .. plot::
     :context: close-figs
+    :alt: Graphene zigzag nanoribbon
 
     model = pb.Model(
         graphene.monolayer(),
@@ -203,6 +209,7 @@ And let's see its band structure:
 
 .. plot::
     :context: close-figs
+    :alt: Graphene zigzag nanoribbon band structure
 
     from math import pi, sqrt
 
@@ -216,6 +223,7 @@ Now, let's include the mass term and compute the band structure again.
 
 .. plot::
     :context: close-figs
+    :alt: Graphene zigzag nanoribbon band structure with band gap
 
     model = pb.Model(
         graphene.monolayer(),
@@ -254,6 +262,7 @@ potential (in eV) before and after the junction. Let's add it to the nanoribbon:
 
 .. plot::
     :context: close-figs
+    :alt: Graphene zigzag nanoribbon with pn-junction
 
     model = pb.Model(
         graphene.monolayer(),
@@ -273,6 +282,7 @@ We can compute and plot the band structure:
 
 .. plot::
     :context: close-figs
+    :alt: Band structure of a graphene zigzag nanoribbon with a pn-junction
 
     solver = pb.solver.lapack(model)
     bands = solver.calc_bands(-pi/a, pi/a)
@@ -283,6 +293,7 @@ But lets take a different approach and create the well by composing two PN junct
 
 .. plot::
     :context: close-figs
+    :alt: Graphene zigzag nanoribbon with a potential well
 
     model = pb.Model(
         graphene.monolayer(),
@@ -298,6 +309,7 @@ The square well affects the band structure by breaking electron-hole symmetry:
 
 .. plot::
     :context: close-figs
+    :alt: Band structure of a graphene zigzag nanoribbon with a potential well
 
     solver = pb.solver.lapack(model)
     bands = solver.calc_bands(-pi/a, pi/a)
@@ -369,6 +381,7 @@ is explained in detail in the :doc:`greens` section of the tutorial.
 
 .. plot::
     :context: close-figs
+    :alt: Landau level peaks in the local density of states (LDOS) of graphene
 
     model = pb.Model(
         graphene.monolayer(),

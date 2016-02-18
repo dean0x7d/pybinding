@@ -1,6 +1,10 @@
 Phosphorene
 ===========
 
+.. meta::
+   :description: Collection of phosphorene lattices, constants and fields for Pybinding
+   :keywords: tight-binding, python, phosphorene
+
 .. plot::
     :context: reset
     :nofigs:
@@ -17,6 +21,7 @@ Phosphorene
         .. plot::
             :context: close-figs
             :include-source: False
+            :alt: Phosphorene unit cell
 
             plt.figure(figsize=(8, 4))
             monolayer_4band().plot()
