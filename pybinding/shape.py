@@ -131,7 +131,7 @@ def rectangle(x, y=None):
 
 
 def regular_polygon(num_sides, radius, angle=0):
-    """Regular polygon
+    """A polygon shape where all sides have equal length
 
     Parameters
     ----------
