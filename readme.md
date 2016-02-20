@@ -1,6 +1,6 @@
 # pybinding
 
-[![Documentation Status](https://readthedocs.org/projects/pybinding/badge/?version=latest)](http://pybinding.readthedocs.org/en/latest/?badge=latest)
+[![Documentation Status](https://readthedocs.org/projects/pybinding/badge/?version=latest)](http://docs.pybinding.site/)
 [![Build Status](https://travis-ci.org/dean0x7d/pybinding.svg?branch=master)](https://travis-ci.org/dean0x7d/pybinding)
 [![Build status](https://ci.appveyor.com/api/projects/status/vd84e6gxixsu9l81?svg=true)](https://ci.appveyor.com/project/dean0x7d/pybinding)
 
@@ -20,10 +20,11 @@ of user-defined computation routines.
 the raw result data. The included plotting functions are tailored for tight-binding problems to
 help visualize the model structure and make sense of the results.
 
-The main interface is written in Python with the aim to be as user-friendly and flexible as
+The code interface is written in Python with the aim to be as user-friendly and flexible as
 possible. Under the hood, C++11 is used to accelerate demanding tasks to deliver high performance
 with low memory usage.
 
+See the [documentation] for more details.
 
 ## Install
 
@@ -44,7 +45,9 @@ prerequisites, it's just a simple case of using `pip`, Python's usual package ma
 
 ## Current status
 
-Work in progress. See the [documentation] for more details and a guide to get started.
+Work in progress. The goal of the project is to develop a tight-binding code framework which is 
+fast, flexible and easy to use.
+See the [documentation] for more details and a guide to get started.
 
 #### Implemented features
 
@@ -54,7 +57,8 @@ Work in progress. See the [documentation] for more details and a guide to get st
 * Geometric deformations and defects: defined via displacement and state functions
 * Fields and arbitrary effects: defined via hopping and onsite energy functions
 * Green's function: fast kernel polynomial method implementation
-* Eigensolvers: standard dense and sparse solvers (always available) and the [FEAST] solver (only available when compiled with MKL)
+* Eigensolvers: standard dense and sparse solvers (always available)
+  and the [FEAST] solver (only available when compiled with Intel's MKL)
 * Model and result objects have builtin plotting functions for easy visualization
 
 #### Planned work
@@ -64,8 +68,8 @@ Work in progress. See the [documentation] for more details and a guide to get st
 * Multiple orbitals and spins are already supported, but could use a nicer interface
 
 
+[documentation]: http://docs.pybinding.site/
+[install instructions]: http://docs.pybinding.site/en/latest/install/index.html
 [Python]: https://www.python.org/
 [SciPy]: http://www.scipy.org/>
-[install instructions]: http://pybinding.rtfd.org/en/latest/install/index.html
-[documentation]: http://pybinding.readthedocs.org/
 [FEAST]: http://www.ecs.umass.edu/~polizzi/feast/index.htm
