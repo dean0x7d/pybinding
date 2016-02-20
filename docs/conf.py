@@ -156,9 +156,7 @@ html_title = project
 # relative to this directory. They are copied after the builtin static files,
 # so a file named "default.css" will overwrite the builtin "default.css".
 html_static_path = ['_static']
-html_style = 'css/custom.css'
-if 'READTHEDOCS' in os.environ:
-    html_context = {'extra_css_files': ['_static/css/custom.css']}
+html_context = {'extra_css_files': ['_static/extra.css']}
 
 # Add any extra paths that contain custom files (such as robots.txt or
 # .htaccess) here, relative to this directory. These files are copied
