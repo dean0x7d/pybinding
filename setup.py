@@ -63,7 +63,7 @@ setup(
     name=info['__title__'],
     version=info['__version__'],
     description=info['__summary__'],
-    long_description="Documentation: http://pybinding.readthedocs.org/",
+    long_description="Documentation: http://pybinding.site/",
     url=info['__url__'],
     license=info['__license__'],
     keywords="pybinding tight-binding solid-state physics cmt",

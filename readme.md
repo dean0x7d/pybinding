@@ -1,8 +1,9 @@
 # pybinding
 
-[![Documentation Status](https://readthedocs.org/projects/pybinding/badge/?version=latest)](http://docs.pybinding.site/)
 [![Build Status](https://travis-ci.org/dean0x7d/pybinding.svg?branch=master)](https://travis-ci.org/dean0x7d/pybinding)
 [![Build status](https://ci.appveyor.com/api/projects/status/vd84e6gxixsu9l81?svg=true)](https://ci.appveyor.com/project/dean0x7d/pybinding)
+[![Documentation Status](https://readthedocs.org/projects/pybinding/badge/?version=latest)](http://docs.pybinding.site/)
+[![Gitter](https://img.shields.io/gitter/room/nwjs/nw.js.svg)](https://gitter.im/dean0x7d/pybinding?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge)
 
 Pybinding is a Python package for numerical tight-binding calculations in solid state physics.
 The main features include:
@@ -68,8 +69,16 @@ See the [documentation] for more details and a guide to get started.
 * Multiple orbitals and spins are already supported, but could use a nicer interface
 
 
+## Questions?
+
+If you have any questions, feel free to join the [chat room on Gitter].
+You can also open an issue at the [tracker].
+
+
 [documentation]: http://docs.pybinding.site/
 [install instructions]: http://docs.pybinding.site/en/latest/install/index.html
 [Python]: https://www.python.org/
 [SciPy]: http://www.scipy.org/>
 [FEAST]: http://www.ecs.umass.edu/~polizzi/feast/index.htm
+[chat room on Gitter]: https://gitter.im/dean0x7d/pybinding
+[tracker]: https://github.com/dean0x7d/pybinding/issues

@@ -46,6 +46,9 @@ This modular approach enables the construction of arbitrary tight-binding models
 easy-to-use code. Various solvers, computation routines and visualization tools are also part
 of the package. See the :doc:`tutorial/index` for a walkthrough of the features.
 
+The source code repository is `located on Github <https://github.com/dean0x7d/pybinding>`_
+where you can also post any questions, comments or issues that you might have.
+
 
 .. toctree::
     :maxdepth: 2
