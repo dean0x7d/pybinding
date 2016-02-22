@@ -9,6 +9,7 @@ import functools
 import numpy as np
 
 from . import _cpp
+from .system import Sites
 from .support.inspect import get_call_signature
 from .utils.misc import decorator_decorator
 
@@ -16,7 +17,7 @@ __all__ = ['site_state_modifier', 'site_position_modifier', 'onsite_energy_modif
            'hopping_energy_modifier', 'constant_potential', 'force_double_precision']
 
 
-def _check_modifier_spec(func, keywords):
+def _check_modifier_spec(func, keywords, has_sites):
     """Make sure the arguments are specified correctly
 
     Parameters
@@ -25,8 +26,12 @@ def _check_modifier_spec(func, keywords):
         The function which is to become a modifier.
     keywords : list
         Used to check that `func` arguments are correct.
+    has_sites : bool
+        Check for 'site' argument.
     """
     argnames = inspect.signature(func).parameters.keys()
+    if has_sites:
+        keywords += ["sites"]
     unexpected = ", ".join([name for name in argnames if name not in keywords])
     if unexpected:
         expected = ", ".join(keywords)
@@ -70,7 +75,8 @@ def _check_modifier_return(modifier, num_arguments, num_return, maybe_complex):
         raise RuntimeError("This modifier must not return complex values")
 
 
-def _make_modifier(func, kind, keywords, num_return=1, maybe_complex=False, double=False):
+def _make_modifier(func, kind, keywords, has_sites=True, num_return=1,
+                   maybe_complex=False, double=False):
     """Turn a regular function into a modifier of the desired kind
 
     Parameters
@@ -81,6 +87,8 @@ def _make_modifier(func, kind, keywords, num_return=1, maybe_complex=False, doub
         Modifier base class.
     keywords : str
         String of comma separated names: the expected arguments of a modifier function.
+    has_sites : bool
+        Arguments may include the :class:`Sites` helper.
     num_return : int
         Expected number of return values.
     maybe_complex : bool
@@ -93,10 +101,10 @@ def _make_modifier(func, kind, keywords, num_return=1, maybe_complex=False, doub
     Modifier
     """
     keywords = [word.strip() for word in keywords.split(",")]
-    _check_modifier_spec(func, keywords)
+    _check_modifier_spec(func, keywords, has_sites)
 
     class Modifier(kind):
-        argnames = tuple(inspect.signature(func).parameters.keys())
+        requested_argnames = tuple(inspect.signature(func).parameters.keys())
         callsig = getattr(func, 'callsig', None)
         if not callsig:
             callsig = get_call_signature()
@@ -116,10 +124,15 @@ def _make_modifier(func, kind, keywords, num_return=1, maybe_complex=False, doub
             return func(*args, **kwargs)
 
         def apply(self, *args):
-            # only pass the requested arguments to func
-            named_args = {name: value for name, value in zip(keywords, args)
-                          if name in self.argnames}
-            ret = func(**named_args)
+            kwargs = dict(zip(keywords, args))
+            requested_kwargs = {name: value for name, value in kwargs.items()
+                                if name in self.requested_argnames}
+
+            if 'sites' in self.requested_argnames:
+                positions = (kwargs[k] for k in ('x', 'y', 'z'))
+                requested_kwargs['sites'] = Sites(positions, kwargs['sub_id'])
+
+            ret = func(**requested_kwargs)
 
             def cast_dtype(v):
                 return v.astype(args[0].dtype, casting='same_kind', copy=False)
@@ -156,6 +169,8 @@ def site_state_modifier():
         Lattice site position.
     sub_id : ndarray of int
         Sublattice ID. Can be checked for equality with `lattice[sublattice_name]`.
+    sites : :class:`.Sites`
+        Helper object. Can be used instead of `x, y, z, sub_id`. See :class:`.Sites`.
 
     The function must return:
 
@@ -178,6 +193,8 @@ def site_position_modifier():
         Lattice site position.
     sub_id : ndarray of int
         Sublattice ID. Can be checked for equality with `lattice[sublattice_name]`.
+    sites : :class:`.Sites`
+        Helper object. Can be used instead of `x, y, z, sub_id`. See :class:`.Sites`.
 
     The function must return:
 
@@ -208,6 +225,8 @@ def onsite_energy_modifier(double=False):
         Lattice site position.
     sub_id : ndarray of int
         Sublattice ID. Can be checked for equality with `lattice[sublattice_name]`.
+    sites : :class:`.Sites`
+        Helper object. Can be used instead of `x, y, z, sub_id`. See :class:`.Sites`.
 
     The function must return:
 
@@ -244,8 +263,9 @@ def hopping_energy_modifier(double=False):
     ndarray
         A modified `hopping` argument or an `ndarray` of the same dtype and shape.
     """
-    return functools.partial(_make_modifier, kind=_cpp.HoppingModifier, maybe_complex=True,
-                             double=double, keywords="energy, x1, y1, z1, x2, y2, z2, hop_id")
+    return functools.partial(_make_modifier, kind=_cpp.HoppingModifier,
+                             maybe_complex=True, double=double, has_sites=False,
+                             keywords="energy, x1, y1, z1, x2, y2, z2, hop_id")
 
 
 def constant_potential(magnitude):

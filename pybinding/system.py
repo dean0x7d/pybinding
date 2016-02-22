@@ -4,6 +4,7 @@ from collections import namedtuple
 
 import numpy as np
 import matplotlib.pyplot as plt
+from numpy import ma
 
 from . import _cpp
 from . import pltutils
@@ -12,7 +13,7 @@ from .support.sparse import SparseMatrix
 from .support.pickle import pickleable
 from .support.fuzzy_set import FuzzySet
 
-__all__ = ['Positions', 'Boundary', 'System', 'plot_hoppings', 'plot_sites']
+__all__ = ['Positions', 'Boundary', 'System', 'Sites', 'plot_hoppings', 'plot_sites']
 
 
 Positions = namedtuple('Positions', 'x y z')
@@ -25,6 +26,101 @@ Attributes
 x, y, z : array_like
     1D arrays of Cartesian coordinates
 """
+
+
+class Sites:
+    """Utility class which stores site positions and sublattice IDs
+
+    Attributes
+    ----------
+    x, y, z : np.ndarray
+    sublattices : np.ndarray
+    """
+    def __init__(self, positions, sublattices):
+        self.x, self.y, self.z = map(np.atleast_1d, positions)
+        self.sublattices = np.atleast_1d(sublattices)
+
+    @property
+    def positions(self):
+        """Named tuple of x, y, z positions"""
+        return Positions(self.x, self.y, self.z)
+
+    @property
+    def sub_id(self) -> np.ndarray:
+        """Alias for :attr:`sublattices`"""
+        return self.sublattices
+
+    def distances(self, target_position):
+        """Return the distances of all sites from the target position
+
+        Parameters
+        ----------
+        target_position : array_like
+
+        Examples
+        --------
+        >>> sites = Sites(([0, 1, 1.1], [0, 0, 0], [0, 0, 0]), [0, 1, 0])
+        >>> np.allclose(sites.distances([1, 0, 0]), [1, 0, 0.1])
+        True
+        """
+        target_position = np.atleast_1d(target_position)
+        ndim = len(target_position)
+        positions = np.stack(self.positions[:ndim], axis=1)
+        return np.linalg.norm(positions - target_position, axis=1)
+
+    def find_nearest(self, target_position, target_sublattice=-1):
+        """Return the index of the position nearest the target
+
+        Parameters
+        ----------
+        target_position : array_like
+        target_sublattice : int
+            Look for a specific sublattice site, or -1 if any will do (default).
+
+        Returns
+        -------
+        int
+
+        Examples
+        --------
+        >>> sites = Sites(([0, 1, 1.1], [0, 0, 0], [0, 0, 0]), [0, 1, 0])
+        >>> sites.find_nearest([1, 0, 0])
+        1
+        >>> sites.find_nearest([1, 0, 0], target_sublattice=0)
+        2
+        """
+        distances = self.distances(target_position)
+        if target_sublattice < 0:
+            return np.argmin(distances)
+        else:
+            return ma.argmin(ma.array(distances, mask=(self.sublattices != target_sublattice)))
+
+    def argsort_nearest(self, target_position, target_sublattice=-1):
+        """Return an ndarray of site indices, sorted by distance from the target
+
+        Parameters
+        ----------
+        target_position : array_like
+        target_sublattice : int
+            Look for a specific sublattice site, or -1 if any will do (default).
+
+        Returns
+        -------
+        np.ndarray
+
+        Examples
+        --------
+        >>> sites = Sites(([0, 1, 1.1], [0, 0, 0], [0, 0, 0]), [0, 1, 0])
+        >>> sites.argsort_nearest([1, 0, 0])
+        array([1, 2, 0])
+        >>> sites.argsort_nearest([1, 0, 0], target_sublattice=0)
+        array([2, 0, 1])
+        """
+        distances = self.distances(target_position)
+        if target_sublattice < 0:
+            return np.argsort(distances)
+        else:
+            return ma.argsort(ma.array(distances, mask=(self.sublattices != target_sublattice)))
 
 
 @pickleable(impl='shift hoppings.')
@@ -153,14 +249,8 @@ class System:
             return self.impl.find_nearest(position, int(at_sublattice))
         else:
             # fallback numpy implementation
-            r = np.array(position)
-            distance = np.linalg.norm(self.xyz[:, :len(r)] - r, axis=1)
-            if at_sublattice < 0:
-                return np.argmin(distance)
-            else:
-                from numpy import ma
-                masked_distance = ma.array(distance, mask=self.sublattices != at_sublattice)
-                return ma.argmin(masked_distance)
+            sites = Sites(self.positions, self.sublattices)
+            return sites.find_nearest(position, at_sublattice)
 
     def plot(self, site_radius=0.025, hopping_width=1.0, num_periods=1, lead_length=6, axes='xy',
              site_props=None, hopping_props=None, boundary_props=None):

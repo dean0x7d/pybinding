@@ -101,19 +101,21 @@ def test_site_state():
     capture = []
 
     @pb.site_state_modifier
-    def check_args(state, x, y, z, sub_id):
+    def check_args(state, x, y, z, sub_id, sites):
         capture[:] = (v.copy() for v in (state, x, y, z, sub_id))
+        capture.append(sites.argsort_nearest([0, graphene.a_cc / 2]))
         return state
 
     model = build_model(check_args)
     assert model.hamiltonian.dtype == np.float32
 
-    state, x, y, z, sub_id = capture
+    state, x, y, z, sub_id, nearest = capture
     assert np.all(state == [True, True])
     assert np.allclose(x, [0, 0])
     assert np.allclose(y, [-graphene.a_cc / 2, graphene.a_cc / 2])
     assert np.allclose(z, [0, 0])
     assert np.allclose(sub_id, [0, 1])
+    assert np.all(nearest == [1, 0])
 
 
 def test_site_position():
@@ -126,18 +128,20 @@ def test_site_position():
     capture = []
 
     @pb.site_position_modifier
-    def check_args(x, y, z, sub_id):
+    def check_args(x, y, z, sub_id, sites):
         capture[:] = (v.copy() for v in (x, y, z, sub_id))
+        capture.append(sites.argsort_nearest([0, graphene.a_cc / 2]))
         return x, y, z
 
     model = build_model(check_args)
     assert model.hamiltonian.dtype == np.float32
 
-    x, y, z, sub_id = capture
+    x, y, z, sub_id, nearest = capture
     assert np.allclose(x, [0, 0])
     assert np.allclose(y, [-graphene.a_cc / 2, graphene.a_cc / 2])
     assert np.allclose(z, [0, 0])
     assert np.allclose(sub_id, [0, 1])
+    assert np.all(nearest == [1, 0])
 
 
 def test_onsite():
@@ -150,19 +154,21 @@ def test_onsite():
     capture = []
 
     @pb.onsite_energy_modifier
-    def check_args(energy, x, y, z, sub_id):
+    def check_args(energy, x, y, z, sub_id, sites):
         capture[:] = (v.copy() for v in (energy, x, y, z, sub_id))
+        capture.append(sites.argsort_nearest([0, graphene.a_cc / 2]))
         return energy
 
     model = build_model(check_args)
     assert model.hamiltonian.dtype == np.float32
 
-    energy, x, y, z, sub_id = capture
+    energy, x, y, z, sub_id, nearest = capture
     assert np.allclose(energy, [0, 0])
     assert np.allclose(x, [0, 0])
     assert np.allclose(y, [-graphene.a_cc / 2, graphene.a_cc / 2])
     assert np.allclose(z, [0, 0])
     assert np.allclose(sub_id, [0, 1])
+    assert np.all(nearest == [1, 0])
 
     @pb.onsite_energy_modifier(double=True)
     def make_double(energy):

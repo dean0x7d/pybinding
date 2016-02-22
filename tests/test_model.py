@@ -47,6 +47,10 @@ def test_system(model, baseline, plot_if_fails):
     assert idx == expected.find_nearest(expected.xyz[idx])
     assert idx == expected.find_nearest(expected.xyz[idx], expected.sublattices[idx])
 
+    invalid_sublattice = 99
+    assert 0 == system.find_nearest([0, 0], invalid_sublattice)
+    assert 0 == expected.find_nearest([0, 0], invalid_sublattice)
+
 
 def test_system_plot(compare_figure):
     model = pb.Model(graphene.bilayer(), graphene.hexagon_ac(0.1))

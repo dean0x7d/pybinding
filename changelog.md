@@ -1,6 +1,10 @@
 # Changelog
 
-### v0.7.2 | TBD
+### v0.7.2 | in development
+
+* Added optional `sites` argument for state, position, and onsite energy modifiers.
+  It can be used instead of the `x, y, z, sub_id` arguments and contains a few helper methods.
+  See the modifier API reference for more information.
 
 * Fixed a bug where using a single KPM object for multiple calculations could return wrong results
 
