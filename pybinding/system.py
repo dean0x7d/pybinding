@@ -111,10 +111,10 @@ class Sites:
         Examples
         --------
         >>> sites = Sites(([0, 1, 1.1], [0, 0, 0], [0, 0, 0]), [0, 1, 0])
-        >>> sites.argsort_nearest([1, 0, 0])
-        array([1, 2, 0])
-        >>> sites.argsort_nearest([1, 0, 0], target_sublattice=0)
-        array([2, 0, 1])
+        >>> np.all(sites.argsort_nearest([1, 0, 0]) == [1, 2, 0])
+        True
+        >>> np.all(sites.argsort_nearest([1, 0, 0], target_sublattice=0) == [2, 0, 1])
+        True
         """
         distances = self.distances(target_position)
         if target_sublattice < 0:
