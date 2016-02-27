@@ -53,7 +53,7 @@ class _AliasArray(np.ndarray):
 
 
 def _make_alias_array(obj):
-    if isinstance(obj, _cpp.SubIdRef):
+    if isinstance(obj, (_cpp.SubIdRef, _cpp.HopIdRef)):
         return _AliasArray(obj.ids, obj.name_map)
     else:
         return obj
@@ -67,6 +67,8 @@ def _process_modifier_args(args, keywords, requested_argnames):
     kwargs = dict(zip(keywords, args))
     if 'sub_id' in requested_argnames or 'sites' in requested_argnames:
         kwargs['sub_id'] = _make_alias_array(kwargs['sub_id'])
+    if 'hop_id' in requested_argnames:
+        kwargs['hop_id'] = _make_alias_array(kwargs['hop_id'])
 
     requested_kwargs = {name: value for name, value in kwargs.items()
                         if name in requested_argnames}

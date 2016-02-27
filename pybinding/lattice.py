@@ -72,7 +72,7 @@ class Lattice(_cpp.Lattice):
         for name, energy in sorted(mapping.items(), key=lambda item: item[0]):
             if name in self.hopping_ids:
                 raise KeyError("Hopping '{}' already exists".format(name))
-            self.hopping_ids[name] = super()._register_hopping_energy(energy)
+            self.hopping_ids[name] = super()._register_hopping_energy(name, energy)
 
     def add_one_sublattice(self, name, offset, onsite_energy=0.0, alias=None):
         """Add a new sublattice

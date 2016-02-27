@@ -33,6 +33,18 @@ def assert_sublattice(sub_id, model):
         assert sub_id == 'invalid_sublattice_name'
 
 
+def assert_hoppings(hop_id, model):
+    assert np.all(hop_id == 0)
+
+    assert np.all(hop_id == model.lattice('t'))
+    assert not np.any(hop_id != model.lattice('t'))
+    assert np.all(hop_id == 't')
+    assert not np.any(hop_id != 't')
+
+    with pytest.raises(KeyError):
+        assert hop_id == 'invalid_hopping_name'
+
+
 def test_decorator():
     pb.onsite_energy_modifier(lambda energy: energy)
     with pytest.raises(RuntimeError) as excinfo:
@@ -209,7 +221,7 @@ def test_hopping_energy():
 
     energy, hop_id, x1, y1, z1, x2, y2, z2 = capture
     assert np.allclose(energy, graphene.t)
-    assert np.allclose(hop_id, 0)
+    assert_hoppings(hop_id, model)
     assert np.allclose(x1, 0)
     assert np.allclose(y1, -graphene.a_cc / 2)
     assert np.allclose(z1, 0)

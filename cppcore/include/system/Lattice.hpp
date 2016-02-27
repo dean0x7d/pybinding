@@ -10,6 +10,7 @@ namespace tbm {
 using sub_id = std::int8_t;
 using hop_id = std::int8_t;
 using SubIdMap = std::unordered_map<std::string, sub_id>;
+using HopIdMap = std::unordered_map<std::string, hop_id>;
 
 /**
  Hopping description
@@ -42,6 +43,14 @@ struct SubIdRef {
 };
 
 /**
+ Helper class for passing hopping information to modifier functions
+ */
+struct HopIdRef {
+    ArrayX<hop_id> const& ids;
+    HopIdMap const& name_map;
+};
+
+/**
  Crystal lattice specification
  */
 class Lattice {
@@ -57,7 +66,7 @@ public:
                        sub_id to_sublattice, std::complex<double> energy);
 
     /// Register just the energy and create an ID, but don't connect any sites
-    hop_id register_hopping_energy(std::complex<double> energy);
+    hop_id register_hopping_energy(std::string const& name, std::complex<double> energy);
 
     /// Connect sites with already registered hopping ID/energy
     void add_registered_hopping(Index3D relative_index, sub_id from_sublattice,
@@ -78,6 +87,7 @@ public:
     std::vector<Sublattice> sublattices; ///< all the sites that belong to the primitive cell
     SubIdMap sub_name_map; ///< map from friendly sublattice name to numeric ID
     std::vector<std::complex<double>> hopping_energies; ///< unique energies indexed by hop_id
+    HopIdMap hop_name_map; ///< map from friendly hopping name to numeric ID
     int min_neighbours = 1; ///< minimum number of neighbours required at each lattice site
     bool has_onsite_energy = false; ///< does at least one sublattice have non-zero onsite energy
     bool has_complex_hopping = false; ///< is at least one hopping complex

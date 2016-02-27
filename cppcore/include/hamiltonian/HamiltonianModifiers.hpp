@@ -39,14 +39,14 @@ public:
     virtual ~HoppingModifierImpl() = default;
     virtual bool is_complex() const { return false; }
 
-    virtual void apply(ArrayXf& hopping, CartesianArray const& pos1, CartesianArray const& pos2,
-                       ArrayX<hop_id> const& id) const = 0;
-    virtual void apply(ArrayXd& hopping, CartesianArray const& pos1, CartesianArray const& pos2,
-                       ArrayX<hop_id> const& id) const = 0;
-    virtual void apply(ArrayXcf& hopping,  CartesianArray const& pos1, CartesianArray const& pos2,
-                       ArrayX<hop_id> const& id) const = 0;
-    virtual void apply(ArrayXcd& hopping,  CartesianArray const& pos1, CartesianArray const& pos2,
-                       ArrayX<hop_id> const& id) const = 0;
+    virtual void apply(ArrayXf& energy, CartesianArray const& pos1, CartesianArray const& pos2,
+                       HopIdRef hopping) const = 0;
+    virtual void apply(ArrayXd& energy, CartesianArray const& pos1, CartesianArray const& pos2,
+                       HopIdRef hopping) const = 0;
+    virtual void apply(ArrayXcf& energy,  CartesianArray const& pos1, CartesianArray const& pos2,
+                       HopIdRef hopping) const = 0;
+    virtual void apply(ArrayXcd& energy,  CartesianArray const& pos1, CartesianArray const& pos2,
+                       HopIdRef hopping) const = 0;
 
     bool is_double = false;
 };
@@ -163,7 +163,7 @@ void HamiltonianModifiers::apply_to_hoppings(SystemOrBoundary const& system, Fn 
                 }
 
                 for (auto const& modifier : hopping)
-                    modifier->apply(hoppings, pos1, pos2, hop_ids);
+                    modifier->apply(hoppings, pos1, pos2, {hop_ids, system.lattice.hop_name_map});
 
                 hopping_csr_matrix.slice_for_each(
                     start_row, start_idx, size,

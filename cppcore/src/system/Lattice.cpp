@@ -37,27 +37,31 @@ hop_id Lattice::add_hopping(Index3D rel_index, sub_id from_sub, sub_id to_sub,
         if (it != hopping_energies.end())
             return static_cast<hop_id>(it - hopping_energies.begin());
         else
-            return register_hopping_energy(energy);
+            return register_hopping_energy({}, energy);
     }();
 
     add_registered_hopping(rel_index, from_sub, to_sub, hopping_id);
     return hopping_id;
 }
 
-hop_id Lattice::register_hopping_energy(std::complex<double> energy) {
+hop_id Lattice::register_hopping_energy(std::string const& name, std::complex<double> energy) {
     auto const hopping_id = static_cast<hop_id>(hopping_energies.size());
     if (hopping_id == std::numeric_limits<hop_id>::max())
         throw std::logic_error{"Can't create any more hoppings: " + std::to_string(hopping_id)};
 
-    if (energy.imag() != .0)
-        has_complex_hopping = true;
-
     hopping_energies.push_back(energy);
+    if (!name.empty()) {
+        hop_name_map.emplace(name, hopping_id);
+    }
+    if (energy.imag() != .0) {
+        has_complex_hopping = true;
+    }
+
     return hopping_id;
 }
 
 void Lattice::add_registered_hopping(Index3D relative_index, sub_id from_sub,
-                                       sub_id to_sub, hop_id hopping_id) {
+                                     sub_id to_sub, hop_id hopping_id) {
     if (from_sub == to_sub && relative_index == Index3D::Zero()) {
         throw std::logic_error{
             "Hoppings from/to the same sublattice must have a non-zero relative "

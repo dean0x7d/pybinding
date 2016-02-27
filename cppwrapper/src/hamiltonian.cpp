@@ -38,7 +38,6 @@ public:
 class PyHopping : public tbm::HoppingModifierImpl,
                   public wrapper<tbm::HoppingModifierImpl> {
     using CA = CartesianArray const&;
-    using HA = ArrayX<tbm::hop_id> const&;
 
 public:
     virtual bool is_complex() const final {
@@ -49,26 +48,31 @@ public:
     }
 
     template<class Array>
-    void apply_(Array& hopping, CA p1, CA p2, HA id) const {
+    void apply_(Array& energy, CA p1, CA p2, HopIdRef hopping) const {
         object result = get_override("apply")(
-            arrayref(hopping),
+            arrayref(energy),
             arrayref(p1.x), arrayref(p1.y), arrayref(p1.z),
             arrayref(p2.x), arrayref(p2.y), arrayref(p2.z),
-            arrayref(id)
+            hopping
         );
-        extract_array(hopping, result);
+        extract_array(energy, result);
     }
     
-    virtual void apply(ArrayXf& h, CA p1, CA p2, HA id) const final { apply_(h, p1, p2, id); }
-    virtual void apply(ArrayXd& h, CA p1, CA p2, HA id) const final { apply_(h, p1, p2, id); }
-    virtual void apply(ArrayXcf& h, CA p1, CA p2, HA id) const final { apply_(h, p1, p2, id); }
-    virtual void apply(ArrayXcd& h, CA p1, CA p2, HA id) const final { apply_(h, p1, p2, id); }
+    void apply(ArrayXf& e, CA p1, CA p2, HopIdRef h) const final { apply_(e, p1, p2, h); }
+    void apply(ArrayXd& e, CA p1, CA p2, HopIdRef h) const final { apply_(e, p1, p2, h); }
+    void apply(ArrayXcf& e, CA p1, CA p2, HopIdRef h) const final { apply_(e, p1, p2, h); }
+    void apply(ArrayXcd& e, CA p1, CA p2, HopIdRef h) const final { apply_(e, p1, p2, h); }
 };
 
 void export_modifiers() {
     using tbm::Hamiltonian;
     class_<Hamiltonian, std::shared_ptr<Hamiltonian>, noncopyable>{"Hamiltonian", no_init}
     .add_property("matrix", internal_ref(&Hamiltonian::matrix_union))
+    ;
+
+    class_<HopIdRef>{"HopIdRef", no_init}
+    .add_property("ids", internal_ref([](HopIdRef const& s) { return arrayref(s.ids); }))
+    .add_property("name_map", copy_value([](HopIdRef const& s) { return s.name_map; }))
     ;
 
     class_<PyOnsite, noncopyable>{"OnsiteModifier"}
