@@ -1,5 +1,4 @@
 #include "system/System.hpp"
-#include "system/Shape.hpp"
 #include "system/Symmetry.hpp"
 #include "system/SystemModifiers.hpp"
 
@@ -14,27 +13,22 @@ using namespace boost::python;
 using namespace tbm;
 
 
-class PySiteStateModifier : public tbm::SiteStateModifierImpl,
-                            public wrapper<tbm::SiteStateModifierImpl> {
+class PySiteStateModifier : public SiteStateModifierImpl,
+                            public wrapper<SiteStateModifierImpl> {
 public:
-    virtual void apply(ArrayX<bool>& is_valid, CartesianArray const& p,
-                       ArrayX<tbm::sub_id> const& s) const override {
+    void apply(ArrayX<bool>& state, CartesianArray const& p, SubIdRef s) const override {
         object result = get_override("apply")(
-            arrayref(is_valid),
-            arrayref(p.x), arrayref(p.y), arrayref(p.z),
-            arrayref(s)
+            arrayref(state), arrayref(p.x), arrayref(p.y), arrayref(p.z), s
         );
-        extract_array(is_valid, result);
+        extract_array(state, result);
     }
 };
 
-class PyPositionModifier : public tbm::PositionModifierImpl,
-                           public wrapper<tbm::PositionModifierImpl> {
+class PyPositionModifier : public PositionModifierImpl,
+                           public wrapper<PositionModifierImpl> {
 public:
-    virtual void apply(CartesianArray& p, ArrayX<tbm::sub_id> const& s) const override {
-        tuple result = get_override("apply")(
-            arrayref(p.x), arrayref(p.y), arrayref(p.z), arrayref(s)
-        );
+    void apply(CartesianArray& p, SubIdRef s) const override {
+        tuple result = get_override("apply")(arrayref(p.x), arrayref(p.y), arrayref(p.z), s);
         extract_array(p.x, result[0]);
         extract_array(p.y, result[1]);
         extract_array(p.z, result[2]);
@@ -111,11 +105,16 @@ void export_system() {
     })
     ;
 
+    class_<SubIdRef>{"SubIdRef", no_init}
+    .add_property("ids", internal_ref([](SubIdRef const& s) { return arrayref(s.ids); }))
+    .add_property("name_map", copy_value([](SubIdRef const& s) { return s.name_map; }))
+    ;
+
     using tbm::Lattice;
     class_<Lattice>{"Lattice",
                     init<Cartesian, optional<Cartesian, Cartesian>>(args("a1", "a2", "a3"))}
     .def("_add_sublattice", &Lattice::add_sublattice,
-         args("self", "offset", "onsite_potential"_kw=.0f, "alias"_kw=-1))
+         args("self", "name", "offset", "onsite_potential"_kw=.0f, "alias"_kw=-1))
     .def("_add_hopping", &Lattice::add_hopping,
          args("self", "relative_index", "from_sublattice", "to_sublattice", "energy"))
     .def("_register_hopping_energy", &Lattice::register_hopping_energy, args("self", "energy"))

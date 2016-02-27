@@ -2,6 +2,9 @@
 
 ### v0.7.2 | in development
 
+* The `sub_id` modifier argument can now be compared directly with a sublattice name. For example,
+  this makes it possible to write `sub_id == 'A'` instead of the old `sub_id == lattice['A']`.
+
 * Added optional `sites` argument for state, position, and onsite energy modifiers.
   It can be used instead of the `x, y, z, sub_id` arguments and contains a few helper methods.
   See the modifier API reference for more information.

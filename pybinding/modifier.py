@@ -17,6 +17,66 @@ __all__ = ['site_state_modifier', 'site_position_modifier', 'onsite_energy_modif
            'hopping_energy_modifier', 'constant_potential', 'force_double_precision']
 
 
+class _AliasArray(np.ndarray):
+    """Helper class for modifier arguments
+
+    This ndarray subclass enables comparing sub_id and hop_id arrays directly with
+    their friendly string identifiers. The mapping parameter translates sublattice
+    or hopping names into their number IDs.
+
+    Examples
+    --------
+    >>> a = _AliasArray([0, 1, 0], {'A': 0, 'B': 1})
+    >>> list(a == 0)
+    [True, False, True]
+    >>> list(a == 'A')
+    [True, False, True]
+    """
+    def __new__(cls, array, mapping):
+        obj = np.asarray(array).view(cls)
+        obj.mapping = mapping
+        return obj
+
+    def __array_finalize__(self, obj):
+        if obj is None:
+            return
+        self.mapping = getattr(obj, 'mapping', None)
+
+    def __eq__(self, other):
+        if isinstance(other, str):
+            return super().__eq__(self.mapping[other])
+        else:
+            return super().__eq__(other)
+
+    def __ne__(self, other):
+        return np.logical_not(self.__eq__(other))
+
+
+def _make_alias_array(obj):
+    if isinstance(obj, _cpp.SubIdRef):
+        return _AliasArray(obj.ids, obj.name_map)
+    else:
+        return obj
+
+
+def _process_modifier_args(args, keywords, requested_argnames):
+    """Return only the requested modifier arguments
+
+    Also process any special args like 'sub_id', 'hop_id' and 'sites'.
+    """
+    kwargs = dict(zip(keywords, args))
+    if 'sub_id' in requested_argnames or 'sites' in requested_argnames:
+        kwargs['sub_id'] = _make_alias_array(kwargs['sub_id'])
+
+    requested_kwargs = {name: value for name, value in kwargs.items()
+                        if name in requested_argnames}
+
+    if 'sites' in requested_argnames:
+        requested_kwargs['sites'] = Sites((kwargs[k] for k in ('x', 'y', 'z')), kwargs['sub_id'])
+
+    return requested_kwargs
+
+
 def _check_modifier_spec(func, keywords, has_sites):
     """Make sure the arguments are specified correctly
 
@@ -124,14 +184,7 @@ def _make_modifier(func, kind, keywords, has_sites=True, num_return=1,
             return func(*args, **kwargs)
 
         def apply(self, *args):
-            kwargs = dict(zip(keywords, args))
-            requested_kwargs = {name: value for name, value in kwargs.items()
-                                if name in self.requested_argnames}
-
-            if 'sites' in self.requested_argnames:
-                positions = (kwargs[k] for k in ('x', 'y', 'z'))
-                requested_kwargs['sites'] = Sites(positions, kwargs['sub_id'])
-
+            requested_kwargs = _process_modifier_args(args, keywords, self.requested_argnames)
             ret = func(**requested_kwargs)
 
             def cast_dtype(v):

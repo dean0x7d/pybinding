@@ -97,7 +97,7 @@ class Lattice(_cpp.Lattice):
 
         offset = np.atleast_1d(offset)
         alias = self.__getitem__(alias) if alias is not None else -1
-        self.sublattice_ids[name] = super()._add_sublattice(offset, onsite_energy, alias)
+        self.sublattice_ids[name] = super()._add_sublattice(name, offset, onsite_energy, alias)
 
     def add_sublattices(self, *sublattices):
         """Add multiple new sublattices

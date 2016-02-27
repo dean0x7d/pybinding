@@ -11,11 +11,8 @@
 using namespace boost::python;
 using namespace tbm;
 
-class PyOnsite : public tbm::OnsiteModifierImpl,
-                 public wrapper<tbm::OnsiteModifierImpl> {
-    using CA = CartesianArray const&;
-    using SA = ArrayX<tbm::sub_id> const&;
-
+class PyOnsite : public OnsiteModifierImpl,
+                 public wrapper<OnsiteModifierImpl> {
 public:
     virtual bool is_complex() const final {
         if (auto f = get_override("is_complex")) {
@@ -25,17 +22,17 @@ public:
     }
     
     template<class Array>
-    void apply_(Array& potential, CA p, SA s) const {
+    void apply_(Array& potential, CartesianArray const& p, SubIdRef s) const {
         object result = get_override("apply")(
-            arrayref(potential), arrayref(p.x), arrayref(p.y), arrayref(p.z), arrayref(s)
+            arrayref(potential), arrayref(p.x), arrayref(p.y), arrayref(p.z), s
         );
         extract_array(potential, result);
     }
     
-    virtual void apply(ArrayXf& v, CA p, SA s) const final {apply_(v, p, s); }
-    virtual void apply(ArrayXcf& v, CA p, SA s) const final {apply_(v, p, s); }
-    virtual void apply(ArrayXd& v, CA p, SA s) const final {apply_(v, p, s); }
-    virtual void apply(ArrayXcd& v, CA p, SA s) const final {apply_(v, p, s); }
+    void apply(ArrayXf& v, CartesianArray const& p, SubIdRef s) const final {apply_(v, p, s); }
+    void apply(ArrayXcf& v, CartesianArray const& p, SubIdRef s) const final {apply_(v, p, s); }
+    void apply(ArrayXd& v, CartesianArray const& p, SubIdRef s) const final {apply_(v, p, s); }
+    void apply(ArrayXcd& v, CartesianArray const& p, SubIdRef s) const final {apply_(v, p, s); }
 };
 
 class PyHopping : public tbm::HoppingModifierImpl,

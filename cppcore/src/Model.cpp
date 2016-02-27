@@ -96,14 +96,15 @@ std::shared_ptr<System> Model::make_system() const {
         symmetry.apply(foundation);
 
     if (!system_modifiers.empty()) {
-        auto const sublattices_ids = detail::make_sublattice_ids(foundation);
+        auto const sublattices = detail::make_sublattice_ids(foundation);
 
         for (auto const& site_state_modifier : system_modifiers.state) {
             site_state_modifier->apply(foundation.get_states(), foundation.get_positions(),
-                                       sublattices_ids);
+                                       {sublattices, lattice.sub_name_map});
         }
         for (auto const& position_modifier : system_modifiers.position) {
-            position_modifier->apply(foundation.get_positions(), sublattices_ids);
+            position_modifier->apply(foundation.get_positions(),
+                                     {sublattices, lattice.sub_name_map});
         }
     }
 

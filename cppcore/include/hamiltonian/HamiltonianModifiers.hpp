@@ -19,14 +19,14 @@ public:
     virtual bool is_complex() const { return false; }
 
     /// Get the value of the potential at the given coordinates.
-    virtual void apply(ArrayXf& potential, CartesianArray const& position,
-                       ArrayX<sub_id> const& sublattices) const = 0;
-    virtual void apply(ArrayXcf& potential, CartesianArray const& position,
-                       ArrayX<sub_id> const& sublattices) const = 0;
-    virtual void apply(ArrayXd& potential, CartesianArray const& position,
-                       ArrayX<sub_id> const& sublattices) const = 0;
-    virtual void apply(ArrayXcd& potential, CartesianArray const& position,
-                       ArrayX<sub_id> const& sublattices) const = 0;
+    virtual void apply(ArrayXf& energy, CartesianArray const& position,
+                       SubIdRef sublattice) const = 0;
+    virtual void apply(ArrayXcf& energy, CartesianArray const& position,
+                       SubIdRef sublattice) const = 0;
+    virtual void apply(ArrayXd& energy, CartesianArray const& position,
+                       SubIdRef sublattice) const = 0;
+    virtual void apply(ArrayXcd& energy, CartesianArray const& position,
+                       SubIdRef sublattice) const = 0;
 
     bool is_double = false;
 };
@@ -100,8 +100,10 @@ void HamiltonianModifiers::apply_to_onsite(System const& system, Fn lambda) cons
         if (potential.size() == 0)
             potential.setZero(num_sites);
 
-        for (auto const& modifier : onsite)
-            modifier->apply(potential, system.positions, system.sublattices);
+        for (auto const& modifier : onsite) {
+            modifier->apply(potential, system.positions,
+                            {system.sublattices, system.lattice.sub_name_map});
+        }
     }
 
     if (potential.size() > 0) {

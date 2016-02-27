@@ -1,12 +1,15 @@
 #pragma once
 #include "support/dense.hpp"
 #include <vector>
+#include <string>
+#include <unordered_map>
 
 namespace tbm {
 
 /// Sublattice and hopping ID data types
 using sub_id = std::int8_t;
 using hop_id = std::int8_t;
+using SubIdMap = std::unordered_map<std::string, sub_id>;
 
 /**
  Hopping description
@@ -31,6 +34,14 @@ struct Sublattice {
 };
 
 /**
+ Helper class for passing sublattice information to modifier functions
+ */
+struct SubIdRef {
+    ArrayX<sub_id> const& ids;
+    SubIdMap const& name_map;
+};
+
+/**
  Crystal lattice specification
  */
 class Lattice {
@@ -38,7 +49,8 @@ public:
     Lattice(Cartesian v1, Cartesian v2 = Cartesian::Zero(), Cartesian v3 = Cartesian::Zero());
 
     /// Create a new sublattice and return it's ID
-    sub_id add_sublattice(Cartesian offset, double onsite_energy = .0, sub_id alias = -1);
+    sub_id add_sublattice(std::string const& name, Cartesian offset,
+                          double onsite_energy = .0, sub_id alias = -1);
 
     /// Connect sites via relative index/sublattices and return an ID for the given hopping energy
     hop_id add_hopping(Index3D relative_index, sub_id from_sublattice,
@@ -54,10 +66,8 @@ public:
     /// Get the maximum possible number of hoppings from any site of this lattice
     int max_hoppings() const;
 
-    // convenient way to access sublattices
-    const Sublattice& operator[](int n) const {
-        return sublattices[n];
-    }
+    /// Convenient way to access sublattices
+    const Sublattice& operator[](int n) const { return sublattices[n]; }
 
     /// Calculate the spatial position of a unit cell or a sublattice site if specified
     Cartesian calc_position(Index3D index, Cartesian origin = Cartesian::Zero(),
@@ -66,6 +76,7 @@ public:
 public:
     std::vector<Cartesian> vectors; ///< primitive vectors that define the lattice
     std::vector<Sublattice> sublattices; ///< all the sites that belong to the primitive cell
+    SubIdMap sub_name_map; ///< map from friendly sublattice name to numeric ID
     std::vector<std::complex<double>> hopping_energies; ///< unique energies indexed by hop_id
     int min_neighbours = 1; ///< minimum number of neighbours required at each lattice site
     bool has_onsite_energy = false; ///< does at least one sublattice have non-zero onsite energy

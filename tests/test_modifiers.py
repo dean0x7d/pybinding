@@ -15,6 +15,24 @@ def build_model(*params):
     return model
 
 
+def assert_position(x, y, z):
+    assert np.allclose(x, [0, 0])
+    assert np.allclose(y, [-graphene.a_cc / 2, graphene.a_cc / 2])
+    assert np.allclose(z, [0, 0])
+
+
+def assert_sublattice(sub_id, model):
+    assert np.allclose(sub_id, [0, 1])
+
+    assert np.argwhere(sub_id == model.lattice['A']) == 0
+    assert np.argwhere(sub_id != model.lattice['A']) == 1
+    assert np.argwhere(sub_id == 'A') == 0
+    assert np.argwhere(sub_id != 'A') == 1
+
+    with pytest.raises(KeyError):
+        assert sub_id == 'invalid_sublattice_name'
+
+
 def test_decorator():
     pb.onsite_energy_modifier(lambda energy: energy)
     with pytest.raises(RuntimeError) as excinfo:
@@ -111,10 +129,8 @@ def test_site_state():
 
     state, x, y, z, sub_id, nearest = capture
     assert np.all(state == [True, True])
-    assert np.allclose(x, [0, 0])
-    assert np.allclose(y, [-graphene.a_cc / 2, graphene.a_cc / 2])
-    assert np.allclose(z, [0, 0])
-    assert np.allclose(sub_id, [0, 1])
+    assert_position(x, y, z)
+    assert_sublattice(sub_id, model)
     assert np.all(nearest == [1, 0])
 
 
@@ -137,10 +153,8 @@ def test_site_position():
     assert model.hamiltonian.dtype == np.float32
 
     x, y, z, sub_id, nearest = capture
-    assert np.allclose(x, [0, 0])
-    assert np.allclose(y, [-graphene.a_cc / 2, graphene.a_cc / 2])
-    assert np.allclose(z, [0, 0])
-    assert np.allclose(sub_id, [0, 1])
+    assert_position(x, y, z)
+    assert_sublattice(sub_id, model)
     assert np.all(nearest == [1, 0])
 
 
@@ -164,10 +178,8 @@ def test_onsite():
 
     energy, x, y, z, sub_id, nearest = capture
     assert np.allclose(energy, [0, 0])
-    assert np.allclose(x, [0, 0])
-    assert np.allclose(y, [-graphene.a_cc / 2, graphene.a_cc / 2])
-    assert np.allclose(z, [0, 0])
-    assert np.allclose(sub_id, [0, 1])
+    assert_position(x, y, z)
+    assert_sublattice(sub_id, model)
     assert np.all(nearest == [1, 0])
 
     @pb.onsite_energy_modifier(double=True)

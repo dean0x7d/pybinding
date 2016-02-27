@@ -10,7 +10,8 @@ Lattice::Lattice(Cartesian v1, Cartesian v2, Cartesian v3) {
     vectors.shrink_to_fit();
 }
 
-sub_id Lattice::add_sublattice(Cartesian offset, double onsite_energy, sub_id alias) {
+sub_id Lattice::add_sublattice(std::string const& name, Cartesian offset,
+                               double onsite_energy, sub_id alias) {
     auto const sublattice_id = static_cast<sub_id>(sublattices.size());
     if (sublattice_id == std::numeric_limits<sub_id>::max())
         throw std::logic_error{"Cannot create more sublattices: " + std::to_string(sublattice_id)};
@@ -21,7 +22,8 @@ sub_id Lattice::add_sublattice(Cartesian offset, double onsite_energy, sub_id al
         (alias < 0) ? sublattice_id : alias,
         {} // create an empty slot for this sublattice's hoppings
     });
-    
+    sub_name_map.emplace(name, sublattice_id);
+
     if (onsite_energy != .0)
         has_onsite_energy = true;
 
