@@ -1,6 +1,9 @@
 cmake_minimum_required(VERSION 3.0)
 project(pybinding_cppcore)
 
+option(PB_WERROR "Make all warnings into errors" OFF)
+option(PB_TESTS "Enable testing" OFF)
+
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/cmake")
 find_package(Eigen3orDownload 3.2.7 REQUIRED)
 
@@ -82,9 +85,6 @@ elseif(${CMAKE_CXX_COMPILER_ID} STREQUAL Intel)
 elseif(${CMAKE_CXX_COMPILER_ID} STREQUAL MSVC)
 endif()
 
-
-option(PB_WERROR "Make all warnings into errors" OFF)
-
 function(set_higher_warning_level TARGET)
     if(WIN32)
         target_compile_options(${TARGET} PRIVATE /W3)
@@ -102,3 +102,7 @@ function(set_higher_warning_level TARGET)
 endfunction()
 
 set_higher_warning_level(pybinding_cppcore)
+
+if(PB_TESTS OR DEFINED ENV{PB_TESTS})
+    add_subdirectory(tests)
+endif()

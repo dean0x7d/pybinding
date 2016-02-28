@@ -30,6 +30,7 @@ install:
 - python setup.py build_ext
 - python setup.py install
 script:
+- catch
 - py.test
 deploy:
   provider: script

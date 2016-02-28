@@ -6,7 +6,9 @@ elif [ "$TRAVIS_OS_NAME" = "osx" ]; then
     export CXX=clang++ CC=clang
 fi
 
+export PATH=$TRAVIS_BUILD_DIR/build/cmake/cppcore/tests/:$PATH
 export PB_WERROR=1  # make warnings into errors
+export PB_TESTS=1  # generate cpp tests
 export MAKEFLAGS=-j2
 
 $CXX --version

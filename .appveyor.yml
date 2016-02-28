@@ -2,6 +2,7 @@ version: '{build}'
 os: Visual Studio 2015
 environment:
   PB_WERROR: 1
+  PB_TESTS: 1
   PYPI_USER:
     secure: VNmO0xqOUrgWa0uT/HO/mg==
   PYPI_PASS:
@@ -20,6 +21,7 @@ build_script:
   - cmd: python setup.py build_ext
   - cmd: python setup.py install > nul
 test_script:
+  - cmd: .\build\cmake\cppcore\tests\Release\catch
   - cmd: py.test
 deploy_script:
   - ps: >-

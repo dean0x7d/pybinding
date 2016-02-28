@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.0)
 project(pybinding_cppwrapper)
 
 # project to be wrapped
-add_subdirectory(../cppcore ../cppcore EXCLUDE_FROM_ALL)
+add_subdirectory(../cppcore ../cppcore)
 # wrap using boost_python
 add_subdirectory(deps/boost_python EXCLUDE_FROM_ALL)
 
