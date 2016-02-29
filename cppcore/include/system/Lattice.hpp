@@ -55,10 +55,10 @@ struct HopIdRef {
  */
 class Lattice {
 public:
-    Lattice(Cartesian v1, Cartesian v2 = Cartesian::Zero(), Cartesian v3 = Cartesian::Zero());
+    Lattice(Cartesian v1, Cartesian v2 = {0, 0, 0}, Cartesian v3 = {0, 0, 0});
 
     /// Create a new sublattice and return it's ID
-    sub_id add_sublattice(std::string const& name, Cartesian offset,
+    sub_id add_sublattice(std::string const& name, Cartesian offset = {0, 0, 0},
                           double onsite_energy = .0, sub_id alias = -1);
 
     /// Connect sites via relative index/sublattices and return an ID for the given hopping energy
@@ -79,7 +79,7 @@ public:
     const Sublattice& operator[](int n) const { return sublattices[n]; }
 
     /// Calculate the spatial position of a unit cell or a sublattice site if specified
-    Cartesian calc_position(Index3D index, Cartesian origin = Cartesian::Zero(),
+    Cartesian calc_position(Index3D index, Cartesian origin = {0, 0, 0},
                             sub_id sublattice = -1) const;
 
 public:

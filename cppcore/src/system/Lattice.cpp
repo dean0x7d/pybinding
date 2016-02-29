@@ -13,8 +13,14 @@ Lattice::Lattice(Cartesian v1, Cartesian v2, Cartesian v3) {
 sub_id Lattice::add_sublattice(std::string const& name, Cartesian offset,
                                double onsite_energy, sub_id alias) {
     auto const sublattice_id = static_cast<sub_id>(sublattices.size());
-    if (sublattice_id == std::numeric_limits<sub_id>::max())
-        throw std::logic_error{"Cannot create more sublattices: " + std::to_string(sublattice_id)};
+    if (sublattice_id == std::numeric_limits<sub_id>::max()) {
+        throw std::logic_error("Cannot create more sublattices: " + std::to_string(sublattice_id));
+    }
+
+    auto const is_unique_name = sub_name_map.emplace(name, sublattice_id).second;
+    if (!is_unique_name) {
+        throw std::logic_error("");
+    }
 
     sublattices.push_back({
         offset,
@@ -22,10 +28,10 @@ sub_id Lattice::add_sublattice(std::string const& name, Cartesian offset,
         (alias < 0) ? sublattice_id : alias,
         {} // create an empty slot for this sublattice's hoppings
     });
-    sub_name_map.emplace(name, sublattice_id);
 
-    if (onsite_energy != .0)
+    if (onsite_energy != .0) {
         has_onsite_energy = true;
+    }
 
     return sublattice_id;
 }
@@ -46,13 +52,18 @@ hop_id Lattice::add_hopping(Index3D rel_index, sub_id from_sub, sub_id to_sub,
 
 hop_id Lattice::register_hopping_energy(std::string const& name, std::complex<double> energy) {
     auto const hopping_id = static_cast<hop_id>(hopping_energies.size());
-    if (hopping_id == std::numeric_limits<hop_id>::max())
-        throw std::logic_error{"Can't create any more hoppings: " + std::to_string(hopping_id)};
+    if (hopping_id == std::numeric_limits<hop_id>::max()) {
+        throw std::logic_error("Can't create any more hoppings: " + std::to_string(hopping_id));
+    }
+
+    if (!name.empty()) {
+        auto const is_unique_name = hop_name_map.emplace(name, hopping_id).second;
+        if (!is_unique_name) {
+            throw std::logic_error("");
+        }
+    }
 
     hopping_energies.push_back(energy);
-    if (!name.empty()) {
-        hop_name_map.emplace(name, hopping_id);
-    }
     if (energy.imag() != .0) {
         has_complex_hopping = true;
     }
@@ -63,18 +74,19 @@ hop_id Lattice::register_hopping_energy(std::string const& name, std::complex<do
 void Lattice::add_registered_hopping(Index3D relative_index, sub_id from_sub,
                                      sub_id to_sub, hop_id hopping_id) {
     if (from_sub == to_sub && relative_index == Index3D::Zero()) {
-        throw std::logic_error{
+        throw std::logic_error(
             "Hoppings from/to the same sublattice must have a non-zero relative "
             "index in at least one direction. Don't define onsite energy here."
-        };
+        );
     }
 
     auto const num_sublattices = static_cast<sub_id>(sublattices.size());
-    if (from_sub >= num_sublattices || to_sub >= num_sublattices)
-        throw std::logic_error{"The specified sublattice does not exist."};
-
-    if (hopping_id >= static_cast<hop_id>(hopping_energies.size()))
-        throw std::logic_error{"The specified hopping does not exist."};
+    if (from_sub < 0 || from_sub >= num_sublattices || to_sub < 0 || to_sub >= num_sublattices) {
+        throw std::logic_error("The specified sublattice does not exist.");
+    }
+    if (hopping_id < 0 || hopping_id >= static_cast<hop_id>(hopping_energies.size())) {
+        throw std::logic_error("The specified hopping does not exist.");
+    }
 
     // the other sublattice has an opposite relative index
     sublattices[from_sub].add_hopping(relative_index, to_sub, hopping_id, /*is_conjugate*/false);
@@ -97,8 +109,9 @@ void Sublattice::add_hopping(Index3D relative_index, sub_id to_sub, hop_id hop, 
         return h.relative_index == relative_index && h.to_sublattice == to_sub;
     });
 
-    if (already_exists)
-        throw std::logic_error{"The specified hopping already exists."};
+    if (already_exists) {
+        throw std::logic_error("The specified hopping already exists.");
+    }
 
     hoppings.push_back({relative_index, to_sub, hop, is_conj});
 }
