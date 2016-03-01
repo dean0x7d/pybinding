@@ -83,6 +83,7 @@ TEST_CASE("HoppingGenerator", "[generator]") {
     }());
     REQUIRE_FALSE(model.is_complex());
     REQUIRE(model.get_lattice().hopping_energies.size() == 1);
+    REQUIRE(model.system()->hoppings.isCompressed());
     REQUIRE(model.system()->hoppings.rows() == 2);
     REQUIRE(model.system()->hoppings.nonZeros() == 0);
 
@@ -96,6 +97,7 @@ TEST_CASE("HoppingGenerator", "[generator]") {
 
         REQUIRE_FALSE(model.is_complex());
         REQUIRE(model.get_lattice().hopping_energies.size() == 2);
+        REQUIRE(model.system()->hoppings.isCompressed());
         REQUIRE(model.system()->hoppings.rows() == 2);
         REQUIRE(model.system()->hoppings.nonZeros() == 1);
 
@@ -107,10 +109,11 @@ TEST_CASE("HoppingGenerator", "[generator]") {
 
     SECTION("Add complex generator") {
         model.add_hopping_family({"t2", {0.0, 1.0}, [](CartesianArray const&, SubIdRef) {
-            return HoppingGenerator::Result{};
+            return HoppingGenerator::Result{ArrayXi(), ArrayXi()};
         }});
 
         REQUIRE(model.is_complex());
+        REQUIRE(model.system()->hoppings.isCompressed());
         REQUIRE(model.system()->hoppings.rows() == 2);
         REQUIRE(model.system()->hoppings.nonZeros() == 0);
     }

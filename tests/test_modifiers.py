@@ -261,7 +261,7 @@ def test_hopping_generator():
         dmin = graphene.a * 0.95
         dmax = graphene.a * 1.05
         kdtree = cKDTree(pos)
-        coo = kdtree.sparse_distance_matrix(kdtree, dmax, output_type='coo_matrix')
+        coo = kdtree.sparse_distance_matrix(kdtree, dmax).tocoo()
         idx = coo.data > dmin
         return coo.row[idx], coo.col[idx]
 

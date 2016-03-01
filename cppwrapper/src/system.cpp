@@ -54,7 +54,7 @@ public:
         : HoppingGenerator(name, energy, {}) {
         make = [py_make](CartesianArray const& p, SubIdRef sublattice) {
             object py_result = py_make(arrayref(p.x), arrayref(p.y), arrayref(p.z), sublattice);
-            auto result = PyHoppingGenerator::Result{};
+            auto result = PyHoppingGenerator::Result{ArrayXi(), ArrayXi()};
             extract_array(result.from, py_result[0]);
             extract_array(result.to, py_result[1]);
             return result;

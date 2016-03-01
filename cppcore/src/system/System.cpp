@@ -21,6 +21,7 @@ System::System(Foundation const& foundation, Symmetry const& symmetry, Leads con
         for (auto const& gen : hopping_generators) {
             detail::add_extra_hoppings(*this, gen);
         }
+        hoppings.makeCompressed();
         has_unbalanced_hoppings = true;
     }
 
