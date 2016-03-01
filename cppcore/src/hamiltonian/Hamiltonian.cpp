@@ -36,10 +36,14 @@ void HamiltonianT<scalar_t>::build_main(System const& system,
     auto const num_sites = system.num_sites();
     matrix.resize(num_sites, num_sites);
 
-    auto const non_zeros_per_row = system.lattice.max_hoppings() +
-        (system.lattice.has_onsite_energy || !modifiers.onsite.empty());
-    matrix.reserve(VectorXi::Constant(num_sites, non_zeros_per_row));
-    
+    auto const has_onsite_energy = system.lattice.has_onsite_energy || !modifiers.onsite.empty();
+    if (system.has_unbalanced_hoppings) {
+        matrix.reserve(nonzeros_per_row(system.hoppings, has_onsite_energy));
+    } else {
+        auto const num_per_row = system.lattice.max_hoppings() + has_onsite_energy;
+        matrix.reserve(ArrayXi::Constant(num_sites, num_per_row));
+    }
+
     modifiers.apply_to_onsite<scalar_t>(system, [&](int i, scalar_t onsite) {
         matrix.insert(i, i) = onsite;
     });

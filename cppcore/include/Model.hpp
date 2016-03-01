@@ -5,6 +5,7 @@
 #include "system/Symmetry.hpp"
 #include "system/SystemModifiers.hpp"
 #include "system/Lead.hpp"
+#include "system/Generators.hpp"
 #include "hamiltonian/HamiltonianModifiers.hpp"
 
 #include "utils/Chrono.hpp"
@@ -32,7 +33,15 @@ public: // set parameters
     void add_onsite_modifier(OnsiteModifier const& m);
     void add_hopping_modifier(HoppingModifier const& m);
 
+    void add_hopping_family(HoppingGenerator const& g);
+
     void set_wave_vector(const Cartesian& k);
+
+public:
+    /// Uses double precision values in the Hamiltonian matrix?
+    bool is_double() const;
+    /// Uses complex values in the Hamiltonian matrix?
+    bool is_complex() const;
 
 public: // get parameters
     Lattice const& get_lattice() const { return lattice; }
@@ -67,12 +76,13 @@ private:
     Primitive primitive;
     Shape shape;
     Symmetry symmetry;
-    Cartesian wave_vector = Cartesian::Zero();
+    Cartesian wave_vector = {0, 0, 0};
 
     Leads leads;
 
     SystemModifiers system_modifiers;
     HamiltonianModifiers hamiltonian_modifiers;
+    HoppingGenerators hopping_generators;
 
     mutable std::shared_ptr<System const> _system;
     mutable std::shared_ptr<Hamiltonian const> _hamiltonian;

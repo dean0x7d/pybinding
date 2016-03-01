@@ -5,15 +5,23 @@
 
 namespace tbm {
 
-System::System(Foundation const& foundation, Symmetry const& symmetry, Leads const& leads)
-    : lattice(foundation.get_lattice()) {
+System::System(Foundation const& foundation, Symmetry const& symmetry, Leads const& leads,
+               HoppingGenerators const& hopping_generators) : lattice(foundation.get_lattice()) {
     auto const hamiltonian_indices = HamiltonianIndices(foundation);
     detail::populate_system(*this, foundation, hamiltonian_indices);
-    if (symmetry)
+    if (symmetry) {
         detail::populate_boundaries(*this, foundation, hamiltonian_indices, symmetry);
+    }
 
     for (auto const& lead : leads) {
         ports.emplace_back(foundation, hamiltonian_indices, lead);
+    }
+
+    if (!hopping_generators.empty()) {
+        for (auto const& gen : hopping_generators) {
+            detail::add_extra_hoppings(*this, gen);
+        }
+        has_unbalanced_hoppings = true;
     }
 
     if (num_sites() == 0)
@@ -197,4 +205,59 @@ void populate_boundaries(System& system, Foundation const& foundation,
     system.boundaries.pop_back();
 }
 
-}} // namespace tbm::detail
+void add_extra_hoppings(System& system, HoppingGenerator const& gen) {
+    auto const& lattice = system.lattice;
+    auto const pairs = gen.make(system.positions, {system.sublattices, lattice.sub_name_map});
+
+    system.hoppings.reserve([&]{
+        auto reserve = ArrayXi(ArrayXi::Zero(system.num_sites()));
+        for (auto i = 0; i < pairs.from.size(); ++i) {
+            auto const row = std::min(pairs.from[i], pairs.to[i]); // upper triangular format
+            reserve[row] += 1;
+        }
+        return reserve;
+    }());
+
+    auto const hopping_id = [&]{
+        auto const it = lattice.hop_name_map.find(gen.name);
+        assert(it != lattice.hop_name_map.end());
+        return it->second;
+    }();
+
+    for (auto i = 0; i < pairs.from.size(); ++i) {
+        auto m = pairs.from[i];
+        auto n = pairs.to[i];
+        if (m > n) { // ensure that only the upper triangle of the matrix is populated
+            std::swap(m, n);
+        }
+        system.hoppings.coeffRef(m, n) = hopping_id;
+    }
+}
+
+} // namespace detail
+
+
+ArrayXi nonzeros_per_row(SparseMatrixX<hop_id> const& hoppings,  bool has_onsite_energy) {
+    assert(hoppings.isCompressed());
+    auto const outer_size = hoppings.outerSize();
+    auto nnz = has_onsite_energy ? ArrayXi(ArrayXi::Ones(outer_size))
+                                 : ArrayXi(ArrayXi::Zero(outer_size));
+
+    auto const indptr = hoppings.outerIndexPtr();
+    for (auto i = 0; i < outer_size; ++i) {
+        nnz[i] += indptr[i + 1] - indptr[i];
+    }
+
+    // The hop_id sparse matrix is triangular, so the total number of non-zeros per row
+    // must also include an extra 1 per column index to account for the other triangle.
+    auto const indices_size = hoppings.nonZeros();
+    auto const indices = hoppings.innerIndexPtr();
+    for (auto i = 0; i < indices_size; ++i) {
+        nnz[indices[i]] += 1;
+    }
+
+    return nnz;
+}
+
+
+} // namespace tbm

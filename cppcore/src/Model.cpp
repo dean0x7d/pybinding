@@ -59,6 +59,21 @@ void Model::add_hopping_modifier(HoppingModifier const& m) {
         _hamiltonian.reset();
 }
 
+void Model::add_hopping_family(HoppingGenerator const& g) {
+    hopping_generators.push_back(g);
+    lattice.register_hopping_energy(g.name, g.energy);
+    _system.reset();
+    _hamiltonian.reset();
+}
+
+bool Model::is_double() const {
+    return hamiltonian_modifiers.any_double();
+}
+
+bool Model::is_complex() const {
+    return lattice.has_complex_hopping || hamiltonian_modifiers.any_complex() || symmetry;
+}
+
 std::shared_ptr<System const> const& Model::system() const {
     if (!_system) {
         system_build_time.timeit([&]{
@@ -112,18 +127,14 @@ std::shared_ptr<System> Model::make_system() const {
         attach(foundation, lead);
     }
 
-    return std::make_shared<System>(foundation, symmetry, leads);
+    return std::make_shared<System>(foundation, symmetry, leads, hopping_generators);
 }
 
 std::shared_ptr<Hamiltonian> Model::make_hamiltonian() const {
     auto const& built_system = *system();
-    auto const is_double = hamiltonian_modifiers.any_double();
-    auto const is_complex = lattice.has_complex_hopping
-                            || hamiltonian_modifiers.any_complex()
-                            || !built_system.boundaries.empty();
 
-    if (is_double) {
-        if (is_complex) {
+    if (is_double()) {
+        if (is_complex()) {
             return std::make_shared<HamiltonianT<std::complex<double>>>(
                 built_system, hamiltonian_modifiers, wave_vector
             );
@@ -133,7 +144,7 @@ std::shared_ptr<Hamiltonian> Model::make_hamiltonian() const {
             );
         }
     } else {
-        if (is_complex) {
+        if (is_complex()) {
             return std::make_shared<HamiltonianT<std::complex<float>>>(
                 built_system, hamiltonian_modifiers, wave_vector
             );

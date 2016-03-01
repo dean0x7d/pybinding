@@ -43,6 +43,7 @@ add_library(pybinding_cppcore
     include/system/Shape.hpp
     include/system/Symmetry.hpp
     include/system/System.hpp
+    include/system/Generators.hpp
     include/system/SystemModifiers.hpp
     include/utils/Chrono.hpp
     include/utils/Log.hpp

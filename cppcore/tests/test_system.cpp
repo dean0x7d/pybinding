@@ -1,6 +1,6 @@
 #include <catch.hpp>
 
-#include "system/Lattice.hpp"
+#include "Model.hpp"
 using namespace tbm;
 
 TEST_CASE("Sublattice", "[lattice]") {
@@ -71,4 +71,77 @@ TEST_CASE("Lattice", "[lattice]") {
         auto const a = lattice.add_sublattice("A", {0, 0, 0.5});
         REQUIRE(lattice.calc_position({1, 2, 0}, {0.5, 0, 0}, a).isApprox(Cartesian(1.5, 2, 0.5)));
     }
+}
+
+TEST_CASE("HoppingGenerator", "[generator]") {
+    auto model = Model([]{
+        auto lattice = Lattice({1, 0, 0}, {0, 1, 0});
+        lattice.add_sublattice("A");
+        lattice.add_sublattice("B");
+        lattice.register_hopping_energy("t1", 1.0);
+        return lattice;
+    }());
+    REQUIRE_FALSE(model.is_complex());
+    REQUIRE(model.get_lattice().hopping_energies.size() == 1);
+    REQUIRE(model.system()->hoppings.rows() == 2);
+    REQUIRE(model.system()->hoppings.nonZeros() == 0);
+
+    SECTION("Add real generator") {
+        model.add_hopping_family({"t2", 2.0, [](CartesianArray const&, SubIdRef) {
+            auto r = HoppingGenerator::Result{ArrayXi(1), ArrayXi(1)};
+            r.from << 0;
+            r.to   << 1;
+            return r;
+        }});
+
+        REQUIRE_FALSE(model.is_complex());
+        REQUIRE(model.get_lattice().hopping_energies.size() == 2);
+        REQUIRE(model.system()->hoppings.rows() == 2);
+        REQUIRE(model.system()->hoppings.nonZeros() == 1);
+
+        auto const hopping_it = model.get_lattice().hop_name_map.find("t2");
+        REQUIRE(hopping_it != model.get_lattice().hop_name_map.end());
+        auto const hopping_id = hopping_it->second;
+        REQUIRE(model.system()->hoppings.coeff(0, 1) == hopping_id);
+    }
+
+    SECTION("Add complex generator") {
+        model.add_hopping_family({"t2", {0.0, 1.0}, [](CartesianArray const&, SubIdRef) {
+            return HoppingGenerator::Result{};
+        }});
+
+        REQUIRE(model.is_complex());
+        REQUIRE(model.system()->hoppings.rows() == 2);
+        REQUIRE(model.system()->hoppings.nonZeros() == 0);
+    }
+
+    SECTION("Upper triangular form should be preserved") {
+        model.add_hopping_family({"t2", 2.0, [](CartesianArray const&, SubIdRef) {
+            auto r = HoppingGenerator::Result{ArrayXi(2), ArrayXi(2)};
+            r.from << 0, 1;
+            r.to   << 1, 0;
+            return r;
+        }});
+
+        REQUIRE(model.system()->hoppings.rows() == 2);
+        REQUIRE(model.system()->hoppings.nonZeros() == 1);
+        REQUIRE(model.system()->hoppings.coeff(0, 1) == 1);
+        REQUIRE(model.system()->hoppings.coeff(1, 0) == 0);
+    }
+}
+
+TEST_CASE("Nonzeros per row of a triangular hopping matrix", "[unit]") {
+    SparseMatrixX<hop_id> sm(5, 5);
+    sm.insert(0, 3) = 1;
+    sm.insert(0, 4) = 1;
+    sm.insert(2, 0) = 1;
+    sm.makeCompressed();
+
+    auto expected0 = ArrayXi(sm.rows());
+    expected0 << 3, 0, 1, 1, 1;
+    REQUIRE((nonzeros_per_row(sm, false) == expected0).all());
+
+    auto expected1 = ArrayXi(sm.rows());
+    expected1 << 4, 1, 2, 2, 2;
+    REQUIRE((nonzeros_per_row(sm, true) == expected1).all());
 }
