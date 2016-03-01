@@ -1,6 +1,7 @@
 #include "system/System.hpp"
 #include "system/Symmetry.hpp"
 #include "system/SystemModifiers.hpp"
+#include "system/Generators.hpp"
 
 #include "eigen3_converters.hpp"
 #include "python_support.hpp"
@@ -42,6 +43,21 @@ public:
         contains = [py_contains](CartesianArray const& p) {
             object result = py_contains(arrayref(p.x), arrayref(p.y), arrayref(p.z));
             return extract<ArrayX<bool>>(result)();
+        };
+    }
+};
+
+class PyHoppingGenerator : public HoppingGenerator,
+                           public wrapper<HoppingGenerator> {
+public:
+    PyHoppingGenerator(std::string const& name, std::complex<double> energy, object py_make)
+        : HoppingGenerator(name, energy, {}) {
+        make = [py_make](CartesianArray const& p, SubIdRef sublattice) {
+            object py_result = py_make(arrayref(p.x), arrayref(p.y), arrayref(p.z), sublattice);
+            auto result = PyHoppingGenerator::Result{};
+            extract_array(result.from, py_result[0]);
+            extract_array(result.to, py_result[1]);
+            return result;
         };
     }
 };
@@ -166,4 +182,11 @@ void export_system() {
 
     class_<PySiteStateModifier, noncopyable>{"SiteStateModifier"};
     class_<PyPositionModifier, noncopyable>{"PositionModifier"};
+
+    class_<PyHoppingGenerator, noncopyable>{
+        "HoppingGenerator",
+        init<std::string const&, std::complex<double>, object>{
+            args("self", "name", "energy", "make")
+        }
+    };
 }

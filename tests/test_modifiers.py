@@ -251,6 +251,29 @@ def test_hopping_energy():
     assert model.hamiltonian.dtype == np.complex128
 
 
+def test_hopping_generator():
+    """Generated next-nearest hoppings should produce the same result as the builtin lattice"""
+    from scipy.spatial import cKDTree
+
+    @pb.hopping_generator("tnn_test", energy=graphene.t_nn)
+    def next_nearest(x, y, z):
+        pos = np.stack([x, y, z], axis=1)
+        dmin = graphene.a * 0.95
+        dmax = graphene.a * 1.05
+        kdtree = cKDTree(pos)
+        coo = kdtree.sparse_distance_matrix(kdtree, dmax, output_type='coo_matrix')
+        idx = coo.data > dmin
+        return coo.row[idx], coo.col[idx]
+
+    @pb.onsite_energy_modifier
+    def onsite_offset(energy):
+        return energy + 3 * graphene.t_nn
+
+    model = pb.Model(graphene.monolayer(), next_nearest, onsite_offset, graphene.hexagon_ac(1))
+    expected = pb.Model(graphene.monolayer(2), graphene.hexagon_ac(1))
+    assert pytest.fuzzy_equal(model.hamiltonian, expected.hamiltonian)
+
+
 # Disabled for now. It doesn't work when the 'fast math' compiler flag is set.
 def dont_test_invalid_return():
     @pb.onsite_energy_modifier

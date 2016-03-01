@@ -14,7 +14,8 @@ from .support.inspect import get_call_signature
 from .utils.misc import decorator_decorator
 
 __all__ = ['site_state_modifier', 'site_position_modifier', 'onsite_energy_modifier',
-           'hopping_energy_modifier', 'constant_potential', 'force_double_precision']
+           'hopping_energy_modifier', 'constant_potential', 'force_double_precision',
+           'hopping_generator']
 
 
 class _AliasArray(np.ndarray):
@@ -79,7 +80,7 @@ def _process_modifier_args(args, keywords, requested_argnames):
     return requested_kwargs
 
 
-def _check_modifier_spec(func, keywords, has_sites):
+def _check_modifier_spec(func, keywords, has_sites=False):
     """Make sure the arguments are specified correctly
 
     Parameters
@@ -345,3 +346,77 @@ def force_double_precision():
         return energy
 
     return mod
+
+
+def _make_generator(func, kind, name, energy, keywords):
+    """Turn a regular function into a generator of the desired kind
+
+    Parameters
+    ----------
+    func : callable
+        The function which is to become a modifier.
+    kind : object
+        Modifier base class.
+    keywords : str
+        String of comma separated names: the expected arguments of a modifier function.
+    """
+    keywords = [word.strip() for word in keywords.split(",")]
+    _check_modifier_spec(func, keywords)
+    requested_argnames = tuple(inspect.signature(func).parameters.keys())
+
+    def generator_func(*args):
+        requested_kwargs = _process_modifier_args(args, keywords, requested_argnames)
+        return func(**requested_kwargs)
+
+    class Generator(kind):
+        callsig = getattr(func, 'callsig', None)
+        if not callsig:
+            callsig = get_call_signature()
+            callsig.function = func
+
+        def __init__(self):
+            # noinspection PyArgumentList
+            super().__init__(name, energy, generator_func)
+
+        def __str__(self):
+            return str(self.callsig)
+
+        def __repr__(self):
+            return repr(self.callsig)
+
+        def __call__(self, *args, **kwargs):
+            return func(*args, **kwargs)
+
+    return Generator()
+
+
+@decorator_decorator
+def hopping_generator(name, energy):
+    """Introduce a new hopping family (with new hop_id) via a list of index pairs
+
+    This can be used to create new hoppings independent of the main :class:`Lattice` definition.
+    It's especially useful for creating additional local hoppings, e.g. to model defects.
+
+    Parameters
+    ----------
+    name : string
+        Friendly identifier for the new hopping family.
+    energy : Union[float, complex]
+        Base hopping energy value.
+
+    Notes
+    -----
+    The function parameters must be a combination of any number of the following:
+
+    x, y, z : np.ndarray
+        Lattice site position.
+    sub_id : np.ndarray
+        Sublattice ID. Can be checked for equality with `lattice[sublattice_name]`.
+
+    The function must return:
+
+    Tuple[np.ndarray, np.ndarray]
+        Arrays of index pairs which form the new hoppings.
+    """
+    return functools.partial(_make_generator, kind=_cpp.HoppingGenerator,
+                             name=name, energy=energy, keywords="x, y, z, sub_id")
