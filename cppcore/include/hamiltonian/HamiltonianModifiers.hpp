@@ -11,53 +11,45 @@
 namespace tbm {
 
 /**
-Abstract base class for onsite potential.
+ Modify the onsite energy, e.g. to apply an electric field
 */
-class OnsiteModifierImpl {
+class OnsiteModifier {
 public:
-    virtual ~OnsiteModifierImpl() = default;
-    virtual bool is_complex() const { return false; }
+    using Function = std::function<void(ComplexArrayRef /*energy*/, CartesianArray const& /*pos*/,
+                                        SubIdRef /*sublattice*/)>;
+    Function apply; ///< to be user-implemented
+    bool is_complex = false; ///< the modeled effect requires complex values
+    bool is_double = false; ///< the modeled effect requires double precision
 
-    /// Get the value of the potential at the given coordinates.
-    virtual void apply(ArrayXf& energy, CartesianArray const& position,
-                       SubIdRef sublattice) const = 0;
-    virtual void apply(ArrayXcf& energy, CartesianArray const& position,
-                       SubIdRef sublattice) const = 0;
-    virtual void apply(ArrayXd& energy, CartesianArray const& position,
-                       SubIdRef sublattice) const = 0;
-    virtual void apply(ArrayXcd& energy, CartesianArray const& position,
-                       SubIdRef sublattice) const = 0;
+    OnsiteModifier(Function const& apply, bool is_complex = false, bool is_double = false)
+        : apply(apply), is_complex(is_complex), is_double(is_double) {}
 
-    bool is_double = false;
+    explicit operator bool() const { return static_cast<bool>(apply); }
 };
 
 /**
-Abstract base class for hopping energy modifiers.
+ Modify the hopping energy, e.g. to apply a magnetic field
 */
-class HoppingModifierImpl {
+class HoppingModifier {
 public:
-    virtual ~HoppingModifierImpl() = default;
-    virtual bool is_complex() const { return false; }
+    using Function = std::function<void(ComplexArrayRef /*energy*/, CartesianArray const& /*pos1*/,
+                                        CartesianArray const& /*pos2*/, HopIdRef /*hopping_id*/)>;
+    Function apply; ///< to be user-implemented
+    bool is_complex = false; ///< the modeled effect requires complex values
+    bool is_double = false; ///< the modeled effect requires double precision
 
-    virtual void apply(ArrayXf& energy, CartesianArray const& pos1, CartesianArray const& pos2,
-                       HopIdRef hopping) const = 0;
-    virtual void apply(ArrayXd& energy, CartesianArray const& pos1, CartesianArray const& pos2,
-                       HopIdRef hopping) const = 0;
-    virtual void apply(ArrayXcf& energy,  CartesianArray const& pos1, CartesianArray const& pos2,
-                       HopIdRef hopping) const = 0;
-    virtual void apply(ArrayXcd& energy,  CartesianArray const& pos1, CartesianArray const& pos2,
-                       HopIdRef hopping) const = 0;
+    HoppingModifier(Function const& apply, bool is_complex = false, bool is_double = false)
+        : apply(apply), is_complex(is_complex), is_double(is_double) {}
 
-    bool is_double = false;
+    explicit operator bool() const { return static_cast<bool>(apply); }
 };
 
-using OnsiteModifier = std::shared_ptr<OnsiteModifierImpl const>;
-using HoppingModifier = std::shared_ptr<HoppingModifierImpl const>;
-
-class HamiltonianModifiers {
-public:
-    bool add_unique(OnsiteModifier const& m);
-    bool add_unique(HoppingModifier const& m);
+/**
+ Container with some convenience functions
+ */
+struct HamiltonianModifiers {
+    std::vector<OnsiteModifier> onsite;
+    std::vector<HoppingModifier> hopping;
 
     /// Do any of the modifiers require complex numbers?
     bool any_complex() const;
@@ -76,11 +68,6 @@ public:
     void apply_to_hoppings(SystemOrBoundary const& system, Fn lambda) const;
 
     void clear();
-    
-public:
-    // Keep modifiers as unique elements but insertion order must be preserved (don't use std::set)
-    std::vector<OnsiteModifier> onsite;
-    std::vector<HoppingModifier> hopping;
 };
 
 template<class scalar_t, class Fn>
@@ -101,8 +88,8 @@ void HamiltonianModifiers::apply_to_onsite(System const& system, Fn lambda) cons
             potential.setZero(num_sites);
 
         for (auto const& modifier : onsite) {
-            modifier->apply(potential, system.positions,
-                            {system.sublattices, system.lattice.sub_name_map});
+            modifier.apply(arrayref(potential), system.positions,
+                           {system.sublattices, system.lattice.sub_name_map});
         }
     }
 
@@ -162,8 +149,10 @@ void HamiltonianModifiers::apply_to_hoppings(SystemOrBoundary const& system, Fn 
                     hop_ids.conservativeResize(size);
                 }
 
-                for (auto const& modifier : hopping)
-                    modifier->apply(hoppings, pos1, pos2, {hop_ids, system.lattice.hop_name_map});
+                for (auto const& modifier : hopping) {
+                    modifier.apply(arrayref(hoppings), pos1, pos2,
+                                   {hop_ids, system.lattice.hop_name_map});
+                }
 
                 hopping_csr_matrix.slice_for_each(
                     start_row, start_idx, size,

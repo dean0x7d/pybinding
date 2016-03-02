@@ -6,6 +6,7 @@
 #include "system/SystemModifiers.hpp"
 #include "system/Lead.hpp"
 #include "system/Generators.hpp"
+#include "hamiltonian/Hamiltonian.hpp"
 #include "hamiltonian/HamiltonianModifiers.hpp"
 
 #include "utils/Chrono.hpp"
@@ -14,8 +15,6 @@
 #include <vector>
 
 namespace tbm {
-
-class Hamiltonian;
 
 class Model {
 public:

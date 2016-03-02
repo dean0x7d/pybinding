@@ -1,7 +1,6 @@
 #include "system/System.hpp"
 #include "system/Symmetry.hpp"
 #include "system/SystemModifiers.hpp"
-#include "system/Generators.hpp"
 
 #include "eigen3_converters.hpp"
 #include "python_support.hpp"
@@ -13,26 +12,28 @@
 using namespace boost::python;
 using namespace tbm;
 
-
-class PySiteStateModifier : public SiteStateModifierImpl,
-                            public wrapper<SiteStateModifierImpl> {
+class PySiteStateModifier : public SiteStateModifier,
+                            public wrapper<SiteStateModifier> {
 public:
-    void apply(ArrayX<bool>& state, CartesianArray const& p, SubIdRef s) const override {
-        object result = get_override("apply")(
-            arrayref(state), arrayref(p.x), arrayref(p.y), arrayref(p.z), s
-        );
-        extract_array(state, result);
+    PySiteStateModifier(object py_apply) : SiteStateModifier({}) {
+        apply = [py_apply](ArrayX<bool>& state, CartesianArray const& p, SubIdRef sub) {
+            object result = py_apply(arrayref(state), arrayref(p.x), arrayref(p.y),
+                                     arrayref(p.z), sub);
+            extract_array(state, result);
+        };
     }
 };
 
-class PyPositionModifier : public PositionModifierImpl,
-                           public wrapper<PositionModifierImpl> {
+class PyPositionModifier : public PositionModifier,
+                           public wrapper<PositionModifier> {
 public:
-    void apply(CartesianArray& p, SubIdRef s) const override {
-        tuple result = get_override("apply")(arrayref(p.x), arrayref(p.y), arrayref(p.z), s);
-        extract_array(p.x, result[0]);
-        extract_array(p.y, result[1]);
-        extract_array(p.z, result[2]);
+    PyPositionModifier(object py_apply) : PositionModifier({}) {
+        apply = [py_apply](CartesianArray& p, SubIdRef sub) {
+            object result = py_apply(arrayref(p.x), arrayref(p.y), arrayref(p.z), sub);
+            extract_array(p.x, result[0]);
+            extract_array(p.y, result[1]);
+            extract_array(p.z, result[2]);
+        };
     }
 };
 
@@ -180,8 +181,8 @@ void export_system() {
 
     class_<tbm::Symmetry>{"TranslationalSymmetry", init<Cartesian>{args("self", "length")}};
 
-    class_<PySiteStateModifier, noncopyable>{"SiteStateModifier"};
-    class_<PyPositionModifier, noncopyable>{"PositionModifier"};
+    class_<PySiteStateModifier, noncopyable>{"SiteStateModifier", init<object>()};
+    class_<PyPositionModifier, noncopyable>{"PositionModifier", init<object>()};
 
     class_<PyHoppingGenerator, noncopyable>{
         "HoppingGenerator",

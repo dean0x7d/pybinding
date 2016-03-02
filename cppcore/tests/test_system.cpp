@@ -3,6 +3,18 @@
 #include "Model.hpp"
 using namespace tbm;
 
+Lattice square_lattice() {
+    auto lattice = Lattice({1, 0, 0}, {0, 1, 0});
+    auto const a = lattice.add_sublattice("A", {0, 0, 0});
+    auto const b = lattice.add_sublattice("B", {0.5, 0.5, 0});
+    auto const t1 = lattice.register_hopping_energy("t1", 1.0);
+    auto const t2 = lattice.register_hopping_energy("t2", 2.0);
+    lattice.add_registered_hopping({0, 0, 0}, a, b, t1);
+    lattice.add_registered_hopping({1, 1, 0}, a, b, t1);
+    lattice.add_registered_hopping({1, 0, 0}, a, a, t2);
+    return lattice;
+}
+
 TEST_CASE("Sublattice", "[lattice]") {
     auto sublattice = Sublattice{};
     sublattice.add_hopping({0, 0, 0}, 0, 0, false);
@@ -71,6 +83,69 @@ TEST_CASE("Lattice", "[lattice]") {
         auto const a = lattice.add_sublattice("A", {0, 0, 0.5});
         REQUIRE(lattice.calc_position({1, 2, 0}, {0.5, 0, 0}, a).isApprox(Cartesian(1.5, 2, 0.5)));
     }
+}
+
+TEST_CASE("SiteStateModifier", "[modifier]") {
+    auto model = Model(square_lattice());
+    REQUIRE(model.system()->num_sites() == 2);
+
+    model.add_site_state_modifier({[](ArrayX<bool>& state, CartesianArray const&, SubIdRef) {
+        state[0] = false;
+    }});
+    REQUIRE(model.system()->num_sites() == 1);
+}
+
+TEST_CASE("SitePositionModifier", "[modifier]") {
+    auto model = Model(square_lattice());
+    REQUIRE(model.system()->positions.y[1] == Approx(0.5));
+
+    model.add_position_modifier({[](CartesianArray& position, SubIdRef) {
+        position.y[1] = 1;
+    }});
+    REQUIRE(model.system()->positions.y[1] == Approx(1));
+}
+
+struct OnsiteEnergyOp {
+    template<class Array>
+    void operator()(Array energy) {
+        energy.setConstant(1);
+    }
+};
+
+TEST_CASE("OnsiteEnergyModifier", "[modifier]") {
+    auto model = Model(square_lattice());
+    auto sm_init = model.hamiltonian()->matrix_union();
+    REQUIRE(sm_init.rows == 2);
+    REQUIRE(sm_init.values.cols == 2);
+
+    model.add_onsite_modifier({[](ComplexArrayRef energy, CartesianArray const&, SubIdRef) {
+        num::match<ArrayX>(energy, OnsiteEnergyOp{});
+    }});
+    auto sm = model.hamiltonian()->matrix_union();
+    REQUIRE(sm.rows == 2);
+    REQUIRE(sm.values.cols == 4);
+}
+
+struct HoppingEnergyOp {
+    template<class Array>
+    void operator()(Array energy) {
+        energy.setZero();
+    }
+};
+
+TEST_CASE("HoppingEnergyModifier", "[modifier]") {
+    auto model = Model(square_lattice());
+    auto sm_init = model.hamiltonian()->matrix_union();
+    REQUIRE(sm_init.rows == 2);
+    REQUIRE(sm_init.values.cols == 2);
+
+    model.add_hopping_modifier({[](ComplexArrayRef energy, CartesianArray const&,
+                                   CartesianArray const&, HopIdRef) {
+        num::match<ArrayX>(energy, HoppingEnergyOp{});
+    }});
+    auto sm = model.hamiltonian()->matrix_union();
+    REQUIRE(sm.rows == 2);
+    REQUIRE(sm.values.cols == 0);
 }
 
 TEST_CASE("HoppingGenerator", "[generator]") {

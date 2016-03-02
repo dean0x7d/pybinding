@@ -7,7 +7,7 @@
 namespace tbm {
 
 struct System;
-class HamiltonianModifiers;
+struct HamiltonianModifiers;
 
 /**
  Builds and stores a tight-binding Hamiltonian. Abstract base.

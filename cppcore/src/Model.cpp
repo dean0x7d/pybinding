@@ -36,27 +36,25 @@ void Model::attach_lead(int direction, Shape const& shape) {
 }
 
 void Model::add_site_state_modifier(SiteStateModifier const& m) {
-    if (system_modifiers.add_unique(m)) {
-        _system.reset();
-        _hamiltonian.reset();
-    }
+    system_modifiers.state.push_back(m);
+    _system.reset();
+    _hamiltonian.reset();
 }
 
 void Model::add_position_modifier(PositionModifier const& m) {
-    if (system_modifiers.add_unique(m)) {
-        _system.reset();
-        _hamiltonian.reset();
-    }
+    system_modifiers.position.push_back(m);
+    _system.reset();
+    _hamiltonian.reset();
 }
 
 void Model::add_onsite_modifier(OnsiteModifier const& m) {
-    if (hamiltonian_modifiers.add_unique(m))
-        _hamiltonian.reset();
+    hamiltonian_modifiers.onsite.push_back(m);
+    _hamiltonian.reset();
 }
 
 void Model::add_hopping_modifier(HoppingModifier const& m) {
-    if (hamiltonian_modifiers.add_unique(m))
-        _hamiltonian.reset();
+    hamiltonian_modifiers.hopping.push_back(m);
+    _hamiltonian.reset();
 }
 
 void Model::add_hopping_family(HoppingGenerator const& g) {
@@ -114,11 +112,11 @@ std::shared_ptr<System> Model::make_system() const {
         auto const sublattices = detail::make_sublattice_ids(foundation);
 
         for (auto const& site_state_modifier : system_modifiers.state) {
-            site_state_modifier->apply(foundation.get_states(), foundation.get_positions(),
+            site_state_modifier.apply(foundation.get_states(), foundation.get_positions(),
                                        {sublattices, lattice.sub_name_map});
         }
         for (auto const& position_modifier : system_modifiers.position) {
-            position_modifier->apply(foundation.get_positions(),
+            position_modifier.apply(foundation.get_positions(),
                                      {sublattices, lattice.sub_name_map});
         }
     }

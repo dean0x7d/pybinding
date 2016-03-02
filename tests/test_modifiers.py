@@ -110,7 +110,7 @@ def test_cast():
 
     assert np.isrealobj(complex_in_real_out(complex_one))
     assert np.iscomplexobj(complex_in_real_out.apply(complex_one, zero, zero, zero))
-    assert not complex_in_real_out.is_complex()
+    assert not complex_in_real_out.is_complex
 
     @pb.hopping_energy_modifier
     def real_in_complex_out(energy):
@@ -118,7 +118,19 @@ def test_cast():
 
     assert np.iscomplexobj(real_in_complex_out(complex_one))
     assert np.iscomplexobj(real_in_complex_out.apply(complex_one, zero, zero, zero))
-    assert real_in_complex_out.is_complex()
+    assert real_in_complex_out.is_complex
+
+    @pb.onsite_energy_modifier
+    def error_checking_complex_onsite(energy):
+        np.argmin(energy)
+        return energy
+    assert not error_checking_complex_onsite.is_complex
+
+    @pb.hopping_energy_modifier
+    def error_checking_complex_hoppings(energy):
+        np.argmin(energy)
+        return energy
+    assert error_checking_complex_hoppings.is_complex
 
 
 def test_site_state():
@@ -272,6 +284,23 @@ def test_hopping_generator():
     model = pb.Model(graphene.monolayer(), next_nearest, onsite_offset, graphene.hexagon_ac(1))
     expected = pb.Model(graphene.monolayer(2), graphene.hexagon_ac(1))
     assert pytest.fuzzy_equal(model.hamiltonian, expected.hamiltonian)
+
+
+def test_wrapper_return():
+    """Make sure the boost python wrapper return type conversion is working"""
+    @pb.hopping_energy_modifier
+    def mul(energy):
+        """Returning a non-contiguous view will force the wrapper to create a copy"""
+        energy = np.concatenate([energy, energy])
+        energy *= 3
+        return energy[::2]
+
+    lattice = pb.Lattice([1, 0])
+    lattice.add_sublattices(("A", [0, 0]), ("B", [0, 0]))
+    lattice.add_one_hopping([0], "A", "B", 1.0)
+
+    model = pb.Model(lattice, mul, pb.primitive(2))
+    assert pytest.fuzzy_equal(model.hamiltonian.data, [3, 3, 3, 3])
 
 
 # Disabled for now. It doesn't work when the 'fast math' compiler flag is set.

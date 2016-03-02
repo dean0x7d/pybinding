@@ -102,25 +102,23 @@ def _check_modifier_spec(func, keywords, has_sites=False):
                            "Arguments must be any of: {expected}".format(**locals()))
 
 
-def _check_modifier_return(modifier, num_arguments, num_return, maybe_complex):
+def _check_modifier_return(func, num_arguments, num_return):
     """Make sure the modifier returns the correct type and size
 
     Parameters
     ----------
-    modifier
-        The modifier being checked.
+    func : callable
+        The function which is to become a modifier.
     num_arguments : int
         Expected number of modifier arguments.
     num_return : int
         Expected number of return values.
-    maybe_complex : bool
-        The modifier may return a complex result even if the input is real.
     """
     in_shape = 10,
     in_data = np.random.rand(*in_shape).astype(np.float16)
 
     try:
-        out_data = modifier.apply(*(in_data,) * num_arguments)
+        out_data = func(*(in_data,) * num_arguments)
     except AttributeError as e:
         if "astype" in str(e):  # known issue
             raise RuntimeError("Modifier must return numpy.ndarray")
@@ -134,12 +132,35 @@ def _check_modifier_return(modifier, num_arguments, num_return, maybe_complex):
     if any(v.shape != in_shape for v in out_data):
         raise RuntimeError("Modifier must return the same shape ndarray as the arguments")
 
-    if not maybe_complex and modifier.is_complex():
+
+def _check_modifier_complex(func, num_arguments, can_be_complex):
+    """A modifier is complex if it returns complex output for real input
+
+    Parameters
+    ----------
+    func : callable
+        The function which is to become a modifier.
+    num_arguments : int
+        Expected number of modifier arguments.
+    can_be_complex : int
+        Is this modifier allowed to have a complex return value.
+    """
+    dummy_args = [np.array([], dtype=np.float64)] * num_arguments
+    # noinspection PyBroadException
+    try:
+        return_value = func(*dummy_args)
+    except Exception:
+        # an exception prevented checking, assume the worst case
+        return can_be_complex
+
+    is_complex = np.iscomplexobj(return_value)
+    if is_complex and not can_be_complex:
         raise RuntimeError("This modifier must not return complex values")
+    return is_complex
 
 
 def _make_modifier(func, kind, keywords, has_sites=True, num_return=1,
-                   maybe_complex=False, double=False):
+                   can_be_complex=False, double=False):
     """Turn a regular function into a modifier of the desired kind
 
     Parameters
@@ -154,7 +175,7 @@ def _make_modifier(func, kind, keywords, has_sites=True, num_return=1,
         Arguments may include the :class:`Sites` helper.
     num_return : int
         Expected number of return values.
-    maybe_complex : bool
+    can_be_complex : bool
         The modifier may return a complex result even if the input is real.
     double : bool
         The modifier requires double precision floating point.
@@ -165,16 +186,36 @@ def _make_modifier(func, kind, keywords, has_sites=True, num_return=1,
     """
     keywords = [word.strip() for word in keywords.split(",")]
     _check_modifier_spec(func, keywords, has_sites)
+    requested_argnames = tuple(inspect.signature(func).parameters.keys())
+
+    def apply_func(*args):
+        requested_kwargs = _process_modifier_args(args, keywords, requested_argnames)
+        ret = func(**requested_kwargs)
+
+        def cast_dtype(v):
+            return v.astype(args[0].dtype, casting='same_kind', copy=False)
+
+        try:  # cast output array to same element type as the input
+            if isinstance(ret, tuple):
+                return tuple(map(cast_dtype, ret))
+            else:
+                return cast_dtype(ret)
+        except TypeError:
+            return ret
+
+    _check_modifier_return(apply_func, len(keywords), num_return)
 
     class Modifier(kind):
-        requested_argnames = tuple(inspect.signature(func).parameters.keys())
         callsig = getattr(func, 'callsig', None)
         if not callsig:
             callsig = get_call_signature()
             callsig.function = func
 
         def __init__(self):
-            super().__init__()
+            # noinspection PyArgumentList
+            super().__init__(apply_func)
+            self.apply = apply_func
+            self.is_complex = _check_modifier_complex(apply_func, len(keywords), can_be_complex)
             self.is_double = double
 
         def __str__(self):
@@ -186,28 +227,7 @@ def _make_modifier(func, kind, keywords, has_sites=True, num_return=1,
         def __call__(self, *args, **kwargs):
             return func(*args, **kwargs)
 
-        def apply(self, *args):
-            requested_kwargs = _process_modifier_args(args, keywords, self.requested_argnames)
-            ret = func(**requested_kwargs)
-
-            def cast_dtype(v):
-                return v.astype(args[0].dtype, casting='same_kind', copy=False)
-
-            try:  # cast output array to same element type as the input
-                if isinstance(ret, tuple):
-                    return tuple(map(cast_dtype, ret))
-                else:
-                    return cast_dtype(ret)
-            except TypeError:
-                return ret
-
-        def is_complex(self):
-            ret = self.apply(np.ones(1), *(np.zeros(1) for _ in keywords[1:]))
-            return np.iscomplexobj(ret)
-
-    modifier = Modifier()
-    _check_modifier_return(modifier, len(keywords), num_return, maybe_complex)
-    return modifier
+    return Modifier()
 
 
 @decorator_decorator
@@ -320,7 +340,7 @@ def hopping_energy_modifier(double=False):
         A modified `hopping` argument or an `ndarray` of the same dtype and shape.
     """
     return functools.partial(_make_modifier, kind=_cpp.HoppingModifier,
-                             maybe_complex=True, double=double, has_sites=False,
+                             can_be_complex=True, double=double, has_sites=False,
                              keywords="energy, x1, y1, z1, x2, y2, z2, hop_id")
 
 
