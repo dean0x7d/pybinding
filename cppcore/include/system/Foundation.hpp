@@ -3,7 +3,7 @@
 
 #include "detail/slice.hpp"
 #include "support/dense.hpp"
-#include "support/cpp14.hpp"
+#include "support/cppfuture.hpp"
 
 #include <array>
 #include <vector>
@@ -155,8 +155,8 @@ template<bool is_const>
 class Foundation::Iterator
     : public Site,
       public std::iterator<std::input_iterator_tag,
-                           cpp14::conditional_t<is_const, Site const, Site>> {
-    using Ref = cpp14::conditional_t<is_const, Site const&, Site&>;
+                           std14::conditional_t<is_const, Site const, Site>> {
+    using Ref = std14::conditional_t<is_const, Site const&, Site&>;
 
 public:
     Iterator(Foundation* foundation, int idx) : Site(foundation, {0, 0, 0}, 0, idx) {}
@@ -191,8 +191,8 @@ private:
     class Iterator
         : public Site,
           public std::iterator<std::input_iterator_tag,
-                               cpp14::conditional_t<is_const, Iterator const, Iterator>> {
-        using Ref = cpp14::conditional_t<is_const, Iterator const&, Iterator&>;
+                               std14::conditional_t<is_const, Iterator const, Iterator>> {
+        using Ref = std14::conditional_t<is_const, Iterator const&, Iterator&>;
 
         SliceIndex3D slice_index;
         int slice_idx;

@@ -1,5 +1,5 @@
 #pragma once
-#include "support/cpp14.hpp"
+#include "support/cppfuture.hpp"
 #include <complex>
 #include <type_traits>
 
@@ -45,7 +45,7 @@ private:
         if (!cast_ham)
             return nullptr;
 
-        auto strategy = cpp14::make_unique<Strategy<scalar_t>>(config);
+        auto strategy = std14::make_unique<Strategy<scalar_t>>(config);
         strategy->set_hamiltonian(cast_ham);
 
         return std::move(strategy);

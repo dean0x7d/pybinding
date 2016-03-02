@@ -2,7 +2,7 @@
 #include "hamiltonian/HamiltonianModifiers.hpp"
 
 #include "utils/Log.hpp"
-#include "support/cpp14.hpp"
+#include "support/cppfuture.hpp"
 #include "support/physics.hpp"
 
 using namespace tbm;
@@ -84,14 +84,13 @@ void HamiltonianT<scalar_t>::build_periodic(System const& system,
 }
 
 template<class scalar_t, class... Args>
-cpp14::enable_if_t<!num::is_complex<scalar_t>(), void>
-set_helper(Args...)
-{
+std14::enable_if_t<!num::is_complex<scalar_t>(), void>
+set_helper(Args...) {
     // pass - a real Hamiltonian can't have periodic boundary conditions
 }
 
 template<class scalar_t, class SparseMatrix, class M, class L>
-cpp14::enable_if_t<num::is_complex<scalar_t>(), void>
+std14::enable_if_t<num::is_complex<scalar_t>(), void>
 set_helper(SparseMatrix& matrix, const M& boundary_matrices, const L& lengths, Cartesian k) {
     // sum boundary matrices in all periodic directions
     for (std::size_t i = 0; i < boundary_matrices.size(); ++i) {
