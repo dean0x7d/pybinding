@@ -78,6 +78,11 @@ def test_decorator():
         pb.onsite_energy_modifier(lambda energy: np.ones_like(energy, dtype=np.complex128))
     assert "must not return complex" in str(excinfo.value)
 
+    @pb.onsite_energy_modifier
+    def modifier_return_checker_should_ignore_invalid_sublattices(energy, sub_id):
+        energy[sub_id == 'invalid'] = 0
+        return energy
+
 
 @pb.site_state_modifier
 def global_mod(state):
@@ -119,18 +124,6 @@ def test_cast():
     assert np.iscomplexobj(real_in_complex_out(complex_one))
     assert np.iscomplexobj(real_in_complex_out.apply(complex_one, zero, zero, zero))
     assert real_in_complex_out.is_complex
-
-    @pb.onsite_energy_modifier
-    def error_checking_complex_onsite(energy):
-        np.argmin(energy)
-        return energy
-    assert not error_checking_complex_onsite.is_complex
-
-    @pb.hopping_energy_modifier
-    def error_checking_complex_hoppings(energy):
-        np.argmin(energy)
-        return energy
-    assert error_checking_complex_hoppings.is_complex
 
 
 def test_site_state():

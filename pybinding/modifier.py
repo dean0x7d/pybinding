@@ -5,6 +5,7 @@ such as various fields, defects or geometric deformations.
 """
 import inspect
 import functools
+from collections import defaultdict
 
 import numpy as np
 
@@ -102,7 +103,7 @@ def _check_modifier_spec(func, keywords, has_sites=False):
                            "Arguments must be any of: {expected}".format(**locals()))
 
 
-def _check_modifier_return(func, num_arguments, num_return):
+def _check_modifier_return(func, num_arguments, num_return, can_be_complex):
     """Make sure the modifier returns the correct type and size
 
     Parameters
@@ -113,12 +114,14 @@ def _check_modifier_return(func, num_arguments, num_return):
         Expected number of modifier arguments.
     num_return : int
         Expected number of return values.
+    can_be_complex : bool
+        Is this modifier allowed to have a complex return value.
     """
     in_shape = 10,
-    in_data = np.random.rand(*in_shape).astype(np.float16)
+    dummy_input = [_AliasArray(np.ones(in_shape), defaultdict(int))] * num_arguments
 
     try:
-        out_data = func(*(in_data,) * num_arguments)
+        out_data = func(*dummy_input)
     except AttributeError as e:
         if "astype" in str(e):  # known issue
             raise RuntimeError("Modifier must return numpy.ndarray")
@@ -132,30 +135,10 @@ def _check_modifier_return(func, num_arguments, num_return):
     if any(v.shape != in_shape for v in out_data):
         raise RuntimeError("Modifier must return the same shape ndarray as the arguments")
 
-
-def _check_modifier_complex(func, num_arguments, can_be_complex):
-    """A modifier is complex if it returns complex output for real input
-
-    Parameters
-    ----------
-    func : callable
-        The function which is to become a modifier.
-    num_arguments : int
-        Expected number of modifier arguments.
-    can_be_complex : int
-        Is this modifier allowed to have a complex return value.
-    """
-    dummy_args = [np.array([], dtype=np.float64)] * num_arguments
-    # noinspection PyBroadException
-    try:
-        return_value = func(*dummy_args)
-    except Exception:
-        # an exception prevented checking, assume the worst case
-        return can_be_complex
-
-    is_complex = np.iscomplexobj(return_value)
+    is_complex = any(np.iscomplexobj(v) for v in out_data)
     if is_complex and not can_be_complex:
         raise RuntimeError("This modifier must not return complex values")
+
     return is_complex
 
 
@@ -203,7 +186,7 @@ def _make_modifier(func, kind, keywords, has_sites=True, num_return=1,
         except TypeError:
             return ret
 
-    _check_modifier_return(apply_func, len(keywords), num_return)
+    is_complex = _check_modifier_return(apply_func, len(keywords), num_return, can_be_complex)
 
     class Modifier(kind):
         callsig = getattr(func, 'callsig', None)
@@ -215,7 +198,7 @@ def _make_modifier(func, kind, keywords, has_sites=True, num_return=1,
             # noinspection PyArgumentList
             super().__init__(apply_func)
             self.apply = apply_func
-            self.is_complex = _check_modifier_complex(apply_func, len(keywords), can_be_complex)
+            self.is_complex = is_complex
             self.is_double = double
 
         def __str__(self):
