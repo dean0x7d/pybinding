@@ -82,7 +82,7 @@ ArrayX<int16_t> count_neighbors(Foundation const& foundation) {
     return neighbor_count;
 }
 
-void clear_neighbors(Site& site, ArrayX<int16_t>& neighbor_count) {
+void clear_neighbors(Site& site, ArrayX<int16_t>& neighbor_count, int min_neighbors) {
     if (neighbor_count[site.get_idx()] == 0)
         return;
 
@@ -92,23 +92,14 @@ void clear_neighbors(Site& site, ArrayX<int16_t>& neighbor_count) {
 
         auto const neighbor_idx = neighbor.get_idx();
         neighbor_count[neighbor_idx] -= 1;
-        if (neighbor_count[neighbor_idx] < site.get_lattice().min_neighbours) {
+        if (neighbor_count[neighbor_idx] < min_neighbors) {
             neighbor.set_valid(false);
             // recursive call... but it will not be very deep
-            clear_neighbors(neighbor, neighbor_count);
+            clear_neighbors(neighbor, neighbor_count, min_neighbors);
         }
     });
 
     neighbor_count[site.get_idx()] = 0;
-}
-
-void trim_edges(Foundation& foundation) {
-    auto neighbor_count = count_neighbors(foundation);
-    for (auto& site : foundation) {
-        if (!site.is_valid()) {
-            clear_neighbors(site, neighbor_count);
-        }
-    }
 }
 
 ArrayX<sub_id> make_sublattice_ids(Foundation const& foundation) {
@@ -125,6 +116,15 @@ ArrayX<sub_id> make_sublattice_ids(Foundation const& foundation) {
 }
 
 } // namespace detail
+
+void remove_dangling(Foundation& foundation, int min_neighbors) {
+    auto neighbor_count = detail::count_neighbors(foundation);
+    for (auto& site : foundation) {
+        if (!site.is_valid()) {
+            detail::clear_neighbors(site, neighbor_count, min_neighbors);
+        }
+    }
+}
 
 Foundation::Foundation(Lattice const& lattice, Primitive const& primitive)
     : lattice(lattice),
@@ -144,7 +144,7 @@ Foundation::Foundation(Lattice const& lattice, Shape const& shape)
       positions(detail::generate_positions(lattice.calc_position(bounds.first, shape.offset),
                                            size, lattice)),
       is_valid(shape.contains(positions)) {
-    detail::trim_edges(*this);
+    remove_dangling(*this, lattice.min_neighbours);
 }
 
 HamiltonianIndices::HamiltonianIndices(Foundation const& foundation)

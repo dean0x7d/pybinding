@@ -150,6 +150,15 @@ def test_site_state():
     assert_sublattice(sub_id, model)
     assert np.all(nearest == [1, 0])
 
+    @pb.site_state_modifier(min_neighbors=2)
+    def remove_dangling(state):
+        state[0] = False
+        return state
+
+    with pytest.raises(RuntimeError) as excinfo:
+        build_model(remove_dangling)
+    assert "0 lattice sites" in str(excinfo.value)
+
 
 def test_site_position():
     @pb.site_position_modifier

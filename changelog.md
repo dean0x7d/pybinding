@@ -6,6 +6,9 @@
   string names. For example, this makes it possible to write `sub_id == 'A'` instead of the old
   `sub_id == lattice['A']` and `hop_id == 'gamma1'` instead of `hop_id == lattice('gamma1')`.
 
+* The site state modifier can automatically remove dangling sites which have less than a certain
+  number of neighbors (set using the `min_neighbors` decorator argument).
+
 * Added optional `sites` argument for state, position, and onsite energy modifiers.
   It can be used instead of the `x, y, z, sub_id` arguments and contains a few helper methods.
   See the modifier API reference for more information.

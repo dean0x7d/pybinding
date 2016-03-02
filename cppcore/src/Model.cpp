@@ -114,6 +114,9 @@ std::shared_ptr<System> Model::make_system() const {
         for (auto const& site_state_modifier : system_modifiers.state) {
             site_state_modifier.apply(foundation.get_states(), foundation.get_positions(),
                                        {sublattices, lattice.sub_name_map});
+            if (site_state_modifier.min_neighbors > 0) {
+                remove_dangling(foundation, site_state_modifier.min_neighbors);
+            }
         }
         for (auto const& position_modifier : system_modifiers.position) {
             position_modifier.apply(foundation.get_positions(),

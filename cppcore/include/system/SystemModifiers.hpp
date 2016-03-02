@@ -17,8 +17,10 @@ public:
     using Function = std::function<void(ArrayX<bool>& /*state*/, CartesianArray const& /*pos*/,
                                         SubIdRef /*sublattice*/)>;
     Function apply; ///< to be user-implemented
+    int min_neighbors; ///< afterwards, remove sites with less than this number of neighbors
 
-    SiteStateModifier(Function const& apply) : apply(apply) {}
+    SiteStateModifier(Function const& apply, int min_neighbors = 0)
+        : apply(apply), min_neighbors(min_neighbors) {}
 };
 
 /**

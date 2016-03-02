@@ -87,12 +87,18 @@ TEST_CASE("Lattice", "[lattice]") {
 
 TEST_CASE("SiteStateModifier", "[modifier]") {
     auto model = Model(square_lattice());
-    REQUIRE(model.system()->num_sites() == 2);
+    model.set_primitive({2});
+    REQUIRE(model.system()->num_sites() == 4);
 
-    model.add_site_state_modifier({[](ArrayX<bool>& state, CartesianArray const&, SubIdRef) {
+    auto remove_site = [](ArrayX<bool>& state, CartesianArray const&, SubIdRef) {
         state[0] = false;
-    }});
-    REQUIRE(model.system()->num_sites() == 1);
+    };
+    model.add_site_state_modifier({remove_site});
+    REQUIRE(model.system()->num_sites() == 3);
+    model.add_site_state_modifier({remove_site, 1});
+    REQUIRE(model.system()->num_sites() == 2);
+    model.add_site_state_modifier({remove_site, 2});
+    REQUIRE_THROWS(model.system());
 }
 
 TEST_CASE("SitePositionModifier", "[modifier]") {

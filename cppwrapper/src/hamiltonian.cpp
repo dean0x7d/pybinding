@@ -12,7 +12,7 @@ using namespace tbm;
 class PyOnsiteModifier : public OnsiteModifier,
                          public wrapper<OnsiteModifier> {
 public:
-    PyOnsiteModifier(object py_apply, bool is_complex = false, bool is_double = false)
+    PyOnsiteModifier(object py_apply, bool is_complex, bool is_double)
         : OnsiteModifier({}, is_complex, is_double) {
         apply = [py_apply](ComplexArrayRef energy, CartesianArray const& p, SubIdRef sub) {
             object result = py_apply(energy, arrayref(p.x), arrayref(p.y), arrayref(p.z), sub);
@@ -24,7 +24,7 @@ public:
 class PyHoppingModifier : public HoppingModifier,
                           public wrapper<HoppingModifier> {
 public:
-    PyHoppingModifier(object py_apply, bool is_complex = false, bool is_double = false)
+    PyHoppingModifier(object py_apply, bool is_complex, bool is_double)
         : HoppingModifier({}, is_complex, is_double) {
         apply = [py_apply](ComplexArrayRef energy, CartesianArray const& p1,
                            CartesianArray const& p2, HopIdRef hopping) {
@@ -47,11 +47,20 @@ void export_modifiers() {
     .add_property("name_map", copy_value([](HopIdRef const& s) { return s.name_map; }))
     ;
 
-    class_<PyOnsiteModifier, noncopyable>{"OnsiteModifier", init<object, optional<bool, bool>>()}
+    class_<PyOnsiteModifier, noncopyable>{
+        "OnsiteModifier", init<object, bool, bool>(
+            args("self", "apply", "is_complex"_kw=false, "is_double"_kw=false)
+        )
+    }
     .def_readwrite("is_complex", &PyOnsiteModifier::is_complex)
     .def_readwrite("is_double", &PyOnsiteModifier::is_double)
     ;
-    class_<PyHoppingModifier, noncopyable>{"HoppingModifier", init<object, optional<bool, bool>>()}
+
+    class_<PyHoppingModifier, noncopyable>{
+        "HoppingModifier", init<object, bool, bool>(
+            args("self", "apply", "is_complex"_kw=false, "is_double"_kw=false)
+        )
+    }
     .def_readwrite("is_complex", &PyHoppingModifier::is_complex)
     .def_readwrite("is_double", &PyHoppingModifier::is_double)
     ;

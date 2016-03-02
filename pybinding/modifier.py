@@ -142,8 +142,7 @@ def _check_modifier_return(func, num_arguments, num_return, can_be_complex):
     return is_complex
 
 
-def _make_modifier(func, kind, keywords, has_sites=True, num_return=1,
-                   can_be_complex=False, double=False):
+def _make_modifier(func, kind, init, keywords, has_sites=True, num_return=1, can_be_complex=False):
     """Turn a regular function into a modifier of the desired kind
 
     Parameters
@@ -152,6 +151,8 @@ def _make_modifier(func, kind, keywords, has_sites=True, num_return=1,
         The function which is to become a modifier.
     kind : object
         Modifier base class.
+    init : dict
+        Initializer kwargs for the Modifier base class.
     keywords : str
         String of comma separated names: the expected arguments of a modifier function.
     has_sites : bool
@@ -160,8 +161,6 @@ def _make_modifier(func, kind, keywords, has_sites=True, num_return=1,
         Expected number of return values.
     can_be_complex : bool
         The modifier may return a complex result even if the input is real.
-    double : bool
-        The modifier requires double precision floating point.
 
     Returns
     -------
@@ -187,6 +186,8 @@ def _make_modifier(func, kind, keywords, has_sites=True, num_return=1,
             return ret
 
     is_complex = _check_modifier_return(apply_func, len(keywords), num_return, can_be_complex)
+    if can_be_complex:
+        init.update(is_complex=is_complex)
 
     class Modifier(kind):
         callsig = getattr(func, 'callsig', None)
@@ -196,10 +197,8 @@ def _make_modifier(func, kind, keywords, has_sites=True, num_return=1,
 
         def __init__(self):
             # noinspection PyArgumentList
-            super().__init__(apply_func)
+            super().__init__(apply_func, **init)
             self.apply = apply_func
-            self.is_complex = is_complex
-            self.is_double = double
 
         def __str__(self):
             return str(self.callsig)
@@ -214,8 +213,13 @@ def _make_modifier(func, kind, keywords, has_sites=True, num_return=1,
 
 
 @decorator_decorator
-def site_state_modifier():
+def site_state_modifier(min_neighbors=0):
     """Modify the state (valid or invalid) of lattice sites, e.g. to create vacancies
+
+    Parameters
+    ----------
+    min_neighbors : int
+        After modification, remove dangling sites with less than this number of neighbors.
 
     Notes
     -----
@@ -237,6 +241,7 @@ def site_state_modifier():
         A modified `state` argument or an `ndarray` of the same dtype and shape.
     """
     return functools.partial(_make_modifier, kind=_cpp.SiteStateModifier,
+                             init=dict(min_neighbors=min_neighbors),
                              keywords="state, x, y, z, sub_id")
 
 
@@ -260,7 +265,7 @@ def site_position_modifier():
     tuple of ndarray
         Modified 'x, y, z' arguments or 3 `ndarray` objects of the same dtype and shape.
     """
-    return functools.partial(_make_modifier, kind=_cpp.PositionModifier,
+    return functools.partial(_make_modifier, kind=_cpp.PositionModifier, init={},
                              keywords="x, y, z, sub_id", num_return=3)
 
 
@@ -272,7 +277,7 @@ def onsite_energy_modifier(double=False):
     ----------
     double : bool
         Requires the model to use double precision floating point values.
-        Default to single precision otherwise.
+        Defaults to single precision otherwise.
 
     Notes
     -----
@@ -292,7 +297,8 @@ def onsite_energy_modifier(double=False):
     ndarray
         A modified `potential` argument or an `ndarray` of the same dtype and shape.
     """
-    return functools.partial(_make_modifier, kind=_cpp.OnsiteModifier, double=double,
+    return functools.partial(_make_modifier, kind=_cpp.OnsiteModifier,
+                             init=dict(is_double=double),
                              keywords="energy, x, y, z, sub_id")
 
 
@@ -304,7 +310,7 @@ def hopping_energy_modifier(double=False):
     ----------
     double : bool
         Requires the model to use double precision floating point values.
-        Default to single precision otherwise.
+        Defaults to single precision otherwise.
 
     Notes
     -----
@@ -323,7 +329,7 @@ def hopping_energy_modifier(double=False):
         A modified `hopping` argument or an `ndarray` of the same dtype and shape.
     """
     return functools.partial(_make_modifier, kind=_cpp.HoppingModifier,
-                             can_be_complex=True, double=double, has_sites=False,
+                             init=dict(is_double=double), can_be_complex=True, has_sites=False,
                              keywords="energy, x1, y1, z1, x2, y2, z2, hop_id")
 
 

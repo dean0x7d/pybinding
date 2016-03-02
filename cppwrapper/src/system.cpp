@@ -15,7 +15,8 @@ using namespace tbm;
 class PySiteStateModifier : public SiteStateModifier,
                             public wrapper<SiteStateModifier> {
 public:
-    PySiteStateModifier(object py_apply) : SiteStateModifier({}) {
+    PySiteStateModifier(object py_apply, int min_neighbors)
+        : SiteStateModifier({}, min_neighbors) {
         apply = [py_apply](ArrayX<bool>& state, CartesianArray const& p, SubIdRef sub) {
             object result = py_apply(arrayref(state), arrayref(p.x), arrayref(p.y),
                                      arrayref(p.z), sub);
@@ -181,8 +182,14 @@ void export_system() {
 
     class_<tbm::Symmetry>{"TranslationalSymmetry", init<Cartesian>{args("self", "length")}};
 
-    class_<PySiteStateModifier, noncopyable>{"SiteStateModifier", init<object>()};
-    class_<PyPositionModifier, noncopyable>{"PositionModifier", init<object>()};
+    class_<PySiteStateModifier, noncopyable>{
+        "SiteStateModifier",
+        init<object, int>(args("self", "apply", "min_neighbors"_kw=0))
+    };
+    class_<PyPositionModifier, noncopyable>{
+        "PositionModifier",
+        init<object>(args("self", "apply"))
+    };
 
     class_<PyHoppingGenerator, noncopyable>{
         "HoppingGenerator",
