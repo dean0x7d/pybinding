@@ -75,12 +75,12 @@ void BaseSolver::solve() {
     is_solved = true;
 }
 
-RealArrayRef BaseSolver::eigenvalues() {
+RealArrayConstRef BaseSolver::eigenvalues() {
     solve();
     return strategy->eigenvalues();
 }
 
-ComplexArrayRef BaseSolver::eigenvectors() {
+ComplexArrayConstRef BaseSolver::eigenvectors() {
     solve();
     return strategy->eigenvectors();
 }

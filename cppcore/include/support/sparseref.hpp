@@ -5,9 +5,9 @@
 namespace tbm {
 
 struct SparseURef {
-    tbm::num::ArrayRef const values;
-    tbm::num::ArrayRef const inner_indices;
-    tbm::num::ArrayRef const outer_starts;
+    tbm::num::ArrayConstRef const values;
+    tbm::num::ArrayConstRef const inner_indices;
+    tbm::num::ArrayConstRef const outer_starts;
     int const rows, cols;
 
     template<class scalar_t>

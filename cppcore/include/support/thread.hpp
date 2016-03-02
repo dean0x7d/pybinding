@@ -119,7 +119,7 @@ class DeferredBase {
 public:
     virtual void compute() = 0;
     virtual std::string report() = 0;
-    virtual ArrayRef result_uref() = 0;
+    virtual ArrayConstRef result_uref() = 0;
 };
 
 template<class Result>
@@ -151,9 +151,9 @@ public:
         return _result;
     }
 
-    ArrayRef result_uref() final {
+    ArrayConstRef result_uref() final {
         compute();
-        return arrayref(_result);
+        return arrayref(std17::as_const(_result));
     }
 
 private:

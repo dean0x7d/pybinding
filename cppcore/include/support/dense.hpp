@@ -44,6 +44,9 @@ template<class T> using VectorX = Eigen::Matrix<T, Eigen::Dynamic, 1>;
 template<class T> using MatrixX = Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic>;
 
 // array variants
+using num::ArrayConstRef;
+using num::RealArrayConstRef;
+using num::ComplexArrayConstRef;
 using num::ArrayRef;
 using num::RealArrayRef;
 using num::ComplexArrayRef;
@@ -142,35 +145,53 @@ namespace num {
     // ArrayRef's MakeContainer specializations for Eigen types
     template<template<class, int...> class EigenType, class scalar_t, int cols, int... options>
     struct MakeContainer<EigenType<scalar_t, 1, cols, options...>> {
-        using Map = Eigen::Map<const EigenType<scalar_t, 1, cols, options...>>;
-
+        using ConstMap = Eigen::Map<const EigenType<scalar_t, 1, cols, options...>>;
+        static ConstMap make(ArrayConstRef const& ref) {
+            return ConstMap{static_cast<scalar_t const*>(ref.data), ref.cols};
+        }
+        using Map = Eigen::Map<EigenType<scalar_t, 1, cols, options...>>;
         static Map make(ArrayRef const& ref) {
-            return Map{static_cast<scalar_t const*>(ref.data), ref.cols};
+            return Map{static_cast<scalar_t*>(ref.data), ref.cols};
         }
     };
 
     template<template<class, int...> class EigenType, class scalar_t, int rows, int... options>
     struct MakeContainer<EigenType<scalar_t, rows, 1, options...>> {
-        using Map = Eigen::Map<const EigenType<scalar_t, rows, 1, options...>>;
-
+        using ConstMap = Eigen::Map<const EigenType<scalar_t, rows, 1, options...>>;
+        static ConstMap make(ArrayConstRef const& ref) {
+            return ConstMap{static_cast<scalar_t const*>(ref.data), ref.rows};
+        }
+        using Map = Eigen::Map<EigenType<scalar_t, rows, 1, options...>>;
         static Map make(ArrayRef const& ref) {
-            return Map{static_cast<scalar_t const*>(ref.data), ref.rows};
+            return Map{static_cast<scalar_t*>(ref.data), ref.rows};
         }
     };
 
     template<template<class, int...> class EigenType,
              class scalar_t, int rows, int cols, int... options>
     struct MakeContainer<EigenType<scalar_t, rows, cols, options...>> {
-        using Map = Eigen::Map<const EigenType<scalar_t, rows, cols, options...>>;
-
+        using ConstMap = Eigen::Map<const EigenType<scalar_t, rows, cols, options...>>;
+        static ConstMap make(ArrayConstRef const& ref) {
+            return ConstMap{static_cast<scalar_t const*>(ref.data), ref.rows, ref.cols};
+        }
+        using Map = Eigen::Map<EigenType<scalar_t, rows, cols, options...>>;
         static Map make(ArrayRef const& ref) {
-            return Map{static_cast<scalar_t const*>(ref.data), ref.rows, ref.cols};
+            return Map{static_cast<scalar_t*>(ref.data), ref.rows, ref.cols};
         }
     };
 } // namespace num
 
 template<class Derived>
-inline ArrayRef arrayref(DenseBase<Derived> const& v) {
+inline ArrayConstRef arrayref(DenseBase<Derived> const& v) {
+    return {num::detail::get_tag<typename Derived::Scalar>(),
+            Derived::IsRowMajor,
+            v.derived().data(),
+            static_cast<int>(v.derived().rows()),
+            static_cast<int>(v.derived().cols())};
+};
+
+template<class Derived>
+inline ArrayRef arrayref(DenseBase<Derived>& v) {
     return {num::detail::get_tag<typename Derived::Scalar>(),
             Derived::IsRowMajor,
             v.derived().data(),
@@ -179,7 +200,12 @@ inline ArrayRef arrayref(DenseBase<Derived> const& v) {
 };
 
 template<class scalar_t>
-inline ArrayRef arrayref(scalar_t const* data, int size) {
+inline ArrayConstRef arrayref(scalar_t const* data, int size) {
+    return {num::detail::get_tag<scalar_t>(), true, data, 1, size};
+};
+
+template<class scalar_t>
+inline ArrayRef arrayref(scalar_t* data, int size) {
     return {num::detail::get_tag<scalar_t>(), true, data, 1, size};
 };
 

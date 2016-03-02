@@ -56,10 +56,10 @@ public:
 
 public: // overrides
     // map eigenvalues and wavefunctions to only expose results up to the usable subspace size
-    virtual RealArrayRef eigenvalues() const override {
+    virtual RealArrayConstRef eigenvalues() const override {
         return arrayref(Map<const ArrayX<real_t>>(_eigenvalues.data(), info.final_size));
     }
-    virtual ComplexArrayRef eigenvectors() const override {
+    virtual ComplexArrayConstRef eigenvectors() const override {
         return arrayref(Map<const ArrayXX<scalar_t>>(_eigenvectors.data(),
                                                      _eigenvectors.rows(), info.final_size));
     }

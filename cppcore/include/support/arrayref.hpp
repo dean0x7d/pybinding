@@ -1,6 +1,6 @@
 #pragma once
 #include "detail/typelist.hpp"
-#include "support/traits.hpp"
+#include "support/cppfuture.hpp"
 
 #include <algorithm>
 #include <stdexcept>
@@ -28,15 +28,40 @@ namespace detail {
 } // namespace detail
 
 /// Reference to any 1D or 2D array with any scalar type supported by Tag
-struct ArrayRef {
+template<bool is_const>
+struct BasicArrayRef {
+    using ptr_type = std14::conditional_t<is_const, void const*, void*>;
+
     Tag const tag;
     bool const is_row_major;
-    void const* const data;
+    ptr_type const data;
     int const rows;
     int const cols;
 };
 
+using ArrayConstRef = BasicArrayRef<true>;
+using ArrayRef = BasicArrayRef<false>;
+
 /// Reference to an array which is limited to a set of scalar types
+template<class Scalar, class... Scalars>
+struct VariantArrayConstRef : ArrayConstRef {
+    using First = Scalar;
+    using Types = TypeList<Scalar, Scalars...>;
+
+    VariantArrayConstRef(ArrayConstRef const& other) : ArrayConstRef(other) {
+        auto const possible_tags = {detail::get_tag<Scalar>(), detail::get_tag<Scalars>()...};
+        auto const is_invalid = std::none_of(possible_tags.begin(), possible_tags.end(),
+                                             [&](Tag tag) { return other.tag == tag; });
+        if (is_invalid) {
+            throw std::runtime_error("Invalid VariantArrayConstRef assignment");
+        }
+    }
+
+    VariantArrayConstRef(ArrayRef const& a)
+        : VariantArrayConstRef(ArrayConstRef{a.tag, a.is_row_major, a.data, a.rows, a.cols})
+    {}
+};
+
 template<class Scalar, class... Scalars>
 struct VariantArrayRef : ArrayRef {
     using First = Scalar;
@@ -47,41 +72,53 @@ struct VariantArrayRef : ArrayRef {
         auto const is_invalid = std::none_of(possible_tags.begin(), possible_tags.end(),
                                              [&](Tag tag) { return other.tag == tag; });
         if (is_invalid) {
-            throw std::runtime_error{"Invalid VariantArrayRef assignment"};
+            throw std::runtime_error("Invalid VariantArrayRef assignment");
         }
     }
 };
 
 // Common typedefs
+using RealArrayConstRef = VariantArrayConstRef<float, double>;
+using ComplexArrayConstRef = VariantArrayConstRef<
+    float, double, std::complex<float>, std::complex<double>
+>;
 using RealArrayRef = VariantArrayRef<float, double>;
-using ComplexArrayRef = VariantArrayRef<float, double, std::complex<float>, std::complex<double>>;
+using ComplexArrayRef = VariantArrayRef<
+    float, double, std::complex<float>, std::complex<double>
+>;
 
 /**
  Creates an actual container from an ArrayRef
 
- To be specialized by concrete containers. The container can adopt the reference,
- as is the case with Eigen::Map, or it can create a copy of the ArrayRef's data.
+ To be specialized by concrete containers. The container can adopt the reference via
+ a proxy type (e.g. Eigen::Map) or it can create a copy of the ArrayRef's data.
  */
 template<class Container>
 struct MakeContainer {
     // Intentionally unimplemented, specializations should do it
-     static Container make(ArrayRef const&);
+    static Container make(ArrayConstRef const&);
+    static Container make(ArrayRef const&);
 };
 
 namespace detail {
+    template<template<class> class Container, class Variant>
+    using DeclContainer = decltype(
+        MakeContainer<Container<typename Variant::First>>::make(std::declval<Variant>())
+    );
+
     template<class Function, template<class> class Container, class Variant>
     using MatchResult = typename std::result_of<
-        Function(Container<typename Variant::First>)
+        Function(DeclContainer<Container, Variant>)
     >::type;
 
-    template<class Result, template<class> class Container, class Function>
-    Result try_match(ArrayRef const&, Function, TypeList<>) {
+    template<class Result, template<class> class /*Container*/, class Variant, class Function>
+    Result try_match(Variant, Function, TypeList<>) {
         throw std::runtime_error{"A match was not found"};
     };
 
-    template<class Result, template<class> class Container, class Function,
+    template<class Result, template<class> class Container, class Variant, class Function,
              class Scalar, class... Tail>
-    Result try_match(ArrayRef const& ref, Function lambda, TypeList<Scalar, Tail...>) {
+    Result try_match(Variant ref, Function lambda, TypeList<Scalar, Tail...>) {
         if (ref.tag == detail::get_tag<Scalar>()) {
             return lambda(MakeContainer<Container<Scalar>>::make(ref));
         } else {
@@ -92,18 +129,19 @@ namespace detail {
     template<class Function, template<class> class Container1, template<class> class Container2,
              class Variant1, class Variant2>
     using Match2Result = typename std::result_of<
-        Function(Container1<typename Variant1::First>, Container2<typename Variant2::First>)
+        Function(DeclContainer<Container1, Variant1>, DeclContainer<Container2, Variant2>)
     >::type;
 
-    template<class Result, template<class> class Container1, template<class> class Container2,
-             class Function>
-    Result try_match2(ArrayRef const&, ArrayRef const&, Function, TypeList<>) {
+    template<class Result, template<class> class /*Container1*/,
+             template<class> class /*Container2*/, class Variant1, class Variant2, class Function>
+    Result try_match2(Variant1, Variant2, Function, TypeList<>) {
         throw std::runtime_error{"A match was not found"};
     };
 
     template<class Result, template<class> class Container1, template<class> class Container2,
-             class Function, class Scalar1, class Scalar2, class... Tail>
-    Result try_match2(ArrayRef const& ref1, ArrayRef const& ref2, Function lambda,
+             class Variant1, class Variant2, class Function,
+             class Scalar1, class Scalar2, class... Tail>
+    Result try_match2(Variant1 ref1, Variant2 ref2, Function lambda,
                       TypeList<TypeList<Scalar1, Scalar2>, Tail...>) {
         if (ref1.tag == detail::get_tag<Scalar1>() && ref2.tag == detail::get_tag<Scalar2>()) {
             return lambda(MakeContainer<Container1<Scalar1>>::make(ref1),
@@ -125,14 +163,14 @@ namespace detail {
     };
 } // namespace detail
 
-/// Match an VariantArrayRef to a Container and pass it to Function
+/// Match a VariantArrayRef to a Container and pass it to Function
 template<template<class> class Container, class Variant, class Function,
          class Result = detail::MatchResult<Function, Container, Variant>>
 Result match(Variant ref, Function lambda) {
     return detail::try_match<Result, Container>(ref, lambda, typename Variant::Types{});
 }
 
-/// Match two ArrayRefs to Containers (considering all combinations) and pass them to Function
+/// Match two VariantArrayRefs to Containers (in all combinations) and pass them to Function
 template<template<class> class Container1, template<class> class Container2,
          class Variant1, class Variant2, class Function,
          class Result = detail::Match2Result<Function, Container1, Container2, Variant1, Variant2>>

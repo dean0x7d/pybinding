@@ -28,6 +28,9 @@ BOOST_PYTHON_MODULE(_pybinding) {
     eigen3_numpy_register_type<Cartesian>();
     eigen3_numpy_register_type<Index3D>();
 
+    register_arrayref_converter<ArrayConstRef>();
+    register_arrayref_converter<RealArrayConstRef>();
+    register_arrayref_converter<ComplexArrayConstRef>();
     register_arrayref_converter<ArrayRef>();
     register_arrayref_converter<RealArrayRef>();
     register_arrayref_converter<ComplexArrayRef>();

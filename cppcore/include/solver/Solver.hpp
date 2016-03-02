@@ -25,8 +25,8 @@ public:
     virtual bool set_hamiltonian(const std::shared_ptr<const Hamiltonian>&) = 0;
     
     virtual void solve() = 0;
-    virtual RealArrayRef eigenvalues() const = 0;
-    virtual ComplexArrayRef eigenvectors() const = 0;
+    virtual RealArrayConstRef eigenvalues() const = 0;
+    virtual ComplexArrayConstRef eigenvectors() const = 0;
 
     virtual std::string report(bool shortform) const = 0;
 };
@@ -56,8 +56,8 @@ public:
     }
 
 public:
-    virtual RealArrayRef eigenvalues() const override { return arrayref(_eigenvalues); }
-    virtual ComplexArrayRef eigenvectors() const override { return arrayref(_eigenvectors); }
+    virtual RealArrayConstRef eigenvalues() const override { return arrayref(_eigenvalues); }
+    virtual ComplexArrayConstRef eigenvectors() const override { return arrayref(_eigenvectors); }
 
 protected:
     /// possible post-processing that may be defined by derived classes
@@ -87,8 +87,8 @@ public:
     Model const& get_model() const { return model; }
     std::shared_ptr<System const> system() const { return model.system(); }
 
-    RealArrayRef eigenvalues();
-    ComplexArrayRef eigenvectors();
+    RealArrayConstRef eigenvalues();
+    ComplexArrayConstRef eigenvectors();
 
     ArrayXd calc_dos(ArrayXf energies, float broadening);
     ArrayXd calc_spatial_ldos(float energy, float broadening);
