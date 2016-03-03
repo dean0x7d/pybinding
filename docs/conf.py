@@ -40,7 +40,7 @@ numpydoc_show_class_members = False
 
 plot_include_source = True
 plot_html_show_source_link = False
-plot_formats = [('png', 120)]
+plot_formats = [('png', 120), 'pdf']
 plot_html_show_formats = False
 plot_pre_code = """
 import pybinding as pb
@@ -225,13 +225,13 @@ htmlhelp_basename = project + 'doc'
 
 latex_elements = {
     # The paper size ('letterpaper' or 'a4paper').
-    # 'papersize': 'letterpaper',
+    'papersize': 'a4paper',
 
     # The font size ('10pt', '11pt' or '12pt').
     # 'pointsize': '10pt',
 
     # Additional stuff for the LaTeX preamble.
-    # 'preamble': '',
+    'preamble': r"\definecolor{VerbatimBorderColor}{rgb}{1,1,1}",
 
     # Latex figure (float) alignment
     # 'figure_align': 'htbp',
@@ -241,7 +241,7 @@ latex_elements = {
 # (source start file, target name, title,
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
-    (master_doc, project + '.tex', project.capitalize() + ' Documentation', author, 'manual'),
+    (master_doc, project + '.tex', project.capitalize() + ' User Guide', author, 'manual'),
 ]
 
 # The name of an image file (relative to this directory) to place at the top of
@@ -262,7 +262,7 @@ latex_documents = [
 # latex_appendices = []
 
 # If false, no module index is generated.
-# latex_domain_indices = True
+latex_domain_indices = False
 
 
 # -- Options for manual page output ---------------------------------------
