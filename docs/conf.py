@@ -2,7 +2,10 @@
 # -*- coding: utf-8 -*-
 import sys
 import os
+import shutil
+import filecmp
 import sphinx_rtd_theme
+from recommonmark.parser import CommonMarkParser
 
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
@@ -55,8 +58,11 @@ templates_path = ['_templates']
 
 # The suffix(es) of source filenames.
 # You can specify multiple suffix as a list of string:
-# source_suffix = ['.rst', '.md']
-source_suffix = '.rst'
+source_suffix = ['.rst', '.md']
+
+source_parsers = {
+    '.md': CommonMarkParser,
+}
 
 # The encoding of source files.
 # source_encoding = 'utf-8-sig'
@@ -298,3 +304,17 @@ texinfo_documents = [
 
 # If true, do not generate a @detailmenu in the "Top" node's menu.
 # texinfo_no_detailmenu = False
+
+
+# -- Quick extensions -----------------------------------------------------
+
+def copy_changelog(app):
+    """Make the changelog available to sphinx"""
+    src = os.path.join(app.env.srcdir, "../changelog.md")
+    dst = os.path.join(app.env.srcdir, "changelog.md")
+    if not os.path.exists(dst) or not filecmp.cmp(src, dst, shallow=False):
+        shutil.copy(src, dst)
+
+
+def setup(app):
+    app.connect('builder-inited', copy_changelog)

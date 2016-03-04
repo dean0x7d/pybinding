@@ -1,3 +1,4 @@
+import re
 import os
 import sys
 import shutil
@@ -57,13 +58,24 @@ def about(package):
     return ret
 
 
+def changelog():
+    """Return the changes for the latest version only"""
+    if not os.path.exists("changelog.md"):
+        return ""
+
+    with open("changelog.md") as file:
+        log = file.read()
+    match = re.search(r"### ([\s\S]*?)\n###", log)
+    return match.group(1) if match else ""
+
+
 info = about("pybinding")
 manifest_maker.template = "setup.manifest"
 setup(
     name=info['__title__'],
     version=info['__version__'],
     description=info['__summary__'],
-    long_description="Documentation: http://pybinding.site/",
+    long_description="Documentation: http://pybinding.site/\n\n" + changelog(),
     url=info['__url__'],
     license=info['__license__'],
     keywords="pybinding tight-binding solid-state physics cmt",
@@ -73,7 +85,7 @@ setup(
 
     platforms=['Unix', 'Windows'],
     classifiers=[
-        'Development Status :: 3 - Alpha',
+        'Development Status :: 4 - Beta',
         'Intended Audience :: Science/Research',
         'Topic :: Scientific/Engineering :: Physics',
         'License :: OSI Approved :: BSD License',

@@ -26,3 +26,6 @@ pip-delete-this-directory.txt
 nosetests.xml
 coverage.xml
 tests/failed
+
+# Documentation
+docs/changelog.md

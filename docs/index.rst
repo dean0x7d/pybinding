@@ -51,10 +51,11 @@ where you can also post any questions, comments or issues that you might have.
 
 
 .. toctree::
-    :maxdepth: 2
+    :titlesonly:
     :hidden:
 
     intro
+    changelog
 
 
 .. toctree::
