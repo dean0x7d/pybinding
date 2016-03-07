@@ -211,7 +211,7 @@ unstrained carbon-carbon distance. This can be implemented using a
 
 .. plot::
     :nofigs:
-    :context: close-figs
+    :context:
 
         @pb.hopping_energy_modifier
         def strained_hopping(energy, x1, y1, z1, x2, y2, z2):
@@ -244,7 +244,7 @@ Instead, we can package them together in one function which is going to return b
 
 .. plot::
     :nofigs:
-    :context: close-figs
+    :context:
 
     def triaxial_strain(c):
         """Produce both the displacement and hopping energy modifier"""
