@@ -207,7 +207,7 @@ def export_notebooks(app, document, docname):
 
     docpath = os.path.dirname(docname)
     ipynb_path = app.env.nbfiles[docname]
-    with open(ipynb_path, 'w') as file:
+    with open(ipynb_path, 'w', encoding='utf-8') as file:
         writer = NBWriter(app, docpath)
         writer.write(document, file)
 
