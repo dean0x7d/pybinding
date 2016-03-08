@@ -8,6 +8,10 @@ Band structure
 In order to calculate the band structure of a crystal lattice, this section is going to introduce
 the concepts of a :class:`.Model` and a :class:`.Solver`.
 
+.. only:: html
+
+    :nbexport:`Download this page as a Jupyter notebook <self>`
+
 
 Model
 -----
@@ -184,7 +188,9 @@ are going to be dedicated to model building.
 Example
 -------
 
-:download:`Download source code </tutorial/bands_example.py>`
+.. only:: html
+
+    :download:`Download source code </tutorial/bands_example.py>`
 
 .. plot:: tutorial/bands_example.py
     :include-source:

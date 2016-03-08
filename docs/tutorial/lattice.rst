@@ -1,5 +1,5 @@
 Lattice
--------
+=======
 
 .. meta::
    :description: Crystal lattice definition in Pybinding
@@ -9,9 +9,13 @@ A :class:`.Lattice` object describes the unit cell of a crystal lattice. This in
 primitive vectors, positions of sublattice sites and hopping parameters which connect those sites.
 All of this structural information is used to build-up a larger system by translation.
 
+.. only:: html
+
+    :nbexport:`Download this page as a Jupyter notebook <self>`
+
 
 Square lattice
-**************
+--------------
 
 Starting from the basics, we'll create a simple square lattice.
 
@@ -94,7 +98,7 @@ are function arguments, which makes the lattice easily configurable.
 
 
 Graphene
-********
+--------
 
 The next example shows a slightly more complicate two-atom lattice of graphene.
 
@@ -152,7 +156,7 @@ It serves as a handy visual inspection tool.
 
 
 Brillouin zone
-**************
+--------------
 
 The method :meth:`.Lattice.plot_brillouin_zone()` is another handy tool that does just as its
 name implies.
@@ -171,7 +175,7 @@ the vertices of the Brillouin zone.
 
 
 Material repository
-*******************
+-------------------
 
 A few common lattices are included in pybinding's :doc:`/materials/index`. You can get started
 quickly by importing one of them. For example:
@@ -184,21 +188,20 @@ quickly by importing one of them. For example:
     lattice.plot()
 
 
-Example
-*******
-
-This is a full example file which you can download and run with `python lattice_example.py`.
-
-:download:`Download source code</tutorial/lattice_example.py>`
-
-.. plot:: tutorial/lattice_example.py
-    :include-source:
-
-
 Further reading
-***************
+---------------
 
 For more lattice specifications check out the :doc:`examples section </examples/lattice/index>`.
 
-.. todo::
-    * link to advanced features
+
+Example
+-------
+
+.. only:: html
+
+    This is a full example file which you can download and run with `python lattice_example.py`.
+
+    :download:`Download source code</tutorial/lattice_example.py>`
+
+.. plot:: tutorial/lattice_example.py
+    :include-source:

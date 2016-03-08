@@ -11,6 +11,10 @@ the eigensolvers, there is one common :class:`.Greens` interface while the under
 may be implemented in various ways. At this time, :func:`.kpm` is the only one that comes with
 the package.
 
+.. only:: html
+
+    :nbexport:`Download this page as a Jupyter notebook <self>`
+
 
 KPM
 ---
@@ -32,13 +36,19 @@ Greens interface
 ----------------
 
 The interface is quite simple. A :class:`.Greens` function is created with the desired
-implementation::
+implementation:
+
+.. code-block:: python
+    :emphasize-lines: 0
 
     model = pb.Model(graphene.monolayer())
     greens = pb.greens.kpm(model)
 
 It can then be used to calculate the Green's function corresponding to Hamiltonian matrix element
-`i, j` for the desired energy range and broadening::
+`i, j` for the desired energy range and broadening:
+
+.. code-block:: python
+    :emphasize-lines: 0
 
     g_ij = greens(i, j, energy=np.linspace(-9, 9, 100), broadening=0.1)
 
@@ -69,7 +79,10 @@ Indeed, that is what the resulting :class:`.LDOS` object shows after invoking it
 Tight-binding systems have lattice sites at discrete positions, which in principle means that we
 cannot freely choose just any position for LDOS calculations. However, as a convenience the
 :meth:`.Greens.calc_ldos` method will automatically find a valid site closest to the given target
-position. We can optionally also choose a specific sublattice::
+position. We can optionally also choose a specific sublattice:
+
+.. code-block:: python
+    :emphasize-lines: 0
 
     ldos = greens.calc_ldos(energy=np.linspace(-9, 9, 200), broadening=0.05,
                             position=[0, 0], sublattice=model.lattice['B'])

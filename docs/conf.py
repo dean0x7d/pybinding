@@ -10,6 +10,7 @@ from recommonmark.parser import CommonMarkParser
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
+sys.path.insert(0, os.path.abspath('.'))
 sys.path.insert(0, os.path.abspath('..'))
 import pybinding as pb
 
@@ -29,6 +30,7 @@ extensions = [
     'sphinx.ext.intersphinx',
     'numpydoc',
     'matplotlib.sphinxext.plot_directive',
+    'nbexport'
 ]
 
 autodoc_member_order = 'groupwise'
@@ -52,6 +54,13 @@ import matplotlib.pyplot as plt
 """
 plot_rcparams = pb.pltutils.pb_style
 plot_apply_rcparams = True
+
+nbexport_pre_code = plot_pre_code + """
+pb.pltutils.use_style()
+%matplotlib inline
+"""
+nbexport_baseurl = "http://docs.pybinding.site/en/latest/"
+nbexport_execute = False
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']

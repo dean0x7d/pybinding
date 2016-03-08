@@ -10,6 +10,10 @@ present the results of the various models we constructed. This section will take
 look at the concrete :func:`.lapack` and :func:`.arpack` eigenvalue solvers and their common
 :class:`.Solver` interface.
 
+.. only:: html
+
+    :nbexport:`Download this page as a Jupyter notebook <self>`
+
 
 LAPACK
 ------
@@ -50,6 +54,7 @@ No matter which concrete solver is used, they all share a common :class:`.Solver
 The two primary properties are :attr:`~.Solver.eigenvalues` and :attr:`~.Solver.eigenvectors`.
 These are the raw results of the exact diagonalization of the Hamiltonian matrix.
 
+    >>> from pybinding.repository import graphene
     >>> model = pb.Model(graphene.monolayer())
     >>> model.hamiltonian.todense()
     [[ 0.0 -2.8]

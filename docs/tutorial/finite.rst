@@ -1,5 +1,5 @@
 Finite size
------------
+===========
 
 .. meta::
    :description: Constructing tight-binding systems of arbitrary shape
@@ -10,9 +10,13 @@ This section introduces the concept of shapes with classes :class:`.Polygon` and
 eigensolver :func:`.arpack` is also introduced as a good tool for exactly solving
 larger Hamiltonian matrices.
 
+.. only:: html
+
+    :nbexport:`Download this page as a Jupyter notebook <self>`
+
 
 Primitive
-*********
+---------
 
 The simplest finite sized system is just the unit cell of the crystal lattice.
 
@@ -43,7 +47,7 @@ realistic systems we need proper shapes.
 
 
 Polygon
-*******
+-------
 
 The easiest way to create a 2D shape is with the :class:`.Polygon` class. For example,
 a simple rectangle:
@@ -105,7 +109,7 @@ the same `trapezoid` shape as defined earlier:
 
 
 Freeform shape
-**************
+--------------
 
 Unlike a :class:`.Polygon` which is defined by a list of vertices, a :class:`.FreeformShape` is
 defined by a `contains` function which determines if a lattice site is inside the desired shape.
@@ -161,7 +165,11 @@ will cause the lattice to fill in the shape.
     model.shape.plot()
 
 Note that the `ring` example uses `np.logical_and` instead of the plain `and` keyword. This is
-because the `x, y, z` positions are not given as scalar numbers but as `numpy` arrays::
+because the `x, y, z` positions are not given as scalar numbers but as numpy arrays. Array
+comparisons return boolean arrays:
+
+.. code-block:: python
+    :emphasize-lines: 0
 
     >>> x = np.array([7, 2, 3, 5, 1])
     >>> x < 5
@@ -176,7 +184,7 @@ Likewise, `math.sqrt` does not work with arrays, but `np.sqrt` does.
 
 
 Spatial LDOS
-************
+------------
 
 Now that we have a ring structure, we can exactly diagonalize its `model.hamiltonian` using a
 :class:`.Solver`. We previously used the :func:`.lapack` solver to find all the eigenvalues and
@@ -208,16 +216,11 @@ graphene ring structure.
 
 
 Example
-*******
+-------
 
-:download:`Donwload source code </tutorial/finite_example.py>`
+.. only:: html
+
+    :download:`Donwload source code </tutorial/finite_example.py>`
 
 .. plot:: tutorial/finite_example.py
     :include-source:
-
-
-Further reading
-***************
-
-.. todo::
-    For more finite sized systems check out ...

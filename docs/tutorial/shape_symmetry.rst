@@ -1,5 +1,5 @@
 Shape and symmetry
-------------------
+==================
 
 .. meta::
    :description: Constructing periodic tight-binding systems
@@ -8,9 +8,13 @@ Shape and symmetry
 The last two sections showed how to model shape and symmetry individually, but we can be more
 creative and combine the two.
 
+.. only:: html
+
+    :nbexport:`Download this page as a Jupyter notebook <self>`
+
 
 Nanoribbons
-***********
+-----------
 
 To create a graphene nanoribbon, we'll need a shape to give the finite width of the ribbon
 while the infinite length is achieved with translational symmetry.
@@ -112,7 +116,7 @@ lattice vector :math:`a_2`, the points in k-space are given as `[0, pi/d]` inste
 
 
 Complex structures
-******************
+------------------
 
 Up to now, we used :func:`.translational_symmetry` with `True` or `False` parameters to enable
 or disable periodicity in certain directions. We can also pass a number to indicate the desired
@@ -192,21 +196,15 @@ that the inner ring shape is preserved and the periodic boundaries are placed on
 
 
 Example
-*******
+-------
 
 Note the zero-energy mode in the band structure. For wave vector :math:`k = 0`, states on the
 outer edge of the ring have the highest LDOS intensity, but for :math:`k = \pi / a` the inner
 edge states dominate.
 
+.. only:: html
 
-:download:`Download source code </tutorial/shape_symmetry_example.py>`
+    :download:`Download source code </tutorial/shape_symmetry_example.py>`
 
 .. plot:: tutorial/shape_symmetry_example.py
     :include-source:
-
-
-Further reading
-***************
-
-.. todo::
-    For more symmetry tricks check out ...

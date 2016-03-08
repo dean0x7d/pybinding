@@ -11,6 +11,10 @@ This section will introduce :func:`@site_state_modifier <.site_state_modifier>` 
 strain to the model. These modifiers are applied to the structure of the system before the
 Hamiltonian matrix is created.
 
+.. only:: html
+
+    :nbexport:`Download this page as a Jupyter notebook <self>`
+
 
 Vacancies
 ---------
@@ -299,7 +303,9 @@ Take a look at the :doc:`/api/modifier` reference page for more information.
 Example
 -------
 
-:download:`Download source code </tutorial/strain_example.py>`
+.. only:: html
+
+    :download:`Download source code </tutorial/strain_example.py>`
 
 .. plot:: tutorial/strain_example.py
     :include-source:

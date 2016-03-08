@@ -1,5 +1,5 @@
 """Collection of utility functions for matplotlib"""
-from contextlib import contextmanager
+from contextlib import contextmanager, suppress
 
 import numpy as np
 import matplotlib as mpl
@@ -420,6 +420,25 @@ def _make_style():
 pb_style = _make_style()
 
 
+def _is_jupyter_notebook():
+    try:
+        # noinspection PyUnresolvedReferences
+        get_ipython()
+        return True
+    except NameError:
+        return False
+
+
+def _is_notebook_inline_backend():
+    return _is_jupyter_notebook() and 'backend_inline' in mpl.get_backend()
+
+
+def _reset_notebook_inline_backend():
+    with suppress(NameError):
+        # noinspection PyUnresolvedReferences
+        get_ipython().run_line_magic('matplotlib', 'inline')
+
+
 def use_style(style=pb_style):
     """Shortcut for `matplotlib.style.use()`
 
@@ -429,3 +448,7 @@ def use_style(style=pb_style):
         The default value is the preferred pybinding figure style.
     """
     mpl_style.use(style)
+
+    # the style shouldn't override inline backend settings
+    if _is_notebook_inline_backend():
+        _reset_notebook_inline_backend()

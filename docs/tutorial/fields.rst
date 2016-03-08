@@ -11,6 +11,10 @@ This section will introduce :func:`@onsite_energy_modifier <.onsite_energy_modif
 fields to the model. These functions can apply user-defined modifications to the Hamiltonian
 matrix which is why we shall refer to them as *modifier* functions.
 
+.. only:: html
+
+    :nbexport:`Download this page as a Jupyter notebook <self>`
+
 
 Electric potential
 ------------------
@@ -135,7 +139,10 @@ About the decorator
 
 Now that you have a general idea of how to add and compose electric potentials in a model,
 we should talk about role of the :func:`@onsite_energy_modifier <.onsite_energy_modifier>`.
-The full signature of a potential function looks like this::
+The full signature of a potential function looks like this:
+
+.. code-block:: python
+    :emphasize-lines: 0
 
     @pb.onsite_energy_modifier
     def potential(energy, x, y, z, sub_id):
@@ -150,7 +157,10 @@ As we have seen before, we don't actually need to define a function to take all 
 They are optional. The `@` decorator will recognize a function which takes any of these arguments
 and it will adapt it for use in a Pybinding model. Previously, the `linear` function accepted only
 the `energy` and `x` arguments, but `wavy` also included the `y` argument. The order of arguments
-is not important, only their names are. Therefore, this is also a valid modifier::
+is not important, only their names are. Therefore, this is also a valid modifier:
+
+.. code-block:: python
+    :emphasize-lines: 0
 
     @pb.onsite_energy_modifier
     def potential(x, y, energy, sub_id):
@@ -364,7 +374,10 @@ The `energy` argument is the existing hopping energy between two sites at coordi
 and (`x2`, `y2`). The function computes and returns the Peierls substitution as given by the
 equation above.
 
-The full signature of a :func:`@hopping_energy_modifier <.hopping_energy_modifier>` is actually::
+The full signature of a :func:`@hopping_energy_modifier <.hopping_energy_modifier>` is actually:
+
+.. code-block:: python
+    :emphasize-lines: 0
 
     @pb.hopping_energy_modifier
     def function(energy, x1, y1, z1, x2, y2, z2, hop_id):
@@ -407,7 +420,9 @@ Take a look at the :doc:`/api/modifier` reference page for more information.
 Example
 -------
 
-:download:`Download source code </tutorial/fields_example.py>`
+.. only:: html
+
+    :download:`Download source code </tutorial/fields_example.py>`
 
 .. plot:: tutorial/fields_example.py
     :include-source:
