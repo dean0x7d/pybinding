@@ -19,7 +19,7 @@ sub_id Lattice::add_sublattice(std::string const& name, Cartesian offset,
 
     auto const is_unique_name = sub_name_map.emplace(name, sublattice_id).second;
     if (!is_unique_name) {
-        throw std::logic_error("");
+        throw std::logic_error("Sublattice '" + name + "' already exists");
     }
 
     sublattices.push_back({
@@ -59,7 +59,7 @@ hop_id Lattice::register_hopping_energy(std::string const& name, std::complex<do
     if (!name.empty()) {
         auto const is_unique_name = hop_name_map.emplace(name, hopping_id).second;
         if (!is_unique_name) {
-            throw std::logic_error("");
+            throw std::logic_error("Hopping '" + name + "' already exists");
         }
     }
 

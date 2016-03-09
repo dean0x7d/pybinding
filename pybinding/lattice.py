@@ -1,5 +1,4 @@
 from math import pi, atan2
-from collections import OrderedDict
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -12,7 +11,7 @@ from .support.pickle import pickleable
 __all__ = ['Lattice', 'make_lattice']
 
 
-@pickleable(props='sublattices hopping_energies min_neighbors')
+@pickleable(version=1)
 class Lattice(_cpp.Lattice):
     """Holds the specification of a tight-binding lattice
 
@@ -23,37 +22,30 @@ class Lattice(_cpp.Lattice):
         one primitive vector (`a1`), thus forming a simple 1-dimensional lattice.
         If `a2` is also specified, a 2D lattice is created. Passing values for all
         three vectors will create a 3D lattice.
-
-    Attributes
-    ----------
-    sublattice_ids : dict
-        Map from sublattice names to unique IDs. Shortcut: `lattice[sublattice_name]`
-    hopping_ids : dict
-        Map from hopping names to unique IDs. Shortcut: `lattice(hopping_name)`
     """
     def __init__(self, a1, a2=None, a3=None):
         vectors = (np.atleast_1d(v) for v in (a1, a2, a3) if v is not None)
         super().__init__(*vectors)
-        self.sublattice_ids = OrderedDict()
-        self.hopping_ids = {}
 
     def __getitem__(self, name):
         """Get sublattice ID from its user-friendly `name`"""
         if isinstance(name, str):
-            if name not in self.sublattice_ids:
+            try:
+                return self.sub_name_map[name]
+            except KeyError:
                 raise KeyError("There is no sublattice named '{}'".format(name))
-            return self.sublattice_ids[name]
         else:  # an ID was given instead of a name, verify it
             sub_id = name
-            if sub_id not in self.sublattice_ids.values():
+            if sub_id not in self.sub_name_map.values():
                 raise KeyError("There is no sublattice with ID = {}".format(sub_id))
             return sub_id
 
     def __call__(self, name):
         """Get the hopping ID from its user-friendly `name`"""
-        if name not in self.hopping_ids:
+        try:
+            return self.hop_name_map[name]
+        except KeyError:
             raise KeyError("There is no hopping named '{}'".format(name))
-        return self.hopping_ids[name]
 
     @property
     def ndim(self):
@@ -70,9 +62,7 @@ class Lattice(_cpp.Lattice):
             of the hopping energy.
         """
         for name, energy in sorted(mapping.items(), key=lambda item: item[0]):
-            if name in self.hopping_ids:
-                raise KeyError("Hopping '{}' already exists".format(name))
-            self.hopping_ids[name] = super()._register_hopping_energy(name, energy)
+            self._register_hopping_energy(name, energy)
 
     def add_one_sublattice(self, name, offset, onsite_energy=0.0, alias=None):
         """Add a new sublattice
@@ -92,12 +82,9 @@ class Lattice(_cpp.Lattice):
             a supercell which contains multiple sites of one sublattice family at
             different positions.
         """
-        if name in self.sublattice_ids:
-            raise KeyError("Sublattice '{}' already exists".format(name))
-
         offset = np.atleast_1d(offset)
         alias = self.__getitem__(alias) if alias is not None else -1
-        self.sublattice_ids[name] = super()._add_sublattice(name, offset, onsite_energy, alias)
+        self._add_sublattice(name, offset, onsite_energy, alias)
 
     def add_sublattices(self, *sublattices):
         """Add multiple new sublattices
@@ -127,7 +114,7 @@ class Lattice(_cpp.Lattice):
         for sub in sublattices:
             self.add_one_sublattice(*sub)
 
-    def add_one_hopping(self, relative_index, from_sublattice, to_sublattice, energy):
+    def add_one_hopping(self, relative_index, from_sublattice, to_sublattice, hop_name_or_energy):
         """Add a new hopping
 
         For each new hopping, its Hermitian conjugate is added automatically. Doing so
@@ -142,20 +129,17 @@ class Lattice(_cpp.Lattice):
             Name of the sublattice in the source unit cell.
         to_sublattice : str
             Name of the sublattice in the destination unit cell.
-        energy : float or str
+        hop_name_or_energy : float or str
             The numeric value of the hopping energy or the name of a previously
             registered hopping.
         """
         relative_index = np.atleast_1d(relative_index)
         from_sub, to_sub = map(self.__getitem__, (from_sublattice, to_sublattice))
-
-        if energy in self.hopping_ids:
-            super()._add_registered_hopping(relative_index, from_sub, to_sub,
-                                            self.hopping_ids[energy])
-        elif not isinstance(energy, str):
-            super()._add_hopping(relative_index, from_sub, to_sub, energy)
+        if isinstance(hop_name_or_energy, str):
+            hop_id = self.__call__(hop_name_or_energy)
+            self._add_registered_hopping(relative_index, from_sub, to_sub, hop_id)
         else:
-            raise KeyError("There is no hopping named '{}'".format(energy))
+            self._add_hopping(relative_index, from_sub, to_sub, hop_name_or_energy)
 
     def add_hoppings(self, *hoppings):
         """Add multiple new hoppings
@@ -319,7 +303,7 @@ class Lattice(_cpp.Lattice):
             self.plot_vectors(sub_center if vector_position == 'center' else vector_position)
 
         # annotate sublattice names
-        sub_names = list(self.sublattice_ids.keys())
+        sub_names = {sub_id: name for name, sub_id in self.sub_name_map.items()}
         for sub in self.sublattices:
             pltutils.annotate_box(sub_names[sub.alias], xy=sub.offset[:2], bbox=dict(lw=0))
 

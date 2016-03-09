@@ -128,7 +128,6 @@ void export_system() {
     .add_property("name_map", copy_value([](SubIdRef const& s) { return s.name_map; }))
     ;
 
-    using tbm::Lattice;
     class_<Lattice>{"Lattice",
                     init<Cartesian, optional<Cartesian, Cartesian>>(args("a1", "a2", "a3"))}
     .def("_add_sublattice", &Lattice::add_sublattice,
@@ -138,23 +137,29 @@ void export_system() {
     .def("_register_hopping_energy", &Lattice::register_hopping_energy, args("self", "energy"))
     .def("_add_registered_hopping", &Lattice::add_registered_hopping,
          args("self", "relative_index", "from_sublattice", "to_sublattice", "id"))
-    .add_property("vectors", &Lattice::vectors, &Lattice::vectors)
-    .add_property("sublattices", &Lattice::sublattices, [](Lattice& l, std::vector<Sublattice> s) {
-        l.has_onsite_energy = std::any_of(s.begin(), s.end(), [](Sublattice const& sub) {
-            return sub.onsite != 0;
-        });
-        l.sublattices = std::move(s);
-    })
-    .add_property("hopping_energies", &Lattice::hopping_energies,
-                  [](Lattice& l, std::vector<std::complex<double>> h) {
-        l.has_complex_hopping = std::any_of(h.begin(), h.end(), [](std::complex<double> energy) {
-            return energy.imag() != .0;
-        });
-        l.hopping_energies = std::move(h);
-    })
+    .add_property("vectors", &Lattice::vectors)
+    .add_property("sublattices", &Lattice::sublattices)
+    .add_property("hopping_energies", &Lattice::hopping_energies)
+    .add_property("sub_name_map", &Lattice::sub_name_map)
+    .add_property("hop_name_map", &Lattice::hop_name_map)
     .def_readwrite("min_neighbors", &Lattice::min_neighbours)
     .enable_pickling()
     .def("__getinitargs__", [](Lattice const& l) { return l.vectors; })
+    .def("__getstate__", [](Lattice const& l) {
+        return make_tuple(l.sublattices, l.hopping_energies, l.sub_name_map, l.hop_name_map,
+                          l.min_neighbours);
+    })
+    .def("__setstate__", [](Lattice& l, tuple t) {
+        l.sublattices = extract<decltype(l.sublattices)>(t[0]);
+        l.has_onsite_energy = std::any_of(l.sublattices.begin(), l.sublattices.end(),
+                                          [](Sublattice const& sub) { return sub.onsite != 0; });
+        l.hopping_energies = extract<decltype(l.hopping_energies)>(t[1]);
+        l.has_complex_hopping = std::any_of(l.hopping_energies.begin(), l.hopping_energies.end(),
+                                            [](std::complex<double> e) { return e.imag() != .0; });
+        l.sub_name_map = extract<decltype(l.sub_name_map)>(t[2]);
+        l.hop_name_map = extract<decltype(l.hop_name_map)>(t[3]);
+        l.min_neighbours = extract<decltype(l.min_neighbours)>(t[4]);
+    })
     ;
 
     class_<tbm::Primitive> {

@@ -30,12 +30,19 @@ def _add_extension(file):
 
 
 def save(obj, file, add_pbz_extension=True):
-    """Pickle an object and save it to a compressed file.
+    """Pickle an object and save it to a compressed file
 
-    This functions wraps pickle.dump() with a few conveniences:
-     - file may be a str, a pathlib object or a file object created with open()
-     - pickle protocol 4 is used and the data is compressed with gzip
-     - the '.pbz' extension is added if file has none
+    Essentially, this is just a wrapper for :func:`pickle.dump()` with a few conveniences,
+    like default pickle protocol 4 and gzip compression.
+
+    Parameters
+    ----------
+    obj : Any
+        Object to be saved.
+    file : Union[str, pathlib.Path]
+        May be a str, a pathlib object or a file object created with open().
+    add_pbz_extension : bool
+        The '.pbz' extension is added if file has none.
     """
     file = _normalize(file)
     if add_pbz_extension:
@@ -46,9 +53,14 @@ def save(obj, file, add_pbz_extension=True):
 
 
 def load(file):
-    """Load a pickled object from a compressed file.
+    """Load a pickled object from a compressed file
 
-    This functions wraps pickle.load() with the same conveniences as pb.save().
+    Wraps :func:`pickle.load()` with the same conveniences as :func:`save()`.
+
+    Parameters
+    ----------
+    file : Union[str, pathlib.Path]
+        May be a str, a pathlib object or a file object created with open().
     """
     file = _normalize(file)
     file_ext = _add_extension(file)
@@ -69,9 +81,15 @@ def _check_version(self, data, version):
 
 def _override_methods(cls, **kwargs):
     for name, method in kwargs.items():
-        if not hasattr(cls, name):
-            setattr(cls, name, method)
+        setattr(cls, name, method)
     return cls
+
+
+def _find_boost_python_attr(obj, attr, default=None):
+    if any("Boost.Python.instance" in str(c) for c in obj.__class__.mro()):
+        return getattr(super(obj.__class__, obj), attr, default)
+    else:
+        return default
 
 
 @decorator_decorator
@@ -97,24 +115,35 @@ def pickleable(props='', impl='', version: int=0):
     mock_impl = namedtuple('T', impl_names)
 
     def getstate(self):
-        __dict__ = self.__dict__.copy()
-        if impl:
-            __dict__.pop('impl')
+        state = dict(version=version, dict=self.__dict__.copy())
 
-        return dict(version=version, dict=__dict__,
-                    props=[getattr(self, n) for n in props],
-                    impl=[getattr(self, n) for n in impl_names])
+        bp_getstate = _find_boost_python_attr(self, '__getstate__')
+        if bp_getstate:
+            state['boost_python'] = bp_getstate()
 
-    def setstate(self, data):
-        _check_version(self, data, version)
-
-        self.__dict__.update(data['dict'])
-
-        for prop, value in zip(props, data['props']):
-            setattr(self, prop, value)
+        if props:
+            state['props'] = [getattr(self, n) for n in props]
 
         if impl_names:
-            impl_state = (convert(v) for convert, v in zip_longest(conversions, data['impl']))
+            state['dict'].pop('impl')
+            state['impl'] = [getattr(self, n) for n in impl_names]
+
+        return state
+
+    def setstate(self, state):
+        _check_version(self, state, version)
+        self.__dict__.update(state['dict'])
+
+        bp_setstate = _find_boost_python_attr(self, '__setstate__')
+        if bp_setstate:
+            bp_setstate(state['boost_python'])
+
+        if props:
+            for prop, value in zip(props, state['props']):
+                setattr(self, prop, value)
+
+        if impl_names:
+            impl_state = (convert(v) for convert, v in zip_longest(conversions, state['impl']))
             self.impl = mock_impl(*impl_state)
 
     def decorator(cls):

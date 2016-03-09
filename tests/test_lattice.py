@@ -1,16 +1,14 @@
 import pytest
 
 import pybinding as pb
-from pybinding.repository import graphene, mos2, examples
+from pybinding.repository import graphene
 
 lattices = {
-    'square': examples.square_lattice(d=0.2, t=1),
     'graphene-monolayer': graphene.monolayer(),
     'graphene-monolayer-alt': graphene.monolayer_alt(),
     'graphene-monolayer-4atom': graphene.monolayer_4atom(),
     'graphene-monolayer-nn': graphene.monolayer(2),
     'graphene-bilayer': graphene.bilayer(),
-    'mos2': mos2.three_band_lattice(),
 }
 
 
@@ -37,9 +35,9 @@ def mock_lattice():
 
 
 def test_add_sublattice(mock_lattice):
-    with pytest.raises(KeyError) as excinfo:
+    with pytest.raises(RuntimeError) as excinfo:
         mock_lattice.add_one_sublattice('a', (0, 0))
-    assert "already exists" in str(excinfo.value)
+    assert "Sublattice 'a' already exists" in str(excinfo.value)
 
     with pytest.raises(KeyError) as excinfo:
         assert mock_lattice['c']
@@ -95,9 +93,9 @@ def test_add_hopping(mock_lattice):
 
     mock_lattice.add_one_hopping((0, 1), 'a', 'a', 't_nn')
 
-    with pytest.raises(KeyError) as excinfo:
+    with pytest.raises(RuntimeError) as excinfo:
         mock_lattice.register_hopping_energies({'t_nn': 0.2})
-    assert "already exists" in str(excinfo.value)
+    assert "Hopping 't_nn' already exists" in str(excinfo.value)
 
     with pytest.raises(KeyError) as excinfo:
         mock_lattice.add_one_hopping((0, 1), 'a', 'a', 'tt')
@@ -114,12 +112,17 @@ def test_pickle_round_trip(lattice, tmpdir):
     pb.save(lattice, file_name)
     from_file = pb.load(file_name)
 
+    assert lattice.sub_name_map == from_file.sub_name_map
+    assert lattice.hop_name_map == from_file.hop_name_map
     assert pytest.fuzzy_equal(lattice, from_file)
 
 
 def test_expected(lattice, baseline, plot_if_fails):
     expected = baseline(lattice)
     plot_if_fails(lattice, expected, 'plot')
+
+    assert lattice.sub_name_map == expected.sub_name_map
+    assert lattice.hop_name_map == expected.hop_name_map
     assert pytest.fuzzy_equal(lattice, expected)
 
 
