@@ -5,15 +5,16 @@ from collections import namedtuple
 import numpy as np
 import matplotlib.pyplot as plt
 from numpy import ma
+from scipy.sparse import csr_matrix
 
 from . import _cpp
 from . import pltutils
+from .lattice import Lattice
 from .utils import with_defaults
-from .support.sparse import SparseMatrix
 from .support.pickle import pickleable
 from .support.fuzzy_set import FuzzySet
 
-__all__ = ['Positions', 'Boundary', 'System', 'Sites', 'plot_hoppings', 'plot_sites']
+__all__ = ['Positions', 'System', 'Sites', 'plot_hoppings', 'plot_sites']
 
 
 Positions = namedtuple('Positions', 'x y z')
@@ -123,66 +124,24 @@ class Sites:
             return ma.argsort(ma.array(distances, mask=(self.sublattices != target_sublattice)))
 
 
-@pickleable(impl='shift hoppings.')
-class Boundary:
-    """Periodic boundary"""
-
-    def __init__(self, impl: _cpp.Boundary):
-        self.impl = impl
-
-    @property
-    def shift(self) -> np.ndarray:
-        """Position shift of the periodic boundary condition"""
-        return self.impl.shift
-
-    @property
-    def hoppings(self) -> SparseMatrix:
-        """Sparse matrix of the boundary hoppings"""
-        return SparseMatrix(self.impl.hoppings)
-
-
-@pickleable(impl='shift indices inner_hoppings. outer_hoppings.')
-class Port:
-    """Port for a lead to plug into"""
-
-    def __init__(self, impl: _cpp.Port):
-        self.impl = impl
-
-    @property
-    def shift(self) -> np.ndarray:
-        """Position shift of the periodic boundary condition"""
-        return self.impl.shift
-
-    @property
-    def indices(self) -> np.ndarray:
-        """Map of lead indices to main system indices"""
-        return np.array(self.impl.indices)
-
-    @property
-    def inner_hoppings(self) -> SparseMatrix:
-        """Sparse matrix of the inner lead hoppings"""
-        return SparseMatrix(self.impl.inner_hoppings)
-
-    @property
-    def outer_hoppings(self) -> SparseMatrix:
-        """Sparse matrix of the outer (boundary) hoppings"""
-        return SparseMatrix(self.impl.outer_hoppings)
-
-
-@pickleable(impl='positions sublattices hoppings. boundaries[] ports[]')
+@pickleable(version=1)
 class System:
     """Structural data of the model
 
     Stores positions, sublattice and hopping IDs for all lattice sites.
     """
-
     def __init__(self, impl: _cpp.System):
         self.impl = impl
 
     @property
+    def lattice(self) -> Lattice:
+        """:class:`.Lattice` specification"""
+        return self.impl.lattice
+
+    @property
     def num_sites(self) -> int:
         """Total number of sites in the system"""
-        return self.impl.num_sites
+        return self.x.size
 
     @property
     def x(self) -> np.ndarray:
@@ -215,19 +174,19 @@ class System:
         return self.impl.sublattices
 
     @property
-    def hoppings(self) -> SparseMatrix:
+    def hoppings(self) -> csr_matrix:
         """Sparse matrix of hopping IDs"""
-        return SparseMatrix(self.impl.hoppings)
+        return self.impl.hoppings
 
     @property
-    def boundaries(self):
+    def boundaries(self) -> list:
         """List of :class:`.Boundary`"""
-        return [Boundary(b) for b in self.impl.boundaries]
+        return self.impl.boundaries
 
     @property
-    def ports(self):
+    def ports(self) -> list:
         """List of :class:`.Port`"""
-        return [Port(p) for p in self.impl.ports]
+        return self.impl.ports
 
     def find_nearest(self, position, at_sublattice=-1):
         """Find the index of the atom closest to the given position

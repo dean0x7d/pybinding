@@ -1,9 +1,13 @@
 #pragma once
 #include "support/dense.hpp"
+#include "support/sparse.hpp"
 
 #include <boost/python/to_python_converter.hpp>
 #include <boost/python/extract.hpp>
 #include <boost/python/cast.hpp>
+#include <boost/python/import.hpp>
+#include <boost/python/object.hpp>
+#include <boost/python/tuple.hpp>
 
 #define NPY_NO_DEPRECATED_API NPY_1_8_API_VERSION
 #include <numpy/ndarrayobject.h>
@@ -76,7 +80,7 @@ struct arrayref_to_python {
 
 template<class T>
 inline void register_arrayref_converter() {
-    bp::to_python_converter<T, arrayref_to_python<T>>{};
+    bp::to_python_converter<T, arrayref_to_python<T>>();
 }
 
 template<class EigenType>
@@ -155,10 +159,10 @@ struct numpy_to_eigen3 {
 
     static void* convertible(PyObject* p) {
         // try to make an ndarray from the python object
-        auto ndarray = bp::handle<PyArrayObject>{bp::allow_null(PyArray_FROMANY(
+        auto ndarray = bp::handle<PyArrayObject>(bp::allow_null(PyArray_FROMANY(
             p, ndtype, ndim, ndim, NPY_ARRAY_FORCECAST |
             (EigenType::IsRowMajor ? NPY_ARRAY_C_CONTIGUOUS : NPY_ARRAY_F_CONTIGUOUS)
-        ))};
+        )));
 
         if (!ndarray)
             return nullptr;
@@ -176,10 +180,10 @@ struct numpy_to_eigen3 {
             ((bp::converter::rvalue_from_python_storage<EigenType>*)data)->storage.bytes
         );
 
-        auto ndarray = bp::handle<PyArrayObject>{PyArray_FROMANY(
+        auto ndarray = bp::handle<PyArrayObject>(PyArray_FROMANY(
             p, ndtype, ndim, ndim, NPY_ARRAY_FORCECAST |
             (EigenType::IsRowMajor ? NPY_ARRAY_C_CONTIGUOUS : NPY_ARRAY_F_CONTIGUOUS)
-        )};
+        ));
         auto array_data = static_cast<typename EigenType::Scalar*>(PyArray_DATA(ndarray.get()));
         auto array_shape = PyArray_SHAPE(ndarray.get());
 
@@ -250,7 +254,7 @@ template<class EigenType>
 inline void eigen3_numpy_register_type() {
     numpy_to_eigen3<EigenType>{};
     numpy_to_eigen3_map<EigenType>{};
-    bp::to_python_converter<EigenType, eigen3_to_numpy<EigenType>>{};
+    bp::to_python_converter<EigenType, eigen3_to_numpy<EigenType>>();
 }
 
 template<class EigenType>
@@ -259,7 +263,7 @@ inline void extract_array(EigenType& v, bp::object const& o) {
     if (map.check()) {
         v = map();
     } else {
-        v = bp::extract<EigenType>{o}();
+        v = bp::extract<EigenType>(o)();
     }
 }
 
@@ -276,3 +280,87 @@ struct ExtractArray {
         }
     }
 };
+
+namespace detail {
+    template<class scalar_t>
+    void copy_data(bp::object from, int size, scalar_t* to) {
+        using Array = tbm::ArrayX<scalar_t>;
+        bp::extract<Eigen::Map<Array>> extract_map(from);
+        if (extract_map.check()) {
+            std::copy_n(extract_map().data(), size, to);
+        } else {
+            std::copy_n(bp::extract<Array>(from)().data(), size, to);
+        }
+    }
+}
+
+template<class scalar_t>
+struct csr_eigen3_to_scipy {
+    static PyObject* convert(tbm::SparseMatrixX<scalar_t> const& s) {
+        auto scipy_sparse = bp::import("scipy.sparse");
+        auto csr_matrix = scipy_sparse.attr("csr_matrix");
+
+        auto data = tbm::arrayref(s.valuePtr(), s.nonZeros());
+        auto indices = tbm::arrayref(s.innerIndexPtr(), s.nonZeros());
+        auto indptr = tbm::arrayref(s.outerIndexPtr(), s.outerSize() + 1);
+        auto matrix = csr_matrix(bp::make_tuple(data, indices, indptr),
+                                 bp::make_tuple(s.rows(), s.cols()),
+                                 /*dtype*/bp::object{}, /*copy*/bp::object{false});
+        return matrix.release();
+    }
+};
+
+template<class scalar_t>
+struct scipy_sparse_to_eigen3 {
+    using SparseMatrix = tbm::SparseMatrixX<scalar_t>;
+
+    scipy_sparse_to_eigen3() {
+        bp::converter::registry::insert_rvalue_converter(
+            &convertible, &construct, bp::type_id<SparseMatrix>()
+        );
+    }
+
+    static void* convertible(PyObject* p) {
+        auto o = bp::object(bp::handle<>(bp::borrowed(p)));
+        auto type = bp::getattr(o, "dtype", {});
+        if (type.is_none() || bp::extract<int>(type.attr("num")) != dtype<scalar_t>::value) {
+            return nullptr;
+        }
+
+        if (bp::getattr(o, "shape", {}).is_none()) return nullptr;
+        if (bp::getattr(o, "nnz", {}).is_none()) return nullptr;
+        if (bp::getattr(o, "data", {}).is_none()) return nullptr;
+        if (bp::getattr(o, "indices", {}).is_none()) return nullptr;
+        if (bp::getattr(o, "indptr", {}).is_none()) return nullptr;
+
+        return p;
+    }
+
+    static void construct(PyObject* p, bp::converter::rvalue_from_python_stage1_data* d) {
+        auto storage = reinterpret_cast<SparseMatrix*>(
+            ((bp::converter::rvalue_from_python_storage<SparseMatrix>*)d)->storage.bytes
+        );
+
+        auto pymatrix = bp::object(bp::handle<>(bp::borrowed(p)));
+        auto shape = bp::getattr(pymatrix, "shape");
+        auto const rows = bp::extract<int>(shape[0])();
+        auto const cols = bp::extract<int>(shape[1])();
+
+        new (storage) SparseMatrix(rows, cols);
+        auto& sm = *storage;
+
+        auto const nnz = bp::extract<int>(bp::getattr(pymatrix, "nnz"))();
+        sm.resizeNonZeros(nnz);
+        ::detail::copy_data(bp::getattr(pymatrix, "data"), nnz, sm.valuePtr());
+        ::detail::copy_data(bp::getattr(pymatrix, "indices"), nnz, sm.innerIndexPtr());
+        ::detail::copy_data(bp::getattr(pymatrix, "indptr"), rows + 1, sm.outerIndexPtr());
+
+        d->convertible = storage;
+    }
+};
+
+template<class scalar_t>
+inline void register_csr_converter() {
+    scipy_sparse_to_eigen3<scalar_t>{};
+    bp::to_python_converter<tbm::SparseMatrixX<scalar_t>, csr_eigen3_to_scipy<scalar_t>>();
+}

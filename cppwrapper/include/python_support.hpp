@@ -3,6 +3,7 @@
 #include <boost/python/return_value_policy.hpp>
 #include <boost/python/copy_const_reference.hpp>
 #include <boost/python/return_by_value.hpp>
+#include <boost/python/import.hpp>
 
 #include "support/dense.hpp"
 #include "support/sparseref.hpp"
@@ -62,6 +63,31 @@ object sparse_uref(Data Class::* d) {
         [d](Class& c) { return tbm::SparseURef{c.*d}; },
         return_value_policy<return_by_value, with_custodian_and_ward_postcall<0, 1>>{}
     );
+}
+
+namespace detail {
+    template<class T>
+    object with_changed_class(T const& value, char const* class_name, char const* module_name) {
+        auto module = import(module_name);
+        auto o = object(value);
+        o.attr("__class__") = module.attr(class_name);
+        return o;
+    }
+}
+
+template<class Class, class Data>
+object extended(Data (Class::*pmf)() const, char const* class_name,
+                char const* module_name = "pybinding") {
+    return make_function([=](Class const& c) {
+        return detail::with_changed_class((c.*pmf)(), class_name, module_name);
+    });
+}
+
+template<class Class, class Data, class = cpp14::enable_if_t<!std::is_function<Data>::value>>
+object extended(Data Class::* d, char const* class_name, char const* module_name = "pybinding") {
+    return make_function([=](Class const& c) {
+        return detail::with_changed_class(c.*d, class_name, module_name);
+    });
 }
 
 }}

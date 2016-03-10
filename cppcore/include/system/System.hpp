@@ -54,6 +54,7 @@ struct System::Port {
     SparseMatrixX<hop_id> inner_hoppings; ///< hoppings within the lead
     SparseMatrixX<hop_id> outer_hoppings; ///< periodic hoppings
 
+    Port() = default;
     Port(Foundation const& foundation, HamiltonianIndices const& indices, Lead const& lead);
 
     /// Return the lead index corresponding to the main system Hamiltonian index

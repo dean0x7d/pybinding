@@ -59,7 +59,7 @@ def test_freeform(baseline, plot_if_fails):
 def test_freeform_plot():
     def sphere(radius):
         def contains(x, y, z):
-            r = np.sqrt(x**2, y**2, z**2)
+            r = np.sqrt(x**2 + y**2 + z**2)
             return r < radius
 
         return pb.FreeformShape(contains, width=[2 * radius] * 3)

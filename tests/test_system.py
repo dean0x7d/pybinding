@@ -1,12 +1,9 @@
 import pytest
 
 import pybinding as pb
-from pybinding.repository import graphene, examples
+from pybinding.repository import graphene
 
 models = {
-    'square': [examples.square_lattice(d=0.2, t=1), pb.rectangle(1)],
-    'square-periodic-2d': [examples.square_lattice(d=0.2, t=1), pb.rectangle(2),
-                           pb.translational_symmetry(a1=0.6, a2=0.6)],
     'graphene-monolayer': [graphene.monolayer(), graphene.hexagon_ac(1)],
     'graphene-monolayer-alt': [graphene.monolayer_alt(), pb.rectangle(1.6, 1.4)],
     'graphene-monolayer-4atom': [graphene.monolayer_4atom()],
@@ -34,7 +31,7 @@ def test_pickle_round_trip(model, tmpdir):
     assert pytest.fuzzy_equal(model.system, from_file)
 
 
-def test_system(model, baseline, plot_if_fails):
+def test_expected(model, baseline, plot_if_fails):
     system = model.system
     expected = baseline(system)
 

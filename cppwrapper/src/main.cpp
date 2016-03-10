@@ -1,10 +1,11 @@
+#include "system/Lattice.hpp"
+
 #include "eigen3_converters.hpp"
 #include "python_support.hpp"
 
 #include <boost/python/module.hpp>
 #include <boost/python/def.hpp>
 #include <boost/python/class.hpp>
-#include <boost/python/tuple.hpp>
 
 using namespace boost::python;
 using namespace tbm;
@@ -25,6 +26,7 @@ BOOST_PYTHON_MODULE(_pybinding) {
     eigen3_numpy_register_type<ArrayXcd>();
     eigen3_numpy_register_type<ArrayXi>();
     eigen3_numpy_register_type<ArrayX<bool>>();
+    eigen3_numpy_register_type<ArrayX<hop_id>>();
     eigen3_numpy_register_type<Cartesian>();
     eigen3_numpy_register_type<Index3D>();
 
@@ -35,6 +37,8 @@ BOOST_PYTHON_MODULE(_pybinding) {
     register_arrayref_converter<RealArrayRef>();
     register_arrayref_converter<ComplexArrayRef>();
 
+    register_csr_converter<hop_id>();
+
     class_<CartesianArray>{
         "CartesianArray",
         init<ArrayXf const&, ArrayXf const&, ArrayXf const&>{args("self", "x", "y", "z")}
@@ -42,6 +46,10 @@ BOOST_PYTHON_MODULE(_pybinding) {
     .add_property("x", dense_uref(&CartesianArray::x), &CartesianArray::x)
     .add_property("y", dense_uref(&CartesianArray::y), &CartesianArray::y)
     .add_property("z", dense_uref(&CartesianArray::z), &CartesianArray::z)
+    .enable_pickling()
+    .def("__getinitargs__", [](object o) {
+        return make_tuple(o.attr("x"), o.attr("y"), o.attr("z"));
+    })
     ;
 
     class_<SparseURef> {"SparseURef", no_init}
@@ -50,7 +58,7 @@ BOOST_PYTHON_MODULE(_pybinding) {
     .add_property("indices", internal_ref(&SparseURef::inner_indices))
     .add_property("indptr", internal_ref(&SparseURef::outer_starts))
     ;
-    
+
     // export all classes
     export_core();
     export_system();
