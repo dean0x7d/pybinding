@@ -44,3 +44,12 @@ def test_kpm_reuse():
         actual = kpm.calc_ldos(energy, broadening, position)
         expected = pb.greens.kpm(model).calc_ldos(energy, broadening, position)
         assert pytest.fuzzy_equal(actual, expected, rtol=1e-3, atol=1e-6)
+
+
+def test_ldos_sublattice():
+    """LDOS for A and B sublattices should be antisymmetric for graphene with a mass term"""
+    model = pb.Model(graphene.monolayer(), graphene.hexagon_ac(10), graphene.mass_term(1))
+    kpm = pb.greens.kpm(model)
+
+    a, b = (kpm.calc_ldos(np.linspace(-5, 5, 50), 0.1, [0, 0], sub) for sub in ('A', 'B'))
+    assert pytest.fuzzy_equal(a.ldos, b.ldos[::-1], rtol=1e-3, atol=1e-6)

@@ -65,7 +65,7 @@ class Greens:
         """
         return self.impl.calc_greens(i, j, energy, broadening)
 
-    def calc_ldos(self, energy, broadening, position, sublattice=-1):
+    def calc_ldos(self, energy, broadening, position, sublattice=None):
         """Calculate the local density of states as a function of energy
 
         Parameters
@@ -79,7 +79,7 @@ class Greens:
             Cartesian position of the lattice site for which the LDOS is calculated.
             Doesn't need to be exact: the method will find the actual site which is
             closest to the given position.
-        sublattice : int, optional
+        sublattice : Optional[int]
             Only look for sites of a specific sublattice, closest to `position`.
             The default value considers any sublattice.
 
@@ -87,10 +87,11 @@ class Greens:
         -------
         results.LDOS
         """
+        sublattice = self.system.lattice[sublattice] if sublattice is not None else -1
         ldos = self.impl.calc_ldos(energy, broadening, position, sublattice)
         return results.LDOS(energy, ldos)
 
-    def deferred_ldos(self, energy, broadening, position, sublattice=-1):
+    def deferred_ldos(self, energy, broadening, position, sublattice=None):
         """Same as :meth:`calc_ldos` but for parallel computation: see the :mod:`.parallel` module
 
         Parameters
@@ -104,7 +105,7 @@ class Greens:
             Cartesian position of the lattice site for which the LDOS is calculated.
             Doesn't need to be exact: the method will find the actual site which is
             closest to the given position.
-        sublattice : int, optional
+        sublattice : Optional[int]
             Only look for sites of a specific sublattice, closest to `position`.
             The default value considers any sublattice.
 
@@ -112,6 +113,7 @@ class Greens:
         -------
         Deferred
         """
+        sublattice = self.system.lattice[sublattice] if sublattice is not None else -1
         deferred = self.impl.deferred_ldos(energy, broadening, position, sublattice)
         deferred.model = self.model
         return deferred

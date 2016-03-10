@@ -37,9 +37,13 @@ class Sites:
     x, y, z : np.ndarray
     sublattices : np.ndarray
     """
-    def __init__(self, positions, sublattices):
+    def __init__(self, positions, sublattices, lattice=None):
         self.x, self.y, self.z = map(np.atleast_1d, positions)
         self.sublattices = np.atleast_1d(sublattices)
+        self.lattice = lattice
+
+    def _translate_sublattice(self, value):
+        return self.lattice[value] if self.lattice else value
 
     @property
     def positions(self):
@@ -69,14 +73,14 @@ class Sites:
         positions = np.stack(self.positions[:ndim], axis=1)
         return np.linalg.norm(positions - target_position, axis=1)
 
-    def find_nearest(self, target_position, target_sublattice=-1):
+    def find_nearest(self, target_position, target_sublattice=None):
         """Return the index of the position nearest the target
 
         Parameters
         ----------
         target_position : array_like
         target_sublattice : int
-            Look for a specific sublattice site, or -1 if any will do (default).
+            Look for a specific sublattice site. By default any will do.
 
         Returns
         -------
@@ -91,19 +95,20 @@ class Sites:
         2
         """
         distances = self.distances(target_position)
-        if target_sublattice < 0:
+        if target_sublattice is None:
             return np.argmin(distances)
         else:
+            target_sublattice = self._translate_sublattice(target_sublattice)
             return ma.argmin(ma.array(distances, mask=(self.sublattices != target_sublattice)))
 
-    def argsort_nearest(self, target_position, target_sublattice=-1):
+    def argsort_nearest(self, target_position, target_sublattice=None):
         """Return an ndarray of site indices, sorted by distance from the target
 
         Parameters
         ----------
         target_position : array_like
         target_sublattice : int
-            Look for a specific sublattice site, or -1 if any will do (default).
+            Look for a specific sublattice site. By default any will do.
 
         Returns
         -------
@@ -118,9 +123,10 @@ class Sites:
         True
         """
         distances = self.distances(target_position)
-        if target_sublattice < 0:
+        if target_sublattice is None:
             return np.argsort(distances)
         else:
+            target_sublattice = self._translate_sublattice(target_sublattice)
             return ma.argsort(ma.array(distances, mask=(self.sublattices != target_sublattice)))
 
 
@@ -188,21 +194,21 @@ class System:
         """List of :class:`.Port`"""
         return self.impl.ports
 
-    def find_nearest(self, position, at_sublattice=-1):
+    def find_nearest(self, position, at_sublattice=None):
         """Find the index of the atom closest to the given position
 
         Parameters
         ----------
         position : array_like
             Where to look.
-        at_sublattice : int
-            Look for a specific sublattice site, or -1 if any will do (default).
+        at_sublattice : Optional[int]
+            Look for a specific sublattice site. By default any will do.
 
         Returns
         -------
         int
-            Index of the site or -1 if not found.
         """
+        at_sublattice = self.lattice[at_sublattice] if at_sublattice is not None else -1
         if hasattr(self.impl, 'find_nearest'):
             # use cpp implementation
             return self.impl.find_nearest(position, int(at_sublattice))

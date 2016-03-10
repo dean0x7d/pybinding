@@ -23,6 +23,36 @@ def model(request):
     return pb.Model(*request.param)
 
 
+def test_api():
+    model = pb.Model(graphene.monolayer(), pb.primitive(2, 2))
+    system = model.system
+
+    idx = system.num_sites // 2
+    assert idx == system.find_nearest(system.xyz[idx])
+    assert idx == system.find_nearest(system.xyz[idx], system.sublattices[idx])
+    assert system.find_nearest([0, 0], 'A') != system.find_nearest([0, 0], 'B')
+
+    invalid_sublattice = 99
+    with pytest.raises(KeyError) as excinfo:
+        system.find_nearest([0, 0], invalid_sublattice)
+    assert "There is no sublattice" in str(excinfo.value)
+
+    with pytest.raises(KeyError) as excinfo:
+        system.find_nearest([0, 0], 'invalid_sublattice')
+    assert "There is no sublattice" in str(excinfo.value)
+
+
+def test_sites():
+    model = pb.Model(graphene.monolayer(), pb.primitive(2, 2))
+    system = model.system
+
+    sites = pb.system.Sites(system.positions, system.sublattices, system.lattice)
+    idx = system.num_sites // 2
+    assert idx == sites.find_nearest(system.xyz[idx])
+    assert idx == sites.find_nearest(system.xyz[idx], system.sublattices[idx])
+    assert sites.find_nearest([0, 0], 'A') != sites.find_nearest([0, 0], 'B')
+
+
 def test_pickle_round_trip(model, tmpdir):
     file_name = str(tmpdir.join('file.npz'))
     pb.save(model.system, file_name)
@@ -34,19 +64,8 @@ def test_pickle_round_trip(model, tmpdir):
 def test_expected(model, baseline, plot_if_fails):
     system = model.system
     expected = baseline(system)
-
     plot_if_fails(system, expected, 'plot')
     assert pytest.fuzzy_equal(system, expected, 1.e-4, 1.e-6)
-
-    idx = system.num_sites // 2
-    assert idx == system.find_nearest(system.xyz[idx])
-    assert idx == system.find_nearest(system.xyz[idx], system.sublattices[idx])
-    assert idx == expected.find_nearest(expected.xyz[idx])
-    assert idx == expected.find_nearest(expected.xyz[idx], expected.sublattices[idx])
-
-    invalid_sublattice = 99
-    assert 0 == system.find_nearest([0, 0], invalid_sublattice)
-    assert 0 == expected.find_nearest([0, 0], invalid_sublattice)
 
 
 def test_system_plot(compare_figure):
