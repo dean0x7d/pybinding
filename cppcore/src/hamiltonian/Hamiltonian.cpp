@@ -2,7 +2,6 @@
 #include "hamiltonian/HamiltonianModifiers.hpp"
 
 #include "utils/Log.hpp"
-#include "support/cppfuture.hpp"
 #include "support/physics.hpp"
 
 using namespace tbm;
@@ -64,17 +63,16 @@ void HamiltonianT<scalar_t>::build_periodic(System const& system,
     boundary_matrices.resize(num_boundaries);
     boundary_lengths.resize(num_boundaries);
     
-    for (int p = 0; p < num_boundaries; ++p) {
-        auto const& boundary = system.boundaries[p];
-        auto& b_matrix = boundary_matrices[p];
-        boundary_lengths[p] = boundary.shift;
+    for (auto n = 0; n < num_boundaries; ++n) {
+        auto& b_matrix = boundary_matrices[n];
+        boundary_lengths[n] = system.boundaries[n].shift;
         
         // set the size of the matrix
         auto const num_sites = system.num_sites();
         b_matrix.resize(num_sites, num_sites);
         b_matrix.reserve(VectorXi::Constant(num_sites, system.lattice.max_hoppings()));
 
-        modifiers.apply_to_hoppings<scalar_t>(boundary, [&](int i, int j, scalar_t hopping) {
+        modifiers.apply_to_hoppings<scalar_t>(system, n, [&](int i, int j, scalar_t hopping) {
             b_matrix.insert(i, j) = hopping;
         });
 

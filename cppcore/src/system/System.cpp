@@ -164,7 +164,7 @@ void populate_boundaries(System& system, Foundation const& foundation,
     auto const size = hamiltonian_indices.size();
     auto const& lattice = foundation.get_lattice();
 
-    system.boundaries.emplace_back(system);
+    system.boundaries.emplace_back();
     for (const auto& translation : symmetry.translations(foundation)) {
         auto& boundary = system.boundaries.back();
 
@@ -201,7 +201,7 @@ void populate_boundaries(System& system, Foundation const& foundation,
         boundary_matrix_view.compress();
 
         if (boundary.hoppings.nonZeros() > 0)
-            system.boundaries.emplace_back(system);
+            system.boundaries.emplace_back();
     }
     system.boundaries.pop_back();
 }

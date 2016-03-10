@@ -57,6 +57,9 @@ struct HamiltonianModifiers {
     /// Do any of the modifiers require double precision?
     bool any_double() const;
 
+    /// Remove all modifiers
+    void clear();
+
     /// Apply onsite modifiers to the given system and pass results to function:
     ///     lambda(int i, scalar_t onsite)
     template<class scalar_t, class Fn>
@@ -64,11 +67,27 @@ struct HamiltonianModifiers {
 
     /// Apply hopping modifiers to the given system (or boundary) and pass results to:
     ///     lambda(int i, int j, scalar_t hopping)
-    template<class scalar_t, class SystemOrBoundary, class Fn>
-    void apply_to_hoppings(SystemOrBoundary const& system, Fn lambda) const;
+    template<class scalar_t, class Fn>
+    void apply_to_hoppings(System const& system, Fn fn) const {
+        apply_to_hoppings_impl<scalar_t>(system, system.positions, system.lattice, fn);
+    };
 
-    void clear();
+    template<class scalar_t, class Fn>
+    void apply_to_hoppings(System const& system, int boundary_index, Fn fn) const {
+        apply_to_hoppings_impl<scalar_t>(system.boundaries[boundary_index],
+                                         system.positions, system.lattice, fn);
+    };
+
+private:
+    template<class scalar_t, class SystemOrBoundary, class Fn>
+    void apply_to_hoppings_impl(SystemOrBoundary const& system, CartesianArray const& positions,
+                                Lattice const& lattice, Fn lambda) const;
 };
+
+namespace detail {
+    inline Cartesian shifted(Cartesian pos, System const&) { return pos; }
+    inline Cartesian shifted(Cartesian pos, System::Boundary const& b) { return pos - b.shift; }
+}
 
 template<class scalar_t, class Fn>
 void HamiltonianModifiers::apply_to_onsite(System const& system, Fn lambda) const {
@@ -102,8 +121,10 @@ void HamiltonianModifiers::apply_to_onsite(System const& system, Fn lambda) cons
 }
 
 template<class scalar_t, class SystemOrBoundary, class Fn>
-void HamiltonianModifiers::apply_to_hoppings(SystemOrBoundary const& system, Fn lambda) const {
-    auto const& base_hopping_energies = system.lattice.hopping_energies;
+void HamiltonianModifiers::apply_to_hoppings_impl(SystemOrBoundary const& system,
+                                                  CartesianArray const& positions,
+                                                  Lattice const& lattice, Fn lambda) const {
+    auto const& base_hopping_energies = lattice.hopping_energies;
     auto hopping_csr_matrix = sparse::make_loop(system.hoppings);
 
     if (hopping.empty()) {
@@ -137,7 +158,8 @@ void HamiltonianModifiers::apply_to_hoppings(SystemOrBoundary const& system, Fn 
             // fill buffer
             [&](int row, int col, hop_id id, int n) {
                 hoppings[n] = num::complex_cast<scalar_t>(base_hopping_energies[id]);
-                std::make_pair(pos1[n], pos2[n]) = system.get_position_pair(row, col);
+                pos1[n] = positions[row];
+                pos2[n] = detail::shifted(positions[col], system);
                 hop_ids[n] = id;
             },
             // process buffer
@@ -151,7 +173,7 @@ void HamiltonianModifiers::apply_to_hoppings(SystemOrBoundary const& system, Fn 
 
                 for (auto const& modifier : hopping) {
                     modifier.apply(arrayref(hoppings), pos1, pos2,
-                                   {hop_ids, system.lattice.hop_name_map});
+                                   {hop_ids, lattice.hop_name_map});
                 }
 
                 hopping_csr_matrix.slice_for_each(
