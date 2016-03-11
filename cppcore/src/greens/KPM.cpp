@@ -351,10 +351,9 @@ std::string Stats::report(bool shortform) const {
 
 template<class real_t>
 void Stats::lanczos(compute::LanczosBounds<real_t> const& bounds, Chrono const& time) {
-    append(fmt::format("{min_energy:.2f}, {max_energy:.2f}, {loops}",
-                       bounds.min, bounds.max, bounds.loops),
-           fmt::format("Spectrum bounds found ({min_energy:.2f}, {max_energy:.2f} eV) "
-                       "using Lanczos procedure with {loops} loops",
+    append(fmt::format("{:.2f}, {:.2f}, {}", bounds.min, bounds.max, bounds.loops),
+           fmt::format("Spectrum bounds found ({:.2f}, {:.2f} eV) "
+                       "using Lanczos procedure with {} loops",
                        bounds.min, bounds.max, bounds.loops),
            time);
 }
@@ -369,10 +368,8 @@ void Stats::reordering(OptimizedHamiltonian<scalar_t> const& oh, int num_moments
     bool const used_full_system = static_cast<int>(oh.optimized_sizes.size()) < num_moments / 2;
     auto const not_efficient = !used_full_system ? "*" : "";
 
-    append(fmt::format("{removed_percent:.0f}%{not_efficient}",
-                       removed_percent, not_efficient),
-           fmt::format("The reordering optimization was able to remove "
-                       "{removed_percent:.0f}%{not_efficient} of the workload",
+    append(fmt::format("{:.0f}%{}", removed_percent, not_efficient),
+           fmt::format("The reordering optimization was able to remove {:.0f}%{} of the workload",
                        removed_percent, not_efficient),
            time);
 }
@@ -380,11 +377,11 @@ void Stats::reordering(OptimizedHamiltonian<scalar_t> const& oh, int num_moments
 template<class scalar_t>
 void Stats::kpm(OptimizedHamiltonian<scalar_t> const& oh, int num_moments, Chrono const& time) {
     auto const moments_with_suffix = fmt::with_suffix(num_moments);
-    auto const operations_per_second = oh.optimized_area(num_moments) / time.seconds();
+    auto const operations_per_second = oh.optimized_area(num_moments) / time.elapsed_seconds();
     auto const ops_with_suffix = fmt::with_suffix(operations_per_second);
 
-    append(fmt::format("{num_moments} @ {ops}ops", moments_with_suffix, ops_with_suffix),
-           fmt::format("KPM calculated {num_moments} moments at {ops} operations per second",
+    append(fmt::format("{} @ {}ops", moments_with_suffix, ops_with_suffix),
+           fmt::format("KPM calculated {} moments at {} operations per second",
                        moments_with_suffix, ops_with_suffix),
            time);
 }

@@ -1,6 +1,7 @@
 #pragma once
 #include <string>
 #include <chrono>
+#include <ostream>
 
 namespace tbm {
 
@@ -26,14 +27,17 @@ public:
         return *this;
     }
 
-    double seconds() const {
+    double elapsed_seconds() const {
         return 1e-9 * static_cast<double>(elapsed.count());
     }
     
     std::string str() const;
     Chrono& print(std::string msg = "");
 
-    friend std::string str(const Chrono& c) { return c.str(); }
+    friend std::ostream& operator<<(std::ostream& os, Chrono const& chrono) {
+        os << chrono.str();
+        return os;
+    }
 
 private:
     std::chrono::time_point<std::chrono::high_resolution_clock> tic_time;

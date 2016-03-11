@@ -1,7 +1,9 @@
+global-include CMakeLists.txt *.cmake *.hpp *.cpp
 include readme.md license.md changelog.md
 recursive-include tests *.py *.pbz *.png *.cfg
 recursive-include docs *.py *.rst *.css
-global-include CMakeLists.txt *.cmake *.hpp *.cpp
-prune cppcore/deps
+recursive-include cppcore/deps/cppformat *.h *.cc
+prune cppcore/deps/catch
+prune cppcore/deps/eigen3
 prune cppwrapper/deps/boost_python/test
 prune cppwrapper/deps/boost_python/example

@@ -4,6 +4,7 @@
 # include "support/format.hpp"
 # include "compute/mkl/wrapper.hpp"
 
+using namespace fmt::literals;
 using namespace tbm;
 
 template<class scalar_t>
@@ -68,27 +69,27 @@ void FEAST<scalar_t>::solve() {
 
 template<class scalar_t>
 std::string FEAST<scalar_t>::report(bool is_shortform) const {
-    using fmt::format;
     std::string report;
     
     if (info.size_warning)
-        report += format("Resized initial guess: {}\n", config.initial_size_guess);
+        report += fmt::format("Resized initial guess: {}\n", config.initial_size_guess);
 
-    std::string fmt;
+    std::string fmt_string;
     if (is_shortform) {
-        fmt = "Subspace({final_size}|{suggested_size}|{ratio:.2f}), "
-            "Refinement({loops}|{err:.2e}|{residual:.2e})";
+        fmt_string = "Subspace({final_size}|{suggested_size}|{ratio:.2f}), "
+                     "Refinement({loops}|{error_trace:.2e}|{residual:.2e})";
     } else {
-        fmt = "Final subspace size is {final_size} | "
-            "Suggested size is {suggested_size} ({ratio:.2f} ratio)\n"
-            "Converged after {loops} refinement loop(s)\n"
-            "Error trace: {error_trace:.2e} | Max. residual: {residual:.2e}\n"
-            "\nCompleted in";
+        fmt_string = "Final subspace size is {final_size} | "
+                     "Suggested size is {suggested_size} ({ratio:.2f} ratio)\n"
+                     "Converged after {loops} refinement loop(s)\n"
+                     "Error trace: {error_trace:.2e} | Max. residual: {residual:.2e}\n"
+                     "\nCompleted in";
     }
 
-    report += format(
-        fmt, info.final_size, info.suggested_size, (float)info.suggested_size / info.final_size,
-        info.refinement_loops, info.error_trace, info.max_residual
+    report += fmt::format(
+        fmt_string, "final_size"_a=info.final_size, "suggested_size"_a=info.suggested_size,
+        "ratio"_a=double{info.suggested_size} / info.final_size, "loops"_a=info.refinement_loops,
+        "error_trace"_a=info.error_trace, "residual"_a=info.max_residual
     );
 
     return report;

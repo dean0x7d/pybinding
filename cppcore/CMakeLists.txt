@@ -6,6 +6,8 @@ option(PB_TESTS "Enable testing" OFF)
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/cmake")
 find_package(Eigen3orDownload 3.2.7 REQUIRED)
+include(download)
+include(cppformat)
 
 add_library(pybinding_cppcore
     include/compute/eigen3/kernel_polynomial.hpp
@@ -68,6 +70,7 @@ add_library(pybinding_cppcore
 
 target_include_directories(pybinding_cppcore PUBLIC include)
 target_include_directories(pybinding_cppcore SYSTEM PUBLIC ${EIGEN3_INCLUDE_DIR})
+target_link_libraries(pybinding_cppcore PUBLIC cppformat)
 
 if(NOT WIN32)
     target_compile_options(pybinding_cppcore PUBLIC -std=c++11)
