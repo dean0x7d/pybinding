@@ -108,5 +108,6 @@ endfunction()
 set_higher_warning_level(pybinding_cppcore)
 
 if(PB_TESTS OR DEFINED ENV{PB_TESTS})
+    include(catch)
     add_subdirectory(tests)
 endif()
