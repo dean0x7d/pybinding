@@ -5,8 +5,8 @@
 #include <boost/python/return_by_value.hpp>
 #include <boost/python/import.hpp>
 
-#include "support/dense.hpp"
-#include "support/sparseref.hpp"
+#include "numeric/dense.hpp"
+#include "numeric/sparseref.hpp"
 
 namespace boost { namespace python {
 

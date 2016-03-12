@@ -6,7 +6,7 @@
 # include "eigen3/lanczos.hpp"
 #endif
 
-#include "support/sparse.hpp"
+#include "numeric/sparse.hpp"
 #include "compute/linear_algebra.hpp"
 #include <tuple>
 

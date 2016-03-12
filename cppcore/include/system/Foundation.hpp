@@ -2,7 +2,7 @@
 #include "system/Lattice.hpp"
 
 #include "detail/slice.hpp"
-#include "support/dense.hpp"
+#include "numeric/dense.hpp"
 #include "support/cppfuture.hpp"
 
 #include <array>

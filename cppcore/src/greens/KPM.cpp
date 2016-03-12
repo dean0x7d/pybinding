@@ -2,7 +2,7 @@
 
 #include "compute/kernel_polynomial.hpp"
 #include "support/format.hpp"
-#include "support/physics.hpp"
+#include "numeric/constant.hpp"
 
 using namespace tbm;
 using namespace tbm::kpm;
@@ -334,7 +334,7 @@ auto KPM<scalar_t>::calculate_greens(ArrayX<real_t> const& scaled_energy,
     // G = -2*i / sqrt(1 - E^2) * sum( moments * exp(-i*ns*acos(E)) )
     transform(scaled_energy, greens, [&](real_t E) {
         using std::acos;
-        auto const i1 = complex_t{physics::i1};
+        auto const i1 = complex_t{constant::i1};
         auto const norm = -real_t{2} * i1 / sqrt(1 - E*E);
         return norm * sum(moments * exp(-i1 * ns * acos(E)));
     });

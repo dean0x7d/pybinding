@@ -1,8 +1,8 @@
 #pragma once
-#include "support/dense.hpp"
-#include "support/sparse.hpp"
-#include "support/traits.hpp"
-#include "support/sparseref.hpp"
+#include "numeric/dense.hpp"
+#include "numeric/sparse.hpp"
+#include "numeric/sparseref.hpp"
+#include "numeric/traits.hpp"
 
 namespace tbm {
 

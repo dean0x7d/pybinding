@@ -1,6 +1,6 @@
 #include <catch.hpp>
 
-#include "support/dense.hpp"
+#include "numeric/dense.hpp"
 using namespace tbm;
 
 struct ArrayRefTestOp {

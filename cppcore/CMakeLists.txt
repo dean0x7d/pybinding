@@ -20,25 +20,25 @@ add_library(pybinding_cppcore
     include/compute/kernel_polynomial.hpp
     include/compute/lanczos.hpp
     include/compute/linear_algebra.hpp
+    include/detail/config.hpp
     include/detail/slice.hpp
     include/detail/strategy.hpp
+    include/detail/thread.hpp
     include/detail/typelist.hpp
     include/greens/Greens.hpp
     include/greens/KPM.hpp
     include/hamiltonian/Hamiltonian.hpp
     include/hamiltonian/HamiltonianModifiers.hpp
+    include/numeric/arrayref.hpp
+    include/numeric/constant.hpp
+    include/numeric/dense.hpp
+    include/numeric/sparse.hpp
+    include/numeric/sparseref.hpp
+    include/numeric/traits.hpp
     include/solver/FEAST.hpp
     include/solver/Solver.hpp
-    include/support/arrayref.hpp
-    include/support/config.hpp
     include/support/cppfuture.hpp
-    include/support/dense.hpp
     include/support/format.hpp
-    include/support/physics.hpp
-    include/support/sparse.hpp
-    include/support/sparseref.hpp
-    include/support/thread.hpp
-    include/support/traits.hpp
     include/system/Foundation.hpp
     include/system/Lattice.hpp
     include/system/Lead.hpp

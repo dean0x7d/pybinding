@@ -8,7 +8,7 @@
 #include "utils/Chrono.hpp"
 #include "utils/Log.hpp"
 
-#include "support/dense.hpp"
+#include "numeric/dense.hpp"
 
 #include <memory>
 

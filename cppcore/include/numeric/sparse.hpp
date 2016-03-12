@@ -1,5 +1,5 @@
 #pragma once
-#include "support/config.hpp"
+#include "detail/config.hpp"
 #include <Eigen/SparseCore>
 
 namespace tbm {

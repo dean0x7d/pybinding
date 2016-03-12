@@ -1,6 +1,6 @@
 #pragma once
-#include "support/dense.hpp"
-#include "support/sparse.hpp"
+#include "numeric/dense.hpp"
+#include "numeric/sparse.hpp"
 
 #include <boost/python/to_python_converter.hpp>
 #include <boost/python/extract.hpp>

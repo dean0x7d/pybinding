@@ -3,8 +3,8 @@
 #include "system/Lead.hpp"
 #include "system/Generators.hpp"
 
-#include "support/dense.hpp"
-#include "support/sparse.hpp"
+#include "numeric/dense.hpp"
+#include "numeric/sparse.hpp"
 
 #include <vector>
 #include <memory>

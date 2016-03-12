@@ -2,10 +2,10 @@
 #include "hamiltonian/HamiltonianModifiers.hpp"
 
 #include "utils/Log.hpp"
-#include "support/physics.hpp"
+#include "numeric/constant.hpp"
 
 using namespace tbm;
-using physics::i1;
+using constant::i1;
 
 template<class scalar_t>
 HamiltonianT<scalar_t>::~HamiltonianT()

@@ -1,5 +1,5 @@
 #include "solver/Solver.hpp"
-#include "support/physics.hpp"
+#include "numeric/constant.hpp"
 
 namespace tbm { namespace compute {
 
@@ -9,7 +9,7 @@ struct CalcDOS {
 
     template<class Array>
     ArrayXd operator()(Array En) {
-        auto const scale = 1 / (broadening * sqrt(2 * physics::pi));
+        auto const scale = 1 / (broadening * sqrt(2 * constant::pi));
         auto const constant = -0.5f / pow(broadening, 2);
 
         // DOS(E) = 1 / (broadening * sqrt(2pi)) * sum(exp(-0.5 * (En-E)^2 / broadening^2))
@@ -29,7 +29,7 @@ struct CalcSpatialLDOS {
     template<class Array1D, class Array2D>
     ArrayXd operator()(Array1D En, Array2D psi) {
         using scalar_t = typename Array1D::Scalar;
-        auto const scale = 1 / (broadening * sqrt(2 * physics::pi));
+        auto const scale = 1 / (broadening * sqrt(2 * constant::pi));
         auto const constant = -0.5f / pow(broadening, 2);
 
         // DOS(r) = 1 / (b * sqrt(2pi)) * sum(|psi(r)|^2 * exp(-0.5 * (En-E)^2 / b^2))

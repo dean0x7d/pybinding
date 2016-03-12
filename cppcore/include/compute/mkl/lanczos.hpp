@@ -1,5 +1,5 @@
 #pragma once
-#include "support/dense.hpp"
+#include "numeric/dense.hpp"
 #include "compute/mkl/wrapper.hpp"
 
 namespace tbm { namespace compute {

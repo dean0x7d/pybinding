@@ -2,7 +2,7 @@
 #include "system/Shape.hpp"
 
 #include "detail/slice.hpp"
-#include "support/dense.hpp"
+#include "numeric/dense.hpp"
 
 #include <vector>
 

@@ -1,7 +1,7 @@
 #pragma once
 #include "system/Lattice.hpp"
 
-#include "support/dense.hpp"
+#include "numeric/dense.hpp"
 
 #include <vector>
 #include <algorithm>

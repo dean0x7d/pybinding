@@ -7,8 +7,8 @@
 #include "utils/Chrono.hpp"
 #include "utils/Log.hpp"
 
-#include "support/dense.hpp"
-#include "support/thread.hpp"
+#include "numeric/dense.hpp"
+#include "detail/thread.hpp"
 
 namespace tbm {
 

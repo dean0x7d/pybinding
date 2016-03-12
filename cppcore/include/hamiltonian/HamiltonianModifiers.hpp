@@ -1,8 +1,8 @@
 #pragma once
 #include "system/System.hpp"
 
-#include "support/dense.hpp"
-#include "support/sparse.hpp"
+#include "numeric/dense.hpp"
+#include "numeric/sparse.hpp"
 
 #include <vector>
 #include <algorithm>

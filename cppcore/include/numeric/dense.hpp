@@ -1,8 +1,10 @@
 #pragma once
-#include "support/config.hpp"
-#include "support/traits.hpp"
-#include "support/arrayref.hpp"
+#include "detail/config.hpp"
+#include "numeric/traits.hpp"
+#include "numeric/arrayref.hpp"
+
 #include <Eigen/Core>
+
 #include <algorithm>
 #include <vector>
 

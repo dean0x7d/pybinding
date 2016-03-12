@@ -1,6 +1,7 @@
 #pragma once
 #include "detail/typelist.hpp"
 #include "support/cppfuture.hpp"
+#include "numeric/traits.hpp"
 
 #include <algorithm>
 #include <stdexcept>

@@ -1,13 +1,13 @@
 #pragma once
 #include "utils/Chrono.hpp"
-#include "support/dense.hpp"
+#include "numeric/dense.hpp"
 
 #include <thread>
 #include <queue>
 #include <condition_variable>
 
 
-namespace tbm {
+namespace tbm { namespace detail {
 
 template<class T>
 class Queue {
@@ -114,6 +114,7 @@ private:
 
 #endif
 
+} // namespace detail
 
 class DeferredBase {
 public:
@@ -168,10 +169,9 @@ private:
 
 template<class Produce, class Compute, class Retire>
 void parallel_for(size_t size, size_t num_threads, size_t queue_size,
-                  Produce produce, Compute compute, Retire retire)
-{
+                  Produce produce, Compute compute, Retire retire) {
 #ifdef TBM_USE_MKL
-    MKLDisableThreading disable_mkl_internal_threading_if{num_threads > 1};
+    detail::MKLDisableThreading disable_mkl_internal_threading_if{num_threads > 1};
 #endif
 
     using Value = decltype(produce(size_t{}));
@@ -180,12 +180,12 @@ void parallel_for(size_t size, size_t num_threads, size_t queue_size,
         Value value;
     };
 
-    Queue<Job> work_queue{queue_size > 0 ? queue_size : num_threads};
-    Queue<Job> retirement_queue{};
+    detail::Queue<Job> work_queue{queue_size > 0 ? queue_size : num_threads};
+    detail::Queue<Job> retirement_queue{};
 
     // This thread produces new jobs and adds them to the work queue
     std::thread production_thread([&] {
-        QueueGuard<Job> guard{work_queue};
+        detail::QueueGuard<Job> guard{work_queue};
         for (auto id = 0u; id < size; ++id) {
             work_queue.push({id, produce(id)});
         }
@@ -196,7 +196,7 @@ void parallel_for(size_t size, size_t num_threads, size_t queue_size,
     auto work_threads = std::vector<std::thread>{num_threads};
     for (auto& thread : work_threads) {
         thread = std::thread([&] {
-            QueueGuard<Job> guard{retirement_queue};
+            detail::QueueGuard<Job> guard{retirement_queue};
             while (auto maybe_job = work_queue.pop()) {
                 auto job = maybe_job.get();
                 compute(job.value);

@@ -1,6 +1,6 @@
 #pragma once
-#include "support/dense.hpp"
-#include "support/sparse.hpp"
+#include "numeric/dense.hpp"
+#include "numeric/sparse.hpp"
 
 namespace tbm { namespace compute {
 

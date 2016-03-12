@@ -1,5 +1,5 @@
 #pragma once
-#include "support/dense.hpp"
+#include "numeric/dense.hpp"
 #include <vector>
 #include <string>
 #include <unordered_map>

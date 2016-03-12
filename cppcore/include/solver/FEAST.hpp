@@ -1,5 +1,5 @@
 #pragma once
-#include "support/config.hpp"
+#include "detail/config.hpp"
 
 #ifdef TBM_USE_FEAST
 #include "solver/Solver.hpp"

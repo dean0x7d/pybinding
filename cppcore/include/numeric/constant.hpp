@@ -1,8 +1,7 @@
 #pragma once
 #include <complex>
 
-/// Physics constants
-namespace tbm { namespace physics {
+namespace tbm { namespace constant {
     // imaginary one
     constexpr std::complex<float> i1(0, 1);
     // the omnipresent pi
@@ -17,4 +16,4 @@ namespace tbm { namespace physics {
     constexpr float epsilon0 = 8.854e-12f;
     // magnetic flux quantum (h/e)
     constexpr float phi0 = 2 * pi*hbar;
-}} // namespace tbm::physics
+}} // namespace tbm::constant

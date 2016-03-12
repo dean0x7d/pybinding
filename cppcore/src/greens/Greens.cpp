@@ -1,8 +1,8 @@
 #include "greens/Greens.hpp"
-#include "support/physics.hpp"
+#include "numeric/constant.hpp"
 
 using namespace tbm;
-using physics::pi;
+using constant::pi;
 
 
 BaseGreens::BaseGreens(Model const& model, MakeStrategy const& make_strategy)

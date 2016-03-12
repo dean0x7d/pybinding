@@ -1,6 +1,6 @@
 #pragma once
 #include "greens/Greens.hpp"
-#include "support/sparse.hpp"
+#include "numeric/sparse.hpp"
 #include "compute/lanczos.hpp"
 
 namespace tbm { namespace kpm {
