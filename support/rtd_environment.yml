@@ -1,11 +1,8 @@
 name: rtd
-channels:
-- dean0x7d
 dependencies:
 - cmake=3.3.1=0
 - cycler=0.10.0=py34_0
 - decorator=4.0.9=py34_0
-- eigen3=3.2.7=0
 - fontconfig=2.11.1=5
 - freetype=2.5.5=0
 - ipython_genutils=0.1.0=py34_0

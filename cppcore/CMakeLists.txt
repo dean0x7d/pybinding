@@ -5,8 +5,8 @@ option(PB_WERROR "Make all warnings into errors" OFF)
 option(PB_TESTS "Enable testing" OFF)
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/cmake")
-find_package(Eigen3orDownload 3.2.7 REQUIRED)
 include(download)
+include(eigen)
 include(cppformat)
 
 add_library(pybinding_cppcore

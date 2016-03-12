@@ -3,7 +3,7 @@ include readme.md license.md changelog.md
 recursive-include tests *.py *.pbz *.png *.cfg
 recursive-include docs *.py *.rst *.css
 recursive-include cppcore/deps/cppformat *.h *.cc
+recursive-include cppcore/deps/eigen3/Eigen *
 prune cppcore/deps/catch
-prune cppcore/deps/eigen3
 prune cppwrapper/deps/boost_python/test
 prune cppwrapper/deps/boost_python/example
