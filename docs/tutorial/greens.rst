@@ -85,7 +85,7 @@ position. We can optionally also choose a specific sublattice:
     :emphasize-lines: 0
 
     ldos = greens.calc_ldos(energy=np.linspace(-9, 9, 200), broadening=0.05,
-                            position=[0, 0], sublattice=model.lattice['B'])
+                            position=[0, 0], sublattice='B')
 
 In this case we would calculate the LDOS at a site of sublattice B closest to the center of the
 system. We can try that on a graphene system with a mass term:
@@ -101,10 +101,10 @@ system. We can try that on a graphene system with a mass term:
     )
     greens = pb.greens.kpm(model)
 
-    for sub in ['A', 'B']:
+    for sub_name in ['A', 'B']:
         ldos = greens.calc_ldos(energy=np.linspace(-9, 9, 500), broadening=0.05,
-                                position=[0, 0], sublattice=model.lattice[sub])
-        ldos.plot(label=sub)
+                                position=[0, 0], sublattice=sub_name)
+        ldos.plot(label=sub_name)
     pb.pltutils.legend()
 
 Multiple plots compose nicely here. A large band gap is visible at zero energy due to the inclusion

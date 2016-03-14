@@ -230,8 +230,10 @@ def site_state_modifier(min_neighbors=0):
         the model after all modifiers have been applied.
     x, y, z : ndarray
         Lattice site position.
-    sub_id : ndarray of int
-        Sublattice ID. Can be checked for equality with `lattice[sublattice_name]`.
+    sub_id : ndarray
+        Sublattice identifier: Can be checked for equality with sublattice names
+        specified in :class:`.Lattice`. For example, `state[sub_id == 'A'] = False`
+        will invalidate only sites on sublattice A.
     sites : :class:`.Sites`
         Helper object. Can be used instead of `x, y, z, sub_id`. See :class:`.Sites`.
 
@@ -256,7 +258,9 @@ def site_position_modifier():
     x, y, z : ndarray
         Lattice site position.
     sub_id : ndarray of int
-        Sublattice ID. Can be checked for equality with `lattice[sublattice_name]`.
+        Sublattice identifier: can be checked for equality with sublattice names
+        specified in :class:`.Lattice`. For example, `x[sub_id == 'A'] += 0.1` will
+        only displace sites on sublattice A.
     sites : :class:`.Sites`
         Helper object. Can be used instead of `x, y, z, sub_id`. See :class:`.Sites`.
 
@@ -288,7 +292,9 @@ def onsite_energy_modifier(double=False):
     x, y, z : ndarray
         Lattice site position.
     sub_id : ndarray of int
-        Sublattice ID. Can be checked for equality with `lattice[sublattice_name]`.
+        Sublattice identifier: can be checked for equality with sublattice names
+        specified in :class:`.Lattice`. For example, `energy[sub_id == 'A'] = 0`
+        will set the onsite energy only for sublattice A sites.
     sites : :class:`.Sites`
         Helper object. Can be used instead of `x, y, z, sub_id`. See :class:`.Sites`.
 
@@ -321,7 +327,9 @@ def hopping_energy_modifier(double=False):
     x1, y1, z1, x2, y2, z2 : ndarray
         Positions of the two lattice sites connected by the hopping parameter.
     hop_id : ndarray of int
-        Hopping ID. Check for equality with `lattice(hopping_name)`.
+        Hopping identifier: can be checked for equality with hopping names specified
+        in :class:`.Lattice`. For example, `energy[hop_id == 't_nn'] *= 1.1` will only
+        modify the energy of the hopping family named `t_nn`.
 
     The function must return:
 
@@ -420,7 +428,8 @@ def hopping_generator(name, energy):
     x, y, z : np.ndarray
         Lattice site position.
     sub_id : np.ndarray
-        Sublattice ID. Can be checked for equality with `lattice[sublattice_name]`.
+        Sublattice identifier: can be checked for equality with sublattice names
+        specified in :class:`.Lattice`.
 
     The function must return:
 

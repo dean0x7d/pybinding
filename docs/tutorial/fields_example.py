@@ -1,6 +1,5 @@
 """PN junction and broken sublattice symmetry in a graphene nanoribbon"""
 import pybinding as pb
-import numpy as np
 import matplotlib.pyplot as plt
 from pybinding.repository import graphene
 from math import pi, sqrt
@@ -9,16 +8,11 @@ pb.pltutils.use_style()
 
 
 def mass_term(delta):
-    """Break sublattice symmetry
-
-    Applies +delta potential to sublattice 'A' and -delta to 'B'.
-    """
-    lattice = graphene.monolayer()
-
+    """Break sublattice symmetry with opposite A and B onsite energy"""
     @pb.onsite_energy_modifier
     def potential(energy, sub_id):
-        energy[sub_id == lattice['A']] += delta
-        energy[sub_id == lattice['B']] -= delta
+        energy[sub_id == 'A'] += delta
+        energy[sub_id == 'B'] -= delta
         return energy
 
     return potential

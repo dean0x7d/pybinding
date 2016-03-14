@@ -177,20 +177,19 @@ Opening a band gap
 The last thing to explain about :func:`@onsite_energy_modifier <.onsite_energy_modifier>` is the
 use of the `sub_id` argument. It tells us which sublattice a site belongs to. If you remember
 from early on in the tutorial, :doc:`in the process of specifying a lattice <lattice>`, we gave
-each sublattice a name. This name can be used to retrieve the sublattice ID in the form
-`lattice['<sublattice_name>']`. Let's use this to add mass to electrons in graphene.
+each sublattice a unique name. This name can be used to filter out sites of a specific sublattice.
+For example, let's add mass to electrons in graphene:
 
 .. plot::
     :context: close-figs
     :nofigs:
 
     def mass_term(delta):
-        lattice = graphene.monolayer()
-
+        """Break sublattice symmetry with opposite A and B onsite energy"""
         @pb.onsite_energy_modifier
         def potential(energy, sub_id):
-            energy[sub_id == lattice['A']] += delta
-            energy[sub_id == lattice['B']] -= delta
+            energy[sub_id == 'A'] += delta
+            energy[sub_id == 'B'] -= delta
             return energy
 
         return potential

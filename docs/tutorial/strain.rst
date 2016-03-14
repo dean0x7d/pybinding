@@ -100,16 +100,12 @@ the bottom.
 
     def scrape_top_layer(position, radius):
         """Remove the top layer of graphene in the area specified by position and radius"""
-        lattice = graphene.bilayer()
-
         @pb.site_state_modifier
         def modifier(state, x, y, sub_id):
             x0, y0 = position
             is_within_radius = (x-x0)**2 + (y-y0)**2 < radius**2
-            is_top_layer = np.logical_or(sub_id == lattice['A1'],
-                                         sub_id == lattice['B1'])
-            final_condition = np.logical_and(is_within_radius,
-                                             is_top_layer)
+            is_top_layer = np.logical_or(sub_id == 'A1', sub_id == 'B1')
+            final_condition = np.logical_and(is_within_radius, is_top_layer)
             state[final_condition] = False
             return state
 
@@ -136,8 +132,7 @@ Which method is more convenient is up the user.
             x0, y0 = position
             is_within_radius = (x-x0)**2 + (y-y0)**2 < radius**2
             is_top_layer = (z == 0)
-            final_condition = np.logical_and(is_within_radius,
-                                             is_top_layer)
+            final_condition = np.logical_and(is_within_radius, is_top_layer)
             state[final_condition] = False
             return state
 
@@ -283,10 +278,10 @@ A and B.
     )
     greens = pb.greens.kpm(model)
 
-    for sub in ['A', 'B']:
+    for sub_name in ['A', 'B']:
         ldos = greens.calc_ldos(energy=np.linspace(-1, 1, 500), broadening=0.03,
-                                position=[0, 0], sublattice=model.lattice[sub])
-        ldos.plot(label=sub)
+                                position=[0, 0], sublattice=sub_name)
+        ldos.plot(label=sub_name)
     pb.pltutils.legend()
 
 Strain in graphene has an effect similar to a magnetic field. That's why we see Landau-level-like
