@@ -32,6 +32,7 @@ add_library(pybinding_cppcore
     include/numeric/arrayref.hpp
     include/numeric/constant.hpp
     include/numeric/dense.hpp
+    include/numeric/random.hpp
     include/numeric/sparse.hpp
     include/numeric/sparseref.hpp
     include/numeric/traits.hpp

@@ -29,6 +29,9 @@ using conditional_t = typename std::conditional<condition, If, Else>::type;
 template<class T>
 using add_const_t = typename std::add_const<T>::type;
 
+template<class T>
+using decay_t = typename std::decay<T>::type;
+
 } // namespace std14
 
 namespace std17 {

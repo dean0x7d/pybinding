@@ -1,7 +1,8 @@
 add_executable(catch
     catch.cpp
-    test_system.cpp
+    test_compute.cpp
     test_support.cpp
+    test_system.cpp
 )
 target_include_directories(catch PRIVATE ${CATCH_INCLUDE_DIR})
 target_link_libraries(catch PRIVATE pybinding_cppcore)

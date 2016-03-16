@@ -7,7 +7,9 @@
 #endif
 
 #include "numeric/sparse.hpp"
+#include "numeric/random.hpp"
 #include "compute/linear_algebra.hpp"
+
 #include <tuple>
 
 namespace tbm { namespace compute {
@@ -22,29 +24,31 @@ struct LanczosBounds {
 /// Use the Lanczos algorithm to find the min and max eigenvalues at given precision (%)
 template<class scalar_t, class real_t = num::get_real_t<scalar_t>>
 LanczosBounds<real_t> minmax_eigenvalues(SparseMatrixX<scalar_t> const& matrix,
-                                         real_t precision_percent) {
-    auto precision = precision_percent / 100;
-    const auto matrix_size = static_cast<int>(matrix.rows());
+                                         double precision_percent) {
+    auto const precision = static_cast<real_t>(precision_percent / 100);
+    auto const matrix_size = static_cast<int>(matrix.rows());
 
-    VectorX<scalar_t> left = VectorX<scalar_t>::Zero(matrix_size);
-    VectorX<scalar_t> right_previous = VectorX<scalar_t>::Zero(matrix_size);
+    auto left = VectorX<scalar_t>{VectorX<scalar_t>::Zero(matrix_size)};
+    auto right_previous = VectorX<scalar_t>{VectorX<scalar_t>::Zero(matrix_size)};
 
-    VectorX<scalar_t> right = VectorX<scalar_t>::Random(matrix_size);
+    auto right = num::make_random<VectorX<scalar_t>>(matrix_size);
     right.normalize();
 
     // Alpha and beta are the diagonals of the tridiagonal matrix.
     // The final size is not known ahead of time, but it will be small.
-    std::vector<real_t> alpha; alpha.reserve(100);
-    std::vector<real_t> beta; beta.reserve(100);
+    auto alpha = std::vector<real_t>();
+    alpha.reserve(100);
+    auto beta = std::vector<real_t>();
+    beta.reserve(100);
 
     // Energy values from the previous iteration. Used to test convergence.
     // Initial values as far away from expected as possible.
-    real_t previous_min = std::numeric_limits<real_t>::max();
-    real_t previous_max = std::numeric_limits<real_t>::lowest();
+    auto previous_min = std::numeric_limits<real_t>::max();
+    auto previous_max = std::numeric_limits<real_t>::lowest();
 
     constexpr auto loop_limit = 1000;
     // This may iterate up to matrix_size, but since only the extreme eigenvalues are required it
-    // will converge very quickly. More than loop_limit iterations would suggest something is wrong.
+    // will converge very quickly. Exceeding `loop_limit` would suggest something is wrong.
     for (int i = 0; i < loop_limit; ++i) {
         // PART 1: Calculate tridiagonal matrix elements a and b
         // =====================================================
@@ -52,42 +56,35 @@ LanczosBounds<real_t> minmax_eigenvalues(SparseMatrixX<scalar_t> const& matrix,
         // matrix-vector multiplication (the most compute intensive part of each iteration)
         compute::matrix_vector_mul(matrix, right, left);
 
-        // vector dot product (left*right) -> we just need the real part
-        real_t a = std::real(compute::dot_product(left, right));
-        // get b from the previous iteration (or 0 if this is the first iteration)
-        real_t b = !beta.empty() ? beta.back() : 0;
+        auto const a = std::real(compute::dot_product(left, right));
+        auto const b_prev = !beta.empty() ? beta.back() : real_t{0};
 
-        // left -= a*right + b*right_previous;
-        compute::axpy(scalar_t(-a), right, left);
-        compute::axpy(scalar_t(-b), right_previous, left);
-        b = left.norm();
+        // left -= a*right + b_prev*right_previous;
+        compute::axpy(scalar_t{-a}, right, left);
+        compute::axpy(scalar_t{-b_prev}, right_previous, left);
+        auto const b = left.norm();
 
-        // right_previous gets the old value of right
         right_previous.swap(right);
-        // right moves on
         right = (1/b) * left;
 
-        // add a and b to tridiagonal matrix
         alpha.push_back(a);
         beta.push_back(b);
 
         // PART 2: Check if the largest magnitude eigenvalues have converged
         // =================================================================
-        auto eigenvalues = compute::tridiagonal_eigenvalues(eigen_cast<ArrayX>(alpha),
-                                                            eigen_cast<ArrayX>(beta));
+        auto const eigenvalues = compute::tridiagonal_eigenvalues(eigen_cast<ArrayX>(alpha),
+                                                                  eigen_cast<ArrayX>(beta));
+        auto const min = eigenvalues.minCoeff();
+        auto const max = eigenvalues.maxCoeff();
+        auto const is_converged_min = abs((previous_min - min) / min) < precision;
+        auto const is_converged_max = abs((previous_max - max) / max) < precision;
 
-        real_t min = eigenvalues.minCoeff();
-        real_t max = eigenvalues.maxCoeff();
-
-        using std::abs;
-        bool is_converged_min = abs((previous_min - min) / min) < precision;
-        bool is_converged_max = abs((previous_max - max) / max) < precision;
+        if (is_converged_min && is_converged_max) {
+            return {min, max, i};
+        }
 
         previous_min = min;
         previous_max = max;
-
-        if (is_converged_min && is_converged_max)
-            return {min, max, i};
     };
 
     throw std::runtime_error{"Lanczos algorithm did not converge for the min/max eigenvalues."};
