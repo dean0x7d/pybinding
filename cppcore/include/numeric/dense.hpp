@@ -40,6 +40,7 @@ using Eigen::VectorXcd;
 // convenient type aliases
 using Cartesian = Eigen::Vector3f;
 using Index3D = Eigen::Vector3i;
+using Vector3b = Eigen::Matrix<bool, 3, 1>;
 template<class T> using ArrayX = Eigen::Array<T, Eigen::Dynamic, 1>;
 template<class T> using ArrayXX = Eigen::Array<T, Eigen::Dynamic, Eigen::Dynamic>;
 template<class T> using VectorX = Eigen::Matrix<T, Eigen::Dynamic, 1>;

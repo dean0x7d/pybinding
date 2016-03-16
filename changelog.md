@@ -1,5 +1,10 @@
 # Changelog
 
+### v0.7.3 | in development
+
+* Fixed translational symmetry skipping directions for some 2D systems.
+
+
 ### v0.7.2 | 2016-03-14
 
 * Lots of improvements to the documentation. The tutorial pages can now be downloaded and run

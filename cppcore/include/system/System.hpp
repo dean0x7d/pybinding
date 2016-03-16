@@ -13,7 +13,7 @@ namespace tbm {
 
 class Foundation;
 class HamiltonianIndices;
-class Symmetry;
+class TranslationalSymmetry;
 
 /**
  Stores the positions, sublattice and hopping IDs for all lattice sites.
@@ -31,7 +31,7 @@ struct System {
     bool has_unbalanced_hoppings = false; ///< some sites have a lot more hopping than others
 
     System(Lattice const& lattice) : lattice(lattice) {}
-    System(Foundation const& foundation, Symmetry const& symmetry, Leads const& leads,
+    System(Foundation const& foundation, TranslationalSymmetry const& symmetry, Leads const& leads,
            HoppingGenerators const& hopping_generators);
 
     int num_sites() const { return positions.size(); }
@@ -72,7 +72,8 @@ namespace detail {
     void populate_system(System& system, Foundation const& foundation,
                          HamiltonianIndices const& indices);
     void populate_boundaries(System& system, Foundation const& foundation,
-                             HamiltonianIndices const& indices, Symmetry const& symmetry);
+                             HamiltonianIndices const& indices,
+                             TranslationalSymmetry const& symmetry);
     void add_extra_hoppings(System& system, HoppingGenerator const& gen);
 } // namespace detail
 

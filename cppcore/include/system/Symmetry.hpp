@@ -29,19 +29,25 @@ struct Translation {
  Zero is a special value which automatically sets the minimal translation length for the lattice, 
  i.e. the lattice vector length.
 */
-class Symmetry {
+class TranslationalSymmetry {
 public:
-    Symmetry() = default;
-    explicit Symmetry(Cartesian length) : length{length} {}
+    TranslationalSymmetry(float a1 = -1, float a2 = -1, float a3 = -1);
 
     SymmetryArea area(Foundation const& foundation) const;
     std::vector<Translation> translations(Foundation const& foundation) const;
     void apply(Foundation& foundation) const;
 
-    explicit operator bool() const { return length != Cartesian::Constant(-1); }
+    explicit operator bool() const { return enabled_directions != Vector3b{false, false, false}; }
 
 private:
-    Cartesian length = Cartesian::Constant(-1);
+    Cartesian length;
+    Vector3b enabled_directions = {false, false, false};
 };
+
+namespace detail {
+    /// Return all the combinations of enabled directions
+    /// Example: [1, 1, 0] -> [0, 0, 0], [0, 1, 0], [1, 0, 0], [1, 1, 0]
+    std::vector<Index3D> make_masks(Vector3b enabled_directions, int ndim);
+}
 
 } // namespace tbm

@@ -25,8 +25,8 @@ void Model::set_shape(Shape const& new_shape) {
     _hamiltonian.reset();
 }
 
-void Model::set_symmetry(Symmetry const& new_symmetry) {
-    symmetry = new_symmetry;
+void Model::set_symmetry(TranslationalSymmetry const& translational_symmetry) {
+    symmetry = translational_symmetry;
     _system.reset();
     _hamiltonian.reset();
 }

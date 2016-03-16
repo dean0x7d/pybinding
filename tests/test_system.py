@@ -12,8 +12,10 @@ models = {
                                        pb.translational_symmetry(a1=True, a2=False)],
     'graphene-monolayer-periodic-1d-alt': [graphene.monolayer_4atom(), pb.rectangle(1),
                                            pb.translational_symmetry(a1=False, a2=0.6)],
-    'graphene-monolayer-periodic-2d': [graphene.monolayer_4atom(), pb.rectangle(1),
-                                       pb.translational_symmetry(a1=0.6, a2=0.6)],
+    'graphene-monolayer-periodic-2d': [graphene.monolayer(), pb.primitive(a1=5, a2=5),
+                                       pb.translational_symmetry(a1=1, a2=1)],
+    'graphene-monolayer-4atom-periodic-2d': [graphene.monolayer_4atom(), pb.rectangle(1),
+                                             pb.translational_symmetry(a1=0.6, a2=0.6)],
     'graphene-bilayer': [graphene.bilayer(), graphene.hexagon_ac(0.6)],
 }
 

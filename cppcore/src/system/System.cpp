@@ -5,8 +5,9 @@
 
 namespace tbm {
 
-System::System(Foundation const& foundation, Symmetry const& symmetry, Leads const& leads,
-               HoppingGenerators const& hopping_generators) : lattice(foundation.get_lattice()) {
+System::System(Foundation const& foundation, TranslationalSymmetry const& symmetry,
+               Leads const& leads, HoppingGenerators const& hopping_generators)
+    : lattice(foundation.get_lattice()) {
     auto const hamiltonian_indices = HamiltonianIndices(foundation);
     detail::populate_system(*this, foundation, hamiltonian_indices);
     if (symmetry) {
@@ -157,7 +158,7 @@ void populate_system(System& system, Foundation const& foundation,
 
 void populate_boundaries(System& system, Foundation const& foundation,
                          HamiltonianIndices const& hamiltonian_indices,
-                         Symmetry const& symmetry) {
+                         TranslationalSymmetry const& symmetry) {
     // a boundary is added first to prevent copying of Eigen::SparseMatrix
     // --> revise when Eigen types become movable
 

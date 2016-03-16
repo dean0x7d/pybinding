@@ -214,7 +214,10 @@ void export_system() {
         init<Polygon::Vertices const&, Cartesian> {args("self", "vertices", "offset")}
     };
 
-    class_<tbm::Symmetry>{"TranslationalSymmetry", init<Cartesian>{args("self", "length")}};
+    class_<TranslationalSymmetry>{
+        "TranslationalSymmetry",
+        init<float, float, float>{args("self", "a1", "a2", "a3")}
+    };
 
     class_<PySiteStateModifier, noncopyable>{
         "SiteStateModifier",

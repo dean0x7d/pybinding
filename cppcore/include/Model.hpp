@@ -23,7 +23,7 @@ public:
 public: // set parameters
     void set_primitive(Primitive primitive);
     void set_shape(Shape const& shape);
-    void set_symmetry(Symmetry const& symmetry);
+    void set_symmetry(TranslationalSymmetry const& s);
 
     void attach_lead(int direction, Shape const& shape);
 
@@ -46,7 +46,7 @@ public: // get parameters
     Lattice const& get_lattice() const { return lattice; }
     Primitive const& get_primitive() const { return primitive; }
     Shape const& get_shape() const { return shape; }
-    Symmetry const& get_symmetry() const { return symmetry; }
+    TranslationalSymmetry const& get_symmetry() const { return symmetry; }
 
     std::vector<SiteStateModifier> state_modifiers() const { return system_modifiers.state; }
     std::vector<PositionModifier> position_modifiers() const { return system_modifiers.position; }
@@ -74,7 +74,7 @@ private:
     Lattice lattice;
     Primitive primitive;
     Shape shape;
-    Symmetry symmetry;
+    TranslationalSymmetry symmetry;
     Cartesian wave_vector = {0, 0, 0};
 
     Leads leads;

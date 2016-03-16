@@ -75,6 +75,9 @@ public:
     /// Get the maximum possible number of hoppings from any site of this lattice
     int max_hoppings() const;
 
+    /// The dimensionality of the lattice
+    int ndim() const { return static_cast<int>(vectors.size()); }
+
     /// Convenient way to access sublattices
     const Sublattice& operator[](int n) const { return sublattices[n]; }
 

@@ -229,3 +229,29 @@ TEST_CASE("Nonzeros per row of a triangular hopping matrix", "[unit]") {
     expected1 << 4, 1, 2, 2, 2;
     REQUIRE((nonzeros_per_row(sm, true) == expected1).all());
 }
+
+TEST_CASE("Symmetry masks", "[unit]") {
+    SECTION("1") {
+        auto const masks = detail::make_masks({true, false, false}, 1);
+        auto const expected = std::vector<Index3D>{{0, 0, 0}, {1, 0, 0}};
+        REQUIRE(masks == expected);
+    }
+    SECTION("2-1") {
+        auto const masks = detail::make_masks({false, true, false}, 2);
+        auto const expected = std::vector<Index3D>{{0, 0, 0}, {0, 1, 0}};
+        REQUIRE(masks == expected);
+    }
+    SECTION("2-2") {
+        auto const masks = detail::make_masks({true, true, false}, 2);
+        auto const expected = std::vector<Index3D>{{0, 0, 0}, {0, 1, 0}, {1, 0, 0}, {1, 1, 0}};
+        REQUIRE(masks == expected);
+    }
+    SECTION("3") {
+        auto const masks = detail::make_masks({true, true, true}, 3);
+        auto const expected = std::vector<Index3D>{
+            {0, 0, 0}, {0, 0, 1}, {0, 1, 0}, {0, 1, 1},
+            {1, 0, 0}, {1, 0, 1}, {1, 1, 0}, {1, 1, 1}
+        };
+        REQUIRE(masks == expected);
+    }
+}
