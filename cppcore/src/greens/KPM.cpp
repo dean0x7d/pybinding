@@ -296,12 +296,11 @@ ArrayX<scalar_t> KPM<scalar_t>::calculate_moments2(OptimizedHamiltonian<scalar_t
 
     // Interleave moments `n` and `n + 1` for better data locality
     for (auto n = 2; n < num_moments; n += 2) {
-        auto const max_m1 = oh.optimized_size_index(n, num_moments);
-        auto const max_m2 = oh.optimized_size_index(n + 1, num_moments);
-
         auto p0 = 0;
         auto p1 = 0;
-        for (auto m = 0; m <= max_m1; ++m) {
+
+        auto const max_m = oh.optimized_size_index(n, num_moments);
+        for (auto m = 0; m <= max_m; ++m) {
             auto const p2 = oh.optimized_sizes[m];
             compute::kpm_kernel(p1, p2, oh.H2, r1, r0);
             compute::kpm_kernel(p0, p1, oh.H2, r0, r1);
@@ -309,12 +308,13 @@ ArrayX<scalar_t> KPM<scalar_t>::calculate_moments2(OptimizedHamiltonian<scalar_t
             p0 = p1;
             p1 = p2;
         }
-        // Tail end in case `max_m2 >= max_m1`
-        compute::kpm_kernel(p0, oh.optimized_sizes[max_m2], oh.H2, r0, r1);
-
         moments[n] = r0[i];
-        if (n + 1 < num_moments)
+
+        if (n + 1 < num_moments) {
+            auto const max_m2 = oh.optimized_size_index(n + 1, num_moments);
+            compute::kpm_kernel(p0, oh.optimized_sizes[max_m2], oh.H2, r0, r1);
             moments[n + 1] = r1[i];
+        }
     }
 
     return moments;

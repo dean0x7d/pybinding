@@ -77,7 +77,7 @@ TEST_CASE("KPM optimization levels", "[kpm]") {
         auto config = KPMConfig{};
         config.optimization_level = opt_level;
         auto kpm = Greens<KPM>(model, config);
-        auto const g = kpm.calc_greens(i, j, ArrayXd::LinSpaced(10, -0.3, 0.3), 0.02);
+        auto const g = kpm.calc_greens(i, j, ArrayXd::LinSpaced(10, -0.3, 0.3), 0.8);
         return ArrayXcf{g.cast<std::complex<float>>()};
     };
 

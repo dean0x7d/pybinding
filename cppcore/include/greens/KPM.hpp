@@ -59,6 +59,7 @@ public:
     /// Return an index into `optimized_sizes`, indicating the optimal system size
     /// for the calculation of KPM moment number `n` out of total `num_moments`
     int optimized_size_index(int n, int num_moments) const {
+        assert(n < num_moments);
         assert(!optimized_sizes.empty());
 
         auto const max_index = std::min(
