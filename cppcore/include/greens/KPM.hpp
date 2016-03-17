@@ -2,6 +2,7 @@
 #include "greens/Greens.hpp"
 #include "numeric/sparse.hpp"
 #include "compute/lanczos.hpp"
+#include "detail/macros.hpp"
 
 namespace tbm { namespace kpm {
 
@@ -57,28 +58,28 @@ public:
 
     /// Return an index into `optimized_sizes`, indicating the optimal system size
     /// for the calculation of KPM moment number `n` out of total `num_moments`
-    int get_optimized_size_index(int n, int num_moments) const {
+    int optimized_size_index(int n, int num_moments) const {
         assert(!optimized_sizes.empty());
 
-        auto const max_size = std::min(
-            static_cast<int>(optimized_sizes.size()) - 2,
+        auto const max_index = std::min(
+            static_cast<int>(optimized_sizes.size()) - 1,
             num_moments / 2
         );
 
-        if (n < max_size)
-            return n + 1; // size grows in the beginning
-        else if (n > num_moments - max_size - 1)
-            return num_moments - n; // reverse `n + 1` -> shrinking near the end
-        else
-            return max_size + 1; // constant in the middle
+        if (n < max_index) {
+            return n; // size grows in the beginning
+        } else { // constant in the middle and shrinking near the end as reverse `n`
+            return std::min(max_index, num_moments - 1 - n + size_index_offset);
+        }
     }
 
     /// Return the optimized system size for KPM moment number `n` out of total `num_moments`
-    int get_optimized_size(int n, int num_moments) const {
-        if (!optimized_sizes.empty())
-            return optimized_sizes[get_optimized_size_index(n, num_moments)];
-        else
+    int optimized_size(int n, int num_moments) const {
+        if (!optimized_sizes.empty()) {
+            return optimized_sizes[optimized_size_index(n, num_moments)];
+        } else {
             return H2.rows();
+        }
     }
 
     /// The unoptimized compute area is H2.nonZeros() * num_moments
@@ -89,6 +90,7 @@ public:
     IndexPair original_idx = {-1, -1}; ///< indices from the original `H` matrix
     IndexPair optimized_idx = {-1, -1}; ///< reordered indices in the `H2` matrix
     std::vector<int> optimized_sizes; ///< optimal matrix size "steps" for the KPM calculation
+    int size_index_offset = 0; ///< needed to correctly compute off-diagonal elements (i != j)
 
 private:
     /// Fill H2 with scaled Hamiltonian: H2 = (H - I*b) * (2/a)
@@ -174,9 +176,8 @@ protected: // declare used inherited members (template class requirement)
     using GreensStrategyT<scalar_t>::hamiltonian;
 };
 
-extern template class KPM<float>;
-extern template class KPM<std::complex<float>>;
-extern template class KPM<double>;
-extern template class KPM<std::complex<double>>;
+TBM_EXTERN_TEMPLATE_CLASS(KPM)
+TBM_EXTERN_TEMPLATE_CLASS(kpm::Scale)
+TBM_EXTERN_TEMPLATE_CLASS(kpm::OptimizedHamiltonian)
 
 } // namespace tbm

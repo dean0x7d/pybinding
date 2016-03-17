@@ -4,9 +4,9 @@
 #include "support/format.hpp"
 #include "numeric/constant.hpp"
 
-using namespace tbm;
-using namespace tbm::kpm;
 
+namespace tbm {
+using namespace kpm;
 
 template<class scalar_t>
 void Scale<scalar_t>::compute(SparseMatrixX<scalar_t> const& matrix, real_t lanczos_tolerance) {
@@ -64,17 +64,21 @@ void OptimizedHamiltonian<scalar_t>::create_scaled(SparseMatrixX<scalar_t> const
 template<class scalar_t>
 void OptimizedHamiltonian<scalar_t>::create_reordered(SparseMatrixX<scalar_t> const& H,
                                                       IndexPair idx, Scale<scalar_t> scale) {
-    auto const target_index = idx.j; // this one will be relocated to position 0
+    auto const src_index = idx.j; // this one will be relocated to position 0
     auto const system_size = H.rows();
     auto const inverted_a = real_t{2 / scale.a};
 
     // Find the maximum number of non-zero elements in the original matrix
-    auto max_nonzeros = 1;
-    for (int i = 0; i < H.outerSize(); ++i) {
-        auto const nonzeros = H.outerIndexPtr()[i+1] - H.outerIndexPtr()[i];
-        if (nonzeros > max_nonzeros)
-            max_nonzeros = nonzeros;
-    }
+    auto const max_nonzeros = [&]{
+        auto max = 1;
+        for (auto i = 0; i < H.outerSize(); ++i) {
+            auto const nnz = H.outerIndexPtr()[i+1] - H.outerIndexPtr()[i];
+            if (nnz > max) {
+                max = nnz;
+            }
+        }
+        return max;
+    }();
 
     // Allocate the new matrix
     H2.resize(system_size, system_size);
@@ -87,20 +91,19 @@ void OptimizedHamiltonian<scalar_t>::create_reordered(SparseMatrixX<scalar_t> co
     // The index queue will contain the indices that need to be checked next
     auto index_queue = std::vector<int>{};
     index_queue.reserve(system_size);
-    index_queue.push_back(target_index); // starting from the given index
+    index_queue.push_back(src_index); // starting from the given index
 
     // Map from original matrix indices to reordered matrix indices
     auto reorder_map = std::vector<int>(static_cast<std::size_t>(system_size), -1);
     // The point of the reordering is to have the target become index number 0
-    reorder_map[target_index] = 0;
+    reorder_map[src_index] = 0;
 
     // As the reordered matrix is filled, the optimal size for the first few KPM steps is recorded
     optimized_sizes.clear();
-    optimized_sizes.push_back(0);
     optimized_sizes.push_back(1);
 
     // Fill the reordered matrix row by row
-    auto H_view = sparse::make_loop(H);
+    auto const H_view = sparse::make_loop(H);
     for (auto h2_row = 0; h2_row < system_size; ++h2_row) {
         auto diagonal_inserted = false;
 
@@ -135,24 +138,34 @@ void OptimizedHamiltonian<scalar_t>::create_reordered(SparseMatrixX<scalar_t> co
         });
 
         // Store the system size for the next KPM iteration
-        if (h2_row == optimized_sizes.back() - 1)
+        if (h2_row == optimized_sizes.back() - 1) {
             optimized_sizes.push_back(static_cast<int>(index_queue.size()));
+        }
     }
 
-    optimized_sizes.pop_back(); // the last two elements are duplicates
+    optimized_sizes.pop_back(); // the last element is a duplicate of the second to last
     optimized_sizes.shrink_to_fit();
     H2.makeCompressed();
 
-    // idx.j is always reordered so that reorder_map[idx.j] == 0
-    optimized_idx = {reorder_map[idx.i], 0};
     original_idx = idx;
+    optimized_idx = {reorder_map[idx.i], reorder_map[idx.j]};
+
+    size_index_offset = [&]{
+        auto const size = static_cast<int>(optimized_sizes.size());
+        for (auto i = 0; i < size; ++i) {
+            if (optimized_sizes[i] > optimized_idx.i) {
+                return i;
+            }
+        }
+        return 0;
+    }();
 }
 
 template<class scalar_t>
 double OptimizedHamiltonian<scalar_t>::optimized_area(int num_moments) const {
     auto area = .0;
     for (auto n = 0; n < num_moments; ++n) {
-        auto const max_row = get_optimized_size(n, num_moments);
+        auto const max_row = optimized_size(n, num_moments);
         auto const num_nonzeros = H2.outerIndexPtr()[max_row];
         area += num_nonzeros;
     }
@@ -249,7 +262,7 @@ ArrayX<scalar_t> KPM<scalar_t>::calculate_moments(OptimizedHamiltonian<scalar_t>
     moments[1] = r1[i];
 
     for (auto n = 2; n < num_moments; ++n) {
-        auto const optimized_size = oh.get_optimized_size(n, num_moments);
+        auto const optimized_size = oh.optimized_size(n, num_moments);
 
         // -> r0 = H2*r1 - r0; <- optimized compute kernel
         compute::kpm_kernel(0, optimized_size, oh.H2, r1, r0);
@@ -283,12 +296,12 @@ ArrayX<scalar_t> KPM<scalar_t>::calculate_moments2(OptimizedHamiltonian<scalar_t
 
     // Interleave moments `n` and `n + 1` for better data locality
     for (auto n = 2; n < num_moments; n += 2) {
-        auto const max_m1 = oh.get_optimized_size_index(n, num_moments);
-        auto const max_m2 = oh.get_optimized_size_index(n + 1, num_moments);
+        auto const max_m1 = oh.optimized_size_index(n, num_moments);
+        auto const max_m2 = oh.optimized_size_index(n + 1, num_moments);
 
         auto p0 = 0;
         auto p1 = 0;
-        for (auto m = 1; m <= max_m1; ++m) {
+        for (auto m = 0; m <= max_m1; ++m) {
             auto const p2 = oh.optimized_sizes[m];
             compute::kpm_kernel(p1, p2, oh.H2, r1, r0);
             compute::kpm_kernel(p0, p1, oh.H2, r0, r1);
@@ -396,8 +409,8 @@ void Stats::append(std::string short_str, std::string long_str, Chrono const& ti
     long_report += fmt::format(long_line, long_str, time);
 }
 
+TBM_INSTANTIATE_TEMPLATE_CLASS(KPM)
+TBM_INSTANTIATE_TEMPLATE_CLASS(kpm::Scale)
+TBM_INSTANTIATE_TEMPLATE_CLASS(kpm::OptimizedHamiltonian)
 
-template class tbm::KPM<float>;
-template class tbm::KPM<std::complex<float>>;
-template class tbm::KPM<double>;
-template class tbm::KPM<std::complex<double>>;
+} // namespace tbm

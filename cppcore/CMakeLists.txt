@@ -21,6 +21,7 @@ add_library(pybinding_cppcore
     include/compute/lanczos.hpp
     include/compute/linear_algebra.hpp
     include/detail/config.hpp
+    include/detail/macros.hpp
     include/detail/slice.hpp
     include/detail/strategy.hpp
     include/detail/thread.hpp

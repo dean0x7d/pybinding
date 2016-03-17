@@ -1,6 +1,9 @@
 add_executable(catch
     catch.cpp
+    fixtures.hpp
+    fixtures.cpp
     test_compute.cpp
+    test_greens.cpp
     test_support.cpp
     test_system.cpp
 )
