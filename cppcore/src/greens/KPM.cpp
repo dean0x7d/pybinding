@@ -2,7 +2,6 @@
 
 #include "compute/kernel_polynomial.hpp"
 #include "support/format.hpp"
-#include "numeric/constant.hpp"
 
 
 namespace tbm {
@@ -200,7 +199,7 @@ ArrayXcd KPM<scalar_t>::calculate(int i, int j, ArrayXd const& energy, double br
 
     // Determine the scaling parameters of the Hamiltonian (fast)
     timer.tic();
-    scale.compute(hamiltonian->get_matrix(), config.lanczos_precision);
+    scale.compute(*hamiltonian, config.lanczos_precision);
     stats.lanczos(scale.bounds, timer.toc());
 
     auto const num_moments = [&] {
@@ -210,7 +209,7 @@ ArrayXcd KPM<scalar_t>::calculate(int i, int j, ArrayXd const& energy, double br
 
     // Scale and optimize Hamiltonian (fast)
     timer.tic();
-    optimized_hamiltonian.create(hamiltonian->get_matrix(), {i, j}, scale,
+    optimized_hamiltonian.create(*hamiltonian, {i, j}, scale,
                                  /*use_reordering*/config.optimization_level >= 1);
     stats.reordering(optimized_hamiltonian, num_moments, timer.toc());
 

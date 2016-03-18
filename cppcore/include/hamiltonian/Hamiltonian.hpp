@@ -1,64 +1,129 @@
 #pragma once
+#include "hamiltonian/HamiltonianModifiers.hpp"
+
 #include "numeric/dense.hpp"
 #include "numeric/sparse.hpp"
 #include "numeric/sparseref.hpp"
 #include "numeric/traits.hpp"
+#include "numeric/constant.hpp"
+
+#include "support/variant.hpp"
 
 namespace tbm {
 
-struct System;
-struct HamiltonianModifiers;
+template<class scalar_t>
+using SparseMatrixRC = std::shared_ptr<SparseMatrixX<scalar_t> const>;
 
 /**
- Builds and stores a tight-binding Hamiltonian. Abstract base.
+ Stores a tight-binding Hamiltonian as a sparse matrix variant
+ with real or complex scalar type and single or double precision.
  */
 class Hamiltonian {
-public:
-    virtual ~Hamiltonian() = default;
+    using Variant = var::variant<SparseMatrixRC<float>, SparseMatrixRC<std::complex<float>>,
+                                 SparseMatrixRC<double>, SparseMatrixRC<std::complex<double>>>;
+    Variant variant_matrix;
 
-    virtual SparseURef matrix_union() const = 0;
-    virtual int non_zeros() const = 0;
-    virtual int rows() const = 0;
-    virtual int cols() const = 0;
+public:
+    Hamiltonian() = default;
+    template<class scalar_t>
+    Hamiltonian(std::shared_ptr<SparseMatrixX<scalar_t>> const& s) : variant_matrix(s) {}
+    template<class scalar_t>
+    Hamiltonian(std::shared_ptr<SparseMatrixX<scalar_t>>&& s) : variant_matrix(std::move(s)) {}
+
+    Variant const& get_variant() const { return variant_matrix; }
+
+    explicit operator bool() const;
+    void reset();
+
+    SparseURef matrix_union() const;
+    int non_zeros() const;
+    int rows() const;
+    int cols() const;
 };
 
+namespace detail {
 
-/// Concrete hamiltonian with a specific scalar type.
 template<class scalar_t>
-class HamiltonianT : public Hamiltonian {
-    using real_t = num::get_real_t<scalar_t>;
-    using complex_t = num::get_complex_t<scalar_t>;
-    using SparseMatrix = SparseMatrixX<scalar_t>;
+void build_main(SparseMatrixX<scalar_t>& matrix, System const& system,
+                HamiltonianModifiers const& modifiers) {
+    auto const num_sites = system.num_sites();
+    matrix.resize(num_sites, num_sites);
 
-public:
-    HamiltonianT(System const&, HamiltonianModifiers const&, Cartesian k_vector);
-    virtual ~HamiltonianT() override;
+    auto const has_onsite_energy = system.lattice.has_onsite_energy || !modifiers.onsite.empty();
+    if (system.has_unbalanced_hoppings) {
+        matrix.reserve(nonzeros_per_row(system.hoppings, has_onsite_energy));
+    } else {
+        auto const num_per_row = system.lattice.max_hoppings() + has_onsite_energy;
+        matrix.reserve(ArrayXi::Constant(num_sites, num_per_row));
+    }
 
-    /// Get a const reference to the matrix.
-    const SparseMatrix& get_matrix() const { return matrix; }
+    modifiers.apply_to_onsite<scalar_t>(system, [&](int i, scalar_t onsite) {
+        matrix.insert(i, i) = onsite;
+    });
 
-    virtual SparseURef matrix_union() const override { return matrix; }
-    virtual int non_zeros() const override { return matrix.nonZeros(); }
-    virtual int rows() const override { return matrix.rows(); }
-    virtual int cols() const override { return matrix.cols(); }
+    modifiers.apply_to_hoppings<scalar_t>(system, [&](int i, int j, scalar_t hopping) {
+        matrix.insert(i, j) = hopping;
+        matrix.insert(j, i) = num::conjugate(hopping);
+    });
+}
 
-private: // build the Hamiltonian
-    void build_main(System const&, HamiltonianModifiers const&);
-    void build_periodic(System const&, HamiltonianModifiers const&);
-    void set(Cartesian k_vector);
+template<class scalar_t>
+void build_periodic(SparseMatrixX<scalar_t>& matrix, System const& system,
+                    HamiltonianModifiers const& modifiers, Cartesian k_vector) {
+    auto const num_boundaries = static_cast<int>(system.boundaries.size());
+    for (auto n = 0; n < num_boundaries; ++n) {
+        using constant::i1;
+        auto const& d = system.boundaries[n].shift;
+        auto const phase = num::complex_cast<scalar_t>(exp(i1 * k_vector.dot(d)));
 
-    /// Check that all the values in the matrix are finite
-    static void throw_if_invalid(SparseMatrix const& m);
+        modifiers.apply_to_hoppings<scalar_t>(system, n, [&](int i, int j, scalar_t hopping) {
+            matrix.coeffRef(i, j) += hopping * phase;
+            matrix.coeffRef(j, i) += hopping * num::conjugate(phase);
+        });
+    }
+}
 
-private:
-    SparseMatrix matrix; ///< the sparse matrix that holds the data
-    std::vector<SparseMatrix> boundary_matrices;
-    std::vector<Cartesian> boundary_lengths;
-};
+/// Check that all the values in the matrix are finite
+template<class scalar_t>
+void throw_if_invalid(SparseMatrixX<scalar_t> const& m) {
+    auto const data = Eigen::Map<ArrayX<scalar_t> const>(m.valuePtr(), m.nonZeros());
+    if (!data.allFinite()) {
+        throw std::runtime_error("The Hamiltonian contains invalid values: NaN or INF.\n"
+                                 "Check the lattice and/or modifier functions.");
+    }
+}
 
-extern template class HamiltonianT<float>;
-extern template class HamiltonianT<std::complex<float>>;
-extern template class HamiltonianT<double>;
-extern template class HamiltonianT<std::complex<double>>;
+} // namespace detail
 
+namespace ham {
+
+template<class scalar_t>
+inline SparseMatrixRC<scalar_t> get_shared_ptr(Hamiltonian const& h) {
+    return var::get<SparseMatrixRC<scalar_t>>(h.get_variant());
+}
+
+template<class scalar_t>
+inline SparseMatrixX<scalar_t> const& get_reference(Hamiltonian const& h) {
+    return *var::get<SparseMatrixRC<scalar_t>>(h.get_variant());
+}
+
+template<class scalar_t>
+inline bool is(Hamiltonian const& h) {
+    return h.get_variant().template is<SparseMatrixRC<scalar_t>>();
+}
+
+template<class scalar_t>
+Hamiltonian make(System const& system, HamiltonianModifiers const& modifiers, Cartesian k_vector) {
+    auto matrix = std::make_shared<SparseMatrixX<scalar_t>>();
+
+    detail::build_main(*matrix, system, modifiers);
+    detail::build_periodic(*matrix, system, modifiers, k_vector);
+
+    matrix->makeCompressed();
+    detail::throw_if_invalid(*matrix);
+
+    return matrix;
+}
+
+} // namespace ham
 } // namespace tbm

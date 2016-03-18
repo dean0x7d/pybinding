@@ -120,16 +120,16 @@ struct OnsiteEnergyOp {
 
 TEST_CASE("OnsiteEnergyModifier", "[modifier]") {
     auto model = Model(square_lattice());
-    auto sm_init = model.hamiltonian()->matrix_union();
-    REQUIRE(sm_init.rows == 2);
-    REQUIRE(sm_init.values.cols == 2);
+    auto const& h_init = model.hamiltonian();
+    REQUIRE(h_init.rows() == 2);
+    REQUIRE(h_init.non_zeros() == 2);
 
     model.add_onsite_modifier({[](ComplexArrayRef energy, CartesianArray const&, SubIdRef) {
         num::match<ArrayX>(energy, OnsiteEnergyOp{});
     }});
-    auto sm = model.hamiltonian()->matrix_union();
-    REQUIRE(sm.rows == 2);
-    REQUIRE(sm.values.cols == 4);
+    auto const& h = model.hamiltonian();
+    REQUIRE(h.rows() == 2);
+    REQUIRE(h.non_zeros() == 4);
 }
 
 struct HoppingEnergyOp {
@@ -141,17 +141,17 @@ struct HoppingEnergyOp {
 
 TEST_CASE("HoppingEnergyModifier", "[modifier]") {
     auto model = Model(square_lattice());
-    auto sm_init = model.hamiltonian()->matrix_union();
-    REQUIRE(sm_init.rows == 2);
-    REQUIRE(sm_init.values.cols == 2);
+    auto const& h_init = model.hamiltonian();
+    REQUIRE(h_init.rows() == 2);
+    REQUIRE(h_init.non_zeros() == 2);
 
     model.add_hopping_modifier({[](ComplexArrayRef energy, CartesianArray const&,
                                    CartesianArray const&, HopIdRef) {
         num::match<ArrayX>(energy, HoppingEnergyOp{});
     }});
-    auto sm = model.hamiltonian()->matrix_union();
-    REQUIRE(sm.rows == 2);
-    REQUIRE(sm.values.cols == 0);
+    auto const& h = model.hamiltonian();
+    REQUIRE(h.rows() == 2);
+    REQUIRE(h.non_zeros() == 0);
 }
 
 TEST_CASE("HoppingGenerator", "[generator]") {

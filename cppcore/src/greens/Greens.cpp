@@ -24,7 +24,7 @@ void BaseGreens::set_model(Model const& new_model) {
 }
 
 ArrayXcd BaseGreens::calc_greens(int i, int j, ArrayXd const& energy, double broadening) const {
-    auto const size = model.hamiltonian()->rows();
+    auto const size = model.hamiltonian().rows();
     if (i < 0 || i > size || j < 0 || j > size)
         throw std::logic_error{"KPM::calc_greens(i,j): invalid value for i or j."};
 

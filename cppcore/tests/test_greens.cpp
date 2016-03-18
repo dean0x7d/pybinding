@@ -11,10 +11,7 @@ TEST_CASE("OptimizedHamiltonian reordering", "[kpm]") {
     auto const num_sites = model.system()->num_sites();
 
     using scalat_t = float;
-    using H = HamiltonianT<scalat_t> const;
-    auto const hamiltonian = std::dynamic_pointer_cast<H>(model.hamiltonian());
-    REQUIRE(hamiltonian);
-    auto const& matrix = hamiltonian->get_matrix();
+    auto const& matrix = ham::get_reference<scalat_t>(model.hamiltonian());
 
     auto scale = kpm::Scale<scalat_t>();
     scale.compute(matrix, KPMConfig{}.lanczos_precision);

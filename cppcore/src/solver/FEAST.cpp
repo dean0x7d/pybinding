@@ -10,7 +10,7 @@ using namespace tbm;
 template<class scalar_t>
 void FEAST<scalar_t>::solve() {
     // size of the matrix
-    config.system_size = hamiltonian->get_matrix().rows();
+    config.system_size = hamiltonian->rows();
     // reset info flags
     info.recycle_warning = false;
     info.recycle_warning_loops = 0;
@@ -197,7 +197,7 @@ void FEAST<scalar_t>::call_feast()
 
 template<class scalar_t>
 void FEAST<scalar_t>::call_feast_impl() {
-    auto const& h_matrix = hamiltonian->get_matrix();
+    auto const& h_matrix = *hamiltonian;
 
     // convert to one-based index
     ArrayXi const outer_starts =

@@ -10,13 +10,10 @@ TEST_CASE("Lanczos", "[lanczos]") {
     model.set_primitive({5, 5});
     model.set_symmetry({1, 1});
 
-    using H = HamiltonianT<std::complex<float>> const;
-    auto const hamiltonian = std::dynamic_pointer_cast<H>(model.hamiltonian());
-    REQUIRE(hamiltonian);
-
+    auto const& matrix = ham::get_reference<std::complex<float>>(model.hamiltonian());
     auto loop_counters = std::vector<int>(3);
     for (auto& count : loop_counters) {
-        auto const bounds = compute::minmax_eigenvalues(hamiltonian->get_matrix(), 1e-3f);
+        auto const bounds = compute::minmax_eigenvalues(matrix, 1e-3f);
         auto const expected = abs(3 * graphene::t);
         REQUIRE(bounds.max == Approx(expected));
         REQUIRE(bounds.min == Approx(-expected));

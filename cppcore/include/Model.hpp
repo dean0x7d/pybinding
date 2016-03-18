@@ -55,7 +55,7 @@ public: // get parameters
 
 public: // get results
     std::shared_ptr<System const> const& system() const;
-    std::shared_ptr<Hamiltonian const> const& hamiltonian() const;
+    Hamiltonian const& hamiltonian() const;
 
 public: // get information
     /// Report of the last build operation: system and Hamiltonian
@@ -68,7 +68,7 @@ public:
 
 private:
     std::shared_ptr<System> make_system() const;
-    std::shared_ptr<Hamiltonian> make_hamiltonian() const;
+    Hamiltonian make_hamiltonian() const;
 
 private:
     Lattice lattice;
@@ -84,7 +84,7 @@ private:
     HoppingGenerators hopping_generators;
 
     mutable std::shared_ptr<System const> _system;
-    mutable std::shared_ptr<Hamiltonian const> _hamiltonian;
+    mutable Hamiltonian _hamiltonian;
     mutable Chrono system_build_time;
     mutable Chrono hamiltonian_build_time;
 };

@@ -1,12 +1,10 @@
 #pragma once
+#include "hamiltonian/Hamiltonian.hpp"
 #include "support/cppfuture.hpp"
-#include <complex>
-#include <type_traits>
 
 namespace tbm {
 
 class Model;
-template<class> class HamiltonianT;
 
 namespace detail {
 
@@ -40,15 +38,13 @@ public:
 private:
     template<class scalar_t>
     std::unique_ptr<BaseStrategy> try_strategy(Model const& model) const {
-        using Target = HamiltonianT<scalar_t> const;
-        auto cast_ham = std::dynamic_pointer_cast<Target>(model.hamiltonian());
-        if (!cast_ham)
-            return nullptr;
-
-        auto strategy = std14::make_unique<Strategy<scalar_t>>(config);
-        strategy->set_hamiltonian(cast_ham);
-
-        return std::move(strategy);
+        auto const& h = model.hamiltonian();
+        if (ham::is<scalar_t>(h)) {
+            auto strategy = std14::make_unique<Strategy<scalar_t>>(config);
+            strategy->set_hamiltonian(h);
+            return std::move(strategy);
+        }
+        return {};
     }
 
 private:

@@ -22,8 +22,8 @@ public:
     virtual ~SolverStrategy() = default;
 
     /// Returns false if the given Hamiltonian is the wrong type for this SolverStrategy
-    virtual bool set_hamiltonian(const std::shared_ptr<const Hamiltonian>&) = 0;
-    
+    virtual bool set_hamiltonian(Hamiltonian const&) = 0;
+
     virtual void solve() = 0;
     virtual RealArrayConstRef eigenvalues() const = 0;
     virtual ComplexArrayConstRef eigenvectors() const = 0;
@@ -42,16 +42,12 @@ class SolverStrategyT : public SolverStrategy {
 public:
     virtual ~SolverStrategyT() { Log::d("SolverStrategy<" + num::scalar_name<scalar_t>() + ">()"); }
     
-    virtual bool set_hamiltonian(const std::shared_ptr<const Hamiltonian>& ham) final {
-        // check if it's compatible
-        if (auto cast_ham = std::dynamic_pointer_cast<const HamiltonianT<scalar_t>>(ham)) {
-            if (hamiltonian != cast_ham) {
-                hamiltonian = cast_ham;
-                hamiltonian_changed();
-            }
+    virtual bool set_hamiltonian(Hamiltonian const& h) final {
+        if (ham::is<scalar_t>(h)) {
+            hamiltonian = ham::get_shared_ptr<scalar_t>(h);
+            hamiltonian_changed();
             return true;
         }
-        // failed -> wrong scalar_type
         return false;
     }
 
@@ -66,7 +62,7 @@ protected:
 protected:
     ArrayX<real_t> _eigenvalues;
     ArrayXX<scalar_t> _eigenvectors;
-    std::shared_ptr<const HamiltonianT<scalar_t>> hamiltonian; ///< the Hamiltonian to solve
+    std::shared_ptr<SparseMatrixX<scalar_t> const> hamiltonian; ///< the Hamiltonian to solve
 };
 
 

@@ -2,12 +2,11 @@
 #include "Model.hpp"
 #include "hamiltonian/Hamiltonian.hpp"
 
-#include "detail/strategy.hpp"
-
 #include "utils/Chrono.hpp"
 #include "utils/Log.hpp"
 
 #include "numeric/dense.hpp"
+#include "detail/strategy.hpp"
 #include "detail/thread.hpp"
 
 namespace tbm {
@@ -21,7 +20,7 @@ public:
 
     /// Try to set the Hamiltonian
     /// @return false if the given Hamiltonian is the wrong scalar type for this GreensStrategy
-    virtual bool set_hamiltonian(const std::shared_ptr<const Hamiltonian>& hamiltonian) = 0;
+    virtual bool set_hamiltonian(Hamiltonian const&) = 0;
     /// Return the Green's function at (i,j) for the given energy range
     virtual ArrayXcd calculate(int i, int j, ArrayXd const& energy, double broadening) = 0;
     /// Get some information about what happened during the last calculation
@@ -37,16 +36,12 @@ class GreensStrategyT : public GreensStrategy {
 public:
     virtual ~GreensStrategyT() { Log::d("~GreensStrategy<" + num::scalar_name<scalar_t>() + ">()"); }
 
-    virtual bool set_hamiltonian(const std::shared_ptr<const Hamiltonian>& ham) final {
-        // check if it's compatible
-        if (auto cast_ham = std::dynamic_pointer_cast<const HamiltonianT<scalar_t>>(ham)) {
-            if (hamiltonian != cast_ham) {
-                hamiltonian = cast_ham;
-                hamiltonian_changed();
-            }
+    bool set_hamiltonian(Hamiltonian const& h) final {
+        if (ham::is<scalar_t>(h)) {
+            hamiltonian = ham::get_shared_ptr<scalar_t>(h);
+            hamiltonian_changed();
             return true;
         }
-        // failed -> wrong scalar_type
         return false;
     }
 
@@ -55,7 +50,7 @@ protected:
     virtual void hamiltonian_changed() {};
 
 protected:
-    std::shared_ptr<const HamiltonianT<scalar_t>> hamiltonian; ///< the Hamiltonian to solve
+    std::shared_ptr<SparseMatrixX<scalar_t> const> hamiltonian; ///< the Hamiltonian to solve
 };
 
 /**

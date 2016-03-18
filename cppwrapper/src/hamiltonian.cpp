@@ -36,9 +36,7 @@ public:
 };
 
 void export_modifiers() {
-    class_<Hamiltonian, std::shared_ptr<Hamiltonian>, noncopyable>{
-        "Hamiltonian", no_init
-    }
+    class_<Hamiltonian>{"Hamiltonian", no_init}
     .add_property("matrix", internal_ref(&Hamiltonian::matrix_union))
     ;
 

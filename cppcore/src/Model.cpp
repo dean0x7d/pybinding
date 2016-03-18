@@ -81,7 +81,7 @@ std::shared_ptr<System const> const& Model::system() const {
     return _system;
 }
 
-std::shared_ptr<Hamiltonian const> const& Model::hamiltonian() const {
+Hamiltonian const& Model::hamiltonian() const {
     if (!_hamiltonian) {
         hamiltonian_build_time.timeit([&]{
             _hamiltonian = make_hamiltonian();
@@ -95,7 +95,7 @@ std::string Model::report() {
     auto report = fmt::format("Built system with {} lattice sites, {}\n",
                               fmt::with_suffix(built_system.num_sites()), system_build_time);
 
-    auto const& built_hamiltonian = *hamiltonian();
+    auto const& built_hamiltonian = hamiltonian();
     report += fmt::format("The Hamiltonian has {} non-zero values, {}",
                           fmt::with_suffix(built_hamiltonian.non_zeros()), hamiltonian_build_time);
 
@@ -131,28 +131,20 @@ std::shared_ptr<System> Model::make_system() const {
     return std::make_shared<System>(foundation, symmetry, leads, hopping_generators);
 }
 
-std::shared_ptr<Hamiltonian> Model::make_hamiltonian() const {
+Hamiltonian Model::make_hamiltonian() const {
     auto const& built_system = *system();
 
     if (is_double()) {
         if (is_complex()) {
-            return std::make_shared<HamiltonianT<std::complex<double>>>(
-                built_system, hamiltonian_modifiers, wave_vector
-            );
+            return ham::make<std::complex<double>>(built_system, hamiltonian_modifiers, wave_vector);
         } else {
-            return std::make_shared<HamiltonianT<double>>(
-                built_system, hamiltonian_modifiers, wave_vector
-            );
+            return ham::make<double>(built_system, hamiltonian_modifiers, wave_vector);
         }
     } else {
         if (is_complex()) {
-            return std::make_shared<HamiltonianT<std::complex<float>>>(
-                built_system, hamiltonian_modifiers, wave_vector
-            );
+            return ham::make<std::complex<float>>(built_system, hamiltonian_modifiers, wave_vector);
         } else {
-            return std::make_shared<HamiltonianT<float>>(
-                built_system, hamiltonian_modifiers, wave_vector
-            );
+            return ham::make<float>(built_system, hamiltonian_modifiers, wave_vector);
         }
     }
 }
