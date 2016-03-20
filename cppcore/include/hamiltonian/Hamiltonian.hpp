@@ -26,9 +26,9 @@ class Hamiltonian {
 public:
     Hamiltonian() = default;
     template<class scalar_t>
-    Hamiltonian(std::shared_ptr<SparseMatrixX<scalar_t>> const& s) : variant_matrix(s) {}
+    Hamiltonian(std::shared_ptr<SparseMatrixX<scalar_t>> p) : variant_matrix(std::move(p)) {}
     template<class scalar_t>
-    Hamiltonian(std::shared_ptr<SparseMatrixX<scalar_t>>&& s) : variant_matrix(std::move(s)) {}
+    Hamiltonian(std::shared_ptr<SparseMatrixX<scalar_t> const> p) : variant_matrix(std::move(p)) {}
 
     Variant const& get_variant() const { return variant_matrix; }
 
@@ -78,7 +78,7 @@ void build_periodic(SparseMatrixX<scalar_t>& matrix, System const& system,
 
         modifiers.apply_to_hoppings<scalar_t>(system, n, [&](int i, int j, scalar_t hopping) {
             matrix.coeffRef(i, j) += hopping * phase;
-            matrix.coeffRef(j, i) += hopping * num::conjugate(phase);
+            matrix.coeffRef(j, i) += num::conjugate(hopping * phase);
         });
     }
 }

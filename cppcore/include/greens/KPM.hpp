@@ -141,16 +141,15 @@ struct KPMConfig {
  Kernel polynomial method for calculating Green's function
  */
 template<class scalar_t>
-class KPM : public GreensStrategyT<scalar_t> {
+class KPM : public GreensStrategy {
     using real_t = num::get_real_t<scalar_t>;
     using complex_t = num::get_complex_t<scalar_t>;
 
 public:
     using Config = KPMConfig;
-    explicit KPM(Config const& config);
+    explicit KPM(SparseMatrixRC<scalar_t> hamiltonian, Config const& config = {});
 
-protected: // required implementation
-    void hamiltonian_changed() override;
+    bool change_hamiltonian(Hamiltonian const& h) override;
     ArrayXcd calculate(int i, int j, ArrayXd const& energy, double broadening) override;
     std::string report(bool shortform) const override;
     
@@ -168,13 +167,12 @@ private:
                                               ArrayX<scalar_t> const& moments);
 
 private:
+    SparseMatrixRC<scalar_t> hamiltonian;
     Config const config;
+
     kpm::Scale<scalar_t> scale;
     kpm::OptimizedHamiltonian<scalar_t> optimized_hamiltonian;
     kpm::Stats stats;
-
-protected: // declare used inherited members (template class requirement)
-    using GreensStrategyT<scalar_t>::hamiltonian;
 };
 
 TBM_EXTERN_TEMPLATE_CLASS(KPM)

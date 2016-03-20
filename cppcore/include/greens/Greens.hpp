@@ -3,8 +3,6 @@
 #include "hamiltonian/Hamiltonian.hpp"
 
 #include "utils/Chrono.hpp"
-#include "utils/Log.hpp"
-
 #include "numeric/dense.hpp"
 #include "detail/strategy.hpp"
 #include "detail/thread.hpp"
@@ -18,48 +16,20 @@ class GreensStrategy {
 public:
     virtual ~GreensStrategy() = default;
 
-    /// Try to set the Hamiltonian
-    /// @return false if the given Hamiltonian is the wrong scalar type for this GreensStrategy
-    virtual bool set_hamiltonian(Hamiltonian const&) = 0;
+    /// Returns false if the given Hamiltonian is the wrong type for this GreensStrategy
+    virtual bool change_hamiltonian(Hamiltonian const& h) = 0;
     /// Return the Green's function at (i,j) for the given energy range
     virtual ArrayXcd calculate(int i, int j, ArrayXd const& energy, double broadening) = 0;
     /// Get some information about what happened during the last calculation
-    virtual std::string report(bool shortform) const = 0;
-};
-
-
-/**
- Abstract base with type specialization.
- */
-template<class scalar_t>
-class GreensStrategyT : public GreensStrategy {
-public:
-    virtual ~GreensStrategyT() { Log::d("~GreensStrategy<" + num::scalar_name<scalar_t>() + ">()"); }
-
-    bool set_hamiltonian(Hamiltonian const& h) final {
-        if (ham::is<scalar_t>(h)) {
-            hamiltonian = ham::get_shared_ptr<scalar_t>(h);
-            hamiltonian_changed();
-            return true;
-        }
-        return false;
-    }
-
-protected:
-    /// post-processing that may be defined by derived classes
-    virtual void hamiltonian_changed() {};
-
-protected:
-    std::shared_ptr<SparseMatrixX<scalar_t> const> hamiltonian; ///< the Hamiltonian to solve
+    virtual std::string report(bool shortform = false) const = 0;
 };
 
 /**
- Green's function calculation interface.
+ Green's function calculation interface
+
  Internally it uses a GreensStrategy with the scalar of the given Hamiltonian.
  */
 class BaseGreens {
-    using MakeStrategy = std::function<std::unique_ptr<GreensStrategy>(Model const&)>;
-
 public:
     void set_model(Model const&);
     Model const& get_model() const { return model; }
@@ -75,6 +45,7 @@ public:
     std::string report(bool shortform) const;
 
 protected:
+    using MakeStrategy = std::function<std::unique_ptr<GreensStrategy>(Hamiltonian const&)>;
     BaseGreens(Model const& model, MakeStrategy const& make_strategy);
 
 private:
@@ -93,5 +64,13 @@ public:
     explicit Greens(Model const& model, Config const& config = {})
         : BaseGreens(model, MakeStrategy(config)) {}
 };
+
+/**
+ Return a strategy with the scalar type matching the given Hamiltonian
+ */
+template<template<class> class Strategy, class Config = typename Strategy<float>::Config>
+std::unique_ptr<GreensStrategy> make_greens_strategy(Hamiltonian const& h, Config const& c = {}) {
+    return detail::MakeStrategy<GreensStrategy, Strategy>(c)(h);
+}
 
 } // namespace tbm

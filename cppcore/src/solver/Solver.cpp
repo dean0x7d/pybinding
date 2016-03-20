@@ -1,5 +1,4 @@
 #include "solver/Solver.hpp"
-#include "numeric/constant.hpp"
 
 namespace tbm { namespace compute {
 
@@ -46,22 +45,22 @@ struct CalcSpatialLDOS {
 } // namespace compute
 
 BaseSolver::BaseSolver(Model const& model, MakeStrategy const& make_strategy)
-    : model(model), make_strategy(make_strategy), strategy(make_strategy(model)) {}
+    : model(model), make_strategy(make_strategy), strategy(make_strategy(model.hamiltonian())) {}
 
 void BaseSolver::set_model(Model const& new_model) {
     is_solved = false;
     model = new_model;
 
-    if (strategy) {
-        // try to assign a new Hamiltonian to the existing Solver strategy
-        bool success = strategy->set_hamiltonian(model.hamiltonian());
-        if (!success) // fails if the they have incompatible scalar types
+    if (strategy) {// try to assign a new Hamiltonian to the existing Solver strategy
+        bool success = strategy->change_hamiltonian(model.hamiltonian());
+        if (!success) { // fails if the they have incompatible scalar types
             strategy.reset();
+        }
     }
 
-    // creates a SolverStrategy with a scalar type suited to the Hamiltonian
-    if (!strategy)
-        strategy = make_strategy(model);
+    if (!strategy) { // creates a SolverStrategy with a scalar type suited to the Hamiltonian
+        strategy = make_strategy(model.hamiltonian());
+    }
 }
 
 void BaseSolver::solve() {

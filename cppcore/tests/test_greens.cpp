@@ -73,8 +73,8 @@ TEST_CASE("KPM optimization levels", "[kpm]") {
     auto calc_greens = [&](int i, int j, int opt_level) {
         auto config = KPMConfig{};
         config.optimization_level = opt_level;
-        auto kpm = Greens<KPM>(model, config);
-        auto const g = kpm.calc_greens(i, j, ArrayXd::LinSpaced(10, -0.3, 0.3), 0.8);
+        auto kpm = make_greens_strategy<KPM>(model.hamiltonian(), config);
+        auto const g = kpm->calculate(i, j, ArrayXd::LinSpaced(10, -0.3, 0.3), 0.8);
         return ArrayXcf{g.cast<std::complex<float>>()};
     };
 

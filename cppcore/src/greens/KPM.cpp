@@ -174,22 +174,34 @@ double OptimizedHamiltonian<scalar_t>::optimized_area(int num_moments) const {
 
 
 template<class scalar_t>
-KPM<scalar_t>::KPM(Config const& config) : config(config) {
-    if (config.min_energy > config.max_energy)
-        throw std::invalid_argument{"KPM: Invalid energy range specified (min > max)."};
-    if (config.lambda <= 0)
-        throw std::invalid_argument{"KPM: Lambda must be positive."};
+KPM<scalar_t>::KPM(SparseMatrixRC<scalar_t> hamiltonian, Config const& config)
+    : hamiltonian(std::move(hamiltonian)), config(config) {
+    if (config.min_energy > config.max_energy) {
+        throw std::invalid_argument("KPM: Invalid energy range specified (min > max).");
+    }
+    if (config.lambda <= 0) {
+        throw std::invalid_argument("KPM: Lambda must be positive.");
+    }
+    if (config.min_energy != config.max_energy) {
+        scale = {config.min_energy, config.max_energy};
+    }
 }
 
 template<class scalar_t>
-void KPM<scalar_t>::hamiltonian_changed() {
-    optimized_hamiltonian = {};
+bool KPM<scalar_t>::change_hamiltonian(Hamiltonian const& h) {
+    if (!ham::is<scalar_t>(h)) {
+        return false;
+    }
 
+    hamiltonian = ham::get_shared_ptr<scalar_t>(h);
+    optimized_hamiltonian = {};
     if (config.min_energy == config.max_energy) {
         scale = {}; // will be automatically computed
     } else {
         scale = {config.min_energy, config.max_energy}; // user-defined bounds
     }
+
+    return true;
 }
 
 template<class scalar_t>

@@ -3,12 +3,9 @@
 #include "system/Lattice.hpp"
 #include "hamiltonian/Hamiltonian.hpp"
 
-#include "detail/strategy.hpp"
-
 #include "utils/Chrono.hpp"
-#include "utils/Log.hpp"
-
 #include "numeric/dense.hpp"
+#include "detail/strategy.hpp"
 
 #include <memory>
 
@@ -22,58 +19,20 @@ public:
     virtual ~SolverStrategy() = default;
 
     /// Returns false if the given Hamiltonian is the wrong type for this SolverStrategy
-    virtual bool set_hamiltonian(Hamiltonian const&) = 0;
-
+    virtual bool change_hamiltonian(Hamiltonian const& h) = 0;
     virtual void solve() = 0;
+    virtual std::string report(bool shortform) const = 0;
+
     virtual RealArrayConstRef eigenvalues() const = 0;
     virtual ComplexArrayConstRef eigenvectors() const = 0;
-
-    virtual std::string report(bool shortform) const = 0;
 };
 
-
 /**
- Abstract base with scalar type specialization
- */
-template<class scalar_t>
-class SolverStrategyT : public SolverStrategy {
-    using real_t = num::get_real_t<scalar_t>;
+ Main solver interface
 
-public:
-    virtual ~SolverStrategyT() { Log::d("SolverStrategy<" + num::scalar_name<scalar_t>() + ">()"); }
-    
-    virtual bool set_hamiltonian(Hamiltonian const& h) final {
-        if (ham::is<scalar_t>(h)) {
-            hamiltonian = ham::get_shared_ptr<scalar_t>(h);
-            hamiltonian_changed();
-            return true;
-        }
-        return false;
-    }
-
-public:
-    virtual RealArrayConstRef eigenvalues() const override { return arrayref(_eigenvalues); }
-    virtual ComplexArrayConstRef eigenvectors() const override { return arrayref(_eigenvectors); }
-
-protected:
-    /// possible post-processing that may be defined by derived classes
-    virtual void hamiltonian_changed() {};
-    
-protected:
-    ArrayX<real_t> _eigenvalues;
-    ArrayXX<scalar_t> _eigenvectors;
-    std::shared_ptr<SparseMatrixX<scalar_t> const> hamiltonian; ///< the Hamiltonian to solve
-};
-
-
-/**
- The factory will produce the SolverStrategy class with the right scalar type.
- This is an abstract base factory. The derived factories will need to
- implement the create_for(hamiltonian) method.
+ Internally it uses a SolverStrategy with the scalar of the given Hamiltonian.
  */
 class BaseSolver {
-    using MakeStrategy = std::function<std::unique_ptr<SolverStrategy>(Model const&)>;
-
 public:
     void solve();
     void clear() { is_solved = false; }
@@ -90,6 +49,7 @@ public:
     ArrayXd calc_spatial_ldos(float energy, float broadening);
 
 protected:
+    using MakeStrategy = std::function<std::unique_ptr<SolverStrategy>(Hamiltonian const&)>;
     BaseSolver(Model const& model, MakeStrategy const& make_strategy);
 
 private:

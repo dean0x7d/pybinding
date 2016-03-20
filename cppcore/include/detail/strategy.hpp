@@ -2,11 +2,7 @@
 #include "hamiltonian/Hamiltonian.hpp"
 #include "support/cppfuture.hpp"
 
-namespace tbm {
-
-class Model;
-
-namespace detail {
+namespace tbm { namespace detail {
 
 /**
  Function object which creates a new Strategy with the appropriate scalar type for the given Model
@@ -18,37 +14,35 @@ template<class BaseStrategy, template<class> class Strategy>
 class MakeStrategy {
     static_assert(std::is_base_of<BaseStrategy, Strategy<float>>::value, "");
     using Config = typename Strategy<float>::Config;
+    Config config;
 
 public:
     explicit MakeStrategy(Config const& config) : config(config) {}
 
-    std::unique_ptr<BaseStrategy> operator()(Model const& model) const {
+    std::unique_ptr<BaseStrategy> operator()(Hamiltonian const& h) const {
         std::unique_ptr<BaseStrategy> strategy;
 
-        if (!strategy) strategy = try_strategy<float>(model);
-        if (!strategy) strategy = try_strategy<std::complex<float>>(model);
-        if (!strategy) strategy = try_strategy<double>(model);
-        if (!strategy) strategy = try_strategy<std::complex<double>>(model);
-        if (!strategy)
-            throw std::runtime_error{"MakeStrategy: unknown Hamiltonian type."};
+        if (!strategy) strategy = try_strategy<float>(h);
+        if (!strategy) strategy = try_strategy<std::complex<float>>(h);
+        if (!strategy) strategy = try_strategy<double>(h);
+        if (!strategy) strategy = try_strategy<std::complex<double>>(h);
+        if (!strategy) {
+            throw std::runtime_error("MakeStrategy: unknown Hamiltonian type.");
+        }
 
         return strategy;
     }
 
 private:
     template<class scalar_t>
-    std::unique_ptr<BaseStrategy> try_strategy(Model const& model) const {
-        auto const& h = model.hamiltonian();
+    std::unique_ptr<BaseStrategy> try_strategy(Hamiltonian const& h) const {
         if (ham::is<scalar_t>(h)) {
-            auto strategy = std14::make_unique<Strategy<scalar_t>>(config);
-            strategy->set_hamiltonian(h);
-            return std::move(strategy);
+            return std::unique_ptr<BaseStrategy>{
+                std14::make_unique<Strategy<scalar_t>>(ham::get_shared_ptr<scalar_t>(h), config)
+            };
         }
         return {};
     }
-
-private:
-    Config config;
 };
 
 }} // namespace tbm::detail

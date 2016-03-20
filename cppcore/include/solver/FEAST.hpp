@@ -33,7 +33,7 @@ struct FEASTConfig {
  Implementation of the FEAST eigensolver
  */
 template<class scalar_t>
-class FEAST : public SolverStrategyT<scalar_t> {
+class FEAST : public SolverStrategy {
     using real_t = num::get_real_t<scalar_t>;
     using complex_t = num::get_complex_t<scalar_t>;
 
@@ -52,21 +52,22 @@ public:
     
 public:
     using Config = FEASTConfig;
-    explicit FEAST(Config const& config) : config(config) {}
+    explicit FEAST(SparseMatrixRC<scalar_t> hamiltonian, Config const& config = {})
+        : hamiltonian(std::move(hamiltonian)), config(config) {}
 
 public: // overrides
+    bool change_hamiltonian(Hamiltonian const& h) override;
+    void solve() override;
+    std::string report(bool shortform) const override;
+
     // map eigenvalues and wavefunctions to only expose results up to the usable subspace size
-    virtual RealArrayConstRef eigenvalues() const override {
+    RealArrayConstRef eigenvalues() const override {
         return arrayref(Map<const ArrayX<real_t>>(_eigenvalues.data(), info.final_size));
     }
-    virtual ComplexArrayConstRef eigenvectors() const override {
+    ComplexArrayConstRef eigenvectors() const override {
         return arrayref(Map<const ArrayXX<scalar_t>>(_eigenvectors.data(),
                                                      _eigenvectors.rows(), info.final_size));
     }
-
-    virtual void solve() override;
-    virtual std::string report(bool shortform) const override;
-    virtual void hamiltonian_changed() override;
 
 private: // implementation
     void init_feast(); ///< initialize FEAST parameters
@@ -76,15 +77,15 @@ private: // implementation
     void force_clear(); ///< clear eigenvalue, eigenvector and residual data
 
 private:
-    int	fpm[128]; ///< FEAST init parameters
+    SparseMatrixRC<scalar_t> hamiltonian;
     Config config;
+
+    ArrayX<real_t> _eigenvalues;
+    ArrayXX<scalar_t> _eigenvectors;
+
+    int fpm[128]; ///< FEAST init parameters
     Info info;
     ArrayX<real_t> residual; ///< relative residual
-
-protected: // declared used inherited members (template class requirement)
-    using SolverStrategyT<scalar_t>::_eigenvalues;
-    using SolverStrategyT<scalar_t>::_eigenvectors;
-    using SolverStrategyT<scalar_t>::hamiltonian;
 };
 
 extern template class tbm::FEAST<float>;

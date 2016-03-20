@@ -96,9 +96,16 @@ std::string FEAST<scalar_t>::report(bool is_shortform) const {
 }
 
 template<class scalar_t>
-void FEAST<scalar_t>::hamiltonian_changed() {
-    if (!config.recycle_subspace)
+bool FEAST<scalar_t>::change_hamiltonian(Hamiltonian const& h) {
+    if (!ham::is<scalar_t>(h)) {
+        return false;
+    }
+
+    hamiltonian = ham::get_shared_ptr<scalar_t>(h);
+    if (!config.recycle_subspace) {
         force_clear();
+    }
+    return true;
 }
 
 template<class scalar_t>

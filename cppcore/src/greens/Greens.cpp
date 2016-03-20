@@ -1,26 +1,24 @@
 #include "greens/Greens.hpp"
-#include "numeric/constant.hpp"
 
-using namespace tbm;
+namespace tbm {
 using constant::pi;
 
-
 BaseGreens::BaseGreens(Model const& model, MakeStrategy const& make_strategy)
-    : model(model), make_strategy(make_strategy), strategy(make_strategy(model)) {}
+    : model(model), make_strategy(make_strategy), strategy(make_strategy(model.hamiltonian())) {}
 
 void BaseGreens::set_model(Model const& new_model) {
     model = new_model;
 
-    if (strategy) {
-        // try to assign a new Hamiltonian to the existing Green's strategy
-        bool success = strategy->set_hamiltonian(model.hamiltonian());
-        if (!success) // fails if the they have incompatible scalar types
+    if (strategy) { // try to assign a new Hamiltonian to the existing Green's strategy
+        bool success = strategy->change_hamiltonian(model.hamiltonian());
+        if (!success) { // fails if the they have incompatible scalar types
             strategy.reset();
+        }
     }
 
-    // creates a Green's strategy with a scalar type suited to the Hamiltonian
-    if (!strategy)
-        strategy = make_strategy(model);
+    if (!strategy) { // create a Green's strategy with a scalar type suited to the Hamiltonian
+        strategy = make_strategy(model.hamiltonian());
+    }
 }
 
 ArrayXcd BaseGreens::calc_greens(int i, int j, ArrayXd const& energy, double broadening) const {
@@ -45,7 +43,7 @@ ArrayXd BaseGreens::calc_ldos(ArrayXd const& energy, double broadening,
 
 Deferred<ArrayXd> BaseGreens::deferred_ldos(ArrayXd const& energy, double broadening,
                                             Cartesian position, sub_id sublattice) const {
-    auto shared_strategy = std::shared_ptr<GreensStrategy>{make_strategy(model)};
+    auto shared_strategy = std::shared_ptr<GreensStrategy>(make_strategy(model.hamiltonian()));
     auto& model = this->model;
 
     return {
@@ -63,3 +61,5 @@ Deferred<ArrayXd> BaseGreens::deferred_ldos(ArrayXd const& energy, double broade
 std::string BaseGreens::report(bool shortform) const {
     return strategy ? strategy->report(shortform) + " " + calculation_timer.str() : "";
 }
+
+} // namespace tbm
