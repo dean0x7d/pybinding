@@ -9,15 +9,14 @@ using namespace tbm;
 
 
 void export_parallel() {
-    class_<DeferredBase, noncopyable>{"DeferredBase", no_init}
+    class_<DeferredBase, std::shared_ptr<DeferredBase>, noncopyable>{"DeferredBase", no_init}
     .def("compute", &DeferredBase::compute)
     .add_property("report", &DeferredBase::report)
     .add_property("result", internal_ref(&DeferredBase::result_uref))
     ;
 
-    class_<Deferred<ArrayXf>, bases<DeferredBase>>{"DeferredXf", no_init};
-    class_<Deferred<ArrayXd>, bases<DeferredBase>>{"DeferredXd", no_init};
-
+    using DeferredXd = Deferred<ArrayXd>;
+    class_<DeferredXd, std::shared_ptr<DeferredXd>, bases<DeferredBase>>{"DeferredXd", no_init};
 
     def("parallel_for", [](object sequence, object produce, object retire,
                            std::size_t num_threads, std::size_t queue_size) {
