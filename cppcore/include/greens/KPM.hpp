@@ -136,7 +136,7 @@ namespace detail {
             return sinh(lambda * (1 - n / N)) / sinh(lambda);
         };
 
-        for (auto n = 0u; n < N; ++n) {
+        for (auto n = 0; n < N; ++n) {
             moments[n] *= lorentz_kernel(static_cast<real_t>(n));
         }
     }
@@ -184,7 +184,7 @@ public:
 
     /// Collect the first 2 moments which are computer outside the main KPM loop
     void collect_initial(VectorX<scalar_t> const& r0, VectorX<scalar_t> const& r1) {
-        for (auto i = 0u; i < indices.size(); ++i) {
+        for (auto i = 0; i < indices.size(); ++i) {
             auto const idx = indices[i];
             data[i][0] = r0[idx] * real_t{0.5}; // 0.5 is special for the moment zero
             data[i][1] = r1[idx];
@@ -194,7 +194,7 @@ public:
     /// Collect moment `n` from result vector `r` for each index. Expects `n >= 2`.
     void collect(int n, VectorX<scalar_t> const& r) {
         assert(n >= 2 && n < data[0].size());
-        for (auto i = 0u; i < indices.size(); ++i) {
+        for (auto i = 0; i < indices.size(); ++i) {
             auto const idx = indices[i];
             data[i][n] = r[idx];
         }
