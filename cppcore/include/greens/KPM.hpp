@@ -35,6 +35,26 @@ public:
 };
 
 /**
+ Indices of the Green's function matrix that will be computed
+
+ A single KPM calculation will compute an entire `row` of the Green's matrix,
+ however only some column indices are required to be saved, as indicated by `cols`.
+ */
+struct Indices {
+    int row = -1;
+    ArrayXi cols;
+
+    Indices() = default;
+    Indices(int row, int col) : row(row), cols(1) { cols[0] = col; }
+    Indices(int row, ArrayXi const& cols) : row(row), cols(cols) {}
+    Indices(int row, std::vector<int> const& cols) : row(row), cols(eigen_cast<ArrayX>(cols)) {}
+
+    friend bool operator==(Indices const& l, Indices const& r) {
+        return l.row == r.row && all_of(l.cols == r.cols);
+    }
+};
+
+/**
  Stores a scaled Hamiltonian `(H - b)/a` which limits it to (-1, 1) boundaries required for KPM.
  In addition, two optimisations are applied:
 
@@ -49,11 +69,10 @@ public:
 template<class scalar_t>
 class OptimizedHamiltonian {
     using real_t = num::get_real_t<scalar_t>;
-    struct IndexPair { int i, j; };
 
 public:
     /// Create the optimized Hamiltonian from `H` targeting index pair `idx`
-    void create(SparseMatrixX<scalar_t> const& H, IndexPair idx,
+    void create(SparseMatrixX<scalar_t> const& H, Indices const& idx,
                 Scale<scalar_t> scale, bool use_reordering);
 
     /// Return an index into `optimized_sizes`, indicating the optimal system size
@@ -88,16 +107,116 @@ public:
 
 public:
     SparseMatrixX<scalar_t> H2; ///< the optimized matrix
-    IndexPair original_idx = {-1, -1}; ///< indices from the original `H` matrix
-    IndexPair optimized_idx = {-1, -1}; ///< reordered indices in the `H2` matrix
+    Indices original_idx; ///< indices from the original `H` matrix
+    Indices optimized_idx; ///< reordered indices in the `H2` matrix
     std::vector<int> optimized_sizes; ///< optimal matrix size "steps" for the KPM calculation
     int size_index_offset = 0; ///< needed to correctly compute off-diagonal elements (i != j)
 
 private:
     /// Fill H2 with scaled Hamiltonian: H2 = (H - I*b) * (2/a)
-    void create_scaled(SparseMatrixX<scalar_t> const& H, IndexPair idx, Scale<scalar_t> scale);
+    void create_scaled(SparseMatrixX<scalar_t> const& H, Indices const& idx,
+                       Scale<scalar_t> scale);
     /// Scale and reorder the Hamiltonian so that idx is at the start of the H2 matrix
-    void create_reordered(SparseMatrixX<scalar_t> const& H, IndexPair idx, Scale<scalar_t> scale);
+    void create_reordered(SparseMatrixX<scalar_t> const& H, Indices const& idx,
+                          Scale<scalar_t> scale);
+    static Indices reorder_indices(Indices const& original_idx,
+                                   std::vector<int> const& reorder_map);
+    static int compute_index_offset(Indices const& optimized_idx,
+                                    std::vector<int> const& optimized_sizes);
+};
+
+namespace detail {
+    /// Put the kernel in *Kernel* polynomial method
+    template<class scalar_t, class real_t>
+    void apply_lorentz_kernel(ArrayX<scalar_t>& moments, real_t lambda) {
+        auto const N = moments.size();
+
+        auto lorentz_kernel = [=](real_t n) { // n is real_t to get proper fp division
+            using std::sinh;
+            return sinh(lambda * (1 - n / N)) / sinh(lambda);
+        };
+
+        for (auto n = 0u; n < N; ++n) {
+            moments[n] *= lorentz_kernel(static_cast<real_t>(n));
+        }
+    }
+
+    /// Calculate the final Green's function for `scaled_energy` using the KPM `moments`
+    template<class scalar_t, class real_t, class complex_t = num::get_complex_t<scalar_t>>
+    ArrayX<complex_t> calculate_greens(ArrayX<real_t> const& scaled_energy,
+                                       ArrayX<scalar_t> const& moments) {
+        // Note that this integer array has real type values
+        auto ns = ArrayX<real_t>(moments.size());
+        for (auto n = 0; n < ns.size(); ++n) {
+            ns[n] = static_cast<real_t>(n);
+        }
+
+        // G = -2*i / sqrt(1 - E^2) * sum( moments * exp(-i*ns*acos(E)) )
+        auto greens = ArrayX<complex_t>(scaled_energy.size());
+        transform(scaled_energy, greens, [&](real_t E) {
+            using std::acos;
+            using constant::i1;
+            auto const norm = -real_t{2} * complex_t{i1} / sqrt(1 - E*E);
+            return norm * sum(moments * exp(-complex_t{i1} * ns * acos(E)));
+        });
+
+        return greens;
+    }
+} // namespace detail
+
+/**
+ Stores KPM moments (size `num_moments`) computed for each index (size of `indices`)
+ */
+template<class scalar_t>
+class MomentMatrix {
+    using real_t = num::get_real_t<scalar_t>;
+
+    ArrayXi indices;
+    std::vector<ArrayX<scalar_t>> data;
+
+public:
+    MomentMatrix(int num_moments, ArrayXi const& indices)
+        : indices(indices), data(indices.size()) {
+        for (auto& moments : data) {
+            moments.resize(num_moments);
+        }
+    }
+
+    /// Collect the first 2 moments which are computer outside the main KPM loop
+    void collect_initial(VectorX<scalar_t> const& r0, VectorX<scalar_t> const& r1) {
+        for (auto i = 0u; i < indices.size(); ++i) {
+            auto const idx = indices[i];
+            data[i][0] = r0[idx] * real_t{0.5}; // 0.5 is special for the moment zero
+            data[i][1] = r1[idx];
+        }
+    }
+
+    /// Collect moment `n` from result vector `r` for each index. Expects `n >= 2`.
+    void collect(int n, VectorX<scalar_t> const& r) {
+        assert(n >= 2 && n < data[0].size());
+        for (auto i = 0u; i < indices.size(); ++i) {
+            auto const idx = indices[i];
+            data[i][n] = r[idx];
+        }
+    }
+
+    /// Put the kernel in *Kernel* polynomial method
+    void apply_lorentz_kernel(real_t lambda) {
+        for (auto& moments : data) {
+            detail::apply_lorentz_kernel(moments, lambda);
+        }
+    }
+
+    /// Calculate the final Green's function at all indices for `scaled_energy`
+    std::vector<ArrayXcd> calc_greens(ArrayX<real_t> const& scaled_energy) const {
+        auto greens = std::vector<ArrayXcd>();
+        greens.reserve(indices.size());
+        for (auto const& moments : data) {
+            auto const g = detail::calculate_greens(scaled_energy, moments);
+            greens.push_back(g.template cast<std::complex<double>>());
+        }
+        return greens;
+    }
 };
 
 /**
@@ -150,21 +269,18 @@ public:
     explicit KPM(SparseMatrixRC<scalar_t> hamiltonian, Config const& config = {});
 
     bool change_hamiltonian(Hamiltonian const& h) override;
-    ArrayXcd calculate(int i, int j, ArrayXd const& energy, double broadening) override;
+    ArrayXcd calc(int i, int j, ArrayXd const& energy, double broadening) override;
+    std::vector<ArrayXcd> calc_vector(int row, std::vector<int> const& cols,
+                                      ArrayXd const& energy, double broadening) override;
     std::string report(bool shortform) const override;
-    
+
 private:
     /// Calculate the KPM Green's function moments
-    static ArrayX<scalar_t> calculate_moments(kpm::OptimizedHamiltonian<scalar_t> const& oh,
-                                              int num_moments);
-    /// Optimized `calculate_moments`: lower memory bandwidth requirements
-    static ArrayX<scalar_t> calculate_moments2(kpm::OptimizedHamiltonian<scalar_t> const& oh,
-                                               int num_moments);
-    /// Put the kernel in *Kernel* polynomial method
-    static void apply_lorentz_kernel(ArrayX<scalar_t>& moments, float lambda);
-    /// Calculate the final Green's function for `energy` using the KPM `moments`
-    static ArrayX<complex_t> calculate_greens(ArrayX<real_t> const& scaled_energy,
-                                              ArrayX<scalar_t> const& moments);
+    static kpm::MomentMatrix<scalar_t> calc_moments(kpm::OptimizedHamiltonian<scalar_t> const& oh,
+                                                    int num_moments);
+    /// Optimized `calc_moments`: lower memory bandwidth requirements
+    static kpm::MomentMatrix<scalar_t> calc_moments2(kpm::OptimizedHamiltonian<scalar_t> const& oh,
+                                                     int num_moments);
 
 private:
     SparseMatrixRC<scalar_t> hamiltonian;
@@ -178,5 +294,6 @@ private:
 TBM_EXTERN_TEMPLATE_CLASS(KPM)
 TBM_EXTERN_TEMPLATE_CLASS(kpm::Scale)
 TBM_EXTERN_TEMPLATE_CLASS(kpm::OptimizedHamiltonian)
+TBM_EXTERN_TEMPLATE_CLASS(kpm::MomentMatrix)
 
 } // namespace tbm

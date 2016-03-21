@@ -12,7 +12,10 @@ void export_greens() {
     using tbm::BaseGreens;
     class_<BaseGreens, noncopyable>{"Greens", no_init}
     .def("report", &BaseGreens::report, args("self", "shortform"_kw=false))
-    .def("calc_greens", &BaseGreens::calc_greens, args("self", "i", "j", "energy", "broadening"))
+    .def("calc_greens", &BaseGreens::calc_greens,
+         args("self", "row", "col", "energy", "broadening"))
+    .def("calc_greens", &BaseGreens::calc_greens_vector,
+         args("self", "row", "cols", "energy", "broadening"))
     .def("calc_ldos", &BaseGreens::calc_ldos,
          args("self", "energy", "broadening", "position", "sublattice"_kw=-1))
     .def("deferred_ldos", &BaseGreens::deferred_ldos,

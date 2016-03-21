@@ -18,8 +18,11 @@ public:
 
     /// Returns false if the given Hamiltonian is the wrong type for this GreensStrategy
     virtual bool change_hamiltonian(Hamiltonian const& h) = 0;
-    /// Return the Green's function at (i,j) for the given energy range
-    virtual ArrayXcd calculate(int i, int j, ArrayXd const& energy, double broadening) = 0;
+    /// Return the Green's function matrix element (row, col) for the given energy range
+    virtual ArrayXcd calc(int i, int j, ArrayXd const& energy, double broadening) = 0;
+    /// Return multiple Green's matrix elements for a single `row` and multiple `cols`
+    virtual std::vector<ArrayXcd> calc_vector(int row, std::vector<int> const& cols,
+                                              ArrayXd const& energy, double broadening) = 0;
     /// Get some information about what happened during the last calculation
     virtual std::string report(bool shortform = false) const = 0;
 };
@@ -35,7 +38,10 @@ public:
     Model const& get_model() const { return model; }
     std::shared_ptr<System const> system() const { return model.system(); }
 
-    ArrayXcd calc_greens(int i, int j, ArrayXd const& energy, double broadening) const;
+    ArrayXcd calc_greens(int row, int col, ArrayXd const& energy, double broadening) const;
+    std::vector<ArrayXcd> calc_greens_vector(int row, std::vector<int> const& cols,
+                                             ArrayXd const& energy, double broadening) const;
+
     ArrayXd calc_ldos(ArrayXd const& energy, double broadening,
                       Cartesian position, sub_id sublattice = -1) const;
     Deferred<ArrayXd> deferred_ldos(ArrayXd const& energy, double broadening,

@@ -26,21 +26,22 @@ void Scale<scalar_t>::compute(SparseMatrixX<scalar_t> const& matrix, real_t lanc
 
 
 template<class scalar_t>
-void OptimizedHamiltonian<scalar_t>::create(SparseMatrixX<scalar_t> const& H,
-                                            IndexPair idx, Scale<scalar_t> scale,
-                                            bool use_reordering) {
-    if (original_idx.i == idx.i && original_idx.j == idx.j)
+void OptimizedHamiltonian<scalar_t>::create(SparseMatrixX<scalar_t> const& H, Indices const& idx,
+                                            Scale<scalar_t> scale, bool use_reordering) {
+    if (original_idx == idx) {
         return; // already optimized for this idx
+    }
 
-    if (use_reordering)
+    if (use_reordering) {
         create_reordered(H, idx, scale);
-    else
+    } else {
         create_scaled(H, idx, scale);
+    }
 }
 
 template<class scalar_t>
 void OptimizedHamiltonian<scalar_t>::create_scaled(SparseMatrixX<scalar_t> const& H,
-                                                   IndexPair idx, Scale<scalar_t> scale) {
+                                                   Indices const& idx, Scale<scalar_t> scale) {
     original_idx = idx;
     optimized_idx = idx;
 
@@ -62,8 +63,7 @@ void OptimizedHamiltonian<scalar_t>::create_scaled(SparseMatrixX<scalar_t> const
 
 template<class scalar_t>
 void OptimizedHamiltonian<scalar_t>::create_reordered(SparseMatrixX<scalar_t> const& H,
-                                                      IndexPair idx, Scale<scalar_t> scale) {
-    auto const src_index = idx.j; // this one will be relocated to position 0
+                                                      Indices const& idx, Scale<scalar_t> scale) {
     auto const system_size = H.rows();
     auto const inverted_a = real_t{2 / scale.a};
 
@@ -90,12 +90,12 @@ void OptimizedHamiltonian<scalar_t>::create_reordered(SparseMatrixX<scalar_t> co
     // The index queue will contain the indices that need to be checked next
     auto index_queue = std::vector<int>{};
     index_queue.reserve(system_size);
-    index_queue.push_back(src_index); // starting from the given index
+    index_queue.push_back(idx.row); // starting from the given index
 
     // Map from original matrix indices to reordered matrix indices
     auto reorder_map = std::vector<int>(static_cast<std::size_t>(system_size), -1);
     // The point of the reordering is to have the target become index number 0
-    reorder_map[src_index] = 0;
+    reorder_map[idx.row] = 0;
 
     // As the reordered matrix is filled, the optimal size for the first few KPM steps is recorded
     optimized_sizes.clear();
@@ -147,17 +147,34 @@ void OptimizedHamiltonian<scalar_t>::create_reordered(SparseMatrixX<scalar_t> co
     H2.makeCompressed();
 
     original_idx = idx;
-    optimized_idx = {reorder_map[idx.i], reorder_map[idx.j]};
+    optimized_idx = reorder_indices(original_idx, reorder_map);
+    size_index_offset = compute_index_offset(optimized_idx, optimized_sizes);
+}
 
-    size_index_offset = [&]{
-        auto const size = static_cast<int>(optimized_sizes.size());
-        for (auto i = 0; i < size; ++i) {
-            if (optimized_sizes[i] > optimized_idx.i) {
-                return i;
-            }
+template<class scalar_t>
+Indices OptimizedHamiltonian<scalar_t>::reorder_indices(Indices const& original_idx,
+                                                        std::vector<int> const& reorder_map) {
+    auto const size = original_idx.cols.size();
+    ArrayXi cols(size);
+    for (auto i = 0; i < size; ++i) {
+        cols[i] = reorder_map[original_idx.cols[i]];
+    }
+    // original_idx.row is always reordered to 0, that the whole purpose of the optimization
+    return {0, cols};
+}
+
+template<class scalar_t>
+int OptimizedHamiltonian<scalar_t>::compute_index_offset(Indices const& optimized_idx,
+                                                         std::vector<int> const& optimized_sizes) {
+    auto const max_index = *std::max_element(begin(optimized_idx.cols),
+                                             end(optimized_idx.cols));
+    auto const size = static_cast<int>(optimized_sizes.size());
+    for (auto i = 0; i < size; ++i) {
+        if (optimized_sizes[i] > max_index) {
+            return i;
         }
-        return 0;
-    }();
+    }
+    return size - 1;
 }
 
 template<class scalar_t>
@@ -205,7 +222,14 @@ bool KPM<scalar_t>::change_hamiltonian(Hamiltonian const& h) {
 }
 
 template<class scalar_t>
-ArrayXcd KPM<scalar_t>::calculate(int i, int j, ArrayXd const& energy, double broadening) {
+ArrayXcd KPM<scalar_t>::calc(int i, int j, ArrayXd const& energy, double broadening) {
+    return std::move(calc_vector(i, {j}, energy, broadening).front());
+}
+
+template<class scalar_t>
+std::vector<ArrayXcd> KPM<scalar_t>::calc_vector(int row, std::vector<int> const& cols,
+                                                 ArrayXd const& energy, double broadening) {
+    assert(!cols.empty());
     stats = {};
     auto timer = Chrono{};
 
@@ -221,28 +245,29 @@ ArrayXcd KPM<scalar_t>::calculate(int i, int j, ArrayXd const& energy, double br
 
     // Scale and optimize Hamiltonian (fast)
     timer.tic();
-    optimized_hamiltonian.create(*hamiltonian, {i, j}, scale,
+    optimized_hamiltonian.create(*hamiltonian, {row, cols}, scale,
                                  /*use_reordering*/config.optimization_level >= 1);
     stats.reordering(optimized_hamiltonian, num_moments, timer.toc());
 
     // Calculate KPM moments (slow)
     timer.tic();
     auto moments = [&] {
-        if (config.optimization_level < 2)
-            return calculate_moments(optimized_hamiltonian, num_moments);
-        else
-            return calculate_moments2(optimized_hamiltonian, num_moments);
+        if (config.optimization_level < 2) {
+            return calc_moments(optimized_hamiltonian, num_moments);
+        } else {
+            return calc_moments2(optimized_hamiltonian, num_moments);
+        }
     }();
-    apply_lorentz_kernel(moments, config.lambda);
+    moments.apply_lorentz_kernel(config.lambda);
     stats.kpm(optimized_hamiltonian, num_moments, timer.toc());
 
     // Final Green's function (fast)
     timer.tic();
     auto const scaled_energy = (energy.template cast<real_t>() - scale.b) / scale.a;
-    auto const greens = calculate_greens(scaled_energy, moments);
+    auto greens = moments.calc_greens(scaled_energy);
     stats.greens(timer.toc());
 
-    return greens.template cast<std::complex<double>>();
+    return greens;
 }
 
 template<class scalar_t>
@@ -251,26 +276,23 @@ std::string KPM<scalar_t>::report(bool is_shortform) const {
 }
 
 template<class scalar_t>
-ArrayX<scalar_t> KPM<scalar_t>::calculate_moments(OptimizedHamiltonian<scalar_t> const& oh,
-                                                  int num_moments) {
-    auto const i = oh.optimized_idx.i;
-    auto const j = oh.optimized_idx.j;
-
+MomentMatrix<scalar_t> KPM<scalar_t>::calc_moments(OptimizedHamiltonian<scalar_t> const& oh,
+                                                   int num_moments) {
+    auto const source_idx = oh.optimized_idx.row;
     VectorX<scalar_t> r0 = VectorX<scalar_t>::Zero(oh.H2.rows());
-    r0[j] = 1; // all zeros except for position `j`
+    r0[source_idx] = 1; // all zeros except for the source index
     
-    // -> left[i] = 1; <- optimized out
+    // -> left[dest_idx] = 1; <- optimized out
     // This vector is constant (and simple) so we don't actually need it. Its dot product
     // with the r0 vector may be simplified -> see the last line of the loop below.
 
-    // -> r1 = H * r0; <- optimized thanks to `r0[j] = 1`
+    // -> r1 = H * r0; <- optimized thanks to `r0[source_idx] = 1`
     // Note: H2.col(j) == H2.row(j).conjugate(), but the second is row-major friendly
-    VectorX<scalar_t> r1 = oh.H2.row(j).conjugate();
+    VectorX<scalar_t> r1 = oh.H2.row(source_idx).conjugate();
     r1 *= real_t{0.5}; // because H == 0.5*H2
 
-    ArrayX<scalar_t> moments{num_moments};
-    moments[0] = r0[i] * real_t{0.5}; // 0.5 is special for moments[0] (not related to H2)
-    moments[1] = r1[i];
+    auto moments = MomentMatrix<scalar_t>(num_moments, oh.optimized_idx.cols);
+    moments.collect_initial(r0, r1);
 
     for (auto n = 2; n < num_moments; ++n) {
         auto const optimized_size = oh.optimized_size(n, num_moments);
@@ -283,27 +305,24 @@ ArrayX<scalar_t> KPM<scalar_t>::calculate_moments(OptimizedHamiltonian<scalar_t>
         r1.swap(r0);
 
         // -> moments[n] = left.dot(r1); <- optimized thanks to constant `left[i] = 1`
-        moments[n] = r1[i];
+        moments.collect(n, r1);
     }
 
     return moments;
 }
 
 template<class scalar_t>
-ArrayX<scalar_t> KPM<scalar_t>::calculate_moments2(OptimizedHamiltonian<scalar_t> const& oh,
-                                                   int num_moments) {
-    auto const i = oh.optimized_idx.i;
-    auto const j = oh.optimized_idx.j;
-
+MomentMatrix<scalar_t> KPM<scalar_t>::calc_moments2(OptimizedHamiltonian<scalar_t> const& oh,
+                                                    int num_moments) {
+    auto const source_idx = oh.optimized_idx.row;
     VectorX<scalar_t> r0 = VectorX<scalar_t>::Zero(oh.H2.rows());
-    r0[j] = 1;
+    r0[source_idx] = 1;
 
-    VectorX<scalar_t> r1 = oh.H2.row(j).conjugate();
+    VectorX<scalar_t> r1 = oh.H2.row(source_idx).conjugate();
     r1 *= real_t{0.5};
 
-    ArrayX<scalar_t> moments{num_moments};
-    moments[0] = r0[i] * real_t{0.5};
-    moments[1] = r1[i];
+    auto moments = MomentMatrix<scalar_t>(num_moments, oh.optimized_idx.cols);
+    moments.collect_initial(r0, r1);
 
     // Interleave moments `n` and `n + 1` for better data locality
     for (auto n = 2; n < num_moments; n += 2) {
@@ -319,51 +338,16 @@ ArrayX<scalar_t> KPM<scalar_t>::calculate_moments2(OptimizedHamiltonian<scalar_t
             p0 = p1;
             p1 = p2;
         }
-        moments[n] = r0[i];
+        moments.collect(n, r0);
 
         if (n + 1 < num_moments) {
             auto const max_m2 = oh.optimized_size_index(n + 1, num_moments);
             compute::kpm_kernel(p0, oh.optimized_sizes[max_m2], oh.H2, r0, r1);
-            moments[n + 1] = r1[i];
+            moments.collect(n + 1, r1);
         }
     }
 
     return moments;
-}
-
-template<class scalar_t>
-void KPM<scalar_t>::apply_lorentz_kernel(ArrayX<scalar_t>& moments, float lambda) {
-    auto const N = moments.size();
-
-    auto lorentz_kernel = [=](real_t n) { // n is real_t to get proper fp division
-        using std::sinh;
-        return sinh(lambda * (1 - n / N)) / sinh(lambda);
-    };
-
-    for (int n = 0; n < N; ++n)
-        moments[n] *= lorentz_kernel(static_cast<real_t>(n));
-}
-
-template<class scalar_t>
-auto KPM<scalar_t>::calculate_greens(ArrayX<real_t> const& scaled_energy,
-                                     ArrayX<scalar_t> const& moments)
-                                     -> ArrayX<complex_t> {
-    // Note that this integer array has real type values
-    ArrayX<real_t> ns{moments.size()};
-    for (auto n = 0; n < ns.size(); ++n)
-        ns[n] = static_cast<real_t>(n);
-
-    ArrayX<complex_t> greens{scaled_energy.size()};
-
-    // G = -2*i / sqrt(1 - E^2) * sum( moments * exp(-i*ns*acos(E)) )
-    transform(scaled_energy, greens, [&](real_t E) {
-        using std::acos;
-        auto const i1 = complex_t{constant::i1};
-        auto const norm = -real_t{2} * i1 / sqrt(1 - E*E);
-        return norm * sum(moments * exp(-i1 * ns * acos(E)));
-    });
-
-    return greens;
 }
 
 std::string Stats::report(bool shortform) const {
@@ -423,5 +407,6 @@ void Stats::append(std::string short_str, std::string long_str, Chrono const& ti
 TBM_INSTANTIATE_TEMPLATE_CLASS(KPM)
 TBM_INSTANTIATE_TEMPLATE_CLASS(kpm::Scale)
 TBM_INSTANTIATE_TEMPLATE_CLASS(kpm::OptimizedHamiltonian)
+TBM_INSTANTIATE_TEMPLATE_CLASS(kpm::MomentMatrix)
 
 } // namespace tbm

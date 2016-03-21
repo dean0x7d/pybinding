@@ -4,10 +4,14 @@
 #include "greens/KPM.hpp"
 using namespace tbm;
 
-TEST_CASE("OptimizedHamiltonian reordering", "[kpm]") {
-    auto const lattice = graphene::monolayer();
-    auto model = Model(lattice);
+Model make_test_model() {
+    auto model = Model(graphene::monolayer());
     model.set_shape(shape::rectangle(0.6f, 0.8f));
+    return model;
+}
+
+TEST_CASE("OptimizedHamiltonian reordering", "[kpm]") {
+    auto const model = make_test_model();
     auto const num_sites = model.system()->num_sites();
 
     using scalat_t = float;
@@ -29,8 +33,8 @@ TEST_CASE("OptimizedHamiltonian reordering", "[kpm]") {
         auto const i = num_sites / 2;
         oh.create(matrix, {i, i}, scale, /*use_reordering*/true);
 
-        REQUIRE(oh.optimized_idx.i == 0);
-        REQUIRE(oh.optimized_idx.j == 0);
+        REQUIRE(oh.optimized_idx.row == 0);
+        REQUIRE(oh.optimized_idx.cols[0] == 0);
         REQUIRE(oh.optimized_sizes[0] == 1);
         REQUIRE(oh.optimized_sizes.back() == num_sites);
         REQUIRE(oh.size_index_offset == 0);
@@ -45,11 +49,11 @@ TEST_CASE("OptimizedHamiltonian reordering", "[kpm]") {
 
     SECTION("Off-diagonal") {
         auto oh = kpm::OptimizedHamiltonian<scalat_t>();
-        auto const i = num_sites / 2;
-        auto const j = num_sites / 4;
-        oh.create(matrix, {i, j}, scale, /*use_reordering*/true);
+        auto const i = num_sites / 4;
+        auto const j = num_sites / 2;
+        oh.create(matrix, {i, std::vector<int>{j, j+1, j+2}}, scale, /*use_reordering*/true);
 
-        REQUIRE(oh.optimized_idx.i != oh.optimized_idx.j);
+        REQUIRE(oh.optimized_idx.row != oh.optimized_idx.cols[0]);
         REQUIRE(oh.optimized_sizes[0] == 1);
         REQUIRE(oh.optimized_sizes.back() == num_sites);
         REQUIRE(oh.size_index_offset > 0);
@@ -63,18 +67,36 @@ TEST_CASE("OptimizedHamiltonian reordering", "[kpm]") {
     }
 }
 
+TEST_CASE("KPM strategy", "[kpm]") {
+    auto const model = make_test_model();
+    auto kpm = make_greens_strategy<KPM>(model.hamiltonian());
+
+    auto const num_sites = model.system()->num_sites();
+    auto const i = num_sites / 2;
+    auto const j = num_sites / 4;
+    auto energy_range = ArrayXd::LinSpaced(10, -0.3, 0.3);
+    auto const broadening = 0.8;
+
+    auto const cols = std::vector<int>{j, j+1, j+2};
+    auto const gs = kpm->calc_vector(i, cols, energy_range, broadening);
+    REQUIRE(gs.size() == cols.size());
+    REQUIRE_FALSE(gs[0].isApprox(gs[1], Eigen::NumTraits<float>::dummy_precision()));
+    REQUIRE_FALSE(gs[0].isApprox(gs[2], Eigen::NumTraits<float>::dummy_precision()));
+
+    kpm->change_hamiltonian(model.hamiltonian());
+    auto const g = kpm->calc(j, i, energy_range, broadening);
+    REQUIRE(gs[0].isApprox(g, Eigen::NumTraits<float>::dummy_precision()));
+}
 
 TEST_CASE("KPM optimization levels", "[kpm]") {
-    auto const lattice = graphene::monolayer();
-    auto model = Model(lattice);
-    model.set_shape(shape::rectangle(0.6f, 0.8f));
+    auto const model = make_test_model();
     auto const num_sites = model.system()->num_sites();
 
     auto calc_greens = [&](int i, int j, int opt_level) {
         auto config = KPMConfig{};
         config.optimization_level = opt_level;
         auto kpm = make_greens_strategy<KPM>(model.hamiltonian(), config);
-        auto const g = kpm->calculate(i, j, ArrayXd::LinSpaced(10, -0.3, 0.3), 0.8);
+        auto const g = kpm->calc(i, j, ArrayXd::LinSpaced(10, -0.3, 0.3), 0.8);
         return ArrayXcf{g.cast<std::complex<float>>()};
     };
 

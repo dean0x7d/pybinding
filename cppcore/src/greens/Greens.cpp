@@ -21,16 +21,27 @@ void BaseGreens::set_model(Model const& new_model) {
     }
 }
 
-ArrayXcd BaseGreens::calc_greens(int i, int j, ArrayXd const& energy, double broadening) const {
+ArrayXcd BaseGreens::calc_greens(int row, int col, ArrayXd const& energy,
+                                 double broadening) const {
+    return std::move(calc_greens_vector(row, {col}, energy, broadening).front());
+}
+
+std::vector<ArrayXcd> BaseGreens::calc_greens_vector(int row, std::vector<int> const& cols,
+                                                     ArrayXd const& energy,
+                                                     double broadening) const {
     auto const size = model.hamiltonian().rows();
-    if (i < 0 || i > size || j < 0 || j > size)
-        throw std::logic_error{"KPM::calc_greens(i,j): invalid value for i or j."};
+    auto const row_error = row < 0 || row > size;
+    auto const col_error = std::any_of(cols.begin(), cols.end(),
+                                       [&](int col) { return col < 0 || col > size; });
+    if (row_error || col_error) {
+        throw std::logic_error("KPM::calc_greens(i,j): invalid value for i or j.");
+    }
 
     calculation_timer.tic();
-    auto greens_function = strategy->calculate(i, j, energy, broadening);
+    auto greens_functions = strategy->calc_vector(row, cols, energy, broadening);
     calculation_timer.toc();
 
-    return greens_function;
+    return greens_functions;
 }
 
 ArrayXd BaseGreens::calc_ldos(ArrayXd const& energy, double broadening,
@@ -49,7 +60,7 @@ Deferred<ArrayXd> BaseGreens::deferred_ldos(ArrayXd const& energy, double broade
     return {
         [shared_strategy, model, position, sublattice, energy, broadening](ArrayXd& ldos) {
             auto i = model.system()->find_nearest(position, sublattice);
-            auto greens_function = shared_strategy->calculate(i, i, energy, broadening);
+            auto greens_function = shared_strategy->calc(i, i, energy, broadening);
             ldos = -1/pi * greens_function.imag();
         },
         [shared_strategy] {
