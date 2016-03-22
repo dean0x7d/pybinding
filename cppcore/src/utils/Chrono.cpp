@@ -23,10 +23,10 @@ std::string Chrono::str() const {
         auto const sec = duration_cast<seconds>(elapsed) - min;
 
         if (min < minutes{60}) {
-            ret = fmt::format("{}:{:02i}", min.count(), sec.count());
+            ret = fmt::format("{}:{:02}", min.count(), sec.count());
         } else { // elapsed >= hours{1}
             auto const hr = duration_cast<hours>(min);
-            ret = fmt::format("{}:{:02i}:{:02i}", hr.count(), (min - hr).count(), sec.count());
+            ret = fmt::format("{}:{:02}:{:02}", hr.count(), (min - hr).count(), sec.count());
         }
     }
 
