@@ -19,7 +19,7 @@ public:
     /// Returns false if the given Hamiltonian is the wrong type for this GreensStrategy
     virtual bool change_hamiltonian(Hamiltonian const& h) = 0;
     /// Return the Green's function matrix element (row, col) for the given energy range
-    virtual ArrayXcd calc(int i, int j, ArrayXd const& energy, double broadening) = 0;
+    virtual ArrayXcd calc(int row, int col, ArrayXd const& energy, double broadening) = 0;
     /// Return multiple Green's matrix elements for a single `row` and multiple `cols`
     virtual std::vector<ArrayXcd> calc_vector(int row, std::vector<int> const& cols,
                                               ArrayXd const& energy, double broadening) = 0;

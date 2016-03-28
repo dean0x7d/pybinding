@@ -10,8 +10,6 @@
 #include "numeric/random.hpp"
 #include "compute/linear_algebra.hpp"
 
-#include <tuple>
-
 namespace tbm { namespace compute {
 
 template<class real_t>

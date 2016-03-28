@@ -23,7 +23,15 @@ void BaseGreens::set_model(Model const& new_model) {
 
 ArrayXcd BaseGreens::calc_greens(int row, int col, ArrayXd const& energy,
                                  double broadening) const {
-    return std::move(calc_greens_vector(row, {col}, energy, broadening).front());
+    auto const size = model.hamiltonian().rows();
+    if (row < 0 || row > size || col < 0 || col > size) {
+        throw std::logic_error("KPM::calc_greens(i,j): invalid value for i or j.");
+    }
+
+    calculation_timer.tic();
+    auto greens_function = strategy->calc(row, col, energy, broadening);
+    calculation_timer.toc();
+    return greens_function;
 }
 
 std::vector<ArrayXcd> BaseGreens::calc_greens_vector(int row, std::vector<int> const& cols,
@@ -40,7 +48,6 @@ std::vector<ArrayXcd> BaseGreens::calc_greens_vector(int row, std::vector<int> c
     calculation_timer.tic();
     auto greens_functions = strategy->calc_vector(row, cols, energy, broadening);
     calculation_timer.toc();
-
     return greens_functions;
 }
 

@@ -15,29 +15,27 @@ TEST_CASE("OptimizedHamiltonian reordering", "[kpm]") {
     auto const num_sites = model.system()->num_sites();
 
     using scalat_t = float;
-    auto const& matrix = ham::get_reference<scalat_t>(model.hamiltonian());
-
-    auto scale = kpm::Scale<scalat_t>();
-    scale.compute(matrix, KPMConfig{}.lanczos_precision);
+    auto const matrix = ham::get_reference<scalat_t>(model.hamiltonian());
+    auto bounds = kpm::Bounds<scalat_t>(&matrix, KPMConfig{}.lanczos_precision);
 
     auto size_indices = [](kpm::OptimizedHamiltonian<scalat_t> const& oh, int num_moments) {
         auto v = std::vector<int>(num_moments);
         for (auto n = 0; n < num_moments; ++n) {
-            v[n] = oh.optimized_size_index(n, num_moments);
+            v[n] = oh.sizes().index(n, num_moments);
         }
         return v;
     };
 
     SECTION("Diagonal") {
-        auto oh = kpm::OptimizedHamiltonian<scalat_t>();
+        auto oh = kpm::OptimizedHamiltonian<scalat_t>(&matrix);
         auto const i = num_sites / 2;
-        oh.create(matrix, {i, i}, scale, /*use_reordering*/true);
+        oh.optimize_for({i, i}, bounds.scaling_factors());
 
-        REQUIRE(oh.optimized_idx.row == 0);
-        REQUIRE(oh.optimized_idx.cols[0] == 0);
-        REQUIRE(oh.optimized_sizes[0] == 1);
-        REQUIRE(oh.optimized_sizes.back() == num_sites);
-        REQUIRE(oh.size_index_offset == 0);
+        REQUIRE(oh.idx().row == 0);
+        REQUIRE(oh.idx().cols[0] == 0);
+        REQUIRE(oh.sizes().get_data().front() == 1);
+        REQUIRE(oh.sizes().get_data().back() == num_sites);
+        REQUIRE(oh.sizes().get_offset() == 0);
 
         auto const expected6 = std::vector<int>{0, 1, 2, 2, 1, 0};
         REQUIRE(size_indices(oh, 6) == expected6);
@@ -48,15 +46,15 @@ TEST_CASE("OptimizedHamiltonian reordering", "[kpm]") {
     }
 
     SECTION("Off-diagonal") {
-        auto oh = kpm::OptimizedHamiltonian<scalat_t>();
+        auto oh = kpm::OptimizedHamiltonian<scalat_t>(&matrix);
         auto const i = num_sites / 4;
         auto const j = num_sites / 2;
-        oh.create(matrix, {i, std::vector<int>{j, j+1, j+2}}, scale, /*use_reordering*/true);
+        oh.optimize_for({i, std::vector<int>{j, j+1, j+2}}, bounds.scaling_factors());
 
-        REQUIRE(oh.optimized_idx.row != oh.optimized_idx.cols[0]);
-        REQUIRE(oh.optimized_sizes[0] == 1);
-        REQUIRE(oh.optimized_sizes.back() == num_sites);
-        REQUIRE(oh.size_index_offset > 0);
+        REQUIRE(oh.idx().row != oh.idx().cols[0]);
+        REQUIRE(oh.sizes().get_data().front() == 1);
+        REQUIRE(oh.sizes().get_data().back() == num_sites);
+        REQUIRE(oh.sizes().get_offset() > 0);
 
         auto const expected6 = std::vector<int>{0, 1, 2, 3, 3, 3};
         REQUIRE(size_indices(oh, 6) == expected6);
