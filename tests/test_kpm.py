@@ -5,12 +5,12 @@ import pybinding as pb
 from pybinding.repository import graphene
 
 models = {
-    'graphene-pristine': [graphene.monolayer(), pb.rectangle(30)],
-    'graphene-pristine-oversized': [graphene.monolayer(), pb.rectangle(45)],
-    'graphene-const_potential': [graphene.monolayer(), pb.rectangle(30),
+    'graphene-pristine': [graphene.monolayer(), pb.rectangle(15)],
+    'graphene-pristine-oversized': [graphene.monolayer(), pb.rectangle(20)],
+    'graphene-const_potential': [graphene.monolayer(), pb.rectangle(15),
                                  pb.constant_potential(0.5)],
-    'graphene-magnetic_field': [graphene.monolayer(), pb.rectangle(30),
-                                graphene.constant_magnetic_field(800)],
+    'graphene-magnetic_field': [graphene.monolayer(), pb.rectangle(15),
+                                graphene.constant_magnetic_field(1e3)],
 }
 
 
@@ -25,16 +25,16 @@ def kpm(model):
 
 
 def test_ldos(kpm, baseline, plot_if_fails):
-    energy = np.linspace(-2, 2, 100)
-    results = [k.calc_ldos(energy, broadening=0.06, position=(0, 0)) for k in kpm]
+    energy = np.linspace(0, 2, 25)
+    results = [k.calc_ldos(energy, broadening=0.15, position=(0, 0)) for k in kpm]
 
-    expected = pb.results.LDOS(energy, baseline(results[0].ldos))
+    expected = pb.results.LDOS(energy, baseline(results[0].ldos.astype(np.float32)))
     for i in range(len(results)):
         plot_if_fails(results[i], expected, 'plot', label=i)
 
-    assert pytest.fuzzy_equal(results[0], expected, rtol=1e-3, atol=1e-6)
-    assert pytest.fuzzy_equal(results[1], expected, rtol=1e-3, atol=1e-6)
-    assert pytest.fuzzy_equal(results[2], expected, rtol=1e-3, atol=1e-6)
+    assert pytest.fuzzy_equal(results[0], expected, rtol=1e-4, atol=1e-6)
+    assert pytest.fuzzy_equal(results[1], expected, rtol=1e-4, atol=1e-6)
+    assert pytest.fuzzy_equal(results[2], expected, rtol=1e-4, atol=1e-6)
 
 
 def test_kpm_multiple_indices(model):

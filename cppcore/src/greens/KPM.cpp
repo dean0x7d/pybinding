@@ -273,6 +273,7 @@ MomentsMatrix<scalar_t> calc_moments2(OptimizedHamiltonian<scalar_t> const& oh, 
     moment_matrix.collect_initial(r0, r1);
 
     // Interleave moments `n` and `n + 1` for better data locality
+    assert(num_moments % 2 == 0);
     for (auto n = 2; n < num_moments; n += 2) {
         auto p0 = 0;
         auto p1 = 0;
@@ -288,11 +289,9 @@ MomentsMatrix<scalar_t> calc_moments2(OptimizedHamiltonian<scalar_t> const& oh, 
         }
         moment_matrix.collect(n, r0);
 
-        if (n + 1 < num_moments) {
-            auto const max_m2 = sizes.index(n + 1, num_moments);
-            compute::kpm_kernel(p0, sizes[max_m2], h2, r0, r1);
-            moment_matrix.collect(n + 1, r1);
-        }
+        auto const max_m2 = sizes.index(n + 1, num_moments);
+        compute::kpm_kernel(p0, sizes[max_m2], h2, r0, r1);
+        moment_matrix.collect(n + 1, r1);
     }
 
     return moment_matrix;
@@ -362,7 +361,13 @@ std::string KPM<scalar_t>::report(bool shortform) const {
 template<class scalar_t>
 int KPM<scalar_t>::required_num_moments(double broadening, kpm::Scale<real_t> scale) {
     auto const scaled_broadening = broadening / scale.a;
-    auto const num_moments = static_cast<int>(config.lambda / scaled_broadening) + 1;
+    auto num_moments = static_cast<int>(config.lambda / scaled_broadening) + 1;
+    // Moment calculations at higher optimization levels require specific rounding.
+    // `num_moments - 2` considers only moments in the main KPM loop. Divisible by 4
+    // because that is the strictest requirement imposed by `calc_diag_moments2()`.
+    while ((num_moments - 2) % 4 != 0) {
+        ++num_moments;
+    }
     return num_moments;
 }
 

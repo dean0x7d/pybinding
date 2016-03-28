@@ -16,12 +16,12 @@ def test_sweep(baseline, plot_if_fails):
     def factory(v, energy=np.linspace(0, 0.1, 10)):
         model = pb.Model(
             graphene.monolayer(),
-            graphene.hexagon_ac(side_width=20),
+            graphene.hexagon_ac(side_width=15),
             pb.constant_potential(v)
         )
 
         kpm = pb.greens.kpm(model)
-        return kpm.deferred_ldos(energy, broadening=0.1, position=[0, 0])
+        return kpm.deferred_ldos(energy, broadening=0.15, position=[0, 0])
 
     silence_parallel_output(factory)
     labels = dict(title="test sweep", x="V (eV)", y="E (eV)", data="LDOS")
@@ -29,7 +29,7 @@ def test_sweep(baseline, plot_if_fails):
 
     expected = baseline(result)
     plot_if_fails(result, expected, 'plot')
-    assert pytest.fuzzy_equal(result, expected, rtol=2e-3, atol=1e-6)
+    assert pytest.fuzzy_equal(result, expected, rtol=1e-4, atol=1e-6)
 
 
 def test_ndsweep(baseline):
@@ -37,21 +37,16 @@ def test_ndsweep(baseline):
     def factory(v1, v2, energy=np.linspace(0, 0.1, 10)):
         model = pb.Model(
             graphene.monolayer(),
-            graphene.hexagon_ac(side_width=20),
+            graphene.hexagon_ac(side_width=15),
             pb.constant_potential(v1),
             pb.constant_potential(v2)
         )
 
         kpm = pb.greens.kpm(model)
-        return kpm.deferred_ldos(energy, broadening=0.1, position=[0, 0])
+        return kpm.deferred_ldos(energy, broadening=0.15, position=[0, 0])
 
     silence_parallel_output(factory)
     result = pb.parallel.ndsweep(factory)
 
-    # The following lines keep the test compatible with old baseline data
-    # TODO: Remove these lines when NDSweep is finalized and new baseline data is made
-    del result.labels
-    del result.tags
-
     expected = baseline(result)
-    assert pytest.fuzzy_equal(result, expected, rtol=1e-3, atol=1e-6)
+    assert pytest.fuzzy_equal(result, expected, rtol=1e-4, atol=1e-6)
