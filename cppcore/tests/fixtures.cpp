@@ -28,3 +28,25 @@ Shape rectangle(float x, float y) {
 }
 
 } // namespace shape
+
+namespace field {
+
+namespace {
+    struct OnsiteEnergyOp {
+        float value;
+
+        template<class Array>
+        void operator()(Array energy) {
+            using scalar_t = typename Array::Scalar;
+            energy.setConstant(static_cast<scalar_t>(value));
+        }
+    };
+}
+
+tbm::OnsiteModifier constant_potential(float value) {
+    return {[value](ComplexArrayRef energy, CartesianArray const&, SubIdRef) {
+        num::match<ArrayX>(energy, OnsiteEnergyOp{value});
+    }};
+}
+
+} // namespace field

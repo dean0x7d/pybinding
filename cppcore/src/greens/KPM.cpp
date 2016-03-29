@@ -202,7 +202,17 @@ std::string Stats::report(Bounds<scalar_t> const& bounds, OptimizedHamiltonian<s
                           bool shortform) const {
     auto const moments_with_suffix = fmt::with_suffix(last_num_moments);
     auto const ops_with_suffix = [&]{
-        auto const operations = oh.optimized_area(last_num_moments);
+        auto const operations = [&]{
+            auto ops = oh.optimized_area(last_num_moments);
+            if (oh.idx().is_diagonal()) {
+                ops /= 2;
+                for (auto n = 0; n <= last_num_moments / 2; ++n) {
+                    ops += 2 * oh.sizes().optimal(n, last_num_moments);
+                }
+            }
+            return ops;
+        }();
+
         auto const operations_per_second = operations / moments_timer.elapsed_seconds();
         return fmt::with_suffix(operations_per_second);
     }();
@@ -242,6 +252,25 @@ MomentsMatrix<scalar_t> calc_moments0(SparseMatrixX<scalar_t> const& h2,
 }
 
 template<class scalar_t>
+ArrayX<scalar_t> calc_diag_moments0(SparseMatrixX<scalar_t> const& h2, int i, int num_moments) {
+    auto moments = ArrayX<scalar_t>(num_moments);
+    auto r0 = make_r0(h2, i);
+    auto r1 = make_r1(h2, i);
+    auto const m0 = moments[0] = r0[i] * scalar_t{0.5};
+    auto const m1 = moments[1] = r1[i];
+
+    assert(num_moments % 2 == 0);
+    for (auto n = 2; n <= num_moments / 2; ++n) {
+        compute::kpm_kernel(0, h2.rows(), h2, r1, r0);
+        r1.swap(r0);
+        moments[2 * (n - 1)] = scalar_t{2} * (r0.squaredNorm() - m0);
+        moments[2 * (n - 1) + 1] = scalar_t{2} * r1.dot(r0) - m1;
+    }
+
+    return moments;
+}
+
+template<class scalar_t>
 MomentsMatrix<scalar_t> calc_moments1(OptimizedHamiltonian<scalar_t> const& oh, int num_moments) {
     auto const& idx = oh.idx();
     auto const& h2 = oh.matrix();
@@ -259,6 +288,29 @@ MomentsMatrix<scalar_t> calc_moments1(OptimizedHamiltonian<scalar_t> const& oh, 
     }
 
     return moment_matrix;
+}
+
+template<class scalar_t>
+ArrayX<scalar_t> calc_diag_moments1(OptimizedHamiltonian<scalar_t> const& oh, int num_moments) {
+    auto const i = oh.idx().row;
+    auto const& h2 = oh.matrix();
+
+    auto moments = ArrayX<scalar_t>(num_moments);
+    auto r0 = make_r0(h2, i);
+    auto r1 = make_r1(h2, i);
+    auto const m0 = moments[0] = r0[i] * scalar_t{0.5};
+    auto const m1 = moments[1] = r1[i];
+
+    assert(num_moments % 2 == 0);
+    for (auto n = 2; n <= num_moments / 2; ++n) {
+        auto const opt_size = oh.sizes().optimal(n, num_moments);
+        compute::kpm_kernel(0, opt_size, h2, r1, r0);
+        r1.swap(r0);
+        moments[2 * (n - 1)] = scalar_t{2} * (r0.head(opt_size).squaredNorm() - m0);
+        moments[2 * (n - 1) + 1] = scalar_t{2} * r1.head(opt_size).dot(r0.head(opt_size)) - m1;
+    }
+
+    return moments;
 }
 
 template<class scalar_t>
@@ -295,6 +347,61 @@ MomentsMatrix<scalar_t> calc_moments2(OptimizedHamiltonian<scalar_t> const& oh, 
     }
 
     return moment_matrix;
+}
+
+template<class scalar_t>
+ArrayX<scalar_t> calc_diag_moments2(OptimizedHamiltonian<scalar_t> const& oh, int num_moments) {
+    auto const i = oh.idx().row;
+    auto const& h2 = oh.matrix();
+    auto const& sizes = oh.sizes();
+
+    auto moments = ArrayX<scalar_t>(num_moments);
+    auto r0 = make_r0(h2, i);
+    auto r1 = make_r1(h2, i);
+    auto const m0 = moments[0] = r0[i] * scalar_t{0.5};
+    auto const m1 = moments[1] = r1[i];
+
+    assert((num_moments - 2) % 4 == 0);
+    for (auto n = 2; n <= num_moments / 2; n += 2) {
+        auto m2 = scalar_t{0};
+        auto m3 = scalar_t{0};
+        auto m4 = scalar_t{0};
+        auto m5 = scalar_t{0};
+
+        auto const max1 = sizes.index(n, num_moments);
+        auto const max2 = sizes.index(n + 1, num_moments);
+
+        for (auto k = 0, p0 = 0, p1 = 0; k <= max1; ++k) {
+            auto const p2 = sizes[k];
+            auto const d21 = p2 - p1;
+            auto const d10 = p1 - p0;
+
+            compute::kpm_kernel(p1, p2, h2, r1, r0);
+            m2 += r1.segment(p1, d21).squaredNorm();
+            m3 += r0.segment(p1, d21).dot(r1.segment(p1, d21));
+            m4 += r0.segment(p1, d21).squaredNorm();
+
+            compute::kpm_kernel(p0, p1, h2, r0, r1);
+            m5 += r1.segment(p0, d10).dot(r0.segment(p0, d10));
+
+            p0 = p1;
+            p1 = p2;
+        }
+        moments[2 * (n - 1)] = scalar_t{2} * (m2 - m0);
+        moments[2 * (n - 1) + 1] = scalar_t{2} * m3 - m1;
+
+        auto const p0 = sizes[max1 - 1];
+        auto const p1 = sizes[max2];
+        auto const d10 = p1 - p0;
+
+        compute::kpm_kernel(p0, p1, h2, r0, r1);
+        m5 += r1.segment(p0, d10).dot(r0.segment(p0, d10));
+
+        moments[2 * n] = scalar_t{2} * (m4 - m0);
+        moments[2 * n + 1] = scalar_t{2} * m5 - m1;
+    }
+
+    return moments;
 }
 
 } // namespace kpm
@@ -339,7 +446,14 @@ bool KPM<scalar_t>::change_hamiltonian(Hamiltonian const& h) {
 
 template<class scalar_t>
 ArrayXcd KPM<scalar_t>::calc(int row, int col, ArrayXd const& energy, double broadening) {
-    return std::move(calc_vector(row, {col}, energy, broadening).front());
+    if (row == col) {
+        auto const moments = calc_moments_diag(row, broadening);
+        auto const scaled_energy = bounds.scale_energy(energy.template cast<real_t>());
+        auto const greens = kpm::detail::calculate_greens(scaled_energy, moments);
+        return greens.template cast<std::complex<double>>();
+    } else {
+        return std::move(calc_vector(row, {col}, energy, broadening).front());
+    }
 }
 
 template<class scalar_t>
@@ -347,8 +461,7 @@ std::vector<ArrayXcd> KPM<scalar_t>::calc_vector(int row, std::vector<int> const
                                                  ArrayXd const& energy, double broadening) {
     assert(!cols.empty());
     auto const moment_matrix = calc_moments_matrix({row, cols}, broadening);
-    auto const scale = bounds.scaling_factors();
-    auto const scaled_energy = (energy.template cast<real_t>() - scale.b) / scale.a;
+    auto const scaled_energy = bounds.scale_energy(energy.template cast<real_t>());
     return moment_matrix.calc_greens(scaled_energy);
 }
 
@@ -391,6 +504,27 @@ kpm::MomentsMatrix<scalar_t> KPM<scalar_t>::calc_moments_matrix(kpm::Indices con
     stats.moments_timer.toc();
 
     return moment_matrix;
+}
+
+template<class scalar_t>
+ArrayX<scalar_t> KPM<scalar_t>::calc_moments_diag(int i, double broadening) {
+    auto const scale = bounds.scaling_factors();
+    optimized_hamiltonian.optimize_for({i, i}, scale);
+
+    auto const num_moments = required_num_moments(broadening, scale);
+    stats = {num_moments};
+    stats.moments_timer.tic();
+    auto moments = [&] {
+        switch (config.optimization_level) {
+            case 0: return kpm::calc_diag_moments0(optimized_hamiltonian.matrix(), i, num_moments);
+            case 1: return kpm::calc_diag_moments1(optimized_hamiltonian, num_moments);
+            default: return kpm::calc_diag_moments2(optimized_hamiltonian, num_moments);
+        }
+    }();
+    kpm::detail::apply_lorentz_kernel(moments, config.lambda);
+    stats.moments_timer.toc();
+
+    return moments;
 }
 
 TBM_INSTANTIATE_TEMPLATE_CLASS(KPM)

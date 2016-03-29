@@ -16,3 +16,9 @@ namespace shape {
 tbm::Shape rectangle(float x, float y);
 
 } // namespace shape
+
+namespace field {
+
+tbm::OnsiteModifier constant_potential(float value);
+
+} // namespace field

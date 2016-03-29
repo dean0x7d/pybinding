@@ -60,6 +60,12 @@ public:
         return factors;
     }
 
+    /// Return energy in range (-1, 1) scaled by the eigenvalue bounds
+    ArrayX<real_t> scale_energy(ArrayX<real_t> const& energy) {
+        auto const scale = scaling_factors();
+        return (energy.template cast<real_t>() - scale.b) / scale.a;
+    }
+
     std::string report(bool shortform = false) const;
 
 private:
@@ -81,6 +87,9 @@ struct Indices {
     Indices(int row, int col) : row(row), cols(1) { cols[0] = col; }
     Indices(int row, ArrayXi const& cols) : row(row), cols(cols) {}
     Indices(int row, std::vector<int> const& cols) : row(row), cols(eigen_cast<ArrayX>(cols)) {}
+
+    /// Indicates a single element on the main diagonal
+    bool is_diagonal() const { return cols.size() == 1 && row == cols[0]; }
 
     friend bool operator==(Indices const& l, Indices const& r) {
         return l.row == r.row && all_of(l.cols == r.cols);
@@ -314,14 +323,20 @@ VectorX<scalar_t> make_r1(SparseMatrixX<scalar_t> const& h2, int i) {
 template<class scalar_t>
 MomentsMatrix<scalar_t> calc_moments0(SparseMatrixX<scalar_t> const& h2,
                                      Indices const& idx, int num_moments);
+template<class scalar_t>
+ArrayX<scalar_t> calc_diag_moments0(SparseMatrixX<scalar_t> const& h2, int i, int num_moments);
 
 /// Calculate KPM moments -- with reordering optimization (optimal system size for each iteration)
 template<class scalar_t>
 MomentsMatrix<scalar_t> calc_moments1(OptimizedHamiltonian<scalar_t> const& oh, int num_moments);
+template<class scalar_t>
+ArrayX<scalar_t> calc_diag_moments1(OptimizedHamiltonian<scalar_t> const& oh, int num_moments);
 
 /// Calculate KPM moments -- like previous plus bandwidth optimization (interleaved moments)
 template<class scalar_t>
 MomentsMatrix<scalar_t> calc_moments2(OptimizedHamiltonian<scalar_t> const& oh, int num_moments);
+template<class scalar_t>
+ArrayX<scalar_t> calc_diag_moments2(OptimizedHamiltonian<scalar_t> const& oh, int num_moments);
 
 } // namespace kpm
 
@@ -365,6 +380,8 @@ private:
     int required_num_moments(double broadening, kpm::Scale<real_t> scale);
     /// Return KPM moments for several indices
     kpm::MomentsMatrix<scalar_t> calc_moments_matrix(kpm::Indices const& idx, double broadening);
+    /// Return KPM moments for a diagonal element (faster algorithm than off-diagonal)
+    ArrayX<scalar_t> calc_moments_diag(int i, double broadening);
 };
 
 TBM_EXTERN_TEMPLATE_CLASS(KPM)
