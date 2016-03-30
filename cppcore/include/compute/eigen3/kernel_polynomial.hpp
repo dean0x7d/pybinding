@@ -6,17 +6,14 @@ namespace tbm { namespace compute {
 
 namespace detail {
     template<class real_t>
-    inline void kpm_kernel_sum(real_t& result, real_t const& a, real_t const& b) {
-        result += a * b;
+    inline real_t kpm_kernel_mul(real_t a, real_t b) {
+        return a * b;
     }
 
     template<class real_t>
-    inline void kpm_kernel_sum(std::complex<real_t>& result, std::complex<real_t> const& a,
-                               std::complex<real_t> const& b) {
-        auto const re = result.real() + a.real() * b.real() - a.imag() * b.imag();
-        auto const im = result.imag() + a.real() * b.imag() + a.imag() * b.real();
-        result.real(re);
-        result.imag(im);
+    inline std::complex<real_t> kpm_kernel_mul(std::complex<real_t> a, std::complex<real_t> b) {
+        return {a.real() * b.real() - a.imag() * b.imag(),
+                a.real() * b.imag() + a.imag() * b.real()};
     }
 }
 
@@ -29,8 +26,9 @@ inline void kpm_kernel(int start, int end, SparseMatrixX<scalar_t> const& matrix
 
     for (auto i = start; i < end; ++i) {
         auto r = scalar_t{0};
-        for (auto j = row_start[i]; j < row_start[i + 1]; ++j)
-            detail::kpm_kernel_sum(r, value[j], x[column_index[j]]);
+        for (auto j = row_start[i]; j < row_start[i + 1]; ++j) {
+            r += detail::kpm_kernel_mul(value[j], x[column_index[j]]);
+        }
         y[i] = r - y[i];
     }
 }
