@@ -70,7 +70,7 @@ def test_decorator():
     assert "expected to return 1 ndarray(s), but got 2" in str(excinfo.value)
 
     with pytest.raises(RuntimeError) as excinfo:
-        pb.onsite_energy_modifier(lambda x: np.zeros(x.size / 2))
+        pb.onsite_energy_modifier(lambda x: np.zeros(x.size // 2))
     assert "must return the same shape" in str(excinfo.value)
 
     pb.hopping_energy_modifier(lambda energy: np.ones_like(energy, dtype=np.complex128))
