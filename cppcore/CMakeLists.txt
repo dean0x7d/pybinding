@@ -18,6 +18,7 @@ add_library(pybinding_cppcore
     include/compute/mkl/lanczos.hpp
     include/compute/mkl/linear_algebra.hpp
     include/compute/mkl/wrapper.hpp
+    include/compute/detail.hpp
     include/compute/kernel_polynomial.hpp
     include/compute/lanczos.hpp
     include/compute/linear_algebra.hpp
@@ -34,6 +35,7 @@ add_library(pybinding_cppcore
     include/numeric/arrayref.hpp
     include/numeric/constant.hpp
     include/numeric/dense.hpp
+    include/numeric/ellmatrix.hpp
     include/numeric/random.hpp
     include/numeric/sparse.hpp
     include/numeric/sparseref.hpp

@@ -1,8 +1,12 @@
 #pragma once
 #include "greens/Greens.hpp"
+
 #include "numeric/sparse.hpp"
+#include "numeric/ellmatrix.hpp"
 #include "compute/lanczos.hpp"
+
 #include "detail/macros.hpp"
+#include "support/variant.hpp"
 
 namespace tbm { namespace kpm {
 
@@ -104,7 +108,7 @@ class OptimizedSizes {
     int offset = 0; ///< needed to correctly compute off-diagonal elements (i != j)
 
 public:
-    OptimizedSizes(int system_size) : data{system_size} {}
+    explicit OptimizedSizes(int system_size) : data{system_size} {}
     OptimizedSizes(std::vector<int> sizes, Indices idx);
 
     /// Return an index into `data`, indicating the optimal system size for
@@ -155,27 +159,35 @@ public:
 template<class scalar_t>
 class OptimizedHamiltonian {
     using real_t = num::get_real_t<scalar_t>;
+    using OptMatrix = var::variant<SparseMatrixX<scalar_t>, num::EllMatrix<scalar_t>>;
 
-    SparseMatrixX<scalar_t> optimized_matrix; ///< reordered for faster compute
+    OptMatrix optimized_matrix; ///< reordered for faster compute
     Indices optimized_idx; ///< reordered target indices in the optimized matrix
     OptimizedSizes optimized_sizes; ///< optimal matrix sizes for each KPM iteration
 
     SparseMatrixX<scalar_t> const* original_matrix;
     Indices original_idx; ///< original target indices for which the optimization was done
 
-    bool use_reordering;
+    int opt_level;
     Chrono timer;
 
 public:
     OptimizedHamiltonian(SparseMatrixX<scalar_t> const* m, int opt_level = 1)
-        : optimized_sizes(m->rows()), original_matrix(m), use_reordering(opt_level >= 1) {}
+        : optimized_sizes(m->rows()), original_matrix(m), opt_level(opt_level) {}
 
     /// Create the optimized Hamiltonian targeting specific indices and scale factors
     void optimize_for(Indices const& idx, Scale<real_t> scale);
 
     Indices const& idx() const { return optimized_idx; }
     OptimizedSizes const& sizes() const { return optimized_sizes; }
-    SparseMatrixX<scalar_t> const& matrix() const { return optimized_matrix; }
+
+    SparseMatrixX<scalar_t> const& csr() const {
+        return optimized_matrix.template get<SparseMatrixX<scalar_t>>();
+    }
+
+    num::EllMatrix<scalar_t> const& ell() const {
+        return optimized_matrix.template get<num::EllMatrix<scalar_t>>();
+    }
 
     /// The unoptimized compute area is matrix.nonZeros() * num_moments
     std::uint64_t optimized_area(int num_moments) const;
@@ -187,6 +199,8 @@ private:
     void create_scaled(Indices const& idx, Scale<real_t> scale);
     /// Scale and reorder the Hamiltonian so that idx is at the start of the optimized matrix
     void create_reordered(Indices const& idx, Scale<real_t> scale);
+    /// Scale, reorder and store in ELLPACK format
+    void create_ellpack(Indices const& idx, Scale<real_t> scale);
     /// Get optimized indices which map to the given originals
     static Indices reorder_indices(Indices const& original_idx,
                                    std::vector<int> const& reorder_map);
@@ -302,10 +316,9 @@ struct Stats {
 };
 
 /// Return the KPM r0 vector with all zeros except for the source index
-template<class scalar_t>
-VectorX<scalar_t> make_r0(SparseMatrixX<scalar_t> const& h2, int i) {
-    auto r0 = VectorX<scalar_t>();
-    r0.setZero(h2.rows());
+template<class Matrix, class scalar_t = typename Matrix::Scalar>
+VectorX<scalar_t> make_r0(Matrix const& h2, int i) {
+    auto r0 = VectorX<scalar_t>::Zero(h2.rows()).eval();
     r0[i] = 1;
     return r0;
 }
@@ -319,24 +332,39 @@ VectorX<scalar_t> make_r1(SparseMatrixX<scalar_t> const& h2, int i) {
     return h2.row(i).conjugate() * scalar_t{0.5};
 }
 
+template<class scalar_t>
+VectorX<scalar_t> make_r1(num::EllMatrix<scalar_t> const& h2, int i) {
+    auto r1 = VectorX<scalar_t>::Zero(h2.rows()).eval();
+    for (auto n = 0; n < h2.nnz_per_row; ++n) {
+        auto const col = h2.indices(i, n);
+        auto const value = h2.data(i, n);
+        r1[col] = num::conjugate(value) * scalar_t{0.5};
+    }
+    return r1;
+}
+
 /// Calculate KPM moments -- reference implementation, no optimizations
 template<class scalar_t>
 MomentsMatrix<scalar_t> calc_moments0(SparseMatrixX<scalar_t> const& h2,
-                                     Indices const& idx, int num_moments);
+                                      Indices const& idx, int num_moments);
 template<class scalar_t>
 ArrayX<scalar_t> calc_diag_moments0(SparseMatrixX<scalar_t> const& h2, int i, int num_moments);
 
 /// Calculate KPM moments -- with reordering optimization (optimal system size for each iteration)
-template<class scalar_t>
-MomentsMatrix<scalar_t> calc_moments1(OptimizedHamiltonian<scalar_t> const& oh, int num_moments);
-template<class scalar_t>
-ArrayX<scalar_t> calc_diag_moments1(OptimizedHamiltonian<scalar_t> const& oh, int num_moments);
+template<class Matrix, class scalar_t = typename Matrix::Scalar>
+MomentsMatrix<scalar_t> calc_moments1(Matrix const& h2, Indices const& idx, int num_moments,
+                                      OptimizedSizes const& sizes);
+template<class Matrix, class scalar_t = typename Matrix::Scalar>
+ArrayX<scalar_t> calc_diag_moments1(Matrix const& h2, int i, int num_moments,
+                                    OptimizedSizes const& sizes);
 
 /// Calculate KPM moments -- like previous plus bandwidth optimization (interleaved moments)
-template<class scalar_t>
-MomentsMatrix<scalar_t> calc_moments2(OptimizedHamiltonian<scalar_t> const& oh, int num_moments);
-template<class scalar_t>
-ArrayX<scalar_t> calc_diag_moments2(OptimizedHamiltonian<scalar_t> const& oh, int num_moments);
+template<class Matrix, class scalar_t = typename Matrix::Scalar>
+MomentsMatrix<scalar_t> calc_moments2(Matrix const& h2, Indices const& idx, int num_moments,
+                                      OptimizedSizes const& sizes);
+template<class Matrix, class scalar_t = typename Matrix::Scalar>
+ArrayX<scalar_t> calc_diag_moments2(Matrix const& h2, int i, int num_moments,
+                                    OptimizedSizes const& sizes);
 
 } // namespace kpm
 
@@ -346,7 +374,7 @@ struct KPMConfig {
     float min_energy = 0.0f; ///< lowest eigenvalue of the Hamiltonian
     float max_energy = 0.0f; ///< highest eigenvalue of the Hamiltonian
 
-    int optimization_level = 2; ///< 0 to 2, higher levels apply more complex optimizations
+    int optimization_level = 3; ///< 0 to 3, higher levels apply more complex optimizations
     float lanczos_precision = 0.002f; ///< how precise should the min/max energy estimation be
 };
 

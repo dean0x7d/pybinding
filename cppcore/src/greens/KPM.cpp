@@ -45,10 +45,12 @@ void OptimizedHamiltonian<scalar_t>::optimize_for(Indices const& idx, Scale<real
     }
 
     timer.tic();
-    if (use_reordering) {
+    if (opt_level <= 0) {
+        create_scaled(idx, scale);
+    } else if (opt_level <= 2) {
         create_reordered(idx, scale);
     } else {
-        create_scaled(idx, scale);
+        create_ellpack(idx, scale);
     }
     timer.toc();
 
@@ -59,38 +61,28 @@ template<class scalar_t>
 void OptimizedHamiltonian<scalar_t>::create_scaled(Indices const& idx, Scale<real_t> scale) {
     optimized_idx = idx;
 
-    auto const& H = *original_matrix;
+    auto const& h = *original_matrix;
+    auto h2 = SparseMatrixX<scalar_t>();
     if (scale.b == 0) { // just scale, no b offset
-        optimized_matrix = H * (2 / scale.a);
+        h2 = h * (2 / scale.a);
     } else { // scale and offset
-        auto I = SparseMatrixX<scalar_t>{H.rows(), H.cols()};
+        auto I = SparseMatrixX<scalar_t>{h.rows(), h.cols()};
         I.setIdentity();
-        optimized_matrix = (H - I * scale.b) * (2 / scale.a);
+        h2 = (h - I * scale.b) * (2 / scale.a);
     }
-    optimized_matrix.makeCompressed();
+    h2.makeCompressed();
+    optimized_matrix = h2.markAsRValue();
 }
 
 template<class scalar_t>
 void OptimizedHamiltonian<scalar_t>::create_reordered(Indices const& idx, Scale<real_t> scale) {
-    auto const& H = *original_matrix;
-    auto const system_size = H.rows();
+    auto const& h = *original_matrix;
+    auto const system_size = h.rows();
     auto const inverted_a = real_t{2 / scale.a};
 
-    // Find the maximum number of non-zero elements in the original matrix
-    auto const max_nonzeros = [&]{
-        auto max = 1;
-        for (auto i = 0; i < H.outerSize(); ++i) {
-            auto const nnz = H.outerIndexPtr()[i+1] - H.outerIndexPtr()[i];
-            if (nnz > max) {
-                max = nnz;
-            }
-        }
-        return max;
-    }();
-
-    // Allocate the new matrix
-    optimized_matrix.resize(system_size, system_size);
-    optimized_matrix.reserve(VectorXi::Constant(system_size, max_nonzeros + 1)); // +1 for padding
+    auto h2 = SparseMatrixX<scalar_t>(system_size, system_size);
+    // Reserve the same nnz per row as the original + 1 in case the scaling adds diagonal elements
+    h2.reserve(VectorXi::Constant(system_size, sparse::max_nnz_per_row(h) + 1));
 
     // Note: The following "queue" and "map" use vectors instead of other container types because
     //       they serve a very simple purpose. Using preallocated vectors results in better
@@ -111,18 +103,18 @@ void OptimizedHamiltonian<scalar_t>::create_reordered(Indices const& idx, Scale<
     sizes.push_back(1);
 
     // Fill the reordered matrix row by row
-    auto const H_view = sparse::make_loop(H);
+    auto const h_view = sparse::make_loop(h);
     for (auto h2_row = 0; h2_row < system_size; ++h2_row) {
         auto diagonal_inserted = false;
 
         // Loop over elements in the row of the original matrix
         // corresponding to the h2_row of the reordered matrix
         auto const row = index_queue[h2_row];
-        H_view.for_each_in_row(row, [&](int col, scalar_t value) {
+        h_view.for_each_in_row(row, [&](int col, scalar_t value) {
             // A diagonal element may need to be inserted into the reordered matrix
             // even if the original matrix doesn't have an element on the main diagonal
             if (scale.b != 0 && !diagonal_inserted && col > row) {
-                optimized_matrix.insert(h2_row, h2_row) = -scale.b * inverted_a;
+                h2.insert(h2_row, h2_row) = -scale.b * inverted_a;
                 diagonal_inserted = true;
             }
 
@@ -142,7 +134,7 @@ void OptimizedHamiltonian<scalar_t>::create_reordered(Indices const& idx, Scale<
                 diagonal_inserted = true;
             }
 
-            optimized_matrix.insert(h2_row, h2_col) = h2_value;
+            h2.insert(h2_row, h2_col) = h2_value;
         });
 
         // Store the system size for the next KPM iteration
@@ -150,13 +142,36 @@ void OptimizedHamiltonian<scalar_t>::create_reordered(Indices const& idx, Scale<
             sizes.push_back(static_cast<int>(index_queue.size()));
         }
     }
-    optimized_matrix.makeCompressed();
+    h2.makeCompressed();
+    optimized_matrix = h2.markAsRValue();
 
     sizes.pop_back(); // the last element is a duplicate of the second to last
     sizes.shrink_to_fit();
 
     optimized_idx = reorder_indices(idx, reorder_map);
     optimized_sizes = {std::move(sizes), optimized_idx};
+}
+
+template<class scalar_t>
+void OptimizedHamiltonian<scalar_t>::create_ellpack(Indices const& idx, Scale<real_t> scale) {
+    create_reordered(idx, scale);
+    auto const& h2_csr = csr();
+    auto h2_ell = num::EllMatrix<scalar_t>(h2_csr.rows(), h2_csr.cols(),
+                                           sparse::max_nnz_per_row(h2_csr));
+    auto const h2_csr_loop = sparse::make_loop(h2_csr);
+    for (auto row = 0; row < h2_csr.rows(); ++row) {
+        auto n = 0;
+        h2_csr_loop.for_each_in_row(row, [&](int col, scalar_t value) {
+            h2_ell.data(row, n) = value;
+            h2_ell.indices(row, n) = col;
+            ++n;
+        });
+        for (; n < h2_ell.nnz_per_row; ++n) {
+            h2_ell.data(row, n) = scalar_t{0};
+            h2_ell.indices(row, n) = (row > 0) ? h2_ell.indices(row - 1, n) : 0;
+        }
+    }
+    optimized_matrix = std::move(h2_ell);
 }
 
 template<class scalar_t>
@@ -171,12 +186,29 @@ Indices OptimizedHamiltonian<scalar_t>::reorder_indices(Indices const& original_
     return {0, cols};
 }
 
+namespace {
+    /// Return the number of non-zeros present up to `rows`
+    struct NonZeros {
+        int rows;
+
+        template<class scalar_t>
+        int operator()(SparseMatrixX<scalar_t> const& csr) {
+            return csr.outerIndexPtr()[rows];
+        }
+
+        template<class scalar_t>
+        int operator()(num::EllMatrix<scalar_t> const& ell) {
+            return (rows - 1) * ell.nnz_per_row;
+        }
+    };
+}
+
 template<class scalar_t>
 std::uint64_t OptimizedHamiltonian<scalar_t>::optimized_area(int num_moments) const {
     auto area = std::uint64_t{0};
     for (auto n = 0; n < num_moments; ++n) {
-        auto const max_row = optimized_sizes.optimal(n, num_moments);
-        auto const num_nonzeros = optimized_matrix.outerIndexPtr()[max_row];
+        auto const rows = optimized_sizes.optimal(n, num_moments);
+        auto const num_nonzeros = var::apply_visitor(NonZeros{rows}, optimized_matrix);
         area += num_nonzeros;
     }
     return area;
@@ -185,8 +217,8 @@ std::uint64_t OptimizedHamiltonian<scalar_t>::optimized_area(int num_moments) co
 template<class scalar_t>
 std::string OptimizedHamiltonian<scalar_t>::report(int num_moments, bool shortform) const {
     auto const removed_percent = [&]{
-        auto const nnz = static_cast<double>(optimized_matrix.nonZeros());
-        auto const full_area = nnz * num_moments;
+        auto const nnz = var::apply_visitor(NonZeros{original_matrix->rows()}, optimized_matrix);
+        auto const full_area = static_cast<double>(nnz) * num_moments;
         return 100 * (full_area - optimized_area(num_moments)) / full_area;
     }();
     auto const not_efficient = optimized_sizes.uses_full_system(num_moments) ? "" : "*";
@@ -229,7 +261,7 @@ std::string Stats::report(Bounds<scalar_t> const& bounds, OptimizedHamiltonian<s
 
 template<class scalar_t>
 MomentsMatrix<scalar_t> calc_moments0(SparseMatrixX<scalar_t> const& h2,
-                                     Indices const& idx, int num_moments) {
+                                      Indices const& idx, int num_moments) {
     auto moment_matrix = MomentsMatrix<scalar_t>(num_moments, idx.cols);
     auto r0 = make_r0(h2, idx.row);
     auto r1 = make_r1(h2, idx.row);
@@ -270,18 +302,16 @@ ArrayX<scalar_t> calc_diag_moments0(SparseMatrixX<scalar_t> const& h2, int i, in
     return moments;
 }
 
-template<class scalar_t>
-MomentsMatrix<scalar_t> calc_moments1(OptimizedHamiltonian<scalar_t> const& oh, int num_moments) {
-    auto const& idx = oh.idx();
-    auto const& h2 = oh.matrix();
-
+template<class Matrix, class scalar_t>
+MomentsMatrix<scalar_t> calc_moments1(Matrix const& h2, Indices const& idx, int num_moments,
+                                      OptimizedSizes const& sizes) {
     auto moment_matrix = MomentsMatrix<scalar_t>(num_moments, idx.cols);
     auto r0 = make_r0(h2, idx.row);
     auto r1 = make_r1(h2, idx.row);
     moment_matrix.collect_initial(r0, r1);
 
     for (auto n = 2; n < num_moments; ++n) {
-        auto const optimized_size = oh.sizes().optimal(n, num_moments);
+        auto const optimized_size = sizes.optimal(n, num_moments);
         compute::kpm_kernel(0, optimized_size, h2, r1, r0); // r0 = matrix * r1 - r0
         r1.swap(r0);
         moment_matrix.collect(n, r1);
@@ -290,11 +320,9 @@ MomentsMatrix<scalar_t> calc_moments1(OptimizedHamiltonian<scalar_t> const& oh, 
     return moment_matrix;
 }
 
-template<class scalar_t>
-ArrayX<scalar_t> calc_diag_moments1(OptimizedHamiltonian<scalar_t> const& oh, int num_moments) {
-    auto const i = oh.idx().row;
-    auto const& h2 = oh.matrix();
-
+template<class Matrix, class scalar_t>
+ArrayX<scalar_t> calc_diag_moments1(Matrix const& h2, int i, int num_moments,
+                                    OptimizedSizes const& sizes) {
     auto moments = ArrayX<scalar_t>(num_moments);
     auto r0 = make_r0(h2, i);
     auto r1 = make_r1(h2, i);
@@ -303,7 +331,7 @@ ArrayX<scalar_t> calc_diag_moments1(OptimizedHamiltonian<scalar_t> const& oh, in
 
     assert(num_moments % 2 == 0);
     for (auto n = 2; n <= num_moments / 2; ++n) {
-        auto const opt_size = oh.sizes().optimal(n, num_moments);
+        auto const opt_size = sizes.optimal(n, num_moments);
         compute::kpm_kernel(0, opt_size, h2, r1, r0);
         r1.swap(r0);
         moments[2 * (n - 1)] = scalar_t{2} * (r0.head(opt_size).squaredNorm() - m0);
@@ -313,12 +341,9 @@ ArrayX<scalar_t> calc_diag_moments1(OptimizedHamiltonian<scalar_t> const& oh, in
     return moments;
 }
 
-template<class scalar_t>
-MomentsMatrix<scalar_t> calc_moments2(OptimizedHamiltonian<scalar_t> const& oh, int num_moments) {
-    auto const& idx = oh.idx();
-    auto const& h2 = oh.matrix();
-    auto const& sizes = oh.sizes();
-
+template<class Matrix, class scalar_t>
+MomentsMatrix<scalar_t> calc_moments2(Matrix const& h2, Indices const& idx, int num_moments,
+                                      OptimizedSizes const& sizes) {
     auto moment_matrix = MomentsMatrix<scalar_t>(num_moments, idx.cols);
     auto r0 = make_r0(h2, idx.row);
     auto r1 = make_r1(h2, idx.row);
@@ -349,12 +374,9 @@ MomentsMatrix<scalar_t> calc_moments2(OptimizedHamiltonian<scalar_t> const& oh, 
     return moment_matrix;
 }
 
-template<class scalar_t>
-ArrayX<scalar_t> calc_diag_moments2(OptimizedHamiltonian<scalar_t> const& oh, int num_moments) {
-    auto const i = oh.idx().row;
-    auto const& h2 = oh.matrix();
-    auto const& sizes = oh.sizes();
-
+template<class Matrix, class scalar_t>
+ArrayX<scalar_t> calc_diag_moments2(Matrix const& h2, int i, int num_moments,
+                                    OptimizedSizes const& sizes) {
     auto moments = ArrayX<scalar_t>(num_moments);
     auto r0 = make_r0(h2, i);
     auto r1 = make_r1(h2, i);
@@ -494,10 +516,12 @@ kpm::MomentsMatrix<scalar_t> KPM<scalar_t>::calc_moments_matrix(kpm::Indices con
     stats = {num_moments};
     stats.moments_timer.tic();
     auto moment_matrix = [&] {
+        auto const& oh = optimized_hamiltonian;
         switch (config.optimization_level) {
-            case 0: return kpm::calc_moments0(optimized_hamiltonian.matrix(), idx, num_moments);
-            case 1: return kpm::calc_moments1(optimized_hamiltonian, num_moments);
-            default: return kpm::calc_moments2(optimized_hamiltonian, num_moments);
+            case 0: return kpm::calc_moments0(oh.csr(), idx, num_moments);
+            case 1: return kpm::calc_moments1(oh.csr(), oh.idx(), num_moments, oh.sizes());
+            case 2: return kpm::calc_moments2(oh.csr(), oh.idx(), num_moments, oh.sizes());
+            default: return kpm::calc_moments2(oh.ell(), oh.idx(), num_moments, oh.sizes());
         }
     }();
     moment_matrix.apply_lorentz_kernel(config.lambda);
@@ -515,10 +539,13 @@ ArrayX<scalar_t> KPM<scalar_t>::calc_moments_diag(int i, double broadening) {
     stats = {num_moments};
     stats.moments_timer.tic();
     auto moments = [&] {
+        auto const& oh = optimized_hamiltonian;
+        auto const opt_i = oh.idx().row;
         switch (config.optimization_level) {
-            case 0: return kpm::calc_diag_moments0(optimized_hamiltonian.matrix(), i, num_moments);
-            case 1: return kpm::calc_diag_moments1(optimized_hamiltonian, num_moments);
-            default: return kpm::calc_diag_moments2(optimized_hamiltonian, num_moments);
+            case 0: return kpm::calc_diag_moments0(oh.csr(), i, num_moments);
+            case 1: return kpm::calc_diag_moments1(oh.csr(), opt_i, num_moments, oh.sizes());
+            case 2: return kpm::calc_diag_moments2(oh.csr(), opt_i, num_moments, oh.sizes());
+            default: return kpm::calc_diag_moments2(oh.ell(), opt_i, num_moments, oh.sizes());
         }
     }();
     kpm::detail::apply_lorentz_kernel(moments, config.lambda);

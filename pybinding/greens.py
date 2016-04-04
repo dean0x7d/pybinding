@@ -119,7 +119,7 @@ class Greens:
         return deferred
 
 
-def kpm(model, lambda_value=4.0, energy_range=None, optimization_level=2, lanczos_precision=0.002):
+def kpm(model, lambda_value=4.0, energy_range=None, optimization_level=3, lanczos_precision=0.002):
     """Calculate Green's function using the Kernel Polynomial Method
 
     Parameters
@@ -141,7 +141,9 @@ def kpm(model, lambda_value=4.0, energy_range=None, optimization_level=2, lanczo
         Level 0 disables all optimizations. Level 1 turns on matrix reordering which
         allows some parts of the sparse matrix-vector multiplication to be discarded.
         Level 2 enables moment interleaving: two KPM moments will be calculated per
-        iteration which significantly lowers the required memory bandwidth.
+        iteration which significantly lowers the required memory bandwidth. Level 3
+        converts the Hamiltonian matrix format from CSR to ELLPACK format which
+        allows for better vectorization of sparse matrix-vector multiplication.
     lanczos_precision : float
         How precise should the automatic Hamiltonian bounds determination be.
         TODO: implementation detail. Remove from public interface.

@@ -21,7 +21,7 @@ def model(request):
 
 @pytest.fixture(scope='module')
 def kpm(model):
-    return [pb.greens.kpm(model, optimization_level=i) for i in range(3)]
+    return [pb.greens.kpm(model, optimization_level=i) for i in range(4)]
 
 
 def test_ldos(kpm, baseline, plot_if_fails):
@@ -35,6 +35,7 @@ def test_ldos(kpm, baseline, plot_if_fails):
     assert pytest.fuzzy_equal(results[0], expected, rtol=1e-4, atol=1e-6)
     assert pytest.fuzzy_equal(results[1], expected, rtol=1e-4, atol=1e-6)
     assert pytest.fuzzy_equal(results[2], expected, rtol=1e-4, atol=1e-6)
+    assert pytest.fuzzy_equal(results[3], expected, rtol=1e-4, atol=1e-6)
 
 
 def test_kpm_multiple_indices(model):

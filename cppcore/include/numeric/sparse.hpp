@@ -148,4 +148,19 @@ private:
 template<class scalar_t>
 inline Loop<scalar_t> make_loop(SparseMatrixX<scalar_t> const& m) { return {m}; }
 
+/**
+ Return the maximum number of non-zeros per row
+ */
+template<class scalar_t>
+int max_nnz_per_row(SparseMatrixX<scalar_t> const& m) {
+    auto max = 0;
+    for (auto i = 0; i < m.outerSize(); ++i) {
+        auto const nnz = m.outerIndexPtr()[i + 1] - m.outerIndexPtr()[i];
+        if (nnz > max) {
+            max = nnz;
+        }
+    }
+    return max;
+}
+
 }} // namespace tbm::sparse

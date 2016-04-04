@@ -80,7 +80,7 @@ TEST_CASE("KPM strategy", "[kpm]") {
     struct Result { ArrayXcd g_ii, g_ij; };
     auto results = std::vector<Result>();
 
-    for (auto opt_level = 0; opt_level <= 2; ++opt_level) {
+    for (auto opt_level = 0; opt_level <= 3; ++opt_level) {
         auto config = KPMConfig{};
         config.optimization_level = opt_level;
         auto kpm = make_greens_strategy<KPM>(model.hamiltonian(), config);
@@ -126,9 +126,11 @@ TEST_CASE("KPM optimization levels", "[kpm]") {
         auto const g0 = calc_greens(i, i, /*opt_level*/0);
         auto const g1 = calc_greens(i, i, /*opt_level*/1);
         auto const g2 = calc_greens(i, i, /*opt_level*/2);
+        auto const g3 = calc_greens(i, i, /*opt_level*/3);
 
         REQUIRE(g0.isApprox(g1));
         REQUIRE(g0.isApprox(g2));
+        REQUIRE(g0.isApprox(g3));
     }
 
     SECTION("Off-diagonal") {
@@ -137,8 +139,10 @@ TEST_CASE("KPM optimization levels", "[kpm]") {
         auto const g0 = calc_greens(i, j, /*opt_level*/0);
         auto const g1 = calc_greens(i, j, /*opt_level*/1);
         auto const g2 = calc_greens(i, j, /*opt_level*/2);
+        auto const g3 = calc_greens(i, j, /*opt_level*/3);
 
         REQUIRE(g0.isApprox(g1));
         REQUIRE(g0.isApprox(g2));
+        REQUIRE(g0.isApprox(g3));
     }
 }
