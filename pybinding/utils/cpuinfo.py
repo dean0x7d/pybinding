@@ -1,7 +1,8 @@
 from cpuinfo import cpuinfo
+from .. import _cpp
+
 _info = cpuinfo.get_cpu_info()
 try:
-    from .. import _cpp
     physical_thread_count = _cpp.get_max_threads()
 except AttributeError:
     physical_thread_count = _info['count']
@@ -20,6 +21,6 @@ def virtual_core_count():
 
 
 def threads():
-    return "Threads {}/{} @ {:.3} GHz".format(
-        physical_core_count(), virtual_core_count(), _info['hz_advertised']
+    return "Threads {}/{} @ {:.3} GHz with {}".format(
+        physical_core_count(), virtual_core_count(), _info['hz_advertised'], _cpp.simd_info()
     )

@@ -5,6 +5,7 @@ recursive-include docs *.py *.rst *.css
 recursive-include cppcore/deps/cppformat *.h *.cc
 recursive-include cppcore/deps/eigen3/Eigen *
 recursive-include cppcore/deps/variant *
+recursive-include cppcore/deps/simdpp *.h
 prune cppcore/deps/catch
 prune cppwrapper/deps/boost_python/test
 prune cppwrapper/deps/boost_python/example

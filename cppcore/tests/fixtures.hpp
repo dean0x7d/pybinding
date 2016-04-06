@@ -20,5 +20,9 @@ tbm::Shape rectangle(float x, float y);
 namespace field {
 
 tbm::OnsiteModifier constant_potential(float value);
+tbm::HoppingModifier constant_magnetic_field(float value);
+
+tbm::HoppingModifier force_double_precision();
+tbm::HoppingModifier force_complex_numbers();
 
 } // namespace field

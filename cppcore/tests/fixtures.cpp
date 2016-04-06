@@ -1,4 +1,5 @@
 #include "fixtures.hpp"
+#include "numeric/constant.hpp"
 using namespace tbm;
 
 namespace graphene {
@@ -36,7 +37,7 @@ namespace {
         float value;
 
         template<class Array>
-        void operator()(Array energy) {
+        void operator()(Array energy) const {
             using scalar_t = typename Array::Scalar;
             energy.setConstant(static_cast<scalar_t>(value));
         }
@@ -47,6 +48,45 @@ tbm::OnsiteModifier constant_potential(float value) {
     return {[value](ComplexArrayRef energy, CartesianArray const&, SubIdRef) {
         num::match<ArrayX>(energy, OnsiteEnergyOp{value});
     }};
+}
+
+namespace {
+    struct MagneticFieldOp {
+        float magnitude;
+        CartesianArray const& pos1;
+        CartesianArray const& pos2;
+
+        static constexpr auto scale = 1e-18f;
+
+        template<class Array>
+        void operator()(Array) const {}
+
+        template<class real_t>
+        void operator()(Map<ArrayX<std::complex<real_t>>> energy) const {
+            using scalar_t = std::complex<real_t>;
+            auto const k = static_cast<scalar_t>(scale * 2 * constant::pi / constant::phi0);
+            auto const vp_x = 0.5f * magnitude * (pos1.y + pos2.y);
+            auto const peierls = vp_x * (pos1.x - pos2.x);
+            energy *= exp(scalar_t{constant::i1} * k * peierls.template cast<scalar_t>());
+        }
+    };
+}
+
+tbm::HoppingModifier constant_magnetic_field(float value) {
+    return {[value](ComplexArrayRef energy, CartesianArray const& pos1,
+                    CartesianArray const& pos2, HopIdRef) {
+        num::match<ArrayX>(energy, MagneticFieldOp{value, pos1, pos2});
+    }, /*is_complex*/true, /*is_double*/false};
+}
+
+tbm::HoppingModifier force_double_precision() {
+    auto nop = [](ComplexArrayRef, CartesianArray const&, CartesianArray const&, HopIdRef) {};
+    return tbm::HoppingModifier(nop, /*is_complex*/false, /*is_double*/true);
+}
+
+tbm::HoppingModifier force_complex_numbers() {
+    auto nop = [](ComplexArrayRef, CartesianArray const&, CartesianArray const&, HopIdRef) {};
+    return tbm::HoppingModifier(nop, /*is_complex*/true, /*is_double*/false);
 }
 
 } // namespace field

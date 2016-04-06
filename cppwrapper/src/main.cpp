@@ -1,5 +1,7 @@
 #include "system/Lattice.hpp"
 
+#include "support/simd.hpp"
+
 #include "eigen3_converters.hpp"
 #include "python_support.hpp"
 
@@ -76,4 +78,17 @@ BOOST_PYTHON_MODULE(_pybinding) {
     def("get_max_cpu_frequency", MKL_Get_Max_Cpu_Frequency);
     def("get_cpu_frequency", MKL_Get_Cpu_Frequency);
 #endif
+
+    def("simd_info", []() -> std::string {
+#if SIMDPP_USE_AVX
+        auto const bits = std::to_string(simd::detail::basic_traits::size_bytes * 8);
+        return "AVX-" + bits;
+#elif SIMDPP_USE_SSE3
+        return "SSE3";
+#elif SIMDPP_USE_SSE2
+        return "SSE2";
+#else
+        return "x87";
+#endif
+    });
 }

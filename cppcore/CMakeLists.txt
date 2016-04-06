@@ -9,6 +9,7 @@ include(download)
 include(eigen)
 include(cppformat)
 include(variant)
+include(simdpp)
 
 add_library(pybinding_cppcore
     include/compute/eigen3/kernel_polynomial.hpp
@@ -44,6 +45,7 @@ add_library(pybinding_cppcore
     include/solver/Solver.hpp
     include/support/cppfuture.hpp
     include/support/format.hpp
+    include/support/simd.hpp
     include/support/variant.hpp
     include/system/Foundation.hpp
     include/system/Lattice.hpp
@@ -77,6 +79,7 @@ add_library(pybinding_cppcore
 target_include_directories(pybinding_cppcore PUBLIC include)
 target_include_directories(pybinding_cppcore SYSTEM PUBLIC ${EIGEN3_INCLUDE_DIR})
 target_include_directories(pybinding_cppcore SYSTEM PUBLIC ${VARIANT_INCLUDE_DIR})
+target_include_directories(pybinding_cppcore SYSTEM PUBLIC ${SIMDPP_INCLUDE_DIR})
 target_link_libraries(pybinding_cppcore PUBLIC cppformat)
 
 if(NOT WIN32)
