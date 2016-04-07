@@ -84,12 +84,15 @@ TEST_CASE("KPM strategy", "[kpm]") {
             auto const energy_range = ArrayXd::LinSpaced(10, -0.3, 0.3);
             auto const broadening = 0.8;
             auto const cols = std::vector<int>{i, j, j+1, j+2};
-            auto const precision = Eigen::NumTraits<float>::dummy_precision();
-
+            auto precision = Eigen::NumTraits<float>::dummy_precision();
+#ifdef __INTEL_COMPILER // workaround for ICC 16.0.1 on Linux
+            precision *= 4;
+#endif
             struct Result { ArrayXcd g_ii, g_ij; };
             auto results = std::vector<Result>();
 
             for (auto opt_level = 0; opt_level <= 3; ++opt_level) {
+                INFO("opt_level: " << opt_level);
                 auto config = KPMConfig{};
                 config.optimization_level = opt_level;
                 auto kpm = make_greens_strategy<KPM>(model.hamiltonian(), config);
