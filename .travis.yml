@@ -29,6 +29,8 @@ before_install:
 install:
 - python setup.py build_ext
 - python setup.py install
+before_script:
+- python -m pybinding.utils.cpuinfo
 script:
 - catch
 - py.test

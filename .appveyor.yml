@@ -20,6 +20,7 @@ install:
 build_script:
   - cmd: python setup.py build_ext
   - cmd: python setup.py install > nul
+  - cmd: python -m pybinding.utils.cpuinfo
 test_script:
   - cmd: .\build\cmake\cppcore\tests\Release\catch
   - cmd: py.test

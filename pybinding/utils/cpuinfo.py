@@ -1,26 +1,37 @@
-from cpuinfo import cpuinfo
 from .. import _cpp
 
-_info = cpuinfo.get_cpu_info()
-try:
-    physical_thread_count = _cpp.get_max_threads()
-except AttributeError:
-    physical_thread_count = _info['count']
+_cached_info = None
 
 
-def name():
-    return _info['brand']
+def get_cpu_info():
+    global _cached_info
+    if not _cached_info:
+        import cpuinfo
+        _cached_info = cpuinfo.get_cpu_info()
+    return _cached_info
 
 
 def physical_core_count():
-    return physical_thread_count
+    try:
+        # noinspection PyUnresolvedReferences
+        return _cpp.get_max_threads()
+    except AttributeError:
+        return get_cpu_info()['count']
 
 
 def virtual_core_count():
-    return _info['count']
+    return get_cpu_info()['count']
 
 
-def threads():
-    return "Threads {}/{} @ {:.3} GHz with {}".format(
-        physical_core_count(), virtual_core_count(), _info['hz_advertised'], _cpp.simd_info()
-    )
+def summary():
+    info = get_cpu_info().copy()
+    hz_raw, scale = info['hz_advertised_raw']
+    info['ghz'] = hz_raw * 10**(scale - 9)
+    info['physical'] = physical_core_count()
+    info['virtual'] = virtual_core_count()
+    info['simd'] = _cpp.simd_info()
+    return "{brand}\n{physical}/{virtual} cores @ {ghz:.2g} GHz with {simd}".format_map(info)
+
+
+if __name__ == '__main__':
+    print(summary())
