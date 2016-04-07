@@ -8,7 +8,7 @@ function(download URL DESTINATION)
                         RESULT_VARIABLE error)
     endif()
     if(error)
-        execute_process(COMMAND curl --create-dirs -s -S -o ${DESTINATION} ${URL}
+        execute_process(COMMAND curl --create-dirs -LSs -o ${DESTINATION} ${URL}
                         RESULT_VARIABLE error)
     endif()
     if(error)
