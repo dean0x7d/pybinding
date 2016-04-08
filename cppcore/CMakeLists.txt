@@ -4,13 +4,6 @@ project(pybinding_cppcore)
 option(PB_WERROR "Make all warnings into errors" OFF)
 option(PB_TESTS "Enable testing" OFF)
 
-list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/cmake")
-include(download)
-include(eigen)
-include(cppformat)
-include(variant)
-include(simdpp)
-
 add_library(pybinding_cppcore
     include/compute/eigen3/kernel_polynomial.hpp
     include/compute/eigen3/lanczos.hpp
@@ -77,9 +70,23 @@ add_library(pybinding_cppcore
 )
 
 target_include_directories(pybinding_cppcore PUBLIC include)
+
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/cmake")
+include(download)
+download_dependency(eigen3 3.2.8
+                    https://bitbucket.org/eigen/eigen/get
+                    \${VERSION}.tar.gz */Eigen)
 target_include_directories(pybinding_cppcore SYSTEM PUBLIC ${EIGEN3_INCLUDE_DIR})
+download_dependency(variant 1.1.0
+                    https://raw.githubusercontent.com/mapbox/variant/v\${VERSION}
+                    variant.hpp recursive_wrapper.hpp)
 target_include_directories(pybinding_cppcore SYSTEM PUBLIC ${VARIANT_INCLUDE_DIR})
+download_dependency(simdpp 2.0-rc2
+                    https://github.com/p12tic/libsimdpp/archive
+                    /v\${VERSION}.tar.gz */simdpp)
 target_include_directories(pybinding_cppcore SYSTEM PUBLIC ${SIMDPP_INCLUDE_DIR})
+
+include(cppformat)
 target_link_libraries(pybinding_cppcore PUBLIC cppformat)
 
 if(NOT WIN32)
@@ -118,6 +125,7 @@ endfunction()
 set_higher_warning_level(pybinding_cppcore)
 
 if(PB_TESTS OR DEFINED ENV{PB_TESTS})
-    include(catch)
+    set(catch_url https://raw.githubusercontent.com/philsquared/Catch/v\${VERSION}/single_include)
+    download_dependency(catch 1.4.0 ${catch_url} catch.hpp)
     add_subdirectory(tests)
 endif()

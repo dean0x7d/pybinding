@@ -1,14 +1,6 @@
-set(CPPFORMAT_VERSION 2.0.0)
-set(CPPFORMAT_INCLUDE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/deps/cppformat")
-
-if(NOT EXISTS ${CPPFORMAT_INCLUDE_DIR})
-    message(STATUS "Downloading cppformat v${CPPFORMAT_VERSION}...")
-    foreach(filename format.h format.cc)
-        set(repo "https://raw.githubusercontent.com/cppformat/cppformat")
-        download("${repo}/${CPPFORMAT_VERSION}/${filename}"
-                 "${CPPFORMAT_INCLUDE_DIR}/${filename}")
-    endforeach()
-endif()
+download_dependency(cppformat 2.0.0
+                    https://raw.githubusercontent.com/cppformat/cppformat/\${VERSION}
+                    format.h format.cc)
 
 add_library(cppformat STATIC EXCLUDE_FROM_ALL ${CPPFORMAT_INCLUDE_DIR}/format.cc)
 target_include_directories(cppformat SYSTEM PUBLIC ${CPPFORMAT_INCLUDE_DIR})
