@@ -391,20 +391,10 @@ ArrayX<scalar_t> calc_diag_moments2(Matrix const& h2, int i, int num_moments,
         auto m5 = scalar_t{0};
 
         auto const max1 = sizes.index(n, num_moments);
-        auto const max2 = sizes.index(n + 1, num_moments);
-
         for (auto k = 0, p0 = 0, p1 = 0; k <= max1; ++k) {
             auto const p2 = sizes[k];
-            auto const d21 = p2 - p1;
-            auto const d10 = p1 - p0;
-
-            compute::kpm_kernel(p1, p2, h2, r1, r0);
-            m2 += r1.segment(p1, d21).squaredNorm();
-            m3 += r0.segment(p1, d21).dot(r1.segment(p1, d21));
-            m4 += r0.segment(p1, d21).squaredNorm();
-
-            compute::kpm_kernel(p0, p1, h2, r0, r1);
-            m5 += r1.segment(p0, d10).dot(r0.segment(p0, d10));
+            compute::kpm_diag_kernel(p1, p2, h2, r1, r0, m2, m3);
+            compute::kpm_diag_kernel(p0, p1, h2, r0, r1, m4, m5);
 
             p0 = p1;
             p1 = p2;
@@ -412,13 +402,8 @@ ArrayX<scalar_t> calc_diag_moments2(Matrix const& h2, int i, int num_moments,
         moments[2 * (n - 1)] = scalar_t{2} * (m2 - m0);
         moments[2 * (n - 1) + 1] = scalar_t{2} * m3 - m1;
 
-        auto const p0 = sizes[max1 - 1];
-        auto const p1 = sizes[max2];
-        auto const d10 = p1 - p0;
-
-        compute::kpm_kernel(p0, p1, h2, r0, r1);
-        m5 += r1.segment(p0, d10).dot(r0.segment(p0, d10));
-
+        auto const max2 = sizes.index(n + 1, num_moments);
+        compute::kpm_diag_kernel(sizes[max1 - 1], sizes[max2], h2, r0, r1, m4, m5);
         moments[2 * n] = scalar_t{2} * (m4 - m0);
         moments[2 * n + 1] = scalar_t{2} * m5 - m1;
     }

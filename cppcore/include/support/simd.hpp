@@ -239,32 +239,52 @@ float64x4 addsub(float64<4, E1> const& a, float64<4, E2> const& b) {
 template<template<unsigned, class> class Vec, unsigned N, class E1, class E2> TBM_ALWAYS_INLINE
 Vec<N, void> complex_mul(Vec<N, E1> const& ab, Vec<N, E2> const& xy) {
     // (a + ib) * (x + iy) = (ax - by) + i(ay + bx)
-    auto const aa = simd::permute2<0, 0>(ab);
+    auto const aa = permute2<0, 0>(ab);
     auto const axay = aa * xy;
-
-    auto const bb = simd::permute2<1, 1>(ab);
-    auto const yx = simd::permute2<1, 0>(xy);
+    auto const bb = permute2<1, 1>(ab);
+    auto const yx = permute2<1, 0>(xy);
     auto const bybx = bb * yx;
+    return addsub(axay, bybx);
+}
 
-    return simd::addsub(axay, bybx);
+/**
+ Complex conjugate
+ */
+template<unsigned N, class E>
+float32<N> conjugate(float32<N, E> const& a) {
+    return bit_xor(a, make_uint<uint32<N>>(0, 0x80000000));
+}
+
+template<unsigned N, class E>
+float64<N> conjugate(float64<N, E> const& a) {
+    return bit_xor(a, make_uint<uint64<N>>(0, 0x8000000000000000));
 }
 
 namespace detail {
-    template<class scalar_t>
+    template<class scalar_t, bool /*conjugate*/ = false>
     struct FMADD {
         template<template<unsigned, class> class Vec, unsigned N,
-                                           class E1, class E2, class E3> TBM_ALWAYS_INLINE
+                 class E1, class E2, class E3> TBM_ALWAYS_INLINE
         static Vec<N, void> call(Vec<N, E1> const& a, Vec<N, E2> const& b, Vec<N, E3> const& c) {
             return a * b + c;
         }
     };
 
     template<class real_t>
-    struct FMADD<std::complex<real_t>> {
+    struct FMADD<std::complex<real_t>, /*conjugate*/false> {
         template<template<unsigned, class> class Vec, unsigned N,
-                                           class E1, class E2, class E3> TBM_ALWAYS_INLINE
+                 class E1, class E2, class E3> TBM_ALWAYS_INLINE
         static Vec<N, void> call(Vec<N, E1> const& a, Vec<N, E2> const& b, Vec<N, E3> const& c) {
-            return simd::complex_mul(a, b) + c;
+            return complex_mul(a, b) + c;
+        }
+    };
+
+    template<class real_t>
+    struct FMADD<std::complex<real_t>, /*conjugate*/true> {
+        template<template<unsigned, class> class Vec, unsigned N,
+                 class E1, class E2, class E3> TBM_ALWAYS_INLINE
+        static Vec<N, void> call(Vec<N, E1> const& a, Vec<N, E2> const& b, Vec<N, E3> const& c) {
+            return complex_mul(conjugate(a), b) + c;
         }
     };
 } // namespace detail
@@ -276,6 +296,45 @@ template<class scalar_t, template<unsigned, class> class Vec, unsigned N,
          class E1, class E2, class E3> TBM_ALWAYS_INLINE
 Vec<N, void> madd_rc(Vec<N, E1> const& a, Vec<N, E2> const& b, Vec<N, E3> const& c) {
     return detail::FMADD<scalar_t>::call(a, b, c);
+}
+
+/**
+ Conjugate multiply and add `conjugate(a) * b + c` for real or complex arguments
+ */
+template<class scalar_t, template<unsigned, class> class Vec, unsigned N,
+         class E1, class E2, class E3> TBM_ALWAYS_INLINE
+Vec<N, void> conjugate_madd_rc(Vec<N, E1> const& a, Vec<N, E2> const& b, Vec<N, E3> const& c) {
+    return detail::FMADD<scalar_t, /*conjugate*/true>::call(a, b, c);
+}
+
+namespace detail {
+    template<class scalar_t>
+    struct ReduceAdd {
+        template<class Vec> TBM_ALWAYS_INLINE
+        static scalar_t call(Vec const& a) {
+            return reduce_add(a);
+        }
+    };
+
+    template<class real_t>
+    struct ReduceAdd<std::complex<real_t>> {
+        template<template<unsigned, class> class V, unsigned N, class E> TBM_ALWAYS_INLINE
+        static std::complex<real_t> call(V<N, E> const& a) {
+            using Vec = V<N, void>;
+            auto real = Vec{a};
+            auto imag = make_float<Vec>(0);
+            transpose2(real, imag);
+            return {reduce_add(real), reduce_add(imag)};
+        }
+    };
+} // namespace detail
+
+/**
+ Reduce add for real or complex arguments
+ */
+template<class scalar_t, class Vec> TBM_ALWAYS_INLINE
+scalar_t reduce_add_rc(Vec const& a) {
+    return detail::ReduceAdd<scalar_t>::call(a);
 }
 
 }} // namespace tbm::simd

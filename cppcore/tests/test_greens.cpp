@@ -12,7 +12,7 @@ Model make_test_model(bool is_double = false, bool is_complex = false) {
         model.add_hopping_modifier(field::force_double_precision());
     }
     if (is_complex) {
-        model.add_hopping_modifier(field::constant_magnetic_field(100));
+        model.add_hopping_modifier(field::constant_magnetic_field(1e5));
     }
     return model;
 }

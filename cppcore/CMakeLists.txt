@@ -5,10 +5,8 @@ option(PB_WERROR "Make all warnings into errors" OFF)
 option(PB_TESTS "Enable testing" OFF)
 
 add_library(pybinding_cppcore
-    include/compute/eigen3/kernel_polynomial.hpp
     include/compute/eigen3/lanczos.hpp
     include/compute/eigen3/linear_algebra.hpp
-    include/compute/mkl/kernel_polynomial.hpp
     include/compute/mkl/lanczos.hpp
     include/compute/mkl/linear_algebra.hpp
     include/compute/mkl/wrapper.hpp
