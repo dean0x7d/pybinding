@@ -12,7 +12,7 @@ Model make_test_model(bool is_double = false, bool is_complex = false) {
         model.add_hopping_modifier(field::force_double_precision());
     }
     if (is_complex) {
-        model.add_hopping_modifier(field::constant_magnetic_field(1e5));
+        model.add_hopping_modifier(field::constant_magnetic_field(1e4));
     }
     return model;
 }
@@ -85,9 +85,7 @@ TEST_CASE("KPM strategy", "[kpm]") {
             auto const broadening = 0.8;
             auto const cols = std::vector<int>{i, j, j+1, j+2};
             auto precision = Eigen::NumTraits<float>::dummy_precision();
-#ifdef __INTEL_COMPILER // workaround for ICC 16.0.1 on Linux
-            precision *= 4;
-#endif
+
             struct Result { ArrayXcd g_ii, g_ij; };
             auto results = std::vector<Result>();
 
@@ -107,9 +105,12 @@ TEST_CASE("KPM strategy", "[kpm]") {
                 REQUIRE(g_ii.isApprox(gs[0], precision));
 
                 auto const g_ij = kpm->calc(i, j, energy_range, broadening);
-                auto const g_ji = kpm->calc(j, i, energy_range, broadening);
-                REQUIRE(g_ij.isApprox(g_ji, precision));
                 REQUIRE(g_ij.isApprox(gs[1], precision));
+
+                if (!is_complex) {
+                    auto const g_ji = kpm->calc(j, i, energy_range, broadening);
+                    REQUIRE(g_ij.isApprox(g_ji, precision));
+                }
 
                 results.push_back({g_ii, g_ij});
             }
