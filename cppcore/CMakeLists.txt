@@ -22,6 +22,11 @@ add_library(pybinding_cppcore
     include/detail/strategy.hpp
     include/detail/thread.hpp
     include/detail/typelist.hpp
+    include/greens/kpm/Bounds.hpp
+    include/greens/kpm/calc_moments.hpp
+    include/greens/kpm/OptimizedHamiltonian.hpp
+    include/greens/kpm/Moments.hpp
+    include/greens/kpm/Stats.hpp
     include/greens/Greens.hpp
     include/greens/KPM.hpp
     include/hamiltonian/Hamiltonian.hpp
@@ -51,6 +56,8 @@ add_library(pybinding_cppcore
     include/utils/Chrono.hpp
     include/utils/Log.hpp
     include/Model.hpp
+    src/greens/kpm/Bounds.cpp
+    src/greens/kpm/OptimizedHamiltonian.cpp
     src/greens/Greens.cpp
     src/greens/KPM.cpp
     src/hamiltonian/Hamiltonian.cpp
