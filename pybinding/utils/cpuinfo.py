@@ -4,6 +4,7 @@ _cached_info = None
 
 
 def get_cpu_info():
+    """Forwarded from `cpuinfo.get_cpu_info()`"""
     global _cached_info
     if not _cached_info:
         import cpuinfo
@@ -12,18 +13,35 @@ def get_cpu_info():
 
 
 def physical_core_count():
+    """Try to return the number of physical cores
+
+    An accurate number of physical cores will only be returned if the extension
+    module was compiled with MKL. Otherwise, this will return the same number
+    as `virtual_core_count()`.
+
+    Examples
+    --------
+    >>> physical_core_count() <= virtual_core_count()
+    True
+    """
     try:
         # noinspection PyUnresolvedReferences
-        return _cpp.get_max_threads()
+        return _cpp.physical_core_count
     except AttributeError:
         return get_cpu_info()['count']
 
 
 def virtual_core_count():
+    """Return the number of threads the CPU can process simultaniously"""
     return get_cpu_info()['count']
 
 
 def summary():
+    """Return a short description of the host CPU
+
+    The returned SIMD instruction set is the one that the extension module was
+    compiled with, not the highest one supported by the CPU.
+    """
     info = get_cpu_info().copy()
     hz_raw, scale = info['hz_advertised_raw']
     info['ghz'] = hz_raw * 10**(scale - 9)

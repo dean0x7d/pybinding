@@ -70,13 +70,15 @@ BOOST_PYTHON_MODULE(_pybinding) {
     export_parallel();
 
 #ifdef TBM_USE_MKL
-    // export some helper functions
     def("get_max_threads", MKL_Get_Max_Threads,
         "Get the maximum number of MKL threads. (<= logical theads)");
     def("set_num_threads", MKL_Set_Num_Threads, arg("number"),
         "Set the number of MKL threads.");
     def("get_max_cpu_frequency", MKL_Get_Max_Cpu_Frequency);
     def("get_cpu_frequency", MKL_Get_Cpu_Frequency);
+    // The max threads count may change later but at init time it's usually
+    // equal to the physical core count which is useful information.
+    scope().attr("physical_core_count") = MKL_Get_Max_Threads();
 #endif
 
     def("simd_info", []() -> std::string {
