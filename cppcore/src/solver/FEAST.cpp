@@ -86,10 +86,11 @@ std::string FEAST<scalar_t>::report(bool is_shortform) const {
                      "\nCompleted in";
     }
 
+    auto const ratio = static_cast<double>(info.suggested_size) / info.final_size;
     report += fmt::format(
         fmt_string, "final_size"_a=info.final_size, "suggested_size"_a=info.suggested_size,
-        "ratio"_a=double{info.suggested_size} / info.final_size, "loops"_a=info.refinement_loops,
-        "error_trace"_a=info.error_trace, "residual"_a=info.max_residual
+        "ratio"_a=ratio, "loops"_a=info.refinement_loops, "error_trace"_a=info.error_trace,
+        "residual"_a=info.max_residual
     );
 
     return report;

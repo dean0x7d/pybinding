@@ -7,8 +7,9 @@ elif [ "$TRAVIS_OS_NAME" = "osx" ]; then
 fi
 
 export PATH=$TRAVIS_BUILD_DIR/build/cmake/cppcore/tests/:$PATH
-export PB_WERROR=1  # make warnings into errors
-export PB_TESTS=1  # generate cpp tests
+export PB_WERROR=ON  # make warnings into errors
+export PB_TESTS=ON  # generate cpp tests
+export PB_NATIVE_SIMD=OFF  # only generate generic SIMD for deployment
 export MAKEFLAGS=-j2
 
 $CXX --version

@@ -2,7 +2,9 @@ cmake_minimum_required(VERSION 3.0)
 project(pybinding_cppcore)
 
 option(PB_WERROR "Make all warnings into errors" OFF)
-option(PB_TESTS "Enable testing" OFF)
+option(PB_TESTS "Enable testing" ON)
+option(PB_NATIVE_SIMD "Enable all instruction sets supported by the local machine" ON)
+option(PB_MKL "Use Intel's Math Kernel Library" OFF)
 
 add_library(pybinding_cppcore
     include/compute/eigen3/lanczos.hpp
@@ -91,38 +93,20 @@ if(NOT WIN32)
     target_compile_options(pybinding_cppcore PUBLIC -std=c++11)
 endif()
 
-if(${CMAKE_CXX_COMPILER_ID} STREQUAL Clang)
-elseif(${CMAKE_CXX_COMPILER_ID} STREQUAL GNU)
-elseif(${CMAKE_CXX_COMPILER_ID} STREQUAL Intel)
-    target_compile_options(pybinding_cppcore PUBLIC -xHost)
-    find_package(MKL REQUIRED)
-    if(MKL_INCLUDE_DIR)
-        target_compile_definitions(pybinding_cppcore PUBLIC TBM_USE_MKL)
-        target_compile_options(pybinding_cppcore PUBLIC -mkl=parallel)
-        target_link_libraries(pybinding_cppcore PUBLIC -mkl=parallel)
-    endif()
-elseif(${CMAKE_CXX_COMPILER_ID} STREQUAL MSVC)
-endif()
-
-function(set_higher_warning_level TARGET)
-    if(WIN32)
-        target_compile_options(${TARGET} PRIVATE /W3)
-    else()
-        target_compile_options(${TARGET} PRIVATE -Wall -Wextra)
-    endif()
-
-    if(PB_WERROR OR DEFINED ENV{PB_WERROR})
-        if(WIN32)
-            target_compile_options(${TARGET} PRIVATE /WX)
-        else()
-            target_compile_options(${TARGET} PRIVATE -Werror)
-        endif()
-    endif()
-endfunction()
-
+include(warnings)
 set_higher_warning_level(pybinding_cppcore)
 
-if(PB_TESTS OR DEFINED ENV{PB_TESTS})
+if(PB_NATIVE_SIMD AND NOT MSVC) # MSVC does not have anything like a /arch:native flag
+    target_compile_options(pybinding_cppcore PUBLIC -march=native)
+endif()
+
+if(PB_MKL)
+    include(mkl)
+    target_link_mkl(pybinding_cppcore PUBLIC)
+    target_compile_definitions(pybinding_cppcore PUBLIC TBM_USE_MKL)
+endif()
+
+if(PB_TESTS)
     set(catch_url https://raw.githubusercontent.com/philsquared/Catch/v\${VERSION}/single_include)
     download_dependency(catch 1.4.0 ${catch_url} catch.hpp)
     add_subdirectory(tests)

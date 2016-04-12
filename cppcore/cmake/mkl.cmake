@@ -1,0 +1,22 @@
+# Link with MKL. Paths are derived from MKLROOT.
+function(target_link_mkl TARGET SCOPE)
+    if(DEFINED ENV{MKLROOT})
+        set(MKLROOT $ENV{MKLROOT})
+    else()
+        set(MKLROOT "/opt/intel/mkl")
+        if(NOT EXISTS ${MKLROOT})
+            message(FATAL_ERROR "MKL path must be set in the MKLROOT environment variable")
+        endif()
+    endif()
+
+    if(APPLE)
+        set(link -L${MKLROOT}/lib -lmkl_intel_lp64 -lmkl_core -lmkl_intel_thread -liomp5)
+    elseif(UNIX)
+        set(link -L${MKLROOT}/lib/intel64 -lmkl_intel_lp64 -lmkl_core -lmkl_intel_thread -liomp5)
+    else()
+        set(link mkl_intel_lp64_dll.lib mkl_core_dll.lib mkl_intel_thread_dll.lib libiomp5md.lib)
+    endif()
+
+    target_include_directories(${TARGET} SYSTEM ${SCOPE} "${MKLROOT}/include")
+    target_link_libraries(${TARGET} ${SCOPE} ${link})
+endfunction()
