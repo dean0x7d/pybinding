@@ -6,7 +6,6 @@
 #include <boost/python/import.hpp>
 
 #include "numeric/dense.hpp"
-#include "numeric/sparseref.hpp"
 
 namespace boost { namespace python {
 
@@ -53,14 +52,6 @@ template<class Class, class Data, class = cpp14::enable_if_t<!std::is_function<D
 object dense_uref(Data Class::* d) {
     return make_function(
         [d](Class& c) { return tbm::arrayref(c.*d); },
-        return_value_policy<return_by_value, with_custodian_and_ward_postcall<0, 1>>{}
-    );
-}
-
-template<class Class, class Data, class = cpp14::enable_if_t<!std::is_function<Data>::value>>
-object sparse_uref(Data Class::* d) {
-    return make_function(
-        [d](Class& c) { return tbm::SparseURef{c.*d}; },
         return_value_policy<return_by_value, with_custodian_and_ward_postcall<0, 1>>{}
     );
 }

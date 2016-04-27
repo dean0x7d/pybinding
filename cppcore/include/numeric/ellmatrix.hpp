@@ -1,5 +1,6 @@
 #pragma once
 #include "numeric/dense.hpp"
+#include "numeric/sparseref.hpp"
 
 namespace tbm { namespace num {
 
@@ -56,5 +57,14 @@ public:
         }
     }
 };
+
+/**
+ Return an ELLPACK matrix reference
+ */
+template<class scalar_t>
+inline EllConstRef<scalar_t> ellref(EllMatrix<scalar_t> const& m) {
+    return {m.rows(), m.cols(), m.nnz_per_row, static_cast<int>(m.data.rows()),
+            m.data.data(), m.indices.data()};
+}
 
 }} // namespace tbm::num

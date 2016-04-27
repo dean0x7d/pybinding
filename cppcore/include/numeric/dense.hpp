@@ -47,6 +47,7 @@ template<class T> using VectorX = Eigen::Matrix<T, Eigen::Dynamic, 1>;
 template<class T> using MatrixX = Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic>;
 
 // array variants
+using num::arrayref;
 using num::ArrayConstRef;
 using num::RealArrayConstRef;
 using num::ComplexArrayConstRef;
@@ -200,16 +201,6 @@ inline ArrayRef arrayref(DenseBase<Derived>& v) {
             v.derived().data(),
             static_cast<int>(v.derived().rows()),
             static_cast<int>(v.derived().cols())};
-};
-
-template<class scalar_t>
-inline ArrayConstRef arrayref(scalar_t const* data, int size) {
-    return {num::detail::get_tag<scalar_t>(), true, data, 1, size};
-};
-
-template<class scalar_t>
-inline ArrayRef arrayref(scalar_t* data, int size) {
-    return {num::detail::get_tag<scalar_t>(), true, data, 1, size};
 };
 
 } // namespace tbm

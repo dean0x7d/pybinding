@@ -6,7 +6,6 @@ from . import _cpp
 from . import results
 from .system import System
 from .lattice import Lattice
-from .support.sparse import SparseMatrix
 
 
 class Model(_cpp.Model):
@@ -89,8 +88,7 @@ class Model(_cpp.Model):
     @property
     def hamiltonian(self) -> csr_matrix:
         """Hamiltonian sparse matrix in the :class:`.scipy.sparse.csr_matrix` format"""
-        matrix = SparseMatrix(super().hamiltonian.matrix)
-        return matrix.tocsr()
+        return super().hamiltonian.csrref
 
     @property
     def lattice(self) -> Lattice:

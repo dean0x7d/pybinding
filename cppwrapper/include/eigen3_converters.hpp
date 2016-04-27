@@ -310,6 +310,18 @@ struct csr_eigen3_to_scipy {
     }
 };
 
+struct csrref_to_scipy {
+    static PyObject* convert(tbm::num::CsrConstRef<> const& s) {
+        auto scipy_sparse = bp::import("scipy.sparse");
+        auto csr_matrix = scipy_sparse.attr("csr_matrix");
+
+        auto matrix = csr_matrix(bp::make_tuple(s.data_ref(), s.indices_ref(), s.indptr_ref()),
+                                 bp::make_tuple(s.rows, s.cols),
+                                 /*dtype*/bp::object{}, /*copy*/bp::object{false});
+        return matrix.release();
+    }
+};
+
 template<class scalar_t>
 struct scipy_sparse_to_eigen3 {
     using SparseMatrix = tbm::SparseMatrixX<scalar_t>;

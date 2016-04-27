@@ -78,6 +78,27 @@ struct VariantArrayRef : ArrayRef {
     }
 };
 
+/**
+ Make 1D array reference from pointer and size
+ */
+template<class scalar_t>
+inline ArrayConstRef arrayref(scalar_t const* data, int size) {
+    return {detail::get_tag<scalar_t>(), true, data, 1, size};
+};
+
+template<class scalar_t>
+inline ArrayRef arrayref(scalar_t* data, int size) {
+    return {detail::get_tag<scalar_t>(), true, data, 1, size};
+};
+
+inline ArrayConstRef arrayref(Tag tag, void const* data, int size) {
+    return {tag, true, data, 1, size};
+};
+
+inline ArrayRef arrayref(Tag tag, void* data, int size) {
+    return {tag, true, data, 1, size};
+};
+
 // Common typedefs
 using RealArrayConstRef = VariantArrayConstRef<float, double>;
 using ComplexArrayConstRef = VariantArrayConstRef<

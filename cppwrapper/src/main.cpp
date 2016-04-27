@@ -40,6 +40,7 @@ BOOST_PYTHON_MODULE(_pybinding) {
     register_arrayref_converter<ComplexArrayRef>();
 
     register_csr_converter<hop_id>();
+    bp::to_python_converter<num::CsrConstRef<>, csrref_to_scipy>();
 
     class_<CartesianArray>{
         "CartesianArray",
@@ -52,13 +53,6 @@ BOOST_PYTHON_MODULE(_pybinding) {
     .def("__getinitargs__", [](object o) {
         return make_tuple(o.attr("x"), o.attr("y"), o.attr("z"));
     })
-    ;
-
-    class_<SparseURef> {"SparseURef", no_init}
-    .add_property("shape", [](SparseURef const& s) { return make_tuple(s.rows, s.cols); })
-    .add_property("data", internal_ref(&SparseURef::values))
-    .add_property("indices", internal_ref(&SparseURef::inner_indices))
-    .add_property("indptr", internal_ref(&SparseURef::outer_starts))
     ;
 
     // export all classes

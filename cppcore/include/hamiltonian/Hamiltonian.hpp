@@ -3,7 +3,6 @@
 
 #include "numeric/dense.hpp"
 #include "numeric/sparse.hpp"
-#include "numeric/sparseref.hpp"
 #include "numeric/traits.hpp"
 #include "numeric/constant.hpp"
 
@@ -35,7 +34,7 @@ public:
     explicit operator bool() const;
     void reset();
 
-    SparseURef matrix_union() const;
+    num::CsrConstRef<> csrref() const;
     int non_zeros() const;
     int rows() const;
     int cols() const;

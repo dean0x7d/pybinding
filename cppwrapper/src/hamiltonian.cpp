@@ -37,7 +37,7 @@ public:
 
 void export_modifiers() {
     class_<Hamiltonian>{"Hamiltonian", no_init}
-    .add_property("matrix", internal_ref(&Hamiltonian::matrix_union))
+    .add_property("csrref", internal_ref(&Hamiltonian::csrref))
     ;
 
     class_<HopIdRef>{"HopIdRef", no_init}

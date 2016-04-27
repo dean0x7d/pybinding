@@ -1,5 +1,7 @@
 #pragma once
 #include "detail/config.hpp"
+#include "numeric/sparseref.hpp"
+
 #include <Eigen/SparseCore>
 
 namespace tbm {
@@ -11,6 +13,15 @@ using SparseMatrixXf = SparseMatrixX<float>;
 using SparseMatrixXcf = SparseMatrixX<std::complex<float>>;
 using SparseMatrixXd = SparseMatrixX<double>;
 using SparseMatrixXcd = SparseMatrixX<std::complex<double>>;
+
+/**
+ Return a CSR matrix reference
+ */
+template<class scalar_t>
+inline num::CsrConstRef<scalar_t> csrref(SparseMatrixX<scalar_t> const& m) {
+    return {static_cast<int>(m.rows()), static_cast<int>(m.cols()), static_cast<int>(m.nonZeros()),
+            m.valuePtr(), m.innerIndexPtr(), m.outerIndexPtr()};
+};
 
 template<class scalar_t>
 class CompressedInserter {
