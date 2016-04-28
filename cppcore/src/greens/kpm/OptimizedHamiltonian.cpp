@@ -3,7 +3,7 @@
 
 namespace tbm { namespace kpm {
 
-OptimizedSizes::OptimizedSizes(std::vector<int> sizes, Indices idx) : data(std::move(sizes)) {
+OptimizedSizes::OptimizedSizes(std::vector<int> sizes, Indices const& idx) : data(sizes) {
     assert(idx.cols.size() != 0);
     auto const max_index = *std::max_element(begin(idx.cols), end(idx.cols));
     auto const it = std::find_if(data.begin(), data.end(),
@@ -19,12 +19,14 @@ void OptimizedHamiltonian<scalar_t>::optimize_for(Indices const& idx, Scale<real
     }
 
     timer.tic();
-    if (opt_level <= 0) {
-        create_scaled(idx, scale);
-    } else if (opt_level <= 2) {
+    if (config.reorder == MatrixConfig::Reorder::ON) {
         create_reordered(idx, scale);
     } else {
-        create_ellpack(idx, scale);
+        create_scaled(idx, scale);
+    }
+
+    if (config.format == MatrixConfig::Format::ELL) {
+        optimized_matrix = convert_to_ellpack(csr());
     }
     timer.toc();
 
@@ -127,9 +129,8 @@ void OptimizedHamiltonian<scalar_t>::create_reordered(Indices const& idx, Scale<
 }
 
 template<class scalar_t>
-void OptimizedHamiltonian<scalar_t>::create_ellpack(Indices const& idx, Scale<real_t> scale) {
-    create_reordered(idx, scale);
-    auto const& h2_csr = csr();
+num::EllMatrix<scalar_t>
+OptimizedHamiltonian<scalar_t>::convert_to_ellpack(SparseMatrixX<scalar_t> const& h2_csr) {
     auto h2_ell = num::EllMatrix<scalar_t>(h2_csr.rows(), h2_csr.cols(),
                                            sparse::max_nnz_per_row(h2_csr));
     auto const h2_csr_loop = sparse::make_loop(h2_csr);
@@ -145,7 +146,7 @@ void OptimizedHamiltonian<scalar_t>::create_ellpack(Indices const& idx, Scale<re
             h2_ell.indices(row, n) = (row > 0) ? h2_ell.indices(row - 1, n) : 0;
         }
     }
-    optimized_matrix = std::move(h2_ell);
+    return h2_ell;
 }
 
 template<class scalar_t>

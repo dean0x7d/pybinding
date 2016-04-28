@@ -34,7 +34,7 @@ void export_greens() {
              config.lambda = lambda;
              config.min_energy = energy.first;
              config.max_energy = energy.second;
-             config.optimization_level = opt;
+             config.opt_level = opt;
              config.lanczos_precision = lanczos;
 
              return new Greens<KPM>(model, config);
@@ -42,7 +42,7 @@ void export_greens() {
          default_call_policies(),
          args("model", "lambda_value"_kw = kpm_defaults.lambda,
               "energy_range"_kw = make_tuple(kpm_defaults.min_energy, kpm_defaults.max_energy),
-              "optimization_level"_kw = kpm_defaults.optimization_level,
+              "optimization_level"_kw = kpm_defaults.opt_level,
               "lanczos_precision"_kw = kpm_defaults.lanczos_precision)
          )
     )

@@ -12,6 +12,18 @@
   template class T<double>;                     \
   template class T<std::complex<double>>;
 
+#define TBM_EXTERN_TEMPLATE_CLASS_VARGS(T, ...)              \
+  extern template class T<float, __VA_ARGS__>;               \
+  extern template class T<std::complex<float>, __VA_ARGS__>; \
+  extern template class T<double, __VA_ARGS__>;              \
+  extern template class T<std::complex<double>, __VA_ARGS__>;
+
+#define TBM_INSTANTIATE_TEMPLATE_CLASS_VARGS(T, ...)         \
+  template class T<float, __VA_ARGS__>;                      \
+  template class T<std::complex<float>, __VA_ARGS__>;        \
+  template class T<double, __VA_ARGS__>;                     \
+  template class T<std::complex<double>, __VA_ARGS__>;
+
 
 #ifndef __has_attribute
 # define __has_attribute(x) 0  // Compatibility with non-clang compilers

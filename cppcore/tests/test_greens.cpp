@@ -33,8 +33,10 @@ TEST_CASE("OptimizedHamiltonian reordering", "[kpm]") {
         return v;
     };
 
+    auto const matrix_config = kpm::MatrixConfig{kpm::MatrixConfig::Reorder::ON,
+                                                 kpm::MatrixConfig::Format::CSR};
     SECTION("Diagonal") {
-        auto oh = kpm::OptimizedHamiltonian<scalat_t>(&matrix);
+        auto oh = kpm::OptimizedHamiltonian<scalat_t>(&matrix, matrix_config);
         auto const i = num_sites / 2;
         oh.optimize_for({i, i}, bounds.scaling_factors());
 
@@ -53,7 +55,7 @@ TEST_CASE("OptimizedHamiltonian reordering", "[kpm]") {
     }
 
     SECTION("Off-diagonal") {
-        auto oh = kpm::OptimizedHamiltonian<scalat_t>(&matrix);
+        auto oh = kpm::OptimizedHamiltonian<scalat_t>(&matrix, matrix_config);
         auto const i = num_sites / 4;
         auto const j = num_sites / 2;
         oh.optimize_for({i, std::vector<int>{j, j+1, j+2}}, bounds.scaling_factors());
@@ -92,7 +94,7 @@ TEST_CASE("KPM strategy", "[kpm]") {
             for (auto opt_level = 0; opt_level <= 3; ++opt_level) {
                 INFO("opt_level: " << opt_level);
                 auto config = KPMConfig{};
-                config.optimization_level = opt_level;
+                config.opt_level = opt_level;
                 auto kpm = make_greens_strategy<KPM>(model.hamiltonian(), config);
 
                 auto const gs = kpm->calc_vector(i, cols, energy_range, broadening);
@@ -117,9 +119,11 @@ TEST_CASE("KPM strategy", "[kpm]") {
 
             REQUIRE(results[0].g_ii.isApprox(results[1].g_ii, precision));
             REQUIRE(results[0].g_ii.isApprox(results[2].g_ii, precision));
+            REQUIRE(results[0].g_ii.isApprox(results[3].g_ii, precision));
 
             REQUIRE(results[0].g_ij.isApprox(results[1].g_ij, precision));
             REQUIRE(results[0].g_ij.isApprox(results[2].g_ij, precision));
+            REQUIRE(results[0].g_ij.isApprox(results[3].g_ij, precision));
         }
     }
 }
@@ -133,7 +137,7 @@ TEST_CASE("KPM optimization levels", "[kpm]") {
             auto const num_sites = model.system()->num_sites();
             auto calc_greens = [&](int i, int j, int opt_level) {
                 auto config = KPMConfig{};
-                config.optimization_level = opt_level;
+                config.opt_level = opt_level;
                 auto kpm = make_greens_strategy<KPM>(model.hamiltonian(), config);
                 auto const g = kpm->calc(i, j, ArrayXd::LinSpaced(10, -0.3, 0.3), 0.8);
                 return ArrayXcf{g.cast<std::complex<float>>()};

@@ -25,6 +25,7 @@ add_library(pybinding_cppcore
     include/greens/kpm/Bounds.hpp
     include/greens/kpm/calc_moments.hpp
     include/greens/kpm/OptimizedHamiltonian.hpp
+    include/greens/kpm/OptimizedSizes.hpp
     include/greens/kpm/Moments.hpp
     include/greens/kpm/Stats.hpp
     include/greens/Greens.hpp
