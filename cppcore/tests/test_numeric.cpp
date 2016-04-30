@@ -43,3 +43,9 @@ TEST_CASE("ArrayRef and match2", "[arrayref]") {
     REQUIRE(v2[3] == .0);
     REQUIRE_THROWS((num::match2sp<VectorX, VectorX>(ref1, ref2, ArrayRefTestOp2{})));
 }
+
+TEST_CASE("Aligned size") {
+    REQUIRE((num::aligned_size<float, 16>(4) == 4));
+    REQUIRE((num::aligned_size<std::complex<double>, 16>(2) == 2));
+    REQUIRE((num::aligned_size<std::complex<float>, 32>(9) == 12));
+}

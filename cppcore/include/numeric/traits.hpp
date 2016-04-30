@@ -97,4 +97,20 @@ bool approx_equal(T x, T y, int ulp = 1) {
            || diff <= std::numeric_limits<T>::min(); // subnormal case
 }
 
+/**
+ Return the minimum aligned size for the given scalar type and alignment in bytes
+
+ For example:
+    aligned_size<float, 16>(3) -> 4
+    aligned_size<std::complex<double>, 16>(2) -> 2
+ */
+template<class scalar_t, int align_bytes>
+int aligned_size(int size) {
+    static constexpr auto step = align_bytes / sizeof(scalar_t);
+    while (size % step != 0) {
+        ++size;
+    }
+    return size;
+};
+
 }} // namespace tbm::num

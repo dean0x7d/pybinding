@@ -26,12 +26,7 @@ public:
     EllMatrix() = default;
     EllMatrix(index_t rows, index_t cols, index_t nnz_per_row)
         : _rows(rows), _cols(cols), nnz_per_row(nnz_per_row) {
-        static constexpr auto step = align_bytes / sizeof(scalar_t);
-        auto aligned_rows = rows;
-        while (aligned_rows % step != 0) {
-            ++aligned_rows;
-        }
-
+        auto const aligned_rows = aligned_size<scalar_t, align_bytes>(rows);
         data.resize(aligned_rows, nnz_per_row);
         indices.resize(aligned_rows, nnz_per_row);
     }
