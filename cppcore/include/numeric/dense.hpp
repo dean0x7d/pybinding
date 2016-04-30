@@ -83,9 +83,14 @@ namespace Eigen {
 
 namespace tbm {
 
-template<template<class> class EigenType, class scalar_t>
-Eigen::Map<const EigenType<scalar_t>> eigen_cast(const std::vector<scalar_t>& v) {
-    return Eigen::Map<const EigenType<scalar_t>>(v.data(), v.size());
+/**
+ Map std::vector-like object data to an Eigen type
+ */
+template<template<class> class EigenType, class Vector,
+         class scalar_t = typename Vector::value_type>
+inline Eigen::Map<EigenType<scalar_t> const> eigen_cast(Vector const& v) {
+    using Index = typename EigenType<scalar_t>::Index;
+    return {v.data(), static_cast<Index>(v.size())};
 }
 
 // utility functions

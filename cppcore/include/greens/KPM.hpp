@@ -74,4 +74,18 @@ using kpm::KPMConfig;
 template<class scalar_t>
 using KPM = kpm::Strategy<scalar_t, kpm::DefaultCalcMoments>;
 
+#ifdef PB_CUDA
+namespace kpm {
+/**
+ Cuda GPU implementation for computing KPM moments
+ */
+struct CudaCalcMoments;
+
+TBM_EXTERN_TEMPLATE_CLASS_VARGS(Strategy, CudaCalcMoments)
+} // namespace kpm
+
+template<class scalar_t>
+using KPMcuda = kpm::Strategy<scalar_t, kpm::CudaCalcMoments>;
+#endif // PB_CUDA
+
 } // namespace tbm

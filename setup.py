@@ -39,7 +39,8 @@ class CMakeBuild(build_ext):
                           '-DPB_WERROR=' + os.environ.get("PB_WERROR", "OFF"),
                           '-DPB_TESTS=' + os.environ.get("PB_TESTS", "OFF"),
                           '-DPB_NATIVE_SIMD=' + os.environ.get("PB_NATIVE_SIMD", "ON"),
-                          '-DPB_MKL=' + os.environ.get("PB_MKL", "OFF")]
+                          '-DPB_MKL=' + os.environ.get("PB_MKL", "OFF"),
+                          '-DPB_CUDA=' + os.environ.get("PB_CUDA", "OFF")]
             build_args = ['--config', 'Release']
 
             if platform.system() == "Windows":

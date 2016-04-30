@@ -74,7 +74,14 @@ TEST_CASE("OptimizedHamiltonian reordering", "[kpm]") {
     }
 }
 
-TEST_CASE("KPM strategy", "[kpm]") {
+struct TestGreensResult {
+    ArrayXcd g_ii, g_ij;
+};
+
+template<template<class> class Strategy, int highest_opt_level>
+std::vector<TestGreensResult> test_greens_strategy() {
+    auto results = std::vector<TestGreensResult>();
+
     for (auto is_double_precision : {false, true}) {
         for (auto is_complex : {false, true}) {
             INFO("double: " << is_double_precision << ", complex: " << is_complex);
@@ -86,16 +93,14 @@ TEST_CASE("KPM strategy", "[kpm]") {
             auto const energy_range = ArrayXd::LinSpaced(10, -0.3, 0.3);
             auto const broadening = 0.8;
             auto const cols = std::vector<int>{i, j, j+1, j+2};
-            auto precision = Eigen::NumTraits<float>::dummy_precision();
+            auto const precision = Eigen::NumTraits<float>::dummy_precision();
 
-            struct Result { ArrayXcd g_ii, g_ij; };
-            auto results = std::vector<Result>();
-
-            for (auto opt_level = 0; opt_level <= 3; ++opt_level) {
+            auto unoptimized_result = TestGreensResult{};
+            for (auto opt_level = 0; opt_level <= highest_opt_level; ++opt_level) {
                 INFO("opt_level: " << opt_level);
                 auto config = KPMConfig{};
                 config.opt_level = opt_level;
-                auto kpm = make_greens_strategy<KPM>(model.hamiltonian(), config);
+                auto kpm = make_greens_strategy<Strategy>(model.hamiltonian(), config);
 
                 auto const gs = kpm->calc_vector(i, cols, energy_range, broadening);
                 REQUIRE(gs.size() == cols.size());
@@ -114,59 +119,32 @@ TEST_CASE("KPM strategy", "[kpm]") {
                     REQUIRE(g_ij.isApprox(g_ji, precision));
                 }
 
-                results.push_back({g_ii, g_ij});
-            }
+                if (opt_level == 0) {
+                    unoptimized_result = {g_ii, g_ij};
+                } else {
+                    REQUIRE(g_ii.isApprox(unoptimized_result.g_ii, precision));
+                    REQUIRE(g_ij.isApprox(unoptimized_result.g_ij, precision));
+                }
+            } // for opt_level
 
-            REQUIRE(results[0].g_ii.isApprox(results[1].g_ii, precision));
-            REQUIRE(results[0].g_ii.isApprox(results[2].g_ii, precision));
-            REQUIRE(results[0].g_ii.isApprox(results[3].g_ii, precision));
+            results.push_back(unoptimized_result);
+        } // for is_complex
+    } // for is_double_precision
 
-            REQUIRE(results[0].g_ij.isApprox(results[1].g_ij, precision));
-            REQUIRE(results[0].g_ij.isApprox(results[2].g_ij, precision));
-            REQUIRE(results[0].g_ij.isApprox(results[3].g_ij, precision));
-        }
-    }
+    return results;
 }
 
-TEST_CASE("KPM optimization levels", "[kpm]") {
-    for (auto is_double_precision : {false, true}) {
-        for (auto is_complex : {false, true}) {
-            INFO("double: " << is_double_precision << ", complex: " << is_complex);
-            auto const model = make_test_model(is_double_precision, is_complex);
-
-            auto const num_sites = model.system()->num_sites();
-            auto calc_greens = [&](int i, int j, int opt_level) {
-                auto config = KPMConfig{};
-                config.opt_level = opt_level;
-                auto kpm = make_greens_strategy<KPM>(model.hamiltonian(), config);
-                auto const g = kpm->calc(i, j, ArrayXd::LinSpaced(10, -0.3, 0.3), 0.8);
-                return ArrayXcf{g.cast<std::complex<float>>()};
-            };
-
-            SECTION("Diagonal") {
-                auto const i = num_sites / 2;
-                auto const g0 = calc_greens(i, i, /*opt_level*/0);
-                auto const g1 = calc_greens(i, i, /*opt_level*/1);
-                auto const g2 = calc_greens(i, i, /*opt_level*/2);
-                auto const g3 = calc_greens(i, i, /*opt_level*/3);
-
-                REQUIRE(g0.isApprox(g1));
-                REQUIRE(g0.isApprox(g2));
-                REQUIRE(g0.isApprox(g3));
-            }
-
-            SECTION("Off-diagonal") {
-                auto const i = num_sites / 2;
-                auto const j = num_sites / 4;
-                auto const g0 = calc_greens(i, j, /*opt_level*/0);
-                auto const g1 = calc_greens(i, j, /*opt_level*/1);
-                auto const g2 = calc_greens(i, j, /*opt_level*/2);
-                auto const g3 = calc_greens(i, j, /*opt_level*/3);
-
-                REQUIRE(g0.isApprox(g1));
-                REQUIRE(g0.isApprox(g2));
-                REQUIRE(g0.isApprox(g3));
-            }
-        }
+TEST_CASE("KPM strategy", "[kpm]") {
+#ifndef PB_CUDA
+    test_greens_strategy<KPM, 3>();
+#else
+    auto const cpu_results = test_greens_strategy<KPM, 3>();
+    auto const cuda_results = test_greens_strategy<KPMcuda, 1>();
+    auto const precision = Eigen::NumTraits<float>::dummy_precision();
+    for (auto i = 0u; i < cpu_results.size(); ++i) {
+        REQUIRE(cpu_results[i].g_ii.isApprox(cuda_results[i].g_ii, precision));
+        REQUIRE(cpu_results[i].g_ij.isApprox(cuda_results[i].g_ij, precision));
     }
+#endif // PB_CUDA
 }
+

@@ -5,6 +5,7 @@ option(PB_WERROR "Make all warnings into errors" OFF)
 option(PB_TESTS "Enable testing" ON)
 option(PB_NATIVE_SIMD "Enable all instruction sets supported by the local machine" ON)
 option(PB_MKL "Use Intel's Math Kernel Library" OFF)
+option(PB_CUDA "Enable compilation of components written in CUDA" OFF)
 
 add_library(pybinding_cppcore
     include/compute/eigen3/lanczos.hpp
@@ -45,6 +46,7 @@ add_library(pybinding_cppcore
     include/support/cppfuture.hpp
     include/support/format.hpp
     include/support/simd.hpp
+    include/support/thrust.hpp
     include/support/variant.hpp
     include/system/Foundation.hpp
     include/system/Lattice.hpp
@@ -112,6 +114,17 @@ if(PB_MKL)
     include(mkl)
     target_link_mkl(pybinding_cppcore PUBLIC)
     target_compile_definitions(pybinding_cppcore PUBLIC TBM_USE_MKL)
+endif()
+
+if(PB_CUDA)
+    find_package(CUDA REQUIRED)
+    set(CUDA_NVCC_FLAGS "--std c++11;${CUDA_NVCC_FLAGS}")
+    cuda_include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
+
+    cuda_add_library(pybinding_cuda src/greens/kpm/calc_moments.cu)
+    target_link_libraries(pybinding_cppcore PUBLIC pybinding_cuda ${CUDA_cublas_LIBRARY})
+    target_compile_definitions(pybinding_cppcore PUBLIC PB_CUDA)
+    target_include_directories(pybinding_cppcore PUBLIC ${CUDA_INCLUDE_DIRS})
 endif()
 
 if(PB_TESTS)

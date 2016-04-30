@@ -1,5 +1,8 @@
 #include "greens/KPM.hpp"
 #include "greens/kpm/calc_moments.hpp"
+#ifdef PB_CUDA
+# include "greens/kpm/calc_moments_cuda.hpp"
+#endif
 
 namespace tbm { namespace kpm {
 
@@ -119,5 +122,43 @@ struct DefaultCalcMoments {
 };
 
 TBM_INSTANTIATE_TEMPLATE_CLASS_VARGS(Strategy, DefaultCalcMoments)
+
+#ifdef PB_CUDA
+struct CudaCalcMoments {
+    static MatrixConfig matrix_config(int opt_level) {
+        switch (opt_level) {
+            case 0: return {MatrixConfig::Reorder::OFF, MatrixConfig::Format::ELL};
+            default: return {MatrixConfig::Reorder::ON, MatrixConfig::Format::ELL};
+        }
+    };
+
+    template<class scalar_t>
+    static MomentsMatrix<scalar_t> moments_vector(OptimizedHamiltonian<scalar_t> const& oh,
+                                                  int num_moments, int opt_level) {
+        switch (opt_level) {
+            default: return calc_moments2(oh.ell(), oh.idx(), num_moments, oh.sizes());
+        }
+    }
+
+    template<class scalar_t>
+    static ArrayX<scalar_t> moments_diag(OptimizedHamiltonian<scalar_t> const& oh,
+                                         int num_moments, int opt_level) {
+        assert(oh.idx().is_diagonal());
+        using Cuda = cuda::I<scalar_t>;
+        auto const i = oh.idx().row;
+        auto const ell = ellref(oh.ell());
+
+        auto moments = [&]{
+            switch (opt_level) {
+                case 0: return Cuda::calc_diag_moments0(ell, i, num_moments);
+                default: return Cuda::calc_diag_moments1(ell, i, num_moments, oh.sizes());
+            }
+        }();
+        return eigen_cast<ArrayX>(moments);
+    }
+};
+
+TBM_INSTANTIATE_TEMPLATE_CLASS_VARGS(Strategy, CudaCalcMoments)
+#endif // PB_CUDA
 
 }} // namespace tbm::kpm

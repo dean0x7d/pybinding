@@ -9,7 +9,7 @@ from . import results
 from .model import Model
 from .system import System
 
-__all__ = ['Greens', 'kpm']
+__all__ = ['Greens', 'kpm', 'kpm_cuda']
 
 
 class Greens:
@@ -155,3 +155,31 @@ def kpm(model, lambda_value=4.0, energy_range=None, optimization_level=3, lanczo
     kpm_implementation = _cpp.KPM(model, lambda_value, energy_range or (0, 0),
                                   optimization_level, lanczos_precision)
     return Greens(kpm_implementation)
+
+
+def kpm_cuda(model, lambda_value=4.0, energy_range=None, optimization_level=1):
+    """Same as :func:`kpm` except that it's executed on the GPU using CUDA (if supported)
+
+    See :func:`kpm` for detailed parameter documentation.
+    This method is only available if the C++ extension module was compiled with CUDA.
+
+    Parameters
+    ----------
+    model : Model
+    lambda_value : float
+    energy_range : Tuple[float]
+    optimization_level : int
+
+    Returns
+    -------
+    Greens
+    """
+    try:
+        # noinspection PyUnresolvedReferences
+        kpm_implementation = _cpp.KPMcuda(model, lambda_value, energy_range or (0, 0),
+                                          optimization_level)
+        return Greens(kpm_implementation)
+    except AttributeError:
+        raise Exception("The module was compiled without CUDA support.\n"
+                        "Use a different KPM implementation or recompile the module with CUDA.")
+
