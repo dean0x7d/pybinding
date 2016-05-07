@@ -1,32 +1,38 @@
 #pragma once
 #include <boost/python/data_members.hpp>
 #include <boost/python/return_value_policy.hpp>
-#include <boost/python/copy_const_reference.hpp>
 #include <boost/python/return_by_value.hpp>
+#include <boost/python/return_internal_reference.hpp>
 #include <boost/python/import.hpp>
 
 #include "numeric/dense.hpp"
 
 namespace boost { namespace python {
 
+/**
+ Return a copy
+ */
 template<class Function>
-object copy_value(Function f) {
+object return_copy(Function f) {
     return make_function(f, return_value_policy<return_by_value>());
 }
 
 template<class Class, class Data>
-object copy_value(Data (Class::*pmf)() const) {
+object return_copy(Data (Class::*pmf)() const) {
     return make_function([pmf](Class& c) -> Data { return (c.*pmf)(); },
                          return_value_policy<return_by_value>());
 }
 
 template<class Class, class Data, class = cpp14::enable_if_t<!std::is_function<Data>::value>>
-object copy_value(Data Class::* d) {
+object return_copy(Data Class::* d) {
     return make_getter(d, return_value_policy<return_by_value>());
 }
 
+/**
+ Return a copy but keep the parent object alive
+ */
 template<class Function>
-object internal_ref(Function f) {
+object return_internal_copy(Function f) {
     return make_function(f, return_value_policy<
         return_by_value, with_custodian_and_ward_postcall<0, 1>
     >{});
@@ -34,14 +40,31 @@ object internal_ref(Function f) {
 
 template<class Class, class Data,
          class = cpp14::enable_if_t<!std::is_member_function_pointer<Data Class::*>::value>>
-object internal_ref(Data Class::* d) {
+object return_internal_copy(Data Class::* d) {
     return make_getter(d, return_value_policy<
         return_by_value, with_custodian_and_ward_postcall<0, 1>
     >{});
 }
 
+/**
+ Return a reference and keep the parent object alive
+ */
+template<class Function>
+object return_reference(Function f) {
+    return make_function(f, return_internal_reference<>{});
+}
+
+template<class Class, class Data,
+         class = cpp14::enable_if_t<!std::is_member_function_pointer<Data Class::*>::value>>
+object return_reference(Data Class::* d) {
+    return make_getter(d, return_internal_reference<>{});
+}
+
+/**
+ Convert to `arrayref` and return like `return_internal_copy`
+ */
 template<class Class, class Data>
-object dense_uref(Data (Class::*pmf)() const) {
+object return_arrayref(Data (Class::*pmf)() const) {
     return make_function(
         [pmf](Class& c) { return tbm::arrayref((c.*pmf)()); },
         return_value_policy<return_by_value, with_custodian_and_ward_postcall<0, 1>>{}
@@ -49,7 +72,7 @@ object dense_uref(Data (Class::*pmf)() const) {
 }
 
 template<class Class, class Data, class = cpp14::enable_if_t<!std::is_function<Data>::value>>
-object dense_uref(Data Class::* d) {
+object return_arrayref(Data Class::* d) {
     return make_function(
         [d](Class& c) { return tbm::arrayref(c.*d); },
         return_value_policy<return_by_value, with_custodian_and_ward_postcall<0, 1>>{}
@@ -80,8 +103,6 @@ object extended(Data Class::* d, char const* class_name, char const* module_name
         return detail::with_changed_class(c.*d, class_name, module_name);
     });
 }
-
-}}
 
 /**
  Ensure that the current thread is ready to call the Python C API.
@@ -122,3 +143,5 @@ inline void gil_release(Fn lambda) {
     GILRelease guard;
     lambda();
 }
+
+}} // namespace boost::python

@@ -208,4 +208,14 @@ inline ArrayRef arrayref(DenseBase<Derived>& v) {
             static_cast<int>(v.derived().cols())};
 };
 
+template<class scalar_t>
+inline ArrayConstRef arrayref(std::vector<scalar_t> const& v) {
+    return {num::detail::get_tag<scalar_t>(), true, v.data(), 1, static_cast<int>(v.size())};
+}
+
+template<class scalar_t>
+inline ArrayRef arrayref(std::vector<scalar_t>& v) {
+    return {num::detail::get_tag<scalar_t>(), true, v.data(), 1, static_cast<int>(v.size())};
+}
+
 } // namespace tbm

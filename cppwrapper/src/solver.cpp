@@ -19,10 +19,10 @@ void export_solver() {
     .def("report", &BaseSolver::report, args("self", "shortform"_kw=false))
     .def("calc_dos", &BaseSolver::calc_dos, args("self", "energies", "broadening"))
     .def("calc_spatial_ldos", &BaseSolver::calc_spatial_ldos, args("self", "energy", "broadening"))
-    .add_property("model", internal_ref(&BaseSolver::get_model), &BaseSolver::set_model)
+    .add_property("model", return_reference(&BaseSolver::get_model), &BaseSolver::set_model)
     .add_property("system", &BaseSolver::system)
-    .add_property("eigenvalues", internal_ref(&BaseSolver::eigenvalues))
-    .add_property("eigenvectors", internal_ref(&BaseSolver::eigenvectors))
+    .add_property("eigenvalues", return_internal_copy(&BaseSolver::eigenvalues))
+    .add_property("eigenvectors", return_internal_copy(&BaseSolver::eigenvectors))
     ;
 
 #ifdef TBM_USE_FEAST

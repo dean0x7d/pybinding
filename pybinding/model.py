@@ -88,7 +88,7 @@ class Model(_cpp.Model):
     @property
     def hamiltonian(self) -> csr_matrix:
         """Hamiltonian sparse matrix in the :class:`.scipy.sparse.csr_matrix` format"""
-        return super().hamiltonian.csrref
+        return super().hamiltonian
 
     @property
     def lattice(self) -> Lattice:

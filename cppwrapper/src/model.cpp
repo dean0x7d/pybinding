@@ -22,11 +22,12 @@ void export_core() {
     .add_property("position_modifiers", &Model::position_modifiers)
     .add_property("onsite_modifiers", &Model::onsite_modifiers)
     .add_property("hopping_modifiers", &Model::hopping_modifiers)
-    .add_property("system", copy_value(&Model::system))
-    .add_property("hamiltonian", copy_value(&Model::hamiltonian))
-    .add_property("leads", copy_value(&Model::leads))
-    .def("report", &Model::report,
-         "Report of the last build operation: system and Hamiltonian")
+    .add_property("system", return_copy(&Model::system))
+    .add_property("hamiltonian", return_internal_copy(
+        [](Model const& m) { return m.hamiltonian().csrref(); })
+    )
+    .add_property("leads", return_reference(&Model::leads))
+    .def("report", &Model::report)
     .def("clear_system_modifiers", &Model::clear_system_modifiers)
     .def("clear_hamiltonian_modifiers", &Model::clear_hamiltonian_modifiers)
     .def("clear_all_modifiers", &Model::clear_all_modifiers)

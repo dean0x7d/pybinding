@@ -12,7 +12,7 @@ void export_parallel() {
     class_<DeferredBase, std::shared_ptr<DeferredBase>, noncopyable>{"DeferredBase", no_init}
     .def("compute", &DeferredBase::compute)
     .add_property("report", &DeferredBase::report)
-    .add_property("result", internal_ref(&DeferredBase::result_uref))
+    .add_property("result", return_internal_copy(&DeferredBase::result_uref))
     ;
 
     using DeferredXd = Deferred<ArrayXd>;

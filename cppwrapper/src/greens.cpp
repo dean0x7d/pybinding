@@ -20,7 +20,7 @@ void export_greens() {
          args("self", "energy", "broadening", "position", "sublattice"_kw=-1))
     .def("deferred_ldos", &BaseGreens::deferred_ldos,
          args("self", "energy", "broadening", "position", "sublattice"_kw=-1))
-    .add_property("model", internal_ref(&BaseGreens::get_model), &BaseGreens::set_model)
+    .add_property("model", return_reference(&BaseGreens::get_model), &BaseGreens::set_model)
     .add_property("system", &BaseGreens::system)
     ;
 

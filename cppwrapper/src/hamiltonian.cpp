@@ -1,5 +1,4 @@
 #include "hamiltonian/Hamiltonian.hpp"
-#include "hamiltonian/HamiltonianModifiers.hpp"
 
 #include "eigen3_converters.hpp"
 #include "python_support.hpp"
@@ -36,13 +35,9 @@ public:
 };
 
 void export_modifiers() {
-    class_<Hamiltonian>{"Hamiltonian", no_init}
-    .add_property("csrref", internal_ref(&Hamiltonian::csrref))
-    ;
-
     class_<HopIdRef>{"HopIdRef", no_init}
-    .add_property("ids", internal_ref([](HopIdRef const& s) { return arrayref(s.ids); }))
-    .add_property("name_map", copy_value([](HopIdRef const& s) { return s.name_map; }))
+    .add_property("ids", return_internal_copy([](HopIdRef const& s) { return arrayref(s.ids); }))
+    .add_property("name_map", return_copy([](HopIdRef const& s) { return s.name_map; }))
     ;
 
     class_<PyOnsiteModifier, noncopyable>{

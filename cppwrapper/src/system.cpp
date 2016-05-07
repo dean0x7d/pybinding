@@ -39,7 +39,7 @@ public:
     }
 };
 
-class PyShape : public tbm::Shape, public wrapper<tbm::Shape> {
+class PyShape : public Shape, public wrapper<Shape> {
 public:
     PyShape(Vertices const& vertices, object py_contains, Cartesian offset)
         : Shape(vertices, {}, offset) {
@@ -68,8 +68,8 @@ public:
 void export_system() {
     using Boundary = System::Boundary;
     class_<Boundary>{"Boundary"}
-    .add_property("hoppings", internal_ref(&Boundary::hoppings))
-    .add_property("shift", copy_value(&Boundary::shift))
+    .add_property("hoppings", return_internal_copy(&Boundary::hoppings))
+    .add_property("shift", return_copy(&Boundary::shift))
     .enable_pickling()
     .def("__getstate__", [](object o) { return make_tuple(o.attr("hoppings"), o.attr("shift")); })
     .def("__setstate__", [](Boundary& b, tuple t) {
@@ -80,9 +80,9 @@ void export_system() {
     class_<System, std::shared_ptr<System>, noncopyable>{"System", init<Lattice const&>()}
     .def("find_nearest", &System::find_nearest, args("self", "position", "sublattice"_kw=-1))
     .add_property("lattice", extended(&System::lattice, "Lattice"))
-    .add_property("positions", internal_ref(&System::positions))
-    .add_property("sublattices", dense_uref(&System::sublattices))
-    .add_property("hoppings", internal_ref(&System::hoppings))
+    .add_property("positions", return_reference(&System::positions))
+    .add_property("sublattices", return_arrayref(&System::sublattices))
+    .add_property("hoppings", return_internal_copy(&System::hoppings))
     .add_property("boundaries", &System::boundaries)
     .def_readonly("has_unbalanced_hoppings", &System::has_unbalanced_hoppings)
     .enable_pickling()
@@ -100,9 +100,8 @@ void export_system() {
     })
     ;
 
-    using tbm::Hopping;
     class_<Hopping>{"Hopping"}
-    .add_property("relative_index", copy_value(&Hopping::relative_index))
+    .add_property("relative_index", return_copy(&Hopping::relative_index))
     .def_readonly("to_sublattice", &Hopping::to_sublattice)
     .def_readonly("id", &Hopping::id)
     .def_readonly("is_conjugate", &Hopping::is_conjugate)
@@ -116,9 +115,8 @@ void export_system() {
     })
     ;
 
-    using tbm::Sublattice;
     class_<Sublattice>{"Sublattice"}
-    .add_property("offset", copy_value(&Sublattice::offset))
+    .add_property("offset", return_copy(&Sublattice::offset))
     .def_readonly("onsite", &Sublattice::onsite)
     .def_readonly("alias", &Sublattice::alias)
     .add_property("hoppings", &Sublattice::hoppings)
@@ -133,8 +131,8 @@ void export_system() {
     ;
 
     class_<SubIdRef>{"SubIdRef", no_init}
-    .add_property("ids", internal_ref([](SubIdRef const& s) { return arrayref(s.ids); }))
-    .add_property("name_map", copy_value([](SubIdRef const& s) { return s.name_map; }))
+    .add_property("ids", return_internal_copy([](SubIdRef const& s) { return arrayref(s.ids); }))
+    .add_property("name_map", return_copy([](SubIdRef const& s) { return s.name_map; }))
     ;
 
     class_<Lattice>{"Lattice",
@@ -171,7 +169,7 @@ void export_system() {
     })
     ;
 
-    class_<tbm::Primitive> {
+    class_<Primitive> {
         "Primitive", "Shape of the primitive unit cell",
         init<int, int, int> {args("self", "a1"_kw=1, "a2"_kw=1, "a3"_kw=1)}
     };
@@ -181,16 +179,15 @@ void export_system() {
             args("self", "vertices", "contains", "offset")
         }
     }
-    .add_property("vertices", copy_value(&PyShape::vertices))
-    .add_property("offset", copy_value(&PyShape::offset))
+    .add_property("vertices", return_copy(&PyShape::vertices))
+    .add_property("offset", return_copy(&PyShape::offset))
     ;
 
-    class_<tbm::Line, bases<tbm::Shape>, noncopyable>{"Line",
+    class_<Line, bases<Shape>, noncopyable>{"Line",
         init<Cartesian, Cartesian, optional<Cartesian>>{args("self", "a", "b", "offset")}
     };
 
-    using tbm::Polygon;
-    class_<Polygon, bases<tbm::Shape>, noncopyable> {"Polygon",
+    class_<Polygon, bases<Shape>, noncopyable> {"Polygon",
         init<Polygon::Vertices const&, Cartesian> {args("self", "vertices", "offset")}
     };
 

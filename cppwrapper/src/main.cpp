@@ -43,13 +43,13 @@ BOOST_PYTHON_MODULE(_pybinding) {
     register_csr_converter<hop_id>();
     bp::to_python_converter<num::CsrConstRef<>, csrref_to_scipy>();
 
-    class_<CartesianArray>{
+    class_<CartesianArray, noncopyable>{
         "CartesianArray",
-        init<ArrayXf const&, ArrayXf const&, ArrayXf const&>{args("self", "x", "y", "z")}
+        init<ArrayXf const&, ArrayXf const&, ArrayXf const&>(args("self", "x", "y", "z"))
     }
-    .add_property("x", dense_uref(&CartesianArray::x), &CartesianArray::x)
-    .add_property("y", dense_uref(&CartesianArray::y), &CartesianArray::y)
-    .add_property("z", dense_uref(&CartesianArray::z), &CartesianArray::z)
+    .add_property("x", return_arrayref(&CartesianArray::x), &CartesianArray::x)
+    .add_property("y", return_arrayref(&CartesianArray::y), &CartesianArray::y)
+    .add_property("z", return_arrayref(&CartesianArray::z), &CartesianArray::z)
     .enable_pickling()
     .def("__getinitargs__", [](object o) {
         return make_tuple(o.attr("x"), o.attr("y"), o.attr("z"));
