@@ -7,7 +7,7 @@ Structure::Structure(Foundation const& foundation, HamiltonianIndices const& ham
                      Spec const& lead)
     : system(foundation.get_lattice()) {
     auto const& lattice = foundation.get_lattice();
-    auto const shift = static_cast<float>(-lead.sign) * lattice.vectors[lead.axis];
+    auto const shift = static_cast<float>(lead.sign) * lattice.vectors[lead.axis];
     auto const junction = detail::Junction(foundation, lead);
     auto const slice = foundation[junction.slice_index];
 

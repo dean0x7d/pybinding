@@ -14,13 +14,14 @@ Spec::Spec(int direction, Shape const& shape)
 
 void create_attachment_area(Foundation& foundation, Spec const& spec) {
     auto const size = foundation.get_size();
-    auto const end = (spec.sign > 0) ? size[spec.axis] : -1;
+    auto const step = -spec.sign;
+    auto const end = (step > 0) ? size[spec.axis] : -1;
 
     auto junction = detail::Junction(foundation, spec);
     auto slice = foundation[junction.slice_index];
 
     // Fill in the foundation until all lead sites can be connected to foundation sites
-    for (; slice[spec.axis] != end; slice[spec.axis] += spec.sign) {
+    for (; slice[spec.axis] != end; slice[spec.axis] += step) {
         for (auto& site : slice) {
             if (!junction.is_valid[site.get_slice_idx()])
                 continue;
@@ -62,15 +63,16 @@ SliceIndex3D shape_slice(Foundation const& foundation, Shape const& shape) {
 
 SliceIndex3D attachment_slice(Foundation const& foundation, Spec const& spec) {
     auto const size = foundation.get_size();
-    auto const start = (spec.sign > 0) ? 0 : size[spec.axis] - 1;
-    auto const end = (spec.sign > 0) ? size[spec.axis] : -1;
+    auto const step = -spec.sign;
+    auto const start = (step > 0) ? 0 : size[spec.axis] - 1;
+    auto const end = (step > 0) ? size[spec.axis] : -1;
 
     auto slice_index = shape_slice(foundation, spec.shape);
     auto slice = foundation[slice_index];
 
     // The first index on the lead's axis where there are any existing valid sites
     auto const lead_start = [&]{
-        for (slice[spec.axis] = start; slice[spec.axis] != end; slice[spec.axis] += spec.sign) {
+        for (slice[spec.axis] = start; slice[spec.axis] != end; slice[spec.axis] += step) {
             for (auto& site : slice) {
                 if (site.is_valid()) {
                     return slice[spec.axis];
