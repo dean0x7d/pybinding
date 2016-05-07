@@ -1,4 +1,5 @@
 #include "system/System.hpp"
+#include "system/Shape.hpp"
 #include "system/Symmetry.hpp"
 #include "system/SystemModifiers.hpp"
 
@@ -76,25 +77,6 @@ void export_system() {
     })
     ;
 
-    using Port = System::Port;
-    class_<Port>{"Port"}
-    .add_property("shift", copy_value(&Port::shift))
-    .add_property("indices", copy_value(&Port::indices))
-    .add_property("outer_hoppings", internal_ref(&Port::outer_hoppings))
-    .add_property("inner_hoppings", internal_ref(&Port::inner_hoppings))
-    .enable_pickling()
-    .def("__getstate__", [](object o) {
-        return make_tuple(o.attr("shift"), o.attr("indices"),
-                          o.attr("outer_hoppings"), o.attr("inner_hoppings"));
-    })
-    .def("__setstate__", [](Port& x, tuple t) {
-        x.shift = extract<decltype(x.shift)>(t[0]);
-        x.indices = extract<decltype(x.indices)>(t[1]);
-        x.outer_hoppings = extract<decltype(x.outer_hoppings)>(t[2]);
-        x.inner_hoppings = extract<decltype(x.inner_hoppings)>(t[3]);
-    })
-    ;
-
     class_<System, std::shared_ptr<System>, noncopyable>{"System", init<Lattice const&>()}
     .def("find_nearest", &System::find_nearest, args("self", "position", "sublattice"_kw=-1))
     .add_property("lattice", extended(&System::lattice, "Lattice"))
@@ -102,20 +84,18 @@ void export_system() {
     .add_property("sublattices", dense_uref(&System::sublattices))
     .add_property("hoppings", internal_ref(&System::hoppings))
     .add_property("boundaries", &System::boundaries)
-    .add_property("ports", &System::ports)
     .def_readonly("has_unbalanced_hoppings", &System::has_unbalanced_hoppings)
     .enable_pickling()
     .def("__getinitargs__", [](System const& s) { return make_tuple(s.lattice); })
     .def("__getstate__", [](object s) {
         return make_tuple(s.attr("positions"), s.attr("sublattices"), s.attr("hoppings"),
-                          s.attr("boundaries"), s.attr("ports"), s.attr("has_unbalanced_hoppings"));
+                          s.attr("boundaries"), 0, s.attr("has_unbalanced_hoppings"));
     })
     .def("__setstate__", [](System& s, tuple t) {
         s.positions = extract<decltype(s.positions)>(t[0]);
         extract_array(s.sublattices, t[1]);
         s.hoppings = extract<decltype(s.hoppings)>(t[2]);
         s.boundaries = extract<decltype(s.boundaries)>(t[3]);
-        s.ports = extract<decltype(s.ports)>(t[4]);
         s.has_unbalanced_hoppings = extract<decltype(s.has_unbalanced_hoppings)>(t[5]);
     })
     ;

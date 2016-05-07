@@ -1,6 +1,5 @@
 #pragma once
 #include "system/Lattice.hpp"
-#include "system/Lead.hpp"
 #include "system/Generators.hpp"
 
 #include "numeric/dense.hpp"
@@ -20,19 +19,17 @@ class TranslationalSymmetry;
  */
 struct System {
     struct Boundary;
-    struct Port;
 
     Lattice lattice;
     CartesianArray positions;
     ArrayX<sub_id> sublattices;
     SparseMatrixX<hop_id> hoppings;
     std::vector<Boundary> boundaries;
-    std::vector<Port> ports;
     bool has_unbalanced_hoppings = false; ///< some sites have a lot more hopping than others
 
     System(Lattice const& lattice) : lattice(lattice) {}
-    System(Foundation const& foundation, TranslationalSymmetry const& symmetry, Leads const& leads,
-           HoppingGenerators const& hopping_generators);
+    System(Foundation const& foundation, HamiltonianIndices const& hamiltonian_indices,
+           TranslationalSymmetry const& symmetry, HoppingGenerators const& hopping_generators);
 
     int num_sites() const { return positions.size(); }
 
@@ -46,26 +43,6 @@ struct System {
 struct System::Boundary {
     SparseMatrixX<hop_id> hoppings;
     Cartesian shift; ///< shift length (periodic boundary condition)
-};
-
-struct System::Port {
-    Cartesian shift; ///< periodic shift between two lead unit cells
-    std::vector<int> indices; ///< map from lead Hamiltonian indices to main system indices
-    SparseMatrixX<hop_id> inner_hoppings; ///< hoppings within the lead
-    SparseMatrixX<hop_id> outer_hoppings; ///< periodic hoppings
-
-    Port() = default;
-    Port(Foundation const& foundation, HamiltonianIndices const& indices, Lead const& lead);
-
-    /// Return the lead index corresponding to the main system Hamiltonian index
-    int lead_index(int system_index) const {
-        auto const it = std::find(indices.begin(), indices.end(), system_index);
-        if (it == indices.end()) {
-            return -1;
-        } else {
-            return static_cast<int>(it - indices.begin());
-        }
-    }
 };
 
 namespace detail {

@@ -189,11 +189,6 @@ class System:
         """List of :class:`.Boundary`"""
         return self.impl.boundaries
 
-    @property
-    def ports(self) -> list:
-        """List of :class:`.Port`"""
-        return self.impl.ports
-
     def find_nearest(self, position, at_sublattice=None):
         """Find the index of the atom closest to the given position
 

@@ -32,7 +32,7 @@ void Model::set_symmetry(TranslationalSymmetry const& translational_symmetry) {
 }
 
 void Model::attach_lead(int direction, Shape const& shape) {
-    leads.emplace_back(direction, shape);
+    _leads.add(direction, shape);
 }
 
 void Model::add_site_state_modifier(SiteStateModifier const& m) {
@@ -90,6 +90,12 @@ Hamiltonian const& Model::hamiltonian() const {
     return _hamiltonian;
 }
 
+Leads const& Model::leads() const {
+    system();
+    _leads.make_hamiltonian(hamiltonian_modifiers, is_double(), is_complex());
+    return _leads;
+}
+
 std::string Model::report() {
     auto const& built_system = *system();
     auto report = fmt::format("Built system with {} lattice sites, {}\n",
@@ -124,11 +130,11 @@ std::shared_ptr<System> Model::make_system() const {
         }
     }
 
-    for (auto const& lead : leads) {
-        attach(foundation, lead);
-    }
+    _leads.create_attachment_area(foundation);
 
-    return std::make_shared<System>(foundation, symmetry, leads, hopping_generators);
+    auto const hamiltonian_indices = HamiltonianIndices(foundation);
+    _leads.make_structure(foundation, hamiltonian_indices);
+    return std::make_shared<System>(foundation, hamiltonian_indices, symmetry, hopping_generators);
 }
 
 Hamiltonian Model::make_hamiltonian() const {

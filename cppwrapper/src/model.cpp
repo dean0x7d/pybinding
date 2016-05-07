@@ -1,14 +1,13 @@
 #include "Model.hpp"
-#include "hamiltonian/Hamiltonian.hpp"
 
 #include "python_support.hpp"
 #include <boost/python/class.hpp>
 
 using namespace boost::python;
+using namespace tbm;
 
 void export_core() {
-    using tbm::Model;
-    class_<Model>{"Model", init<tbm::Lattice const&>(args("self", "lattice"))}
+    class_<Model>{"Model", init<Lattice const&>(args("self", "lattice"))}
     .def("add", &Model::set_primitive)
     .def("add", &Model::set_shape)
     .def("add", &Model::set_symmetry)
@@ -25,6 +24,7 @@ void export_core() {
     .add_property("hopping_modifiers", &Model::hopping_modifiers)
     .add_property("system", copy_value(&Model::system))
     .add_property("hamiltonian", copy_value(&Model::hamiltonian))
+    .add_property("leads", copy_value(&Model::leads))
     .def("report", &Model::report,
          "Report of the last build operation: system and Hamiltonian")
     .def("clear_system_modifiers", &Model::clear_system_modifiers)

@@ -5,17 +5,12 @@
 
 namespace tbm {
 
-System::System(Foundation const& foundation, TranslationalSymmetry const& symmetry,
-               Leads const& leads, HoppingGenerators const& hopping_generators)
+System::System(Foundation const& foundation, HamiltonianIndices const& hamiltonian_indices,
+               TranslationalSymmetry const& symmetry, HoppingGenerators const& hopping_generators)
     : lattice(foundation.get_lattice()) {
-    auto const hamiltonian_indices = HamiltonianIndices(foundation);
     detail::populate_system(*this, foundation, hamiltonian_indices);
     if (symmetry) {
         detail::populate_boundaries(*this, foundation, hamiltonian_indices, symmetry);
-    }
-
-    for (auto const& lead : leads) {
-        ports.emplace_back(foundation, hamiltonian_indices, lead);
     }
 
     if (!hopping_generators.empty()) {
@@ -46,80 +41,6 @@ int System::find_nearest(Cartesian target_position, sub_id target_sublattice) co
     }
     
     return nearest_index;
-}
-
-System::Port::Port(Foundation const& foundation,
-                   HamiltonianIndices const& hamiltonian_indices,
-                   Lead const& lead) {
-    auto const& lattice = foundation.get_lattice();
-    shift = static_cast<float>(-lead.sign) * lattice.vectors[lead.axis];
-
-    auto const junction = LeadJunction(foundation, lead);
-    auto const slice = foundation[junction.slice_index];
-
-    indices = [&]{
-        auto indices = std::vector<int>();
-        indices.reserve(junction.is_valid.count());
-
-        for (auto const& site : slice) {
-            if (junction.is_valid[site.get_slice_idx()]) {
-                indices.push_back(hamiltonian_indices[site]);
-            }
-        }
-        return indices;
-    }();
-
-    inner_hoppings = [&]{
-        auto const size = static_cast<int>(indices.size());
-        auto matrix = SparseMatrixX<hop_id>(size, size);
-        auto matrix_view = compressed_inserter(matrix, size * lattice.max_hoppings());
-
-        for (auto const& site : slice) {
-            if (!junction.is_valid[site.get_slice_idx()]) {
-                continue;
-            }
-
-            matrix_view.start_row();
-            site.for_each_neighbour([&](Site neighbor, Hopping hopping) {
-                auto const index = lead_index(hamiltonian_indices[neighbor]);
-                if (index >= 0) {
-                    matrix_view.insert(index, hopping.id);
-                }
-            });
-        }
-        matrix_view.compress();
-
-        return matrix;
-    }();
-
-    outer_hoppings = [&]{
-        auto const size = static_cast<int>(indices.size());
-        auto matrix = SparseMatrixX<hop_id>(size, size);
-        auto matrix_view = compressed_inserter(matrix, size * lattice.max_hoppings());
-
-        for (auto const& site : slice) {
-            if (!junction.is_valid[site.get_slice_idx()]) {
-                continue;
-            }
-
-            auto const shifted_site = [&]{
-                Index3D shift_index = Index3D::Zero();
-                shift_index[lead.axis] = lead.sign;
-                return site.shifted(shift_index);
-            }();
-
-            matrix_view.start_row();
-            shifted_site.for_each_neighbour([&](Site neighbor, Hopping hopping) {
-                auto const index = lead_index(hamiltonian_indices[neighbor]);
-                if (index >= 0) {
-                    matrix_view.insert(index, hopping.id);
-                }
-            });
-        }
-        matrix_view.compress();
-
-        return matrix;
-    }();
 }
 
 namespace detail {
@@ -260,6 +181,5 @@ ArrayXi nonzeros_per_row(SparseMatrixX<hop_id> const& hoppings,  bool has_onsite
 
     return nnz;
 }
-
 
 } // namespace tbm

@@ -33,6 +33,10 @@ add_library(pybinding_cppcore
     include/greens/KPM.hpp
     include/hamiltonian/Hamiltonian.hpp
     include/hamiltonian/HamiltonianModifiers.hpp
+    include/leads/HamiltonianPair.hpp
+    include/leads/Leads.hpp
+    include/leads/Spec.hpp
+    include/leads/Structure.hpp
     include/numeric/arrayref.hpp
     include/numeric/constant.hpp
     include/numeric/dense.hpp
@@ -50,7 +54,6 @@ add_library(pybinding_cppcore
     include/support/variant.hpp
     include/system/Foundation.hpp
     include/system/Lattice.hpp
-    include/system/Lead.hpp
     include/system/Shape.hpp
     include/system/Symmetry.hpp
     include/system/System.hpp
@@ -65,11 +68,13 @@ add_library(pybinding_cppcore
     src/greens/KPM.cpp
     src/hamiltonian/Hamiltonian.cpp
     src/hamiltonian/HamiltonianModifiers.cpp
+    src/leads/Leads.cpp
+    src/leads/Spec.cpp
+    src/leads/Structure.cpp
     src/solver/FEAST.cpp
     src/solver/Solver.cpp
     src/system/Foundation.cpp
     src/system/Lattice.cpp
-    src/system/Lead.cpp
     src/system/Shape.cpp
     src/system/Symmetry.cpp
     src/system/System.cpp

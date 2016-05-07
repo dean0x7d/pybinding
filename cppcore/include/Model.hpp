@@ -4,8 +4,8 @@
 #include "system/Shape.hpp"
 #include "system/Symmetry.hpp"
 #include "system/SystemModifiers.hpp"
-#include "system/Lead.hpp"
 #include "system/Generators.hpp"
+#include "leads/Leads.hpp"
 #include "hamiltonian/Hamiltonian.hpp"
 #include "hamiltonian/HamiltonianModifiers.hpp"
 
@@ -56,6 +56,7 @@ public: // get parameters
 public: // get results
     std::shared_ptr<System const> const& system() const;
     Hamiltonian const& hamiltonian() const;
+    Leads const& leads() const;
 
 public: // get information
     /// Report of the last build operation: system and Hamiltonian
@@ -77,14 +78,13 @@ private:
     TranslationalSymmetry symmetry;
     Cartesian wave_vector = {0, 0, 0};
 
-    Leads leads;
-
     SystemModifiers system_modifiers;
     HamiltonianModifiers hamiltonian_modifiers;
     HoppingGenerators hopping_generators;
 
     mutable std::shared_ptr<System const> _system;
     mutable Hamiltonian _hamiltonian;
+    mutable Leads _leads;
     mutable Chrono system_build_time;
     mutable Chrono hamiltonian_build_time;
 };

@@ -14,6 +14,7 @@ boost_python_add_module(_pybinding
     include/python_support.hpp
     src/greens.cpp
     src/hamiltonian.cpp
+    src/leads.cpp
     src/main.cpp
     src/model.cpp
     src/parallel.cpp

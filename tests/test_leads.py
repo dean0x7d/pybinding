@@ -46,14 +46,3 @@ def test_empty(model):
         model.attach_lead(2, [0, 0], [0, 0])
         assert model.system
     assert "no sites in lead junction" in str(excinfo.value)
-
-
-def test_expected(model, baseline):
-    model.attach_lead(1, [0, -1], [0, 1])
-    model.attach_lead(-1, [0, -1], [0, 1])
-    model.attach_lead(2, [-1, -5], [1, -5])
-    model.attach_lead(-2, [-1, 5], [1, 5])
-
-    ports = model.system.ports
-    expected = baseline(ports)
-    assert pytest.fuzzy_equal(ports, expected, 1.e-4, 1.e-6)

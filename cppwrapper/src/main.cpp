@@ -14,6 +14,7 @@ using namespace tbm;
 
 void export_core();
 void export_system();
+void export_leads();
 void export_solver();
 void export_greens();
 void export_modifiers();
@@ -58,6 +59,7 @@ BOOST_PYTHON_MODULE(_pybinding) {
     // export all classes
     export_core();
     export_system();
+    export_leads();
     export_solver();
     export_greens();
     export_modifiers();
