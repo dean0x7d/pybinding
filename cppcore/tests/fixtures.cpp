@@ -2,6 +2,19 @@
 #include "numeric/constant.hpp"
 using namespace tbm;
 
+namespace lattice {
+
+tbm::Lattice square(float a, float t) {
+    auto lattice = Lattice({a, 0, 0}, {0, a, 0});
+    auto const subid = lattice.add_sublattice("A", {0, 0, 0}, 4 * t);
+    auto const hopid = lattice.register_hopping_energy("-t", -t);
+    lattice.add_registered_hopping({0, 1, 0}, subid, subid, hopid);
+    lattice.add_registered_hopping({1, 0, 0}, subid, subid, hopid);
+    return lattice;
+}
+
+} // namespace lattice
+
 namespace graphene {
 
 Lattice monolayer() {
@@ -77,6 +90,45 @@ tbm::HoppingModifier constant_magnetic_field(float value) {
                     CartesianArray const& pos2, HopIdRef) {
         num::match<ArrayX>(energy, MagneticFieldOp{value, pos1, pos2});
     }, /*is_complex*/true, /*is_double*/false};
+}
+
+namespace {
+    struct LinearOnsite {
+        float k;
+        ArrayXf x;
+
+        template<class Array>
+        void operator()(Array energy) const {
+            using scalar_t = typename Array::Scalar;
+            energy = (k * x).template cast<scalar_t>();
+        }
+    };
+}
+
+tbm::OnsiteModifier linear_onsite(float k) {
+    return {[k](ComplexArrayRef energy, CartesianArray const& pos, SubIdRef) {
+        num::match<ArrayX>(energy, LinearOnsite{k, pos.x});
+    }};
+}
+
+namespace {
+    struct LinearHopping {
+        float k;
+        ArrayXf x;
+
+        template<class Array>
+        void operator()(Array energy) const {
+            using scalar_t = typename Array::Scalar;
+            energy = (k * x).template cast<scalar_t>();
+        }
+    };
+}
+
+tbm::HoppingModifier linear_hopping(float k) {
+    return {[k](ComplexArrayRef energy, CartesianArray const& pos1,
+                CartesianArray const& pos2, HopIdRef) {
+        num::match<ArrayX>(energy, LinearHopping{k, 0.5f * (pos1.x + pos2.x)});
+    }, /*is_complex*/false, /*is_double*/false};
 }
 
 tbm::HoppingModifier force_double_precision() {

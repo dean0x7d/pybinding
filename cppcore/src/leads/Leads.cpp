@@ -29,4 +29,13 @@ void Leads::make_hamiltonian(HamiltonianModifiers const& modifiers,
     }
 }
 
+void Leads::clear_structure() {
+    structures.clear();
+    clear_hamiltonian();
+}
+
+void Leads::clear_hamiltonian() {
+    hamiltonians.clear();
+}
+
 } // namespace tbm

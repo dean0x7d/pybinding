@@ -34,7 +34,7 @@ public: // set parameters
 
     void add_hopping_family(HoppingGenerator const& g);
 
-    void set_wave_vector(const Cartesian& k);
+    void set_wave_vector(Cartesian const& k);
 
 public:
     /// Uses double precision values in the Hamiltonian matrix?
@@ -56,7 +56,10 @@ public: // get parameters
 public: // get results
     std::shared_ptr<System const> const& system() const;
     Hamiltonian const& hamiltonian() const;
+    /// Return all leads
     Leads const& leads() const;
+    /// Return lead at index
+    Lead lead(int i) const { return leads()[i]; }
 
 public: // get information
     /// Report of the last build operation: system and Hamiltonian
@@ -70,6 +73,11 @@ public:
 private:
     std::shared_ptr<System> make_system() const;
     Hamiltonian make_hamiltonian() const;
+
+    /// Clear any existing structural data, implies clearing Hamiltonian
+    void clear_structure();
+    /// Clear Hamiltonian, but leave structural data untouched
+    void clear_hamiltonian();
 
 private:
     Lattice lattice;

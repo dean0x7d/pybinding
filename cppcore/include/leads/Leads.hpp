@@ -48,6 +48,11 @@ public:
 
     /// Create a Hamiltonian pair for each lead
     void make_hamiltonian(HamiltonianModifiers const& modifiers, bool is_double, bool is_complex);
+
+    /// Clear any existing structural data, implies clearing Hamiltonian
+    void clear_structure();
+    /// Clear Hamiltonian, but leave structural data untouched
+    void clear_hamiltonian();
 };
 
 } // namespace tbm

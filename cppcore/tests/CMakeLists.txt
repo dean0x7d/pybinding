@@ -4,6 +4,7 @@ add_executable(catch
     fixtures.cpp
     test_compute.cpp
     test_greens.cpp
+    test_leads.cpp
     test_numeric.cpp
     test_system.cpp
 )

@@ -1,7 +1,5 @@
 #include "Model.hpp"
-
 #include "system/Foundation.hpp"
-#include "hamiltonian/Hamiltonian.hpp"
 
 #include "support/format.hpp"
 
@@ -9,59 +7,55 @@ namespace tbm {
 
 void Model::set_primitive(Primitive new_primitive) {
     primitive = new_primitive;
+    clear_structure();
 }
 
-void Model::set_wave_vector(const Cartesian& new_wave_vector)
-{
+void Model::set_wave_vector(Cartesian const& new_wave_vector) {
     if (wave_vector != new_wave_vector) {
         wave_vector = new_wave_vector;
-        _hamiltonian.reset();
+        clear_hamiltonian();
     }
 }
 
 void Model::set_shape(Shape const& new_shape) {
     shape = new_shape;
-    _system.reset();
-    _hamiltonian.reset();
+    clear_structure();
 }
 
 void Model::set_symmetry(TranslationalSymmetry const& translational_symmetry) {
     symmetry = translational_symmetry;
-    _system.reset();
-    _hamiltonian.reset();
+    clear_structure();
 }
 
 void Model::attach_lead(int direction, Shape const& shape) {
     _leads.add(direction, shape);
+    clear_structure();
 }
 
 void Model::add_site_state_modifier(SiteStateModifier const& m) {
     system_modifiers.state.push_back(m);
-    _system.reset();
-    _hamiltonian.reset();
+    clear_structure();
 }
 
 void Model::add_position_modifier(PositionModifier const& m) {
     system_modifiers.position.push_back(m);
-    _system.reset();
-    _hamiltonian.reset();
+    clear_structure();
 }
 
 void Model::add_onsite_modifier(OnsiteModifier const& m) {
     hamiltonian_modifiers.onsite.push_back(m);
-    _hamiltonian.reset();
+    clear_hamiltonian();
 }
 
 void Model::add_hopping_modifier(HoppingModifier const& m) {
     hamiltonian_modifiers.hopping.push_back(m);
-    _hamiltonian.reset();
+    clear_hamiltonian();
 }
 
 void Model::add_hopping_family(HoppingGenerator const& g) {
     hopping_generators.push_back(g);
     lattice.register_hopping_energy(g.name, g.energy);
-    _system.reset();
-    _hamiltonian.reset();
+    clear_structure();
 }
 
 bool Model::is_double() const {
@@ -153,6 +147,17 @@ Hamiltonian Model::make_hamiltonian() const {
             return ham::make<float>(built_system, hamiltonian_modifiers, wave_vector);
         }
     }
+}
+
+void Model::clear_structure() {
+    _system.reset();
+    _leads.clear_structure();
+    clear_hamiltonian();
+}
+
+void Model::clear_hamiltonian() {
+    _hamiltonian.reset();
+    _leads.clear_hamiltonian();
 }
 
 } // namespace tbm
