@@ -107,8 +107,8 @@ calculate the band structure of our model.
     bands.plot(point_labels=['K', r'$\Gamma$', 'M', 'K'])
 
 The points :math:`\Gamma, K` and :math:`M` are used to draw a path in the reciprocal space of
-graphene's Brillouin zone and :meth:`.calc_bands` calculates the band energy along that path.
-The return value of the method is a :class:`.Bands` result object.
+graphene's Brillouin zone and :meth:`.Solver.calc_bands` calculates the band energy along
+that path. The return value of the method is a :class:`.Bands` result object.
 
 All result objects have built-in plotting methods. Aside from the basic :meth:`~.Bands.plot` seen
 above, :class:`.Bands` also has :meth:`~.Bands.plot_kpath` which presents the path in reciprocal

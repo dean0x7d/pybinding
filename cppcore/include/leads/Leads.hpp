@@ -16,12 +16,8 @@ public:
     Lead(leads::Structure const& ls, leads::HamiltonianPair const& lh)
         : structure(ls), hamiltonian(lh) {}
 
-    Cartesian shift() const { return structure.system.boundaries[0].shift; }
     std::vector<int> const& indices() const { return structure.indices; }
-
-    SparseMatrixX<hop_id> const& inner_hoppings() const { return structure.system.hoppings; }
-    SparseMatrixX<hop_id> const& outer_hoppings() const { return structure.system.boundaries[0].hoppings; }
-
+    System const& system() const { return structure.system; }
     Hamiltonian const& h0() const { return hamiltonian.h0; }
     Hamiltonian const& h1() const { return hamiltonian.h1; }
 };

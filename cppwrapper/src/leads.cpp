@@ -9,10 +9,8 @@ using namespace tbm;
 
 void export_leads() {
     class_<Lead>{"Lead", no_init}
-    .add_property("shift", return_copy(&Lead::shift))
     .add_property("indices", return_arrayref(&Lead::indices))
-    .add_property("outer_hoppings", return_internal_copy(&Lead::outer_hoppings))
-    .add_property("inner_hoppings", return_internal_copy(&Lead::inner_hoppings))
+    .add_property("system", return_reference(&Lead::system))
     .add_property("h0", return_internal_copy([](Lead const& m) { return m.h0().csrref(); }))
     .add_property("h1", return_internal_copy([](Lead const& m) { return m.h1().csrref(); }))
     ;

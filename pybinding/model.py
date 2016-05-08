@@ -4,8 +4,9 @@ from scipy.sparse import csr_matrix
 
 from . import _cpp
 from . import results
-from .system import System
+from .system import System, decorate_structure_plot
 from .lattice import Lattice
+from .leads import Leads
 
 
 class Model(_cpp.Model):
@@ -94,6 +95,11 @@ class Model(_cpp.Model):
     def lattice(self) -> Lattice:
         """:class:`.Lattice` specification"""
         return self._lattice
+    
+    @property
+    def leads(self):
+        """List of :class:`.Lead`"""
+        return Leads(super().leads)
 
     @property
     def shape(self):
@@ -111,3 +117,27 @@ class Model(_cpp.Model):
         """:class:`.StructureMap` of the onsite energy"""
         onsite_energy = np.real(self.hamiltonian.tocsr().diagonal())
         return results.StructureMap.from_system(onsite_energy, self.system)
+
+    def plot(self, site_radius=0.025, hopping_width=1.0, num_periods=1, lead_length=6,
+             axes='xy', **kwargs):
+        """Plot the structure of the model: sites, hoppings, boundaries and leads
+
+        Parameters
+        ----------
+        site_radius : float
+            Radius (in data units) of the circle representing a lattice site.
+        hopping_width : float
+            Width (in figure units) of the hopping lines.
+        num_periods : int
+            Number of times to repeat the periodic boundaries.
+        lead_length : int
+            Number of times to repeat the lead structure.
+        axes : str
+            The spatial axes to plot. E.g. 'xy', 'yz', etc.
+        **kwargs
+            Site, hopping and boundary properties: to be forwarded to their respective plots.
+        """
+        self.system.plot(site_radius, hopping_width, num_periods, axes, **kwargs)
+        for lead in self.leads:
+            lead.plot(site_radius, hopping_width, lead_length, **kwargs)
+        decorate_structure_plot(axes)

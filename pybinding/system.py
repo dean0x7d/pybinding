@@ -212,9 +212,8 @@ class System:
             sites = Sites(self.positions, self.sublattices)
             return sites.find_nearest(position, at_sublattice)
 
-    def plot(self, site_radius=0.025, hopping_width=1.0, num_periods=1, lead_length=6, axes='xy',
-             site_props=None, hopping_props=None, boundary_props=None):
-        """Plot the structure of the system: sites and hoppings
+    def plot(self, site_radius=0.025, hopping_width=1.0, num_periods=1, axes='xy', **kwargs):
+        """Plot the structure of the system: sites, hoppings and boundaries
 
         Parameters
         ----------
@@ -224,39 +223,38 @@ class System:
             Width (in figure units) of the hopping lines.
         num_periods : int
             Number of times to repeat the periodic boundaries.
-        lead_length : int
-            Number of times to repeat the lead structure.
         axes : str
             The spatial axes to plot. E.g. 'xy', 'yz', etc.
-        site_props : Optional[dict]
-            Forwarded to :class:`.CircleCollection`: additional site plotting options.
-        hopping_props : Optional[dict]
-            Forwarded to :class:`.LineCollection`: additional hopping line options.
-        boundary_props : Optional[dict]
-            Forwarded to :class:`.LineCollection`: additional boundary hopping line options.
+        **kwargs
+            Site, hopping and boundary properties: to be forwarded to their respective plots.
         """
-        ax = plt.gca()
-        ax.set_aspect('equal')
-        ax.set_xlabel("{} (nm)".format(axes[0]))
-        ax.set_ylabel("{} (nm)".format(axes[1]))
-
-        site_props = with_defaults(site_props, axes=axes)
-        hopping_props = with_defaults(hopping_props, axes=axes)
-        boundary_props = with_defaults(boundary_props, hopping_props, colors='#d40a0c')
-
-        plot_hoppings(self.positions, self.hoppings.tocoo(), hopping_width, **hopping_props)
-        plot_sites(self.positions, self.sublattices, site_radius, **site_props)
-
+        props = get_structure_props(axes, **kwargs)
+        plot_hoppings(self.positions, self.hoppings.tocoo(), hopping_width, **props['hopping'])
+        plot_sites(self.positions, self.sublattices, site_radius, **props['site'])
         plot_periodic_structure(self.positions, self.hoppings.tocoo(), self.boundaries,
                                 self.sublattices, site_radius, hopping_width, num_periods,
-                                site_props, hopping_props, boundary_props)
+                                props['site'], props['hopping'], props['boundary'])
+        decorate_structure_plot(axes)
 
-        properties = dict(site=site_props, hopping=hopping_props, boundary=boundary_props)
-        plot_lead_structure(self, site_radius, hopping_width, lead_length, **properties)
 
-        pltutils.set_min_axis_length(0.5)
-        pltutils.despine(trim=True)
-        pltutils.add_margin()
+def get_structure_props(axes, **kwargs):
+    props = {
+        'site': with_defaults(kwargs.get('site_props'), axes=axes),
+        'hopping': with_defaults(kwargs.get('hopping_props'), axes=axes),
+    }
+    props['boundary'] = with_defaults(kwargs.get('boundary_props'),
+                                      props['hopping'], colors='#d40a0c')
+    return props
+
+
+def decorate_structure_plot(axes):
+    plt.gca().set_aspect('equal')
+    plt.xlabel("{} (nm)".format(axes[0]))
+    plt.ylabel("{} (nm)".format(axes[1]))
+    pltutils.set_min_axis_length(0.5)
+    pltutils.set_min_axis_ratio(0.4)
+    pltutils.despine(trim=True)
+    pltutils.add_margin()
 
 
 def _rotate(position, axes):
@@ -459,36 +457,6 @@ def plot_periodic_structure(positions, hoppings, boundaries, data, site_radius, 
 
             plot_hoppings(positions, boundary.hoppings.tocoo(), hopping_width * 1.4, shift, blend,
                           boundary=(sign, boundary.shift), **boundary_props)
-
-
-def plot_lead_structure(system, site_radius, hopping_width, lead_length=6, **properties):
-    """Plot the sites, hoppings and periodic boundaries of the systems leads
-
-    Parameters
-    ----------
-    system : System
-        Needs to have `positions`, `sublattices` and `ports` attributes.
-    site_radius : float
-        Radius (in data units) of the circle representing a lattice site.
-    hopping_width : float
-        Width (in figure units) of the hopping lines.
-    lead_length : int
-        Number of times to repeat the lead's periodic boundaries.
-    **properties
-        Site, hopping and boundary properties: to be forwarded to their respective plots.
-    """
-    blend_gradient = np.linspace(0.5, 0.1, lead_length)
-    for port in system.ports:
-        for i, blend in enumerate(blend_gradient, start=1):
-            pos = tuple(v[port.indices] for v in system.positions)
-            sub = system.sublattices[port.indices]
-            offset = i * port.shift
-
-            plot_sites(pos, sub, site_radius, offset, blend, **properties.get('site', {}))
-            plot_hoppings(pos, port.inner_hoppings.tocoo(), hopping_width, offset, blend,
-                          **properties.get('hopping', {}))
-            plot_hoppings(pos, port.outer_hoppings.tocoo(), hopping_width * 1.6, offset, blend,
-                          boundary=(1, -port.shift), **properties.get('boundary', {}))
 
 
 def plot_site_indices(system):

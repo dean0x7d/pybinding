@@ -114,6 +114,28 @@ def set_min_axis_length(length, axis='xy'):
             getattr(ax, "set_{}lim".format(a))(_min, _max, auto=None)
 
 
+def set_min_axis_ratio(ratio):
+    """Set minimum ratio between axes limits
+
+    Parameters
+    ----------
+    ratio : float
+    """
+    xmin, xmax = plt.xlim()
+    ymin, ymax = plt.ylim()
+    x = (xmax - xmin) / 2
+    y = (ymax - ymin) / 2
+
+    if y != 0 and x / y < ratio:
+        center = (xmax + xmin) / 2
+        lim = ratio * y
+        plt.xlim(center - lim, center + lim)
+    elif y / x < ratio:
+        center = (ymax + ymin) / 2
+        lim = ratio * x
+        plt.ylim(center - lim, center + lim)
+
+
 def add_margin(margin=0.08, axis='xy'):
     """Adjust the axis length to include a margin (after autoscale)
 
