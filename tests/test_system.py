@@ -43,6 +43,10 @@ def test_api():
         system.find_nearest([0, 0], 'invalid_sublattice')
     assert "There is no sublattice" in str(excinfo.value)
 
+    with pytest.raises(ValueError) as excinfo:
+        system.hoppings.data += 1
+    assert "read-only" in str(excinfo.value)
+
 
 def test_sites():
     model = pb.Model(graphene.monolayer(), pb.primitive(2, 2))

@@ -322,3 +322,24 @@ def dont_test_invalid_return():
     with pytest.raises(RuntimeError) as excinfo:
         build_model(mod_nan)
     assert "NaN or INF" in str(excinfo.value)
+
+
+def test_mutability():
+    """Only modifier return arguments should be mutable"""
+    @pb.onsite_energy_modifier
+    def mod_energy(energy):
+        """The return energy is writable"""
+        energy += 1
+        return energy
+
+    assert build_model(mod_energy)
+
+    @pb.onsite_energy_modifier
+    def mod_x(energy, x):
+        """Arguments are read-only"""
+        x += 1
+        return energy
+
+    with pytest.raises(ValueError) as excinfo:
+        build_model(mod_x)
+    assert "read-only" in str(excinfo.value)

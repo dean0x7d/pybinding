@@ -39,6 +39,9 @@ namespace boost { namespace python {
 
 template<class ArrayVariant>
 struct arrayref_to_python {
+    static constexpr auto is_const = std::is_base_of<tbm::num::ArrayConstRef, ArrayVariant>::value;
+    static constexpr auto base_flags = NPY_ARRAY_ALIGNED | (!is_const ? NPY_ARRAY_WRITEABLE : 0);
+
     static PyObject* convert(ArrayVariant const& ref) {
         auto const ndim = (ref.rows == 1 || ref.cols == 1) ? 1 : 2;
 
@@ -68,7 +71,8 @@ struct arrayref_to_python {
             }
         }();
 
-        int flags = ref.is_row_major ? NPY_ARRAY_CARRAY : NPY_ARRAY_FARRAY;
+        int flags = base_flags | (ref.is_row_major ? NPY_ARRAY_C_CONTIGUOUS
+                                                   : NPY_ARRAY_F_CONTIGUOUS);
 
         // ndarray from existing data -> it does not own the data and will not delete it
         return PyArray_New(&PyArray_Type, ndim, shape, type, nullptr,

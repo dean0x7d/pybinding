@@ -33,6 +33,11 @@ def test_hamiltonian(model):
     assert pytest.fuzzy_equal(h.indptr, [0, 1, 2])
 
     assert h.data.flags['OWNDATA'] is False
+    assert h.data.flags['WRITEABLE'] is False
+
+    with pytest.raises(ValueError) as excinfo:
+        h.data += 1
+    assert "read-only" in str(excinfo.value)
 
     h2 = model.hamiltonian
     assert h2.data is not h.data
