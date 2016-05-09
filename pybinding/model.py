@@ -81,6 +81,19 @@ class Model(_cpp.Model):
         else:
             raise RuntimeError("Bad arguments")
 
+    def tokwant(self):
+        """Convert this model into `kwant <http://kwant-project.org/>`_ format (finalized)
+
+        This is intended for compatibility with the kwant package: http://kwant-project.org/.
+
+        Returns
+        -------
+        kwant.system.System
+            Finalized system which can be used with kwant compute functions.
+        """
+        from .support.kwant import tokwant
+        return tokwant(self)
+
     @property
     def system(self) -> System:
         """:class:`.System` site positions and other structural data"""
