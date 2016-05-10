@@ -14,7 +14,8 @@ from .utils import with_defaults
 from .support.pickle import pickleable
 from .support.fuzzy_set import FuzzySet
 
-__all__ = ['Positions', 'System', 'Sites', 'plot_hoppings', 'plot_sites']
+__all__ = ['Positions', 'System', 'Sites', 'plot_hoppings', 'plot_sites',
+           'plot_periodic_boundaries', 'structure_plot_properties']
 
 
 Positions = namedtuple('Positions', 'x y z')
@@ -212,49 +213,66 @@ class System:
             sites = Sites(self.positions, self.sublattices)
             return sites.find_nearest(position, at_sublattice)
 
-    def plot(self, site_radius=0.025, hopping_width=1.0, num_periods=1, axes='xy', **kwargs):
-        """Plot the structure of the system: sites, hoppings and boundaries
+    def plot(self, num_periods=1, **kwargs):
+        """Plot the structure: sites, hoppings and periodic boundaries (if any)
 
         Parameters
         ----------
-        site_radius : float
-            Radius (in data units) of the circle representing a lattice site.
-        hopping_width : float
-            Width (in figure units) of the hopping lines.
         num_periods : int
             Number of times to repeat the periodic boundaries.
-        axes : str
-            The spatial axes to plot. E.g. 'xy', 'yz', etc.
         **kwargs
-            Site, hopping and boundary properties: to be forwarded to their respective plots.
+            Additional plot arguments as specified in :func:`.structure_plot_properties`.
         """
-        props = get_structure_props(axes, **kwargs)
-        plot_hoppings(self.positions, self.hoppings.tocoo(), hopping_width, **props['hopping'])
-        plot_sites(self.positions, self.sublattices, site_radius, **props['site'])
-        plot_periodic_structure(self.positions, self.hoppings.tocoo(), self.boundaries,
-                                self.sublattices, site_radius, hopping_width, num_periods,
-                                props['site'], props['hopping'], props['boundary'])
-        decorate_structure_plot(axes)
+        props = structure_plot_properties(**kwargs)
+        props['site'].setdefault('radius', self.lattice.site_radius_for_plot())
+
+        plot_hoppings(self.positions, self.hoppings.tocoo(), **props['hopping'])
+        plot_sites(self.positions, self.sublattices, **props['site'])
+        plot_periodic_boundaries(self.positions, self.hoppings.tocoo(), self.boundaries,
+                                 self.sublattices, num_periods, **props)
+
+        decorate_structure_plot(**props)
 
 
-def get_structure_props(axes, **kwargs):
-    props = {
-        'site': with_defaults(kwargs.get('site_props'), axes=axes),
-        'hopping': with_defaults(kwargs.get('hopping_props'), axes=axes),
-    }
-    props['boundary'] = with_defaults(kwargs.get('boundary_props'),
-                                      props['hopping'], colors='#d40a0c')
+def structure_plot_properties(axes='xyz', site=None, hopping=None, boundary=None, **kwargs):
+    """Process structure plot properties
+
+    Parameters
+    ----------
+    axes : str
+        The spatial axes to plot. E.g. 'xy' for the default view,
+        or 'yz', 'xz' and similar to plot a rotated view.
+    site : dict
+        Arguments to be forwarded to :func:`plot_sites`.
+    hopping : dict
+        Arguments to be forwarded to :func:`plot_hoppings`.
+    boundary : dict
+        Arguments to be forwarded to :func:`plot_periodic_boundaries`.
+    **kwargs
+        Additional args are reserved for internal implementation.
+
+    Returns
+    -------
+    dict
+    """
+    props = {'axes': axes, 'add_margin': kwargs.get('add_margin', True),
+             'site': with_defaults(site, axes=axes),
+             'hopping': with_defaults(hopping, axes=axes)}
+    props['boundary'] = with_defaults(boundary, props['hopping'], colors='#d40a0c', width=1.6)
     return props
 
 
-def decorate_structure_plot(axes):
+def decorate_structure_plot(axes='xy', add_margin=True, **_):
     plt.gca().set_aspect('equal')
     plt.xlabel("{} (nm)".format(axes[0]))
     plt.ylabel("{} (nm)".format(axes[1]))
-    pltutils.set_min_axis_length(0.5)
-    pltutils.set_min_axis_ratio(0.4)
-    pltutils.despine(trim=True)
-    pltutils.add_margin()
+    if add_margin:
+        pltutils.set_min_axis_length(0.5)
+        pltutils.set_min_axis_ratio(0.4)
+        pltutils.despine(trim=True)
+        pltutils.add_margin()
+    else:
+        pltutils.despine()
 
 
 def _rotate(position, axes):
@@ -268,7 +286,8 @@ def _rotate(position, axes):
     return tuple(position[mapping[a]] for a in axes)
 
 
-def plot_hoppings(positions, hoppings, width, offset=(0, 0, 0), blend=1.0, boundary=(), **kwargs):
+def plot_hoppings(positions, hoppings, width=1.0, offset=(0, 0, 0), blend=1.0, boundary=(),
+                  axes='xyz', **kwargs):
     """Plot hopping lines between sites
 
     Parameters
@@ -285,6 +304,8 @@ def plot_hoppings(positions, hoppings, width, offset=(0, 0, 0), blend=1.0, bound
         Blend all colors to white (fake alpha blending): expected values between 0 and 1.
     boundary : Tuple[int, array_like]
         If given, apply the boundary (sign, shift).
+    axes : str
+        The spatial axes to plot. E.g. 'xy', 'yz', etc.
     **kwargs
         Forwarded to matplotlib's :class:`.LineCollection`.
 
@@ -303,7 +324,7 @@ def plot_hoppings(positions, hoppings, width, offset=(0, 0, 0), blend=1.0, bound
     unique_hop_ids = np.arange(hoppings.data.max() + 1)
     kwargs['cmap'], kwargs['norm'] = pltutils.direct_cmap_norm(unique_hop_ids, colors, blend)
 
-    rotate = functools.partial(_rotate, axes=kwargs.pop('axes', 'xyz'))
+    rotate = functools.partial(_rotate, axes=axes)
     positions, offset = map(rotate, (positions, offset))
 
     ax = plt.gca()
@@ -340,7 +361,7 @@ def plot_hoppings(positions, hoppings, width, offset=(0, 0, 0), blend=1.0, bound
     return col
 
 
-def plot_sites(positions, data, radius, offset=(0, 0, 0), blend=1.0, **kwargs):
+def plot_sites(positions, data, radius=0.025, offset=(0, 0, 0), blend=1.0, axes='xyz', **kwargs):
     """Plot circles at lattice site positions
 
     Parameters
@@ -353,9 +374,11 @@ def plot_sites(positions, data, radius, offset=(0, 0, 0), blend=1.0, **kwargs):
         Radius (in data units) of the plotted circles representing lattice sites.
         Should be a scalar value or array with the same size as `positions`.
     offset : Tuple[float, float, float]
-            Offset all positions by a constant value.
+        Offset all positions by a constant value.
     blend : float
         Blend all colors to white (fake alpha blending): expected values between 0 and 1.
+    axes : str
+        The spatial axes to plot. E.g. 'xy', 'yz', etc.
     **kwargs
         Forwarded to :class:`.CircleCollection`.
 
@@ -379,7 +402,7 @@ def plot_sites(positions, data, radius, offset=(0, 0, 0), blend=1.0, **kwargs):
                       "#fdbf6f", "#ff7f00", "#cab2d6", "#6a3d9a"]
         kwargs['cmap'], kwargs['norm'] = pltutils.direct_cmap_norm(data, colors, blend)
 
-    rotate = functools.partial(_rotate, axes=kwargs.pop('axes', 'xyz'))
+    rotate = functools.partial(_rotate, axes=axes)
     positions, offset = map(rotate, (positions, offset))
 
     # create array of (x, y) points
@@ -429,11 +452,25 @@ def _make_shift_set(boundaries, level):
     return FuzzySet(exclusive_shifts)
 
 
-def plot_periodic_structure(positions, hoppings, boundaries, data, site_radius, hopping_width,
-                            num_periods, site_props=None, hopping_props=None, boundary_props=None):
-    site_props = site_props or {}
-    hopping_props = hopping_props or {}
-    boundary_props = with_defaults(boundary_props, hopping_props)
+def plot_periodic_boundaries(positions, hoppings, boundaries, data, num_periods=1, **kwargs):
+    """Plot the periodic boundaries of a system
+
+    Parameters
+    ----------
+    positions : Positions
+        Site coordinates in the form of a (x, y, z) tuple of arrays.
+    hoppings : :class:`~scipy.sparse.coo_matrix`
+        Sparse COO matrix with the hopping data, usually `model.system.hoppings.tocoo()`.
+    boundaries : List[Boundary]
+        Periodic boundaries of a :class:`System`.
+    data : array_like
+        Color data at each site. Should be a 1D array of the same size as `positions`.
+    num_periods : int
+        Number of times to repeat the periodic boundaries.
+    **kwargs
+        Additional plot arguments as specified in :func:`.structure_plot_properties`.
+    """
+    props = structure_plot_properties(**kwargs)
 
     # the periodic parts will fade out gradually at each level of repetition
     blend_gradient = np.linspace(0.5, 0.15, num_periods)
@@ -442,8 +479,8 @@ def plot_periodic_structure(positions, hoppings, boundaries, data, site_radius, 
     for level, blend in enumerate(blend_gradient, start=1):
         shift_set = _make_shift_set(boundaries, level)
         for shift in shift_set:
-            plot_sites(positions, data, site_radius, shift, blend, **site_props)
-            plot_hoppings(positions, hoppings, hopping_width, shift, blend, **hopping_props)
+            plot_sites(positions, data, offset=shift, blend=blend, **props['site'])
+            plot_hoppings(positions, hoppings, offset=shift, blend=blend, **props['hopping'])
 
     # periodic boundary hoppings
     for level, blend in enumerate(blend_gradient, start=1):
@@ -455,8 +492,8 @@ def plot_periodic_structure(positions, hoppings, boundaries, data, site_radius, 
             if (shift + sign * boundary.shift) not in prev_shift_set:
                 continue  # skip existing
 
-            plot_hoppings(positions, boundary.hoppings.tocoo(), hopping_width * 1.4, shift, blend,
-                          boundary=(sign, boundary.shift), **boundary_props)
+            plot_hoppings(positions, boundary.hoppings.tocoo(), offset=shift, blend=blend,
+                          boundary=(sign, boundary.shift), **props['boundary'])
 
 
 def plot_site_indices(system):

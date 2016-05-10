@@ -10,7 +10,8 @@ from scipy.sparse import csr_matrix
 
 from . import _cpp
 from . import pltutils, results
-from .system import System, plot_sites, plot_hoppings, get_structure_props, decorate_structure_plot
+from .system import (System, plot_sites, plot_hoppings, structure_plot_properties,
+                     decorate_structure_plot)
 
 __all__ = ['Lead']
 
@@ -81,21 +82,15 @@ class Lead:
         bands = [eigenvalues(k) for k in k_path]
         return results.Bands([start, end], k_path, np.vstack(bands))
 
-    def plot(self, site_radius=0.025, hopping_width=1.0, lead_length=6, axes='xy', **kwargs):
+    def plot(self, lead_length=6, **kwargs):
         """Plot the sites, hoppings and periodic boundaries of the lead
 
         Parameters
         ----------
-        site_radius : float
-            Radius (in data units) of the circle representing a lattice site.
-        hopping_width : float
-            Width (in figure units) of the hopping lines.
         lead_length : int
             Number of times to repeat the lead's periodic boundaries.
-        axes : str
-            The spatial axes to plot. E.g. 'xy', 'yz', etc.
         **kwargs
-            Site, hopping and boundary properties: to be forwarded to their respective plots.
+            Additional plot arguments as specified in :func:`.structure_plot_properties`.
         """
         pos = self.system.positions
         sub = self.system.sublattices
@@ -103,18 +98,21 @@ class Lead:
         boundary = self.system.boundaries[0]
         outer_hoppings = boundary.hoppings.tocoo()
 
-        props = get_structure_props(axes, **kwargs)
+        props = structure_plot_properties(**kwargs)
+        props['site'].setdefault('radius', self.system.lattice.site_radius_for_plot())
+
         blend_gradient = np.linspace(0.5, 0.1, lead_length)
         for i, blend in enumerate(blend_gradient):
             offset = i * boundary.shift
-            plot_sites(pos, sub, site_radius, offset, blend, **props['site'])
-            plot_hoppings(pos, inner_hoppings, hopping_width, offset, blend, **props['hopping'])
-            plot_hoppings(pos, outer_hoppings, hopping_width * 1.6, offset - boundary.shift, blend,
+            plot_sites(pos, sub, offset=offset, blend=blend, **props['site'])
+            plot_hoppings(pos, inner_hoppings, offset=offset, blend=blend, **props['hopping'])
+            plot_hoppings(pos, outer_hoppings, offset=offset - boundary.shift, blend=blend,
                           boundary=(1, boundary.shift), **props['boundary'])
 
         label_pos = _center(pos, lead_length * boundary.shift * 1.5)
         pltutils.annotate_box("lead {}".format(self.index), label_pos, bbox=dict(alpha=0.7))
-        decorate_structure_plot(axes)
+
+        decorate_structure_plot(**props)
 
     def plot_bands(self, start=-pi, end=pi, step=0.05, **kwargs):
         """Plot the band structure of an infinite lead

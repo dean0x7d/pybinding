@@ -280,6 +280,7 @@ potential (in eV) before and after the junction. Let's add it to the nanoribbon:
         pn_juction(y0=0, v1=-5, v2=5)
     )
     model.onsite_map.plot_structure(cmap="coolwarm", site_radius=0.04)
+    pb.pltutils.colorbar(label="U (eV)")
 
 Remember that the :attr:`.Model.onsite_map` property is a :class:`.StructureMap`, which has
 several plotting methods. A contour plot would not look at all good for such a small nanoribbon,
@@ -312,6 +313,7 @@ But lets take a different approach and create the well by composing two PN junct
         pn_juction(y0=0.2, v1=0, v2=5)
     )
     model.onsite_map.plot_structure(cmap="coolwarm", site_radius=0.04)
+    pb.pltutils.colorbar(label="U (eV)")
 
 It works as expected. This can sometimes be a nice and quick way to extend a model.
 The square well affects the band structure by breaking electron-hole symmetry:

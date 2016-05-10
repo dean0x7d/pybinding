@@ -204,6 +204,7 @@ case, we are interested only in the 20 lowest energy states.
 
     ldos = solver.calc_spatial_ldos(energy=0, broadening=0.05)  # eV
     ldos.plot_structure(site_radius=(0.03, 0.12))
+    pb.pltutils.colorbar(label="LDOS")
 
 The convenient :meth:`.Solver.calc_spatial_ldos` method calculates the local density of states
 (LDOS) at every site for the given energy with a Gaussian broadening. The returned object is a

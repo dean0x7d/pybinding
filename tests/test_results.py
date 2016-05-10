@@ -83,5 +83,5 @@ def test_structure_map_plot(compare_figure):
     structure_map = pb.results.StructureMap.from_system(data, system)
 
     with compare_figure() as chk:
-        structure_map.plot_structure(site_radius=(0.03, 0.05), cbar_props=False)
+        structure_map.plot_structure(site_radius=(0.03, 0.05))
     assert chk.passed

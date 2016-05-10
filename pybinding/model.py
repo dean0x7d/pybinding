@@ -131,16 +131,11 @@ class Model(_cpp.Model):
         onsite_energy = np.real(self.hamiltonian.tocsr().diagonal())
         return results.StructureMap.from_system(onsite_energy, self.system)
 
-    def plot(self, site_radius=0.025, hopping_width=1.0, num_periods=1, lead_length=6,
-             axes='xy', **kwargs):
+    def plot(self, num_periods=1, lead_length=6, axes='xy', **kwargs):
         """Plot the structure of the model: sites, hoppings, boundaries and leads
 
         Parameters
         ----------
-        site_radius : float
-            Radius (in data units) of the circle representing a lattice site.
-        hopping_width : float
-            Width (in figure units) of the hopping lines.
         num_periods : int
             Number of times to repeat the periodic boundaries.
         lead_length : int
@@ -148,9 +143,10 @@ class Model(_cpp.Model):
         axes : str
             The spatial axes to plot. E.g. 'xy', 'yz', etc.
         **kwargs
-            Site, hopping and boundary properties: to be forwarded to their respective plots.
+            Additional plot arguments as specified in :func:`.structure_plot_properties`.
         """
-        self.system.plot(site_radius, hopping_width, num_periods, axes, **kwargs)
+        kwargs['add_margin'] = False
+        self.system.plot(num_periods, axes=axes, **kwargs)
         for lead in self.leads:
-            lead.plot(site_radius, hopping_width, lead_length, **kwargs)
-        decorate_structure_plot(axes)
+            lead.plot(lead_length, axes=axes, **kwargs)
+        decorate_structure_plot(axes=axes)

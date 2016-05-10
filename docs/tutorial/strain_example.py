@@ -43,5 +43,6 @@ for block, energy in zip(grid, [0, 0.25]):
     solver = pb.solver.arpack(model, k=30, sigma=energy)
     ldos_map = solver.calc_spatial_ldos(energy=energy, broadening=0.03)
     ldos_map.plot_structure()
+    pb.pltutils.colorbar(label="LDOS")
 
 plt.show()
