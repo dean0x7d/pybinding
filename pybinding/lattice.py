@@ -258,10 +258,11 @@ class Lattice(_cpp.Lattice):
             raise RuntimeError("3D Brillouin zones are not currently supported")
 
     @staticmethod
-    def _plot_vectors(vectors, position=(0, 0), name="a", head_width=0.08, head_length=0.2):
-        vnorm = np.average([np.linalg.norm(v) for v in vectors])
+    def _plot_vectors(vectors, position=(0, 0), name="a", scale=1.0,
+                      head_width=0.08, head_length=0.2):
+        vnorm = np.average([np.linalg.norm(v) for v in vectors]) * scale
         for i, vector in enumerate(vectors):
-            v2d = vector[:2]
+            v2d = np.array(vector[:2]) * scale
             if np.allclose(v2d, [0, 0]):
                 continue  # nonzero only in z dimension, but the plot is 2D
 
@@ -271,15 +272,35 @@ class Lattice(_cpp.Lattice):
             pltutils.annotate_box(r"${}_{}$".format(name, i+1), position[:2] + v2d / 2,
                                   fontsize='large', bbox=dict(lw=0, alpha=0.6))
 
-    def plot_vectors(self, position):
+    def plot_vectors(self, position, scale=1.0):
         """Plot lattice vectors in the xy plane
 
         Parameters
         ----------
         position : array_like
             Cartesian position to be used as the origin for the vectors.
+        scale : float
+            Multiply the length of the vectors by this number.
         """
-        self._plot_vectors(self.vectors, position)
+        self._plot_vectors(self.vectors, position, scale=scale)
+
+    def site_radius_for_plot(self, scale=0.177):
+        """Return a good estimate for the lattice site radius for plotting
+
+        Based on the smallest inter-atomic spacing in a primitive unit cell.
+
+        scale : float
+            Multiply inter-atomic spacing by this number to get the final site radius.
+
+        Returns
+        -------
+        float
+        """
+        if len(self.sublattices) == 1:
+            return scale * np.min([np.linalg.norm(v) for v in self.vectors])
+        else:
+            from scipy.spatial.distance import pdist
+            return scale * np.min(pdist([s.offset for s in self.sublattices]))
 
     def plot(self, vector_position='center', **kwargs):
         """Illustrate the lattice by plotting the primitive cell and its nearest neighbors
