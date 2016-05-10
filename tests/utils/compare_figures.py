@@ -113,6 +113,8 @@ class CompareFigure:
     def report(self, fail_data):
         def reportfile(variant):
             path = path_from_fixture(self.request, prefix="failed", variant=variant, ext=self.ext)
+            if not path.parent.exists():
+                path.parent.mkdir(parents=True)
             return str(path)
 
         def delete(variant):
