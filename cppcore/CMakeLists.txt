@@ -60,7 +60,6 @@ add_library(pybinding_cppcore
     include/system/Generators.hpp
     include/system/SystemModifiers.hpp
     include/utils/Chrono.hpp
-    include/utils/Log.hpp
     include/Model.hpp
     src/greens/kpm/Bounds.cpp
     src/greens/kpm/OptimizedHamiltonian.cpp
@@ -80,7 +79,6 @@ add_library(pybinding_cppcore
     src/system/System.cpp
     src/system/SystemModifiers.cpp
     src/utils/Chrono.cpp
-    src/utils/Log.cpp
     src/Model.cpp
 )
 
