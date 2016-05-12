@@ -41,7 +41,7 @@ BOOST_PYTHON_MODULE(_pybinding) {
     register_arrayref_converter<ComplexArrayRef>();
 
     register_csr_converter<hop_id>();
-    bp::to_python_converter<num::CsrConstRef<>, csrref_to_scipy>();
+    register_csrref_converter<ComplexCsrConstRef>();
 
     class_<CartesianArray, noncopyable>{
         "CartesianArray",

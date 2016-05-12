@@ -314,8 +314,9 @@ struct csr_eigen3_to_scipy {
     }
 };
 
+template<class CsrRef>
 struct csrref_to_scipy {
-    static PyObject* convert(tbm::num::CsrConstRef<> const& s) {
+    static PyObject* convert(CsrRef const& s) {
         auto scipy_sparse = bp::import("scipy.sparse");
         auto csr_matrix = scipy_sparse.attr("csr_matrix");
 
@@ -325,6 +326,11 @@ struct csrref_to_scipy {
         return matrix.release();
     }
 };
+
+template<class T>
+inline void register_csrref_converter() {
+    bp::to_python_converter<T, csrref_to_scipy<T>>();
+}
 
 template<class scalar_t>
 struct scipy_sparse_to_eigen3 {

@@ -15,7 +15,7 @@ struct Reset {
 
 struct GetSparseRef {
     template<class scalar_t>
-    num::CsrConstRef<> operator()(SparseMatrixRC<scalar_t> const& m) const { return csrref(*m); }
+    ComplexCsrConstRef operator()(SparseMatrixRC<scalar_t> const& m) const { return csrref(*m); }
 };
 
 struct NonZeros {
@@ -43,7 +43,7 @@ void Hamiltonian::reset() {
     return var::apply_visitor(Reset(), variant_matrix);
 }
 
-num::CsrConstRef<> Hamiltonian::csrref() const {
+ComplexCsrConstRef Hamiltonian::csrref() const {
     return var::apply_visitor(GetSparseRef(), variant_matrix);
 }
 

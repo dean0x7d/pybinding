@@ -14,6 +14,11 @@ using SparseMatrixXcf = SparseMatrixX<std::complex<float>>;
 using SparseMatrixXd = SparseMatrixX<double>;
 using SparseMatrixXcd = SparseMatrixX<std::complex<double>>;
 
+using num::RealCsrConstRef;
+using num::ComplexCsrConstRef;
+using num::RealEllConstRef;
+using num::ComplexEllConstRef;
+
 /**
  Return a CSR matrix reference
  */

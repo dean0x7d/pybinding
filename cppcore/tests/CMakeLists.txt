@@ -3,6 +3,7 @@ add_executable(catch
     fixtures.hpp
     fixtures.cpp
     test_compute.cpp
+    test_detail.cpp
     test_greens.cpp
     test_leads.cpp
     test_numeric.cpp

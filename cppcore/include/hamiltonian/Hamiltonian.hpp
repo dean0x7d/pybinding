@@ -34,7 +34,7 @@ public:
     explicit operator bool() const;
     void reset();
 
-    num::CsrConstRef<> csrref() const;
+    ComplexCsrConstRef csrref() const;
     int non_zeros() const;
     int rows() const;
     int cols() const;

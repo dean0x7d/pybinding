@@ -60,4 +60,27 @@ struct FilterImpl<TypeList<T, Ts...>, Predicate> {
     >;
 };
 
+namespace impl {
+    template<bool...> struct Bools {};
+
+    template<class> struct AlwaysFalse { static constexpr bool value = false; };
+
+    template<class List, class Target>
+    struct AnyOf;
+
+    template<class Target, class... Ts>
+    struct AnyOf<TypeList<Ts...>, Target> {
+        static constexpr bool value = !std::is_same<
+            Bools<std::is_same<Ts, Target>::value...>,
+            Bools<AlwaysFalse<Ts>::value...>
+        >::value;
+    };
+}
+
+/**
+ Does any type in the list match the Target type?
+ */
+template<class List, class Target>
+using AnyOf = std::integral_constant<bool, impl::AnyOf<List, Target>::value>;
+
 }} // namespace tbm:tl
