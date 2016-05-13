@@ -23,6 +23,7 @@ void export_core() {
     .add_property("onsite_modifiers", &Model::onsite_modifiers)
     .add_property("hopping_modifiers", &Model::hopping_modifiers)
     .add_property("system", return_copy(&Model::system))
+    .add_property("raw_hamiltonian", return_copy(&Model::hamiltonian))
     .add_property("hamiltonian", return_internal_copy(
         [](Model const& m) { return m.hamiltonian().csrref(); })
     )

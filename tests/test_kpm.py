@@ -76,3 +76,15 @@ def test_ldos_sublattice():
 
     a, b = (kpm.calc_ldos(np.linspace(-5, 5, 50), 0.1, [0, 0], sub) for sub in ('A', 'B'))
     assert pytest.fuzzy_equal(a.ldos, b.ldos[::-1], rtol=1e-3, atol=1e-6)
+
+
+def test_optimized_hamiltonian():
+    """Currently available only in internal interface"""
+    from pybinding import _cpp
+    model = pb.Model(graphene.monolayer(), graphene.hexagon_ac(10))
+    h = model.hamiltonian
+    oh = _cpp.OptimizedHamiltonian(model.raw_hamiltonian, 0)
+
+    assert oh.matrix.shape == h.shape
+    assert oh.sizes[-1] == h.shape[0]
+    assert len(oh.indices) == h.shape[0]

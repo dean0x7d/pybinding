@@ -35,6 +35,10 @@ public:
 };
 
 void export_modifiers() {
+    class_<Hamiltonian>{"Hamiltonian", no_init}
+    .add_property("csrref", return_internal_copy(&Hamiltonian::csrref))
+    ;
+
     class_<HopIdRef>{"HopIdRef", no_init}
     .add_property("ids", return_internal_copy([](HopIdRef const& s) { return arrayref(s.ids); }))
     .add_property("name_map", return_copy([](HopIdRef const& s) { return s.name_map; }))

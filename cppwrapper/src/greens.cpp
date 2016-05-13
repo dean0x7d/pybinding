@@ -9,7 +9,72 @@
 using namespace boost::python;
 using namespace tbm;
 
+namespace {
+
+using OptHamVariant = var::variant<kpm::OptimizedHamiltonian<float>,
+                                   kpm::OptimizedHamiltonian<double>,
+                                   kpm::OptimizedHamiltonian<std::complex<float>>,
+                                   kpm::OptimizedHamiltonian<std::complex<double>>>;
+
+struct MakeOptHam {
+    int i;
+
+    template<class scalar_t>
+    OptHamVariant operator()(SparseMatrixRC<scalar_t> const& m) const {
+        auto ret = kpm::OptimizedHamiltonian<scalar_t>(m.get(), {kpm::MatrixConfig::Reorder::ON,
+                                                                 kpm::MatrixConfig::Format::CSR});
+        auto indices = std::vector<int>(m->rows());
+        std::iota(indices.begin(), indices.end(), 0);
+        auto bounds = kpm::Bounds<scalar_t>(m.get(), KPMConfig{}.lanczos_precision);
+        ret.optimize_for({i, indices}, bounds.scaling_factors());
+        return ret;
+    }
+};
+
+struct ReturnMatrix {
+    template<class scalar_t>
+    ComplexCsrConstRef operator()(kpm::OptimizedHamiltonian<scalar_t> const& oh) const {
+        return csrref(oh.csr());
+    }
+};
+
+struct Sizes {
+    template<class scalar_t>
+    std::vector<int> const& operator()(kpm::OptimizedHamiltonian<scalar_t> const& oh) const {
+        return oh.sizes().get_data();
+    }
+};
+
+struct Indices {
+    template<class scalar_t>
+    ArrayXi const& operator()(kpm::OptimizedHamiltonian<scalar_t> const& oh) const {
+        return oh.idx().cols;
+    }
+};
+
+class PyOptHam {
+    Hamiltonian h;
+    OptHamVariant oh;
+
+public:
+    PyOptHam(Hamiltonian const& h, int index)
+        : h(h), oh(var::apply_visitor(MakeOptHam{index}, h.get_variant())) {}
+
+    ComplexCsrConstRef matrix() const { return var::apply_visitor(ReturnMatrix{}, oh); }
+    std::vector<int> const& sizes() const { return var::apply_visitor(Sizes{}, oh); }
+    ArrayXi const& indices() const { return var::apply_visitor(Indices{}, oh); }
+};
+
+} // anonymously namespace
+
+
 void export_greens() {
+    class_<PyOptHam>{"OptimizedHamiltonian", init<Hamiltonian const&, int>()}
+    .add_property("matrix", return_internal_copy(&PyOptHam::matrix))
+    .add_property("sizes", return_arrayref(&PyOptHam::sizes))
+    .add_property("indices", return_arrayref(&PyOptHam::indices))
+    ;
+
     class_<BaseGreens, noncopyable>{"Greens", no_init}
     .def("report", &BaseGreens::report, args("self", "shortform"_kw=false))
     .def("calc_greens", &BaseGreens::calc_greens,
