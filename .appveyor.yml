@@ -14,7 +14,7 @@ environment:
 install:
   - cmd: git submodule update -q --init --recursive
   - cmd: conda update -y -q conda
-  - cmd: conda create -y -q -n pb35 python=3.5 numpy scipy matplotlib
+  - cmd: conda create -y -q -n pb35 python=3.5 numpy scipy=0.17.0=np111py35_1 matplotlib
   - cmd: activate pb35
   - cmd: pip install -U -q wheel
   - cmd: pip install -q twine
