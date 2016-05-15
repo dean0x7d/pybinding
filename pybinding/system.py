@@ -14,7 +14,7 @@ from .utils import with_defaults
 from .support.pickle import pickleable
 from .support.fuzzy_set import FuzzySet
 
-__all__ = ['Positions', 'System', 'Sites', 'plot_hoppings', 'plot_sites',
+__all__ = ['Positions', 'System', 'Sites', 'plot_sites', 'plot_hoppings',
            'plot_periodic_boundaries', 'structure_plot_properties']
 
 
@@ -243,11 +243,11 @@ def structure_plot_properties(axes='xyz', site=None, hopping=None, boundary=None
         The spatial axes to plot. E.g. 'xy' for the default view,
         or 'yz', 'xz' and similar to plot a rotated view.
     site : dict
-        Arguments to be forwarded to :func:`plot_sites`.
+        Arguments forwarded to :func:`plot_sites`.
     hopping : dict
-        Arguments to be forwarded to :func:`plot_hoppings`.
+        Arguments forwarded to :func:`plot_hoppings`.
     boundary : dict
-        Arguments to be forwarded to :func:`plot_periodic_boundaries`.
+        Arguments forwarded to :func:`plot_periodic_boundaries`.
     **kwargs
         Additional args are reserved for internal implementation.
 
@@ -286,105 +286,39 @@ def _rotate(position, axes):
     return tuple(position[mapping[a]] for a in axes)
 
 
-def plot_hoppings(positions, hoppings, width=1.0, offset=(0, 0, 0), blend=1.0, boundary=(),
-                  axes='xyz', **kwargs):
-    """Plot hopping lines between sites
+def plot_sites(positions, data, radius=0.025, offset=(0, 0, 0), blend=1.0,
+               colors='auto', axes='xyz', **kwargs):
+    """Plot circles at lattice site `positions` with colors based on `data`
 
     Parameters
     ----------
-    positions : Positions
-        Site coordinates in the form of a (x, y, z) tuple of arrays.
-    hoppings : :class:`~scipy.sparse.coo_matrix`
-        Sparse COO matrix with the hopping data, usually `model.system.hoppings.tocoo()`.
-    width : float
-        Width of the hopping plot lines.
-    offset : Tuple[float, float, float]
-        Offset all positions by a constant value.
-    blend : float
-        Blend all colors to white (fake alpha blending): expected values between 0 and 1.
-    boundary : Tuple[int, array_like]
-        If given, apply the boundary (sign, shift).
-    axes : str
-        The spatial axes to plot. E.g. 'xy', 'yz', etc.
-    **kwargs
-        Forwarded to matplotlib's :class:`.LineCollection`.
-
-    Returns
-    -------
-    :class:`.LineCollection`
-    """
-    if width == 0 or hoppings.data.size == 0:
-        return
-
-    kwargs = with_defaults(kwargs, zorder=-1, colors='#666666')
-
-    colors = kwargs.pop('colors')
-    if colors == 'default':
-        colors = ["#666666", "#1b9e77", "#7570b3", "#e7298a", "#66a61e", "#e6ab02", "#a6761d"]
-    unique_hop_ids = np.arange(hoppings.data.max() + 1)
-    kwargs['cmap'], kwargs['norm'] = pltutils.direct_cmap_norm(unique_hop_ids, colors, blend)
-
-    rotate = functools.partial(_rotate, axes=axes)
-    positions, offset = map(rotate, (positions, offset))
-
-    ax = plt.gca()
-    ndims = 3 if ax.name == '3d' else 2
-    pos = np.array(positions[:ndims]).T + np.array(offset[:ndims])
-
-    if not boundary:
-        lines = ((pos[i], pos[j]) for i, j in zip(hoppings.row, hoppings.col))
-    else:
-        sign, shift = boundary
-        shift = rotate(shift)[:ndims]
-        if sign > 0:
-            lines = ((pos[i] + shift, pos[j]) for i, j in zip(hoppings.row, hoppings.col))
-        else:
-            lines = ((pos[i], pos[j] - shift) for i, j in zip(hoppings.row, hoppings.col))
-
-    if ndims == 2:
-        from matplotlib.collections import LineCollection
-        col = LineCollection(lines, lw=width, **kwargs)
-        col.set_array(hoppings.data)
-        ax.add_collection(col)
-        ax.autoscale_view()
-    else:
-        from mpl_toolkits.mplot3d.art3d import Line3DCollection
-        had_data = ax.has_data()
-        col = Line3DCollection(list(lines), lw=width, **kwargs)
-        col.set_array(hoppings.data)
-        ax.add_collection3d(col)
-
-        ax.set_zmargin(0.5)
-        minmax = np.vstack((pos.min(axis=0), pos.max(axis=0))).T
-        ax.auto_scale_xyz(*minmax, had_data=had_data)
-
-    return col
-
-
-def plot_sites(positions, data, radius=0.025, offset=(0, 0, 0), blend=1.0, axes='xyz', **kwargs):
-    """Plot circles at lattice site positions
-
-    Parameters
-    ----------
-    positions : Positions
-        Site coordinates in the form of a (x, y, z) tuple of arrays.
+    positions : Tuple[array_like, array_like, array_like]
+        Site coordinates in the form of an (x, y, z) tuple of 1D arrays.
     data : array_like
         Color data at each site. Should be a 1D array of the same size as `positions`.
+        If the data is discrete with few unique values, the discrete `colors` parameter
+        should be used. For continuous data, setting a `cmap` (colormap) is preferred.
     radius : Union[float, array_like]
         Radius (in data units) of the plotted circles representing lattice sites.
-        Should be a scalar value or array with the same size as `positions`.
+        Should be a scalar value or an array with the same size as `positions`.
     offset : Tuple[float, float, float]
         Offset all positions by a constant value.
     blend : float
         Blend all colors to white (fake alpha blending): expected values between 0 and 1.
+    colors : Union[List[str], str]
+        List of colors to apply to the drawn circles. This assumes that `data` is discrete
+        with only a few unique values. For example, sublattice data for graphene will only
+        contain two unique values for the A and B sublattices, which will be assigned the
+        first two colors from the `colors` list. For continuous data, the `cmap` (colormap)
+        parameter should be used instead.
     axes : str
         The spatial axes to plot. E.g. 'xy', 'yz', etc.
     **kwargs
-        Forwarded to :class:`.CircleCollection`.
+        Forwarded to :class:`matplotlib.collections.CircleCollection`.
 
     Returns
     -------
-    :class:`.CircleCollection`
+    :class:`matplotlib.collections.CircleCollection`
     """
     if np.all(radius == 0):
         return
@@ -393,8 +327,7 @@ def plot_sites(positions, data, radius=0.025, offset=(0, 0, 0), blend=1.0, axes=
 
     # create colormap from discrete colors
     if 'cmap' not in kwargs:
-        colors = kwargs.pop('colors', None)
-        if not colors or colors == 'default':
+        if not colors or colors == 'auto':
             colors = ["#377ec8", "#ff7f00", "#41ae76", "#e41a1c",
                       "#984ea3", "#ffff00", "#a65628", "#f781bf"]
         elif colors == 'pairs':
@@ -439,6 +372,94 @@ def plot_sites(positions, data, radius=0.025, offset=(0, 0, 0), blend=1.0, axes=
     return col
 
 
+def plot_hoppings(positions, hoppings, width=1.0, offset=(0, 0, 0), blend=1.0, colors='#666666',
+                  axes='xyz', boundary=(), **kwargs):
+    """Plot lines between lattice sites at `positions` based on the `hoppings` matrix
+
+    Parameters
+    ----------
+    positions : Tuple[array_like, array_like, array_like]
+        Site coordinates in the form of an (x, y, z) tuple of 1D arrays.
+    hoppings : :class:`~scipy.sparse.coo_matrix`
+        Sparse matrix with the hopping data, usually :meth:`System.hoppings`.
+        The `row` and `col` indices of the sparse matrix are used to draw lines between
+        lattice sites, while `data` determines the color.
+    width : float
+        Width of the hopping plot lines.
+    offset : Tuple[float, float, float]
+        Offset all positions by a constant value.
+    blend : float
+        Blend all colors to white (fake alpha blending): expected values between 0 and 1.
+    axes : str
+        The spatial axes to plot. E.g. 'xy', 'yz', etc.
+    colors : Union[List[str], str]
+        By default, all hopping lines are grey. Pass `colors='auto'` to colorize them.
+        In addition, a list of colors can be passed. Line colors are assigned based on
+        `hoppings.data` and it is assumed to be discrete with only a few unique values.
+        For example, :meth:`System.hoppings` returns lattice hopping ids, so each unique
+        hopping will be assigned a color from `colors`. For continuous data, the `cmap`
+        (colormap) parameter should be used instead.
+    boundary : Tuple[int, array_like]
+        If given, apply the boundary (sign, shift).
+    **kwargs
+        Forwarded to :class:`matplotlib.collections.LineCollection`.
+
+    Returns
+    -------
+    :class:`matplotlib.collections.LineCollection`
+    """
+    if width == 0 or hoppings.data.size == 0:
+        return
+
+    kwargs = with_defaults(kwargs, zorder=-1)
+
+    # create colormap from discrete colors
+    if 'cmap' not in kwargs:
+        if not colors or colors == 'auto':
+            colors = ["#666666", "#1b9e77", "#7570b3", "#e7298a", "#66a61e", "#e6ab02", "#a6761d"]
+        unique_hop_ids = np.arange(hoppings.data.max() + 1)
+        kwargs['cmap'], kwargs['norm'] = pltutils.direct_cmap_norm(unique_hop_ids, colors, blend)
+
+    rotate = functools.partial(_rotate, axes=axes)
+    positions, offset = map(rotate, (positions, offset))
+    hoppings = hoppings.tocoo()
+
+    ax = plt.gca()
+    ndims = 3 if ax.name == '3d' else 2
+    pos = np.array(positions[:ndims]).T + np.array(offset[:ndims])
+
+    if not boundary:
+        lines = ((pos[i], pos[j]) for i, j in zip(hoppings.row, hoppings.col))
+    else:
+        sign, shift = boundary
+        shift = rotate(shift)[:ndims]
+        if sign > 0:
+            lines = ((pos[i] + shift, pos[j]) for i, j in zip(hoppings.row, hoppings.col))
+        else:
+            lines = ((pos[i], pos[j] - shift) for i, j in zip(hoppings.row, hoppings.col))
+
+    if ndims == 2:
+        from matplotlib.collections import LineCollection
+
+        col = LineCollection(lines, lw=width, **kwargs)
+        col.set_array(hoppings.data)
+        ax.add_collection(col)
+        ax.autoscale_view()
+    else:
+        from mpl_toolkits.mplot3d.art3d import Line3DCollection
+
+        had_data = ax.has_data()
+        col = Line3DCollection(list(lines), lw=width, **kwargs)
+        col.set_array(hoppings.data)
+        ax.add_collection3d(col)
+
+        ax.set_zmargin(0.5)
+        minmax = np.vstack((pos.min(axis=0), pos.max(axis=0))).T
+        ax.auto_scale_xyz(*minmax, had_data=had_data)
+
+    return col
+
+
 def _make_shift_set(boundaries, level):
     """Return a set of boundary shift combinations for the given repetition level"""
     if level == 0:
@@ -457,10 +478,12 @@ def plot_periodic_boundaries(positions, hoppings, boundaries, data, num_periods=
 
     Parameters
     ----------
-    positions : Positions
-        Site coordinates in the form of a (x, y, z) tuple of arrays.
+    positions : Tuple[array_like, array_like, array_like]
+        Site coordinates in the form of an (x, y, z) tuple of 1D arrays.
     hoppings : :class:`~scipy.sparse.coo_matrix`
-        Sparse COO matrix with the hopping data, usually `model.system.hoppings.tocoo()`.
+        Sparse matrix with the hopping data, usually :meth:`System.hoppings`.
+        The `row` and `col` indices of the sparse matrix are used to draw lines between
+        lattice sites, while `data` determines the color.
     boundaries : List[Boundary]
         Periodic boundaries of a :class:`System`.
     data : array_like
