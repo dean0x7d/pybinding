@@ -9,13 +9,15 @@ namespace tbm {
  Full description of a single lead
  */
 class Lead {
+    leads::Spec specification;
     leads::Structure structure;
     leads::HamiltonianPair hamiltonian;
 
 public:
-    Lead(leads::Structure const& ls, leads::HamiltonianPair const& lh)
-        : structure(ls), hamiltonian(lh) {}
+    Lead(leads::Spec const& spec, leads::Structure const& ls, leads::HamiltonianPair const& lh)
+        : specification(spec), structure(ls), hamiltonian(lh) {}
 
+    leads::Spec const& spec() const { return specification; }
     std::vector<int> const& indices() const { return structure.indices; }
     System const& system() const { return structure.system; }
     Hamiltonian const& h0() const { return hamiltonian.h0; }
@@ -35,7 +37,7 @@ public:
     int size() const { return static_cast<int>(specs.size()); }
 
     /// Description of lead number `i`
-    Lead operator[](int i) const { return {structures.at(i), hamiltonians.at(i)}; }
+    Lead operator[](int i) const { return {specs.at(i), structures.at(i), hamiltonians.at(i)}; }
 
     /// Add a lead specified by `direction` and `shape`
     void add(int direction, Shape const& shape) { specs.emplace_back(direction, shape); }

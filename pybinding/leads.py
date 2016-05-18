@@ -5,6 +5,7 @@ The classes represented here are the final product of that process, listed
 in :attr:`.Model.leads`.
 """
 import numpy as np
+import matplotlib.pyplot as plt
 from math import pi
 from scipy.sparse import csr_matrix
 
@@ -113,6 +114,54 @@ class Lead:
         pltutils.annotate_box("lead {}".format(self.index), label_pos, bbox=dict(alpha=0.7))
 
         decorate_structure_plot(**props)
+
+    def plot_contact(self, line_width=1.6, arrow_length=0.5,
+                     shade_width=0.3, shade_color='#d40a0c'):
+        """Plot the shape and direction of the lead contact region
+
+        Parameters
+        ----------
+        line_width : float
+            Width of the line representing the lead contact.
+        arrow_length : float
+            Size of the direction arrow as a fraction of the contact line length.
+        shade_width : float
+            Width of the shaded area as a fraction of the arrow length.
+        shade_color : str
+            Color of the shaded area.
+        """
+        lead_spec = self.impl.spec
+        vectors = self.impl.system.lattice.vectors
+        if len(lead_spec.shape.vertices) != 2 or len(vectors) != 2:
+            raise RuntimeError("This only works for 2D systems")
+
+        # contact line vertices
+        a, b = (v[:2] for v in lead_spec.shape.vertices)
+
+        def plot_contact_line():
+            plt.plot(*zip(a, b), color='black', lw=line_width)
+
+        def rescale_lattice_vector(vec):
+            line_length = np.linalg.norm(a - b)
+            scale = arrow_length * line_length / np.linalg.norm(vec)
+            return vec[:2] * scale
+
+        def plot_arrow(xy, vec, spec, head_width=0.08, head_length=0.2):
+            vnorm = np.linalg.norm(vec)
+            plt.arrow(xy[0], xy[1], *vec, color='black', alpha=0.9, length_includes_head=True,
+                      head_width=vnorm * head_width, head_length=vnorm * head_length)
+            label = r"${}a_{}$".format("-" if spec.sign < 0 else "", spec.axis + 1)
+            pltutils.annotate_box(label, xy + vec / 5, fontsize='large',
+                                  bbox=dict(lw=0, alpha=0.6))
+
+        def plot_polygon(w):
+            plt.gca().add_patch(plt.Polygon([a - w, a + w, b + w, b - w],
+                                            color=shade_color, alpha=0.25, lw=0))
+
+        plot_contact_line()
+        v = rescale_lattice_vector(vectors[lead_spec.axis] * lead_spec.sign)
+        plot_arrow(xy=(a + b) / 2, vec=v, spec=lead_spec)
+        plot_polygon(w=shade_width * v)
 
     def plot_bands(self, start=-pi, end=pi, step=0.05, **kwargs):
         """Plot the band structure of an infinite lead
