@@ -216,6 +216,12 @@ become large. The states with a high LDOS are clearly visible on the outer and i
 graphene ring structure.
 
 
+Further reading
+---------------
+
+For more finite-sized systems check out the :doc:`examples section </examples/finite/index>`.
+
+
 Example
 -------
 
