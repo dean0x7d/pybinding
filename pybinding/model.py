@@ -56,8 +56,8 @@ class Model(_cpp.Model):
                 if isinstance(arg, _cpp.Shape):
                     self._shape = arg
 
-    def attach_lead(self, direction, *where):
-        """Attach a lead to the main system region
+    def attach_lead(self, direction, contact):
+        """Attach a lead to the main system
 
         Not valid for 1D lattices.
 
@@ -68,18 +68,12 @@ class Model(_cpp.Model):
             For example, `direction=2` would create a lead which intersects the main system
             in the :math:`a_2` lattice vector direction. Setting `direction=-2` would create
             a lead on the opposite side of the system, but along the same lattice vector.
-        *where
-            Where the lead should be placed:
-
-            * For 2D lattices: Two points between which the lead should pass.
-            * For 3D lattices: A :class:`.FreeformShape` defining the 2D area of the lead.
+        contact : Shape
+            The place where the lead should contact the main system. For a 2D lattice it's
+            just a :func:`.line` describing the intersection of the lead and the system.
+            For a 3D lattice it's the area described by a 2D :class:`.FreeformShape`.
         """
-        if len(where) == 1 and isinstance(where[0], _cpp.Shape):
-            super().attach_lead(direction, where[0])
-        elif len(where) == 2:
-            super().attach_lead(direction, _cpp.Line(*where))
-        else:
-            raise RuntimeError("Bad arguments")
+        super().attach_lead(direction, contact)
 
     def tokwant(self):
         """Convert this model into `kwant <http://kwant-project.org/>`_ format (finalized)

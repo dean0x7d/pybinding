@@ -44,33 +44,29 @@ def linear_hopping(k=1):
 
 
 def test_api(ring_model):
-    with pytest.raises(RuntimeError) as excinfo:
-        ring_model.attach_lead(1)
-    assert "Bad arguments" in str(excinfo.value)
-
     for direction in [0, 4, -4]:
         with pytest.raises(RuntimeError) as excinfo:
-            ring_model.attach_lead(direction, [0, 0], [0, 0])
+            ring_model.attach_lead(direction, pb.line(0, 0))
         assert "Lead direction must be one of" in str(excinfo.value)
 
 
 def test_partial_miss(ring_model):
     with pytest.raises(RuntimeError) as excinfo:
-        ring_model.attach_lead(2, [0, -5], [5, -5])
+        ring_model.attach_lead(2, pb.line([0, -5], [5, -5]))
         assert ring_model.system
     assert "partially misses main structure" in str(excinfo.value)
 
 
 def test_complete_miss(ring_model):
     with pytest.raises(RuntimeError) as excinfo:
-        ring_model.attach_lead(2, [4, -5], [5, -5])
+        ring_model.attach_lead(2, pb.line([4, -5], [5, -5]))
         assert ring_model.system
     assert "completely misses main structure" in str(excinfo.value)
 
 
 def test_empty(ring_model):
     with pytest.raises(RuntimeError) as excinfo:
-        ring_model.attach_lead(2, [0, 0], [0, 0])
+        ring_model.attach_lead(2, pb.line(0, 0))
         assert ring_model.system
     assert "no sites in lead junction" in str(excinfo.value)
 
@@ -79,8 +75,8 @@ def test_attach():
     """Attach 2 leads to a square lattice system"""
     w, h = 2, 3
     model = square_model(w, h)
-    model.attach_lead(-1, [0, -h/2], [0, h/2])
-    model.attach_lead(+1, [0, -h/2], [0, h/2])
+    model.attach_lead(-1, pb.line([0, -h/2], [0, h/2]))
+    model.attach_lead(+1, pb.line([0, -h/2], [0, h/2]))
     assert len(model.leads) == 2
     assert np.all(model.leads[0].indices == [0, 1, 2])
     assert np.all(model.leads[1].indices == [3, 4, 5])

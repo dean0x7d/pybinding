@@ -67,8 +67,8 @@ else:
             pb.rectangle(x=length, y=width),
             potential_well(v)
         )
-        model.attach_lead(-1, [0, -width / 2 - 0.1], [0, width / 2])
-        model.attach_lead(+1, [0, -width / 2 - 0.1], [0, width / 2])
+        model.attach_lead(-1, pb.line([0, -width / 2 - 0.1], [0, width / 2]))
+        model.attach_lead(+1, pb.line([0, -width / 2 - 0.1], [0, width / 2]))
         return model
 
 
