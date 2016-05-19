@@ -1,7 +1,7 @@
 # pybinding
 
 [![Build Status](https://travis-ci.org/dean0x7d/pybinding.svg?branch=master)](https://travis-ci.org/dean0x7d/pybinding)
-[![Build status](https://ci.appveyor.com/api/projects/status/vd84e6gxixsu9l81?svg=true)](https://ci.appveyor.com/project/dean0x7d/pybinding)
+[![Build status](https://ci.appveyor.com/api/projects/status/vd84e6gxixsu9l81/branch/master?svg=true)](https://ci.appveyor.com/project/dean0x7d/pybinding)
 [![Documentation Status](https://readthedocs.org/projects/pybinding/badge/?version=latest)](http://docs.pybinding.site/)
 [![Gitter](https://img.shields.io/gitter/room/nwjs/nw.js.svg)](https://gitter.im/dean0x7d/pybinding?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge)
 
@@ -76,7 +76,7 @@ You can also open an issue at the [tracker].
 
 
 [documentation]: http://docs.pybinding.site/
-[install instructions]: http://docs.pybinding.site/en/latest/install/index.html
+[install instructions]: http://docs.pybinding.site/page/install/index.html
 [Python]: https://www.python.org/
 [SciPy]: http://www.scipy.org/>
 [FEAST]: http://www.ecs.umass.edu/~polizzi/feast/index.htm
