@@ -3,7 +3,7 @@ import pytest
 import math
 import numpy as np
 import pybinding as pb
-from pybinding.repository import graphene
+from pybinding.repository import graphene, examples
 
 
 polygons = {
@@ -67,3 +67,12 @@ def test_freeform_plot():
     with pytest.raises(RuntimeError) as excinfo:
         sphere(1).plot()
     assert "only works for 2D shapes" in str(excinfo.value)
+
+
+def test_line():
+    """1D shape with 1D lattice"""
+    model = pb.Model(examples.chain_lattice(a=1), pb.line(0, 4.5))
+    assert model.system.num_sites == 4
+
+    model = pb.Model(examples.chain_lattice(a=1), pb.line([0, -0.5], [5, 0.5]))
+    assert model.system.num_sites == 6

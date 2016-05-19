@@ -7,8 +7,37 @@ from . import _cpp
 from . import pltutils
 from .utils import with_defaults
 
-__all__ = ['Polygon', 'FreeformShape', 'primitive', 'rectangle', 'regular_polygon', 'circle',
-           'translational_symmetry']
+__all__ = ['Polygon', 'FreeformShape', 'primitive', 'line', 'rectangle',
+           'regular_polygon', 'circle', 'translational_symmetry']
+
+
+class Line(_cpp.Line):
+    """Shape defined by two points
+
+    This is intended for 1D lattices or for specifying leads for 2D lattices
+
+    Attributes
+    ----------
+    a, b : Union[float, array_like]
+        Start and end points.
+    """
+    def __init__(self, a, b):
+        a, b = map(np.array, (a, b))
+        a.resize(2)
+        b.resize(2)
+        super().__init__(a, b)
+        self.a = a
+        self.b = b
+
+    def plot(self, **kwargs):
+        """Show the line
+
+        Parameters
+        ----------
+        **kwargs
+            Forwarded to :func:`matplotlib.pyplot.plot`.
+        """
+        plt.plot(*zip(self.a, self.b), **with_defaults(kwargs, color='black', lw=1.6))
 
 
 class Polygon(_cpp.Polygon):
@@ -113,6 +142,17 @@ def primitive(a1=1, a2=1, a3=1):
         Number of times to repeat the unit cell in the respective lattice vector directions.
     """
     return _cpp.Primitive(a1, a2, a3)
+
+
+def line(a, b):
+    """A simple line shape intended for 1D lattices or for specifying leads for 2D lattices
+
+    Parameters
+    ----------
+    a, b : Union[float, array_like]
+        Start and end points.
+    """
+    return Line(a, b)
 
 
 def rectangle(x, y=None):
