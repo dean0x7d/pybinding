@@ -28,6 +28,15 @@ void Model::set_symmetry(TranslationalSymmetry const& translational_symmetry) {
 }
 
 void Model::attach_lead(int direction, Shape const& shape) {
+    if (direction == 0) {
+        throw std::logic_error("Lead direction must be one of: 1, 2, 3, -1, -2, -3");
+    } else if (lattice.ndim() == 1) {
+        throw std::logic_error("Attaching leads to 1D lattices is not supported");
+    } else if (std::abs(direction) > lattice.ndim()) {
+        throw std::logic_error(fmt::format("Direction {} is not valid for a {}D lattice",
+                                           direction, lattice.ndim()));
+    }
+
     _leads.add(direction, shape);
     clear_structure();
 }

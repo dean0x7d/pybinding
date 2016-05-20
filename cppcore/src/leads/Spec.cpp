@@ -6,11 +6,7 @@ namespace tbm { namespace leads {
 Spec::Spec(int direction, Shape const& shape)
     : axis(abs(direction) - 1),
       sign(direction != 0 ? direction / abs(direction) : 0),
-      shape(shape) {
-    if (direction == 0 || abs(direction) > 3) {
-        throw std::logic_error("Lead direction must be one of: 1, 2, 3, -1, -2, -3");
-    }
-}
+      shape(shape) {}
 
 void create_attachment_area(Foundation& foundation, Spec const& spec) {
     auto const size = foundation.get_size();

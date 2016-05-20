@@ -2,7 +2,7 @@ import pytest
 
 import numpy as np
 import pybinding as pb
-from pybinding.repository import graphene
+from pybinding.repository import graphene, examples
 
 
 @pytest.fixture
@@ -44,10 +44,18 @@ def linear_hopping(k=1):
 
 
 def test_api(ring_model):
-    for direction in [0, 4, -4]:
+    with pytest.raises(RuntimeError) as excinfo:
+        ring_model.attach_lead(0, pb.line(0, 0))
+    assert "Lead direction must be one of" in str(excinfo.value)
+
+    for direction in [3, -3]:
         with pytest.raises(RuntimeError) as excinfo:
             ring_model.attach_lead(direction, pb.line(0, 0))
-        assert "Lead direction must be one of" in str(excinfo.value)
+        assert "not valid for a 2D lattice" in str(excinfo.value)
+
+    with pytest.raises(RuntimeError) as excinfo:
+        pb.Model(examples.chain_lattice()).attach_lead(2, pb.line(0, 0))
+    assert "Attaching leads to 1D lattices is not supported" in str(excinfo.value)
 
 
 def test_partial_miss(ring_model):

@@ -139,7 +139,8 @@ class Lead:
         a, b = (v[:2] for v in lead_spec.shape.vertices)
 
         def plot_contact_line():
-            plt.plot(*zip(a, b), color='black', lw=line_width)
+            # Not using plt.plot() because it would reset axis limits
+            plt.gca().add_patch(plt.Polygon([a, b], color='black', lw=line_width))
 
         def rescale_lattice_vector(vec):
             line_length = np.linalg.norm(a - b)
