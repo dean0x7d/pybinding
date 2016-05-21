@@ -1,34 +1,20 @@
 #include "system/Foundation.hpp"
 #include "system/Shape.hpp"
 
-#include <Eigen/Dense>  // for `colPivHouseholderQr()`
-
 namespace tbm { namespace detail {
 
 std::pair<Index3D, Index3D> find_bounds(Shape const& shape, Lattice const& lattice) {
-    auto const ndim = lattice.vectors.size();
-    auto const lattice_matrix = [&]{
-        Eigen::MatrixXf m(ndim, ndim);
-        for (auto i = 0u; i < ndim; ++i) {
-            m.col(i) = lattice.vectors[i].head(ndim);
-        }
-        return m;
-    }();
-
     Array3i lower_bound = Array3i::Constant(std::numeric_limits<int>::max());
     Array3i upper_bound = Array3i::Constant(std::numeric_limits<int>::min());
     for (auto const& point : shape.vertices) {
-        // Translate Cartesian coordinates `p` into lattice vector coordinates `v`
-        // -> solve `A*v = p`, where A is `lattice_matrix`
-        auto const& p = point.head(ndim);
-        Array3i v = Array3i::Zero();
-        v.head(ndim) = lattice_matrix.colPivHouseholderQr().solve(p).cast<int>();
-
+        // Translate Cartesian coordinates `point` into lattice vector coordinates `v`
+        Array3i const v = lattice.translate_coordinates(point).cast<int>();
         lower_bound = (v < lower_bound).select(v, lower_bound);
         upper_bound = (v > upper_bound).select(v, upper_bound);
     }
 
     // Add +/- 1 padding to compensate for `cast<int>()` truncation
+    auto const ndim = lattice.ndim();
     lower_bound.head(ndim) -= 1;
     upper_bound.head(ndim) += 1;
 
@@ -141,10 +127,10 @@ Foundation::Foundation(Lattice const& lattice, Shape const& shape)
       size((bounds.second - bounds.first) + Index3D::Ones()),
       size_n(static_cast<int>(lattice.sublattices.size())),
       num_sites(size.prod() * size_n),
-      positions(detail::generate_positions(lattice.calc_position(bounds.first, shape.offset),
+      positions(detail::generate_positions(lattice.calc_position(bounds.first) + shape.offset,
                                            size, lattice)),
       is_valid(shape.contains(positions)) {
-    remove_dangling(*this, lattice.min_neighbours);
+    remove_dangling(*this, lattice.min_neighbors);
 }
 
 HamiltonianIndices::HamiltonianIndices(Foundation const& foundation)

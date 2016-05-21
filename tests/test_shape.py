@@ -76,3 +76,19 @@ def test_line():
 
     model = pb.Model(examples.chain_lattice(a=1), pb.line([0, -0.5], [5, 0.5]))
     assert model.system.num_sites == 6
+
+
+def test_primitive():
+    """The primitive shape can be positioned using the lattice origin"""
+    model = pb.Model(graphene.monolayer(), pb.primitive(2, 2))
+    assert model.system.num_sites == 8
+    assert np.isclose(model.system.x.min(), -1.5 * graphene.a, rtol=1e-3)
+    assert np.isclose(model.system.y.min(), -2 * graphene.a_cc, rtol=1e-3)
+
+    model = pb.Model(
+        graphene.monolayer().with_offset([0.5 * graphene.a, 0.5 * graphene.a_cc]),
+        pb.primitive(2, 2)
+    )
+    assert model.system.num_sites == 8
+    assert np.isclose(model.system.x.min(), -graphene.a, rtol=1e-3)
+    assert np.isclose(model.system.y.min(), -1.5 * graphene.a_cc, rtol=1e-3)

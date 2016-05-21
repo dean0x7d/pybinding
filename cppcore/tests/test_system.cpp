@@ -81,8 +81,30 @@ TEST_CASE("Lattice", "[lattice]") {
 
     SECTION("Calculate position") {
         auto const a = lattice.add_sublattice("A", {0, 0, 0.5});
-        REQUIRE(lattice.calc_position({1, 2, 0}, {0.5, 0, 0}, a).isApprox(Cartesian(1.5, 2, 0.5)));
+        REQUIRE(lattice.calc_position({1, 2, 0}, a).isApprox(Cartesian(1, 2, 0.5)));
     }
+
+    SECTION("Set origin") {
+        REQUIRE_NOTHROW(lattice.set_offset({0.5f, 0.5f, 0}));
+        REQUIRE_THROWS(lattice.set_offset({0.6f, 0, 0}));
+        REQUIRE_THROWS(lattice.set_offset({0, -0.6f, 0}));
+
+        auto const copy = lattice.with_offset({0.5f, 0, 0});
+        REQUIRE(copy.calc_position({1, 2, 0}).isApprox(Cartesian(1.5f, 2, 0)));
+    }
+
+    SECTION("Min neighbors") {
+        auto const copy = lattice.with_min_neighbors(3);
+        REQUIRE(copy.min_neighbors == 3);
+    }
+}
+
+TEST_CASE("Lattice translate coordinates", "[lattice]") {
+    auto const lattice = Lattice({1, 0, 0}, {1, 1, 0});
+
+    REQUIRE(lattice.translate_coordinates({1, 0, 0}).isApprox(Vector3f(1, 0, 0)));
+    REQUIRE(lattice.translate_coordinates({1.5, 0.5, 0}).isApprox(Vector3f(1, 0.5, 0)));
+    REQUIRE(lattice.translate_coordinates({0, 0, 1}).isApprox(Vector3f(0, 0, 0)));
 }
 
 TEST_CASE("SiteStateModifier", "[modifier]") {

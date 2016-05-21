@@ -101,10 +101,13 @@ void export_system() {
     ;
 
     class_<Hopping>{"Hopping"}
-    .add_property("relative_index", return_copy(&Hopping::relative_index))
-    .def_readonly("to_sublattice", &Hopping::to_sublattice)
-    .def_readonly("id", &Hopping::id)
-    .def_readonly("is_conjugate", &Hopping::is_conjugate)
+    .add_property("relative_index", return_copy(&Hopping::relative_index),
+                  "Relative index between two unit cells - note that it may be (0, 0, 0)")
+    .def_readonly("to_sublattice", &Hopping::to_sublattice,
+                  "Sublattice ID of the hopping destination")
+    .def_readonly("id", &Hopping::id, "Points to the entry in :attr:`Lattice.hopping_energies`")
+    .def_readonly("is_conjugate", &Hopping::is_conjugate,
+                  "True if this is an automatically added complex conjugate")
     .enable_pickling()
     .def("__getstate__", [](Hopping const& h) {
         return make_tuple(h.relative_index, h.to_sublattice, h.id, h.is_conjugate);
@@ -116,10 +119,11 @@ void export_system() {
     ;
 
     class_<Sublattice>{"Sublattice"}
-    .add_property("offset", return_copy(&Sublattice::offset))
-    .def_readonly("onsite", &Sublattice::onsite)
-    .def_readonly("alias", &Sublattice::alias)
-    .add_property("hoppings", &Sublattice::hoppings)
+    .add_property("offset", return_copy(&Sublattice::offset), "Relative to global lattice offset")
+    .def_readonly("onsite", &Sublattice::onsite, "Onsite energy")
+    .def_readonly("alias", &Sublattice::alias,
+                  "For supercells only: allows two sublattices to have the same ID")
+    .add_property("hoppings", &Sublattice::hoppings, "List of :class:`~_pybinding.Hopping`")
     .enable_pickling()
     .def("__getstate__", [](Sublattice const& s) {
         return make_tuple(s.offset, s.onsite, s.alias, s.hoppings);
@@ -138,23 +142,32 @@ void export_system() {
     class_<Lattice>{"Lattice",
                     init<Cartesian, optional<Cartesian, Cartesian>>(args("a1", "a2", "a3"))}
     .def("_add_sublattice", &Lattice::add_sublattice,
-         args("self", "name", "offset", "onsite_potential"_kw=.0f, "alias"_kw=-1))
+         args("self", "name", "offset", "onsite_potential", "alias"))
     .def("_add_hopping", &Lattice::add_hopping,
          args("self", "relative_index", "from_sublattice", "to_sublattice", "energy"))
     .def("_register_hopping_energy", &Lattice::register_hopping_energy, args("self", "energy"))
     .def("_add_registered_hopping", &Lattice::add_registered_hopping,
          args("self", "relative_index", "from_sublattice", "to_sublattice", "id"))
-    .add_property("vectors", &Lattice::vectors)
-    .add_property("sublattices", &Lattice::sublattices)
-    .add_property("hopping_energies", &Lattice::hopping_energies)
+    .add_property("vectors", &Lattice::vectors, "Primitive lattice vectors")
+    .add_property("sublattices", &Lattice::sublattices, "List of :class:`~_pybinding.Sublattice`")
+    .add_property("hopping_energies", &Lattice::hopping_energies,
+                  "Unique energies indexed by hopping IDs")
     .add_property("sub_name_map", &Lattice::sub_name_map)
     .add_property("hop_name_map", &Lattice::hop_name_map)
-    .def_readwrite("min_neighbors", &Lattice::min_neighbours)
+    .add_property("offset", return_copy(&Lattice::offset), &Lattice::set_offset, R"(
+        Global lattice offset: sublattice offsets are defined relative to this
+
+        It must be within half the length of a primitive lattice vector.)")
+    .def_readwrite("min_neighbors", &Lattice::min_neighbors, R"(
+        Minimum number of neighbours required at each lattice site
+
+        When constructing a finite-sized system, lattice sites with less neighbors
+        than this minimum will be considered as "dangling" and they will be removed.)")
     .enable_pickling()
     .def("__getinitargs__", [](Lattice const& l) { return l.vectors; })
     .def("__getstate__", [](Lattice const& l) {
         return make_tuple(l.sublattices, l.hopping_energies, l.sub_name_map, l.hop_name_map,
-                          l.min_neighbours);
+                          l.min_neighbors, l.offset);
     })
     .def("__setstate__", [](Lattice& l, tuple t) {
         l.sublattices = extract<decltype(l.sublattices)>(t[0]);
@@ -165,7 +178,8 @@ void export_system() {
                                             [](std::complex<double> e) { return e.imag() != .0; });
         l.sub_name_map = extract<decltype(l.sub_name_map)>(t[2]);
         l.hop_name_map = extract<decltype(l.hop_name_map)>(t[3]);
-        l.min_neighbours = extract<decltype(l.min_neighbours)>(t[4]);
+        l.min_neighbors = extract<decltype(l.min_neighbors)>(t[4]);
+        l.offset = (len(t) >= 6) ? extract<decltype(l.offset)>(t[5]) : Cartesian(0, 0, 0);
     })
     ;
 

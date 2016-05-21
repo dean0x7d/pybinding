@@ -1,3 +1,4 @@
+from copy import copy
 from math import pi, atan2
 
 import numpy as np
@@ -187,6 +188,40 @@ class Lattice(_cpp.Lattice):
                     continue
 
                 self.add_one_hopping(relative_index, from_sub, to_sub, hopping_energy)
+
+    def with_offset(self, position):
+        """Return a copy of this lattice with a different offset
+
+        It must be within half the length of a primitive lattice vector
+
+        Parameters
+        ----------
+        position : array_like
+            Cartesian offset in the same length unit as the lattice vectors.
+
+        Returns
+        -------
+        :class:`Lattice`
+        """
+        cp = copy(self)
+        cp.offset = position
+        return cp
+
+    def with_min_neighbors(self, number):
+        """Return a copy of this lattice with a different minimum neighbor count
+
+        Parameters
+        ----------
+        number : int
+            The minimum number of neighbors.
+
+        Returns
+        -------
+        :class:`Lattice`
+        """
+        cp = copy(self)
+        cp.min_neighbors = number
+        return cp
 
     def reciprocal_vectors(self) -> list:
         """Calculate the reciprocal space lattice vectors

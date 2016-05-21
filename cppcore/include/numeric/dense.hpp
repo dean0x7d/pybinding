@@ -31,6 +31,7 @@ using Eigen::ArrayXXf;
 using Eigen::ArrayXXcf;
 using Eigen::ArrayXXd;
 using Eigen::ArrayXXcd;
+using Eigen::Vector3f;
 using Eigen::VectorXi;
 using Eigen::VectorXf;
 using Eigen::VectorXcf;

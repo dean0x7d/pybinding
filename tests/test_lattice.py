@@ -107,6 +107,19 @@ def test_add_hopping(mock_lattice):
     assert "Can't create any more hoppings" in str(excinfo.value)
 
 
+def test_builder():
+    """Builder pattern methods"""
+    lattice = pb.Lattice([1, 0], [0, 1])
+
+    copy = lattice.with_offset([0, 0.5])
+    assert pytest.fuzzy_equal(copy.offset, [0, 0.5, 0])
+    assert pytest.fuzzy_equal(lattice.offset, [0, 0, 0])
+
+    copy = lattice.with_min_neighbors(5)
+    assert copy.min_neighbors == 5
+    assert lattice.min_neighbors == 1
+
+
 def test_pickle_round_trip(lattice, tmpdir):
     file_name = str(tmpdir.join('file.npz'))
     pb.save(lattice, file_name)

@@ -1,12 +1,25 @@
 #include "system/Lattice.hpp"
 
+#include <Eigen/Dense>  // for `colPivHouseholderQr()`
+
 namespace tbm {
 
-Lattice::Lattice(Cartesian v1, Cartesian v2, Cartesian v3) {
-    vectors.push_back(v1);
-    if (v2 != Cartesian::Zero()) vectors.push_back(v2);
-    if (v3 != Cartesian::Zero()) vectors.push_back(v3);
+void Sublattice::add_hopping(Index3D relative_index, sub_id to_sub, hop_id hop, bool is_conj) {
+    bool already_exists = std::any_of(hoppings.begin(), hoppings.end(), [&](Hopping const& h) {
+        return h.relative_index == relative_index && h.to_sublattice == to_sub;
+    });
 
+    if (already_exists) {
+        throw std::logic_error("The specified hopping already exists.");
+    }
+
+    hoppings.push_back({relative_index, to_sub, hop, is_conj});
+}
+
+Lattice::Lattice(Cartesian a1, Cartesian a2, Cartesian a3) {
+    vectors.push_back(a1);
+    if (!a2.isZero()) { vectors.push_back(a2); }
+    if (!a3.isZero()) { vectors.push_back(a3); }
     vectors.shrink_to_fit();
 }
 
@@ -93,6 +106,14 @@ void Lattice::add_registered_hopping(Index3D relative_index, sub_id from_sub,
     sublattices[to_sub].add_hopping(-relative_index, from_sub, hopping_id, /*is_conjugate*/true);
 }
 
+void Lattice::set_offset(Cartesian position) {
+    if (any_of(translate_coordinates(position).array().abs() > 0.55f)) {
+        throw std::logic_error("Lattice origin must not be moved by more than "
+                               "half the length of a primitive lattice vector.");
+    }
+    offset = position;
+}
+
 int Lattice::max_hoppings() const {
     auto max_size = 0;
     for (auto& sub : sublattices) {
@@ -104,20 +125,8 @@ int Lattice::max_hoppings() const {
     return max_size;
 }
 
-void Sublattice::add_hopping(Index3D relative_index, sub_id to_sub, hop_id hop, bool is_conj) {
-    bool already_exists = std::any_of(hoppings.begin(), hoppings.end(), [&](Hopping const& h) {
-        return h.relative_index == relative_index && h.to_sublattice == to_sub;
-    });
-
-    if (already_exists) {
-        throw std::logic_error("The specified hopping already exists.");
-    }
-
-    hoppings.push_back({relative_index, to_sub, hop, is_conj});
-}
-
-Cartesian Lattice::calc_position(Index3D index, Cartesian origin, sub_id sub) const {
-    auto position = origin;
+Cartesian Lattice::calc_position(Index3D index, sub_id sub) const {
+    auto position = offset;
     // Bravais lattice position
     for (auto i = 0u; i < vectors.size(); ++i) {
         position += static_cast<float>(index[i]) * vectors[i];
@@ -126,6 +135,35 @@ Cartesian Lattice::calc_position(Index3D index, Cartesian origin, sub_id sub) co
         position += sublattices[sub].offset;
     }
     return position;
+}
+
+Vector3f Lattice::translate_coordinates(Cartesian position) const {
+    auto const size = ndim();
+    auto const lattice_matrix = [&]{
+        auto m = Eigen::MatrixXf(size, size);
+        for (auto i = 0; i < size; ++i) {
+            m.col(i) = vectors[i].head(size);
+        }
+        return m;
+    }();
+
+    // Solve `lattice_matrix * v = p`
+    auto const& p = position.head(size);
+    auto v = Vector3f(0, 0, 0);
+    v.head(size) = lattice_matrix.colPivHouseholderQr().solve(p);
+    return v;
+}
+
+Lattice Lattice::with_offset(Cartesian position) const {
+    auto new_lattice = *this;
+    new_lattice.set_offset(position);
+    return new_lattice;
+}
+
+Lattice Lattice::with_min_neighbors(int number) const {
+    auto new_lattice = *this;
+    new_lattice.min_neighbors = number;
+    return new_lattice;
 }
 
 } // namespace tbm
