@@ -41,8 +41,7 @@ public:
 
 class PyShape : public Shape, public wrapper<Shape> {
 public:
-    PyShape(Vertices const& vertices, object py_contains, Cartesian offset)
-        : Shape(vertices, {}, offset) {
+    PyShape(Vertices const& vertices, object py_contains) : Shape(vertices) {
         contains = [py_contains](CartesianArray const& p) {
             object result = py_contains(arrayref(p.x), arrayref(p.y), arrayref(p.z));
             return extract<ArrayX<bool>>(result)();
@@ -183,26 +182,25 @@ void export_system() {
     })
     ;
 
-    class_<Primitive> {
+    class_<Primitive>{
         "Primitive", "Shape of the primitive unit cell",
         init<int, int, int> {args("self", "a1"_kw=1, "a2"_kw=1, "a3"_kw=1)}
     };
 
-    class_<PyShape, noncopyable>{"Shape",
-        init<PyShape::Vertices const&, object, Cartesian>{
-            args("self", "vertices", "contains", "offset")
-        }
+    class_<PyShape, noncopyable>{
+        "Shape", init<PyShape::Vertices const&, object>(args("self", "vertices", "contains"))
     }
     .add_property("vertices", return_copy(&PyShape::vertices))
-    .add_property("offset", return_copy(&PyShape::offset))
+    .add_property("lattice_offset", return_copy(&PyShape::lattice_offset),
+                  &PyShape::lattice_offset)
     ;
 
-    class_<Line, bases<Shape>, noncopyable>{"Line",
-        init<Cartesian, Cartesian, optional<Cartesian>>{args("self", "a", "b", "offset")}
+    class_<Line, bases<Shape>, noncopyable>{
+        "Line", init<Cartesian, Cartesian>(args("self", "a", "b"))
     };
 
-    class_<Polygon, bases<Shape>, noncopyable> {"Polygon",
-        init<Polygon::Vertices const&, Cartesian> {args("self", "vertices", "offset")}
+    class_<Polygon, bases<Shape>, noncopyable>{
+        "Polygon", init<Polygon::Vertices const&>(args("self", "vertices"))
     };
 
     class_<TranslationalSymmetry>{

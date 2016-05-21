@@ -30,14 +30,14 @@ public:
     using Contains = std::function<ArrayX<bool>(CartesianArray const&)>;
 
     Shape() = default;
-    Shape(Vertices const& vertices, Contains const& contains, Cartesian offset);
+    explicit Shape(Vertices const& vertices, Contains const& contains = {});
 
     /// A shape is valid if it has a `contains` function
     explicit operator bool() const { return static_cast<bool>(contains); }
 
     Vertices vertices; ///< bounding vertices which define the initial volume
     Contains contains; ///< return `true` for `positions` located within the shape
-    Cartesian offset; ///< offset of the lattice origin from the shape origin
+    Cartesian lattice_offset = {0, 0, 0}; ///< set a specific lattice offset, see Lattice class
 };
 
 /**
@@ -45,7 +45,7 @@ public:
  */
 class Line : public Shape {
 public:
-    Line(Cartesian a, Cartesian b, Cartesian offset = Cartesian::Zero());
+    Line(Cartesian a, Cartesian b);
 };
 
 /**
@@ -55,7 +55,7 @@ public:
  */
 class Polygon : public Shape {
 public:
-    Polygon(Vertices const& vertices, Cartesian offset = Cartesian::Zero());
+    Polygon(Vertices const& vertices);
 };
 
 /**
@@ -63,9 +63,7 @@ public:
  */
 class FreeformShape : public Shape {
 public:
-    FreeformShape(Contains const& contains, Cartesian width,
-                  Cartesian center = Cartesian::Zero(),
-                  Cartesian offset = Cartesian::Zero());
+    FreeformShape(Contains const& contains, Cartesian width, Cartesian center = {0, 0, 0});
 };
 
 namespace detail {

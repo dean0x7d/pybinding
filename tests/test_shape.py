@@ -22,7 +22,7 @@ def polygon(request):
 
 def test_polygon_api():
     with pytest.raises(RuntimeError) as excinfo:
-        pb.Polygon([0, 0], [0, 1])
+        pb.Polygon([[0, 0], [0, 1]])
     assert "at least 3 sides" in str(excinfo.value)
 
 

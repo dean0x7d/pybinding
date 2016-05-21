@@ -8,13 +8,13 @@ Primitive::Primitive(int a1, int a2, int a3) : size(a1, a2, a3) {
     }
 }
 
-Shape::Shape(Vertices const& vertices, Contains const& contains, Cartesian offset)
-    : vertices(vertices), contains(contains), offset(offset) {
+Shape::Shape(Vertices const& vertices, Contains const& contains)
+    : vertices(vertices), contains(contains) {
     if (vertices.size() < 2)
         throw std::logic_error("Shape: The bounding box must contain at least two vertices.");
 }
 
-Line::Line(Cartesian a, Cartesian b, Cartesian offset) : Shape({a, b}, {}, offset) {
+Line::Line(Cartesian a, Cartesian b) : Shape({a, b}) {
     contains = [a, b](CartesianArray const& positions) -> ArrayX<bool> {
         // Return `true` for all `positions` which are in the perpendicular space
         // between the two end points of the line
@@ -89,13 +89,12 @@ ArrayX<bool> WithinPolygon::operator()(CartesianArray const& positions) const {
 
 } // namespace detail
 
-Polygon::Polygon(Vertices const& vertices, Cartesian offset)
-    : Shape(vertices, detail::WithinPolygon(vertices), offset) {}
+Polygon::Polygon(Vertices const& vertices)
+    : Shape(vertices, detail::WithinPolygon(vertices)) {}
 
 
-FreeformShape::FreeformShape(Contains const& contains, Cartesian width,
-                             Cartesian center, Cartesian offset)
-    : Shape({}, contains, offset) {
+FreeformShape::FreeformShape(Contains const& contains, Cartesian width, Cartesian center)
+    : Shape({}, contains) {
     Cartesian base_vertex = center + 0.5 * width;
     auto const x = base_vertex.x();
     auto const y = base_vertex.y();

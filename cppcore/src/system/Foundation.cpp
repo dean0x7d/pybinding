@@ -127,8 +127,7 @@ Foundation::Foundation(Lattice const& lattice, Shape const& shape)
       size((bounds.second - bounds.first) + Index3D::Ones()),
       size_n(static_cast<int>(lattice.sublattices.size())),
       num_sites(size.prod() * size_n),
-      positions(detail::generate_positions(lattice.calc_position(bounds.first) + shape.offset,
-                                           size, lattice)),
+      positions(detail::generate_positions(lattice.calc_position(bounds.first), size, lattice)),
       is_valid(shape.contains(positions)) {
     remove_dangling(*this, lattice.min_neighbors);
 }

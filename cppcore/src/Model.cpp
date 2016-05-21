@@ -19,6 +19,7 @@ void Model::set_wave_vector(Cartesian const& new_wave_vector) {
 
 void Model::set_shape(Shape const& new_shape) {
     shape = new_shape;
+    lattice.set_offset(shape.lattice_offset);
     clear_structure();
 }
 

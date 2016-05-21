@@ -46,14 +46,12 @@ class Polygon(_cpp.Polygon):
     Parameters
     ----------
     vertices : list of array_like
-        Polygon vertices. Must be defined in clockwise or counterclockwise order.
-    offset : array_like
-        Offset of the lattice coordinate origin with relative to the shape origin.
+        Must be defined in clockwise or counterclockwise order.
     """
-    def __init__(self, vertices, offset=(0, 0, 0)):
+    def __init__(self, vertices):
         if len(vertices) < 3:
             raise RuntimeError("A polygon must have at least 3 sides")
-        super().__init__(vertices, offset)
+        super().__init__(vertices)
 
     @property
     def vertices(self):
@@ -65,7 +63,7 @@ class Polygon(_cpp.Polygon):
         Parameters
         ----------
         **kwargs
-            Forwarded to `plt.plot()`.
+            Forwarded to :func:`matplotlib.pyplot.plot`.
         """
         x, y = zip(*self.vertices)
         plt.plot(np.append(x, x[0]), np.append(y, y[0]), **with_defaults(kwargs, color='black'))
@@ -87,10 +85,8 @@ class FreeformShape(_cpp.Shape):
         Width up to 3 dimensions which specifies the size of the bounding box.
     center : array_like
         The position of the center of the bounding box.
-    offset : array_like
-        Offset of the lattice coordinate origin with relative to the shape origin.
     """
-    def __init__(self, contains, width, center=(0, 0, 0), offset=(0, 0, 0)):
+    def __init__(self, contains, width, center=(0, 0, 0)):
         width = np.atleast_1d(width)
         width.resize(3)
         center = np.atleast_1d(center)
@@ -100,7 +96,7 @@ class FreeformShape(_cpp.Shape):
         # e.g. vertices == [(x0, y0), (x0, -y0), (-x0, y0), (-x0, -y0)]
         vertices = list(itertools.product(*zip(vertex, -vertex)))
 
-        super().__init__(vertices, contains, np.atleast_1d(offset))
+        super().__init__(vertices, contains)
         self.contains = contains
 
     def plot(self, resolution=(1000, 1000), **kwargs):
@@ -113,7 +109,7 @@ class FreeformShape(_cpp.Shape):
         resolution : Tuple[int, int]
             The (x, y) pixel resolution of the generated shape image.
         **kwargs
-            Forwarded to `plt.imshow()`.
+            Forwarded to :func:`matplotlib.pyplot.imshow`.
         """
         if any(z != 0 for _, _, z in self.vertices):
             raise RuntimeError("This method only works for 2D shapes.")
