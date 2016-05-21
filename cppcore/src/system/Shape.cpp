@@ -92,24 +92,26 @@ ArrayX<bool> WithinPolygon::operator()(CartesianArray const& positions) const {
 Polygon::Polygon(Vertices const& vertices)
     : Shape(vertices, detail::WithinPolygon(vertices)) {}
 
+namespace {
 
-FreeformShape::FreeformShape(Contains const& contains, Cartesian width, Cartesian center)
-    : Shape({}, contains) {
-    Cartesian base_vertex = center + 0.5 * width;
-    auto const x = base_vertex.x();
-    auto const y = base_vertex.y();
-    auto const z = base_vertex.z();
-
-    vertices = {
-        {x,   y,  z},
-        {-x,  y,  z},
-        {x,  -y,  z},
-        {-x, -y,  z},
-        {x,   y, -z},
-        {-x,  y, -z},
-        {x,  -y, -z},
-        {-x, -y, -z}
+Shape::Vertices make_freeformshape_vertices(Cartesian width, Cartesian center) {
+    auto const v1 = static_cast<Cartesian>(center - 0.5f * width);
+    auto const v2 = static_cast<Cartesian>(center + 0.5f * width);
+    return {
+        {v1.x(), v1.y(), v1.z()},
+        {v2.x(), v1.y(), v1.z()},
+        {v1.x(), v2.y(), v1.z()},
+        {v2.x(), v2.y(), v1.z()},
+        {v1.x(), v1.y(), v2.z()},
+        {v2.x(), v1.y(), v2.z()},
+        {v1.x(), v2.y(), v2.z()},
+        {v2.x(), v2.y(), v2.z()}
     };
 }
+
+} // anonymous namespace
+
+FreeformShape::FreeformShape(Contains const& contains, Cartesian width, Cartesian center)
+    : Shape(make_freeformshape_vertices(width, center), contains) {}
 
 } // namespace tbm
