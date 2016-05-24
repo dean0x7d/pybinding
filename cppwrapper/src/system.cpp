@@ -39,14 +39,24 @@ public:
     }
 };
 
+struct PyContains {
+    object contains;
+
+    ArrayX<bool> operator()(CartesianArray const& p) const {
+        object result = contains(arrayref(p.x), arrayref(p.y), arrayref(p.z));
+        return extract<ArrayX<bool>>(result)();
+    }
+};
+
 class PyShape : public Shape, public wrapper<Shape> {
 public:
-    PyShape(Vertices const& vertices, object py_contains) : Shape(vertices) {
-        contains = [py_contains](CartesianArray const& p) {
-            object result = py_contains(arrayref(p.x), arrayref(p.y), arrayref(p.z));
-            return extract<ArrayX<bool>>(result)();
-        };
-    }
+    PyShape(Vertices const& vertices, object contains) : Shape(vertices, PyContains{contains}) {}
+};
+
+class PyFreeformShape : public FreeformShape, public wrapper<FreeformShape> {
+public:
+    PyFreeformShape(object contains, Cartesian width, Cartesian center)
+        : FreeformShape(PyContains{contains}, width, center) {}
 };
 
 class PyHoppingGenerator : public HoppingGenerator,
@@ -201,6 +211,12 @@ void export_system() {
 
     class_<Polygon, bases<Shape>, noncopyable>{
         "Polygon", init<Polygon::Vertices const&>(args("self", "vertices"))
+    };
+
+    class_<PyFreeformShape, bases<Shape>, noncopyable>{
+        "FreeformShape", init<object, Cartesian, Cartesian>(
+            args("self", "contains", "width", "center")
+        )
     };
 
     class_<TranslationalSymmetry>{

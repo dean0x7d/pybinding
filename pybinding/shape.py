@@ -1,5 +1,3 @@
-import itertools
-
 import numpy as np
 import matplotlib.pyplot as plt
 
@@ -74,7 +72,7 @@ class Polygon(_cpp.Polygon):
         pltutils.add_margin()
 
 
-class FreeformShape(_cpp.Shape):
+class FreeformShape(_cpp.FreeformShape):
     """Shape defined by a bounding box and a function
 
     Parameters
@@ -87,16 +85,7 @@ class FreeformShape(_cpp.Shape):
         The position of the center of the bounding box.
     """
     def __init__(self, contains, width, center=(0, 0, 0)):
-        width = np.atleast_1d(width)
-        width.resize(3)
-        center = np.atleast_1d(center)
-        center.resize(3)
-        # e.g. vertex == [x0, y0]
-        vertex = center + width / 2
-        # e.g. vertices == [(x0, y0), (x0, -y0), (-x0, y0), (-x0, -y0)]
-        vertices = list(itertools.product(*zip(vertex, -vertex)))
-
-        super().__init__(vertices, contains)
+        super().__init__(contains, width, center)
         self.contains = contains
 
     def plot(self, resolution=(1000, 1000), **kwargs):
