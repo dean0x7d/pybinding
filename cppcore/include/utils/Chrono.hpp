@@ -41,7 +41,7 @@ public:
 
 private:
     std::chrono::time_point<std::chrono::high_resolution_clock> tic_time;
-    std::chrono::nanoseconds elapsed;
+    std::chrono::nanoseconds elapsed{0};
 };
 
 } // namespace tbm
