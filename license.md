@@ -1,4 +1,4 @@
-Copyright (c) 2015, Dean Moldovan
+Copyright (c) 2015 - 2016, Dean Moldovan
 
 All rights reserved.
 
