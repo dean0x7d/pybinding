@@ -301,9 +301,8 @@ class Lattice(_cpp.Lattice):
             if np.allclose(v2d, [0, 0]):
                 continue  # nonzero only in z dimension, but the plot is 2D
 
-            plt.arrow(position[0], position[1], *v2d, color='black', alpha=0.8,
-                      head_width=vnorm * head_width, head_length=vnorm * head_length,
-                      length_includes_head=True)
+            plt.arrow(position[0], position[1], *v2d, color='black', length_includes_head=True,
+                      head_width=vnorm * head_width, head_length=vnorm * head_length)
             pltutils.annotate_box(r"${}_{}$".format(name, i+1), position[:2] + v2d / 2,
                                   fontsize='large', bbox=dict(lw=0, alpha=0.6))
 
