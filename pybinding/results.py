@@ -629,11 +629,17 @@ class Sweep:
             return
 
         if multiply:
-            mul_x, mul_y = multiply if isinstance(multiply, tuple) else (multiply, 1)
+            try:
+                mul_x, mul_y = multiply
+            except TypeError:
+                mul_x, mul_y = multiply, 1
             size_x = self.x.size * mul_x
             size_y = self.y.size * mul_y
         else:
-            size_x, size_y = size if isinstance(size, tuple) else (size, 0)
+            try:
+                size_x, size_y = size
+            except TypeError:
+                size_x, size_y = size, 0
 
         if size_x > 0 and size_x != self.x.size:
             interp_x = interp1d(self.x, self.data, axis=0, kind=kind)
@@ -692,14 +698,18 @@ class Sweep:
         idx = np.abs(self.y - y).argmin()
         return self.data[:, idx], self.y[idx]
 
-    def plot(self, cbar_props=None, **kwargs):
-        kwargs = with_defaults(kwargs, cmap='RdYlBu_r', rasterized=True)
-        mesh = plt.pcolormesh(self.x, self.y, self.data.T, **kwargs)
+    def plot(self, **kwargs):
+        """Plot a 2D colormap of :attr:`Sweep.data`
+
+        Parameters
+        ----------
+        **kwargs
+            Forwarded to :func:`matplotlib.pyplot.pcolormesh`.
+        """
+        mesh = plt.pcolormesh(self.x, self.y, self.data.T,
+                              **with_defaults(kwargs, cmap='RdYlBu_r', rasterized=True))
         plt.xlim(self.x.min(), self.x.max())
         plt.ylim(self.y.min(), self.y.max())
-
-        if cbar_props is not False:
-            pltutils.colorbar(label=self.labels['data'])
 
         plt.title(self.labels['title'])
         plt.xlabel(self.labels['x'])
@@ -709,6 +719,10 @@ class Sweep:
         plt.gca().get_yaxis().tick_left()
 
         return mesh
+
+    def colorbar(self, **kwargs):
+        """Draw a colorbar with the label of :attr:`Sweep.data`"""
+        return pltutils.colorbar(**with_defaults(kwargs, label=self.labels['data']))
 
     def _plot_slice(self, axis, x, y, value, **kwargs):
         plt.plot(x, y, **kwargs)
