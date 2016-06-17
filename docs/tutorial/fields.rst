@@ -3,8 +3,6 @@ Fields and effects
 
 .. meta::
    :description: Adding electric and magnetic fields to a tight-binding model
-   :keywords: tight-binding code, electric field, pn-junction, magnetic field, graphene mass term,
-              Landau levels, local density of states, LDOS
 
 This section will introduce :func:`@onsite_energy_modifier <.onsite_energy_modifier>` and
 :func:`@hopping_energy_modifier <.hopping_energy_modifier>` which can be used to add various
@@ -80,7 +78,6 @@ just like this:
         @pb.onsite_energy_modifier
         def potential(x, y):
             return np.sin(a * x)**2 + np.cos(b * y)**2
-
         return potential
 
     model = pb.Model(
@@ -91,7 +88,7 @@ just like this:
     model.onsite_map.plot_contourf()
     pb.pltutils.colorbar(label="U (eV)")
 
-Note that we are using a hexagonal system shape this time (via :func:`.regular_polygon`).
+Note that we are using a system with hexagonal shape this time (via :func:`.regular_polygon`).
 The potential is only plotted inside the area of the actual system.
 
 We can make one more improvement to our `wavy` function. We'll add an `energy` argument:
@@ -104,7 +101,6 @@ We can make one more improvement to our `wavy` function. We'll add an `energy` a
         def potential(energy, x, y):
             v = np.sin(a * x)**2 + np.cos(b * y)**2
             return energy + v
-
         return potential
 
 The `energy` argument contains the existing onsite energy in the system before the new potential
@@ -118,7 +114,6 @@ multiple functions. For example, let's combine the improved `wavy2` with a linea
         @pb.onsite_energy_modifier
         def potential(energy, x):
             return energy + k*x
-
         return potential
 
     model = pb.Model(
@@ -138,7 +133,7 @@ About the decorator
 -------------------
 
 Now that you have a general idea of how to add and compose electric potentials in a model,
-we should talk about role of the :func:`@onsite_energy_modifier <.onsite_energy_modifier>`.
+we should talk about the role of the :func:`@onsite_energy_modifier <.onsite_energy_modifier>`.
 The full signature of a potential function looks like this:
 
 .. code-block:: python
@@ -150,7 +145,7 @@ The full signature of a potential function looks like this:
 
 This function uses all of the possible arguments of an onsite energy modifier: `energy`, `x`,
 `y`, `z` and `sub_id`. We have already explained the first three. The `z` argument is, obviously,
-the z-axis coordinate of lattice sites. The `sub_id` argument tells us which sublattice a site
+the z-axis coordinate of the lattice sites. The `sub_id` argument tells us which sublattice a site
 belongs to. Its usage will be explained below.
 
 As we have seen before, we don't actually need to define a function to take all the arguments.
@@ -191,7 +186,6 @@ For example, let's add mass to electrons in graphene:
             energy[sub_id == 'A'] += delta
             energy[sub_id == 'B'] -= delta
             return energy
-
         return potential
 
 Note that we don't need `x`, `y` or `z` arguments because this will be applied everywhere evenly.
@@ -263,7 +257,6 @@ While we're working with a nanoribbon, let's add a PN junction along its main ax
             energy[y < y0] += v1
             energy[y >= y0] += v2
             return energy
-
         return potential
 
 The `y0` argument is the position of the junction, while `v1` and `v2` are the values of the
@@ -285,7 +278,7 @@ potential (in eV) before and after the junction. Let's add it to the nanoribbon:
 Remember that the :attr:`.Model.onsite_map` property is a :class:`.StructureMap`, which has
 several plotting methods. A contour plot would not look at all good for such a small nanoribbon,
 but the method :meth:`.StructureMap.plot_structure` is perfect. As before, the ribbon has infinite
-length in the x-axis and the transparent sites represent the periodic boundaries. The PN junction
+length along the x-axis and the transparent sites represent the periodic boundaries. The PN junction
 splits the ribbon in half along its main axis.
 
 We can compute and plot the band structure:
@@ -335,10 +328,10 @@ Magnetic field
 To model a magnetic field, we need to apply the Peierls substitution:
 
 .. math::
-    t_{nm} \rightarrow t_{nm} \text{e}^{i\frac{2\pi}{\Phi_0} \int_n^m \vec{A_{nm}} \vec{dl}}
+    t_{nm} \rightarrow t_{nm} \text{e}^{i\frac{2\pi}{\Phi_0} \int_n^m \vec{A}_{nm} \cdot d\vec{l}}
 
 Here :math:`t_{nm}` is the hopping energy between two sites, :math:`\Phi_0 = h/e` is the magnetic
-quantum, :math:`h` is the Planck constant and :math:`\vec{A_{nm}}` is the magnetic vector potential
+quantum, :math:`h` is the Planck constant and :math:`\vec{A}_{nm}` is the magnetic vector potential
 along the path between sites :math:`n` and :math:`m`. We want the magnetic field to be
 perpendicular to the graphene plane, so we can take the gauge :math:`\vec{A}(x,y,z) = (By, 0, 0)`.
 
@@ -368,7 +361,6 @@ This can all be expressed with a :func:`@hopping_energy_modifier <.hopping_energ
 
             # the Peierls substitution
             return energy * np.exp(1j * 2*pi/phi0 * peierls)
-
         return function
 
 The `energy` argument is the existing hopping energy between two sites at coordinates (`x1`, `y1`)
@@ -385,9 +377,9 @@ The full signature of a :func:`@hopping_energy_modifier <.hopping_energy_modifie
         return ... # some function of the arguments
 
 The `hop_id` argument tells us which type of hopping it is. Hopping types can be specifically
-named during the creation of a lattice and retrieved in the form `lattice('<hopping_name>')`.
-This can be used to apply functions only to specific hoppings. However, as with all the modifier
-arguments, it's optional, so we only take what we need.
+named during the creation of a lattice. This can be used to apply functions only to specific
+hoppings. However, as with all the modifier arguments, it's optional, so we only take what we
+need.
 
 To test out our `constant_magnetic_field`, we'll calculate the local density of states (LDOS),
 where we expect to see peaks corresponding to Landau levels. The computation method used here
@@ -400,7 +392,7 @@ is explained in detail in the :doc:`greens` section of the tutorial.
     model = pb.Model(
         graphene.monolayer(),
         pb.rectangle(20),
-        constant_magnetic_field(B=200)
+        constant_magnetic_field(B=200)  # Tesla
     )
     greens = pb.greens.kpm(model)
 

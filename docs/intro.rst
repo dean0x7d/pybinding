@@ -4,14 +4,14 @@ About
 .. meta::
    :description: Pybinding is a Python package for numerical tight-binding calculations.
                  It features easy model construction, fast compute and result visualization tools.
-   :keywords: tight-binding code, python, condensed matter theory, solid state physics
 
 Pybinding is a Python package for numerical tight-binding calculations in solid state physics.
 The main features include:
 
 * **Declarative model construction** - The user just needs to describe *what* the model should be,
   but not *how* to build it. Pybinding will take care of the numerical details of building the
-  Hamiltonian matrix so users can concentrate on the physics: the quantum properties of the model.
+  Hamiltonian matrix so users can concentrate on the physics, i.e. the quantum properties of the
+  model.
 
 * **Fast compute** - Pybinding's implementation of the kernel polynomial method allows for very
   fast calculation of the Green's function of the Hamiltonian. Exact diagonalization is also
@@ -20,7 +20,7 @@ The main features include:
 
 * **Result analysis and visualization** - The package contains utility functions for post-processing
   the raw result data. The included plotting functions are tailored for tight-binding problems to
-  help visualize the model structure and make sense of the results.
+  help visualize the model structure and to make sense of the results.
 
 The main interface is written in Python with the aim to be as user-friendly and flexible as
 possible. Under the hood, C++11 is used to accelerate demanding tasks to deliver high performance
@@ -56,16 +56,16 @@ tight-binding model:
 
 * **System geometry** - The model system can be infinite through the use of translational symmetry
   or it can be finite by specifying a shape. The two approaches can also be composed to create
-  periodic systems with intricate structural patterns. The structure can be control in fine detail
-  to form specific edge types as well as various defects.
+  periodic systems with intricate structural patterns. The structure can be controlled up to fine
+  details, e.g. to form specific edge types as well as various defects.
 
 * **Fields** - Functions can be applied to the onsite and hopping energies of the model system
-  to simulate external fields or various effects. These function are be defined independently
+  to simulate external fields or various effects. These functions are be defined independently
   of any lattice or specific structure which makes them easily reusable and mutually composable.
 
 Once the model description is complete, Pybinding will build the tight-binding Hamiltonian matrix.
 The next step is to apply computations to the matrix to obtain the values of the desired quantum
-properties. To that end, there are a few possibilities:
+properties. To that end, there are the following possibilities:
 
 * **Green's function** - Pybinding implements a fast Chebyshev polynomial routine for calculating
   the Green's function of the Hamiltonian. This can be applied to quickly compute the local density
@@ -80,4 +80,4 @@ properties. To that end, there are a few possibilities:
 
 After the main computation is complete, various utility functions are available for post-processing
 the raw result data. The included plotting functions are tailored for tight-binding problems to
-help visualize the model structure and make sense of the results.
+help visualize the model structure and to make sense of the results.

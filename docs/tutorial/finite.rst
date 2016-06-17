@@ -3,7 +3,6 @@ Finite size
 
 .. meta::
    :description: Constructing tight-binding systems of arbitrary shape
-   :keywords: tight-binding, quantum dots, arbitrary shape, graphene, local density of states
 
 This section introduces the concept of shapes with classes :class:`.Polygon` and
 :class:`.FreeformShape` which are used to model systems of finite size. The sparse
@@ -18,7 +17,7 @@ larger Hamiltonian matrices.
 Primitive
 ---------
 
-The simplest finite sized system is just the unit cell of the crystal lattice.
+The simplest finite-sized system is just the unit cell of the crystal lattice.
 
 .. plot::
     :context: reset
@@ -37,7 +36,6 @@ The unit cell can also be replicated a number of times to create a bigger system
         graphene.monolayer(),
         pb.primitive(a1=5, a2=3)
     )
-
     model.system.plot()
     model.lattice.plot_vectors(position=[0.6, -0.25])
 
@@ -121,8 +119,7 @@ defined by a `contains` function which determines if a lattice site is inside th
     def circle(radius):
         def contains(x, y, z):
             return np.sqrt(x**2 + y**2) < radius
-
-        return pb.FreeformShape(contains, width=[2 * radius, 2 * radius])
+        return pb.FreeformShape(contains, width=[2*radius, 2*radius])
 
     model = pb.Model(
         graphene.monolayer(),
@@ -133,7 +130,7 @@ defined by a `contains` function which determines if a lattice site is inside th
 The `width` parameter of :class:`.FreeformShape` specifies the bounding box width. Only sites
 inside the bounding box will be considered for the shape. It's like carving a sculpture from a
 block of stone. The bounding box can be thought of as the stone block, while the `contains`
-function is the carving tool that can give the shape fine detail.
+function is the carving tool that can give the fine detail of the shape.
 
 As with :class:`.Polygon`, we can visualize the shape with the :meth:`.FreeformShape.plot` method.
 
@@ -144,8 +141,7 @@ As with :class:`.Polygon`, we can visualize the shape with the :meth:`.FreeformS
         def contains(x, y, z):
             r = np.sqrt(x**2 + y**2)
             return np.logical_and(inner_radius < r, r < outer_radius)
-
-        return pb.FreeformShape(contains, width=[2 * outer_radius, 2 * outer_radius])
+        return pb.FreeformShape(contains, width=[2*outer_radius, 2*outer_radius])
 
     shape = ring(inner_radius=1.4, outer_radius=2)
     shape.plot()
@@ -188,7 +184,7 @@ Spatial LDOS
 
 Now that we have a ring structure, we can exactly diagonalize its `model.hamiltonian` using a
 :class:`.Solver`. We previously used the :func:`.lapack` solver to find all the eigenvalues and
-eigenvectors, but this is not efficient for bigger systems. The sparse :func:`.arpack` solver can
+eigenvectors, but this is not efficient for larger systems. The sparse :func:`.arpack` solver can
 calculate a targeted subset of the eigenvalues, which is usually desired and much faster. In this
 case, we are interested only in the 20 lowest energy states.
 
@@ -200,7 +196,7 @@ case, we are interested only in the 20 lowest energy states.
         graphene.monolayer(),
         ring(inner_radius=1.4, outer_radius=2)
     )
-    solver = pb.solver.arpack(model, k=20)  # for the 20 lowest energy eigenvalues
+    solver = pb.solver.arpack(model, k=20)  # only the 20 lowest eigenstates
 
     ldos = solver.calc_spatial_ldos(energy=0, broadening=0.05)  # eV
     ldos.plot_structure(site_radius=(0.03, 0.12))

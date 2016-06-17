@@ -3,7 +3,6 @@ Eigensolvers
 
 .. meta::
    :description: Computing the eigenvalues and eigenvectors of a tight-binding Hamiltonian matrix
-   :keywords: tight-binding code, solver, eigenvalues, eigenvectors, energy states, wavefunctions
 
 Solvers were first introduced in the :doc:`bands` section and then used throughout the tutorial to
 present the results of the various models we constructed. This section will take a more detailed

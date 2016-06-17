@@ -9,17 +9,18 @@ Pybinding is a Python package for numerical tight-binding calculations in solid 
 The main features include:
 
 * **Declarative model construction** - The user just needs to describe *what* the model should be,
-but not *how* to build it. Pybinding will take care of the numerical details of building the
-Hamiltonian matrix so users can concentrate on the physics: the quantum properties of the model.
+  but not *how* to build it. Pybinding will take care of the numerical details of building the
+  Hamiltonian matrix so users can concentrate on the physics, i.e. the quantum properties of the
+  model.
 
-* **Fast compute** - Pybinding's implementation of the kernel polynomial method allows for very fast
-calculation of the Green's function of the Hamiltonian. Exact diagonalization is also available
-through the use of scipy's eigensolvers. The framework is very flexible and allows the addition 
-of user-defined computation routines.
+* **Fast compute** - Pybinding's implementation of the kernel polynomial method allows for very
+  fast calculation of the Green's function of the Hamiltonian. Exact diagonalization is also
+  available through the use of scipy's eigensolvers. The framework is very flexible and allows
+  the addition of user-defined computation routines.
 
 * **Result analysis and visualization** - The package contains utility functions for post-processing
-the raw result data. The included plotting functions are tailored for tight-binding problems to
-help visualize the model structure and make sense of the results.
+  the raw result data. The included plotting functions are tailored for tight-binding problems to
+  help visualize the model structure and to make sense of the results.
 
 The code interface is written in Python with the aim to be as user-friendly and flexible as
 possible. Under the hood, C++11 is used to accelerate demanding tasks to deliver high performance
@@ -46,7 +47,7 @@ prerequisites, it's just a simple case of using `pip`, Python's usual package ma
 
 ## Current status
 
-Work in progress. The goal of the project is to develop a tight-binding code framework which is 
+Work in progress. The goal of the project is to develop a tight-binding code framework which is
 fast, flexible and easy to use.
 See the [documentation] for more details and a guide to get started.
 

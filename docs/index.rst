@@ -5,15 +5,12 @@ Pybinding
 .. meta::
    :description: Pybinding is a Python code package for tight-binding calculations in solid state
                  physics. It can be used to construct and solver large tight-binding models.
-   :keywords: tight-binding code, python, condensed matter theory, solid state physics,
-              band structure, local density of states, LDOS, Green's function,
-              graphene, phosphorene, transition metal dichalcogenides
 
 Pybinding is a Python package for numerical tight-binding calculations in solid state physics.
 If you're just browsing, the :doc:`tutorial/index` section is a good place to start. It gives
 a good overview of the most important features with lots of code examples.
 
-As a very quick sample, the following code creates a triangular quantum dot of bilayer graphene
+As a very quick example, the following code creates a triangular quantum dot of bilayer graphene
 and then applies a custom asymmetric strain function:
 
 .. plot::

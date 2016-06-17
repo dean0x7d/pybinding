@@ -3,8 +3,6 @@ Green's function
 
 .. meta::
    :description: Computing Green's function of a tight-binding Hamiltonian matrix
-   :keywords: tight-binding code, Green's function, local density of states, LDOS,
-              kernel polynomial method, KPM, Chebyshev polynomials, graphene
 
 Green's function methods were used briefly in the :doc:`fields` and :doc:`strain` sections. As with
 the eigensolvers, there is one common :class:`.Greens` interface while the underlying algorithm
@@ -45,7 +43,7 @@ implementation:
     greens = pb.greens.kpm(model)
 
 It can then be used to calculate the Green's function corresponding to Hamiltonian matrix element
-`i, j` for the desired energy range and broadening:
+`i,j` for the desired energy range and broadening:
 
 .. code-block:: python
     :emphasize-lines: 0
@@ -72,7 +70,7 @@ density of states (LDOS). In the next example we'll use a large square sheet of 
 
 The LDOS is calculated for energies between -9 and 9 eV with a Lorentzian broadening of 50 meV.
 Since this is the *local* density of states, position is also a required argument. We target the
-center of our square system where we expect to see the common LDOS shape of pristine graphene.
+center of our square system where we expect to see the well-known LDOS shape of pristine graphene.
 Indeed, that is what the resulting :class:`.LDOS` object shows after invoking its
 :meth:`~.LDOS.plot` method.
 
@@ -116,6 +114,6 @@ antisymmetric around zero energy with respect to one another.
 Further reading
 ---------------
 
-For an additional example see the :ref:`magnetic-field-modifier` subsection of :doc:`fields` as
+For an additional examples see the :ref:`magnetic-field-modifier` subsection of :doc:`fields` as
 well as the :ref:`Strain modifier <strain-modifier>` subsection of :doc:`strain`.
 The reference page for :doc:`/api/greens` contains more information.

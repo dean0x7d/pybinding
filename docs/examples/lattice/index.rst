@@ -3,7 +3,6 @@ Lattice specification and bands
 
 .. meta::
    :description: Lattice specification and band structure calculations in Pybinding
-   :keywords: tight-binding code, python, band structure, graphene, next-nearest neighbor
 
 Checkerboard
 ------------

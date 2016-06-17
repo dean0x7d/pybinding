@@ -3,9 +3,8 @@ Band structure
 
 .. meta::
    :description: Band structure calculations using the tight-binding model
-   :keywords: tight-binding, band structure, graphene, bilayer graphene, periodic structure
 
-In order to calculate the band structure of a crystal lattice, this section is going to introduce
+In order to calculate the band structure of a crystal lattice, this section introduces
 the concepts of a :class:`.Model` and a :class:`.Solver`.
 
 .. only:: html
@@ -91,10 +90,7 @@ calculate the band structure of our model.
 
     from math import sqrt, pi
 
-    model = pb.Model(
-        graphene.monolayer(),
-        pb.translational_symmetry()
-    )
+    model = pb.Model(graphene.monolayer(), pb.translational_symmetry())
     solver = pb.solver.lapack(model)
 
     a_cc = graphene.a_cc
@@ -131,7 +127,7 @@ Switching lattices
 
 We can easily switch to a different material, just by passing a different lattice to the model.
 For this example, we'll use our pre-made :func:`graphene.bilayer() <.graphene.lattice.bilayer>`
-from the :doc:`/materials/index`. But you can create any lattice as describe in the previous
+from the :doc:`/materials/index`. But you can create any lattice as described in the previous
 section: :doc:`/tutorial/lattice`.
 
 .. plot::
@@ -156,10 +152,7 @@ To compute the band structure, we'll need to include :func:`.translational_symme
 .. plot::
     :context: close-figs
 
-    model = pb.Model(
-        graphene.bilayer(),
-        pb.translational_symmetry()
-    )
+    model = pb.Model(graphene.bilayer(), pb.translational_symmetry())
     model.system.plot()
 
 As before, the red hoppings indicate periodic boundaries and the lighter colored circles represent

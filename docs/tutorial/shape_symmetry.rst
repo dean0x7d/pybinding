@@ -3,7 +3,6 @@ Shape and symmetry
 
 .. meta::
    :description: Constructing periodic tight-binding systems
-   :keywords: tight-binding, nanoribbons, band structure, graphene
 
 The last two sections showed how to model shape and symmetry individually, but we can be more
 creative and combine the two.
@@ -17,7 +16,7 @@ Nanoribbons
 -----------
 
 To create a graphene nanoribbon, we'll need a shape to give the finite width of the ribbon
-while the infinite length is achieved with translational symmetry.
+while the infinite length is achieved by imposing translational symmetry.
 
 .. plot::
     :context: reset
@@ -86,7 +85,7 @@ atoms.
 
 Note that the lattice vectors :math:`a_1` and :math:`a_2` are at a right angle, unlike the sharp
 angle of the base 2-atom cell. The lattice properties are identical for the 2 and 4 atom cells,
-but the new geometry helps create armchair edges.
+but the new geometry helps to create armchair edges.
 
 .. plot::
     :context: close-figs
@@ -133,12 +132,12 @@ period length.
     )
     model.system.plot()
 
-The period length is given in nanometers. Note that our base shape is square with 2 nm sides.
+The period length is given in nanometers. Note that our base shape is a square with 2 nm sides.
 The base shape forms the supercell of the periodic structure, but because the period length
 (1.2 nm) is smaller than the shape (2 nm), the extra length is cut off by the periodic boundary.
 
-If you specify a periodic length which is bigger than the base shape, the periodic conditions
-not be applied because the periodic boundary will not have anything to bind to.
+If you specify a periodic length which is larger than the base shape, the periodic conditions
+will not be applied because the periodic boundary will not have anything to bind to.
 
 .. plot::
     :context: close-figs
@@ -150,8 +149,8 @@ not be applied because the periodic boundary will not have anything to bind to.
     )
     model.system.plot()
 
-As you can see, making the period bigger than the shape (1.7 nm vs. 1.5 nm), results in just the
-finite sized part of the system. Don't do this.
+As you can see, making the period larger than the shape (1.7 nm vs. 1.5 nm), results in just the
+finite-sized part of the system. Don't do this.
 
 The combination of shape and symmetry can be more complex as shown here with a nanoribbon ring
 structure.
@@ -161,20 +160,18 @@ structure.
     :alt: Graphene nanoribbon made up of rings
 
     def ring(inner_radius, outer_radius):
+        """Ring shape defined by an inner and outer radius"""
         def contains(x, y, z):
             r = np.sqrt(x**2 + y**2)
             return np.logical_and(inner_radius < r, r < outer_radius)
-
-        return pb.FreeformShape(contains, width=[2 * outer_radius, 2 * outer_radius])
-
+        return pb.FreeformShape(contains, width=[2*outer_radius, 2*outer_radius])
 
     model = pb.Model(
         graphene.monolayer_4atom(),
         ring(inner_radius=1.4, outer_radius=2),
         pb.translational_symmetry(a1=3.8, a2=False)
     )
-
-    plt.figure(figsize=pb.pltutils.cm2inch(20, 7))
+    plt.figure(figsize=[8, 3])
     model.system.plot()
 
 The period length of the translation in the :math:`a_1` direction is set to 3.8 nm. This ensures
@@ -185,14 +182,10 @@ that the inner ring shape is preserved and the periodic boundaries are placed on
     :context: close-figs
     :alt: Graphene ring nanoribbon band structure
 
-    solver = pb.solver.arpack(model, k=10) # for the 10 lowest energy eigenvalues
+    solver = pb.solver.arpack(model, k=10) # only the 10 lowest states
     a = 3.8  # [nm] unit cell length
     bands = solver.calc_bands(-pi/a, pi/a)
     bands.plot(point_labels=['$-\pi / a$', '$\pi / a$'])
-
-
-.. todo::
-    2D periodic structure
 
 
 Example

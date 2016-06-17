@@ -3,8 +3,6 @@ Graphene
 
 .. meta::
    :description: Collection of graphene lattices, constants and fields for Pybinding
-   :keywords: tight-binding code, python, graphene, next-nearest neighbor, third-nearest neighbor,
-              bilayer graphene, magnetic field, strain
 
 .. automodule:: pybinding.repository.graphene
     :members:

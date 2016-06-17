@@ -3,8 +3,6 @@ Defects and strain
 
 .. meta::
    :description: Adding defects and strain to a tight-binding model
-   :keywords: tight-binding code, defects, vacancies, strain, graphene, pseudo-Landau levels,
-              local density of states, LDOS
 
 This section will introduce :func:`@site_state_modifier <.site_state_modifier>` and
 :func:`@site_position_modifier <.site_position_modifier>` which can be used to add defects and
@@ -33,7 +31,6 @@ previous section.
             x0, y0 = position
             state[(x-x0)**2 + (y-y0)**2 < radius**2] = False
             return state
-
         return modifier
 
 The `state` argument indicates the current boolean state of a lattice site. Only valid sites
@@ -64,7 +61,7 @@ it with any existing shapes:
 
 The resulting 2-atom vacancy is visible in the center of the system. The two vacant sites are
 completely removed from the final Hamiltonian matrix. If we were to inspect the number of rows
-and columns by looking up `model.hamiltonian.shape`, we would see the size of the matrix is
+and columns by looking up `model.hamiltonian.shape`, we would see that the size of the matrix is
 reduced by 2.
 
 Any number of modifiers can be included in the model and they will compose as expected. We can
@@ -108,9 +105,7 @@ the bottom.
             final_condition = np.logical_and(is_within_radius, is_top_layer)
             state[final_condition] = False
             return state
-
         return modifier
-
 
     model = pb.Model(
         graphene.bilayer(),
@@ -122,7 +117,7 @@ the bottom.
 The central monolayer area is nicely visible in the figure. We can actually create the same
 structure in a different way: by considering the `z` position of the lattice site to distinguish
 the layers. An alternative modifier definition is given below. It would generate the same figure.
-Which method is more convenient is up the user.
+Which method is more convenient is up to the user.
 ::
 
     def scrape_top_layer_alt(position, radius):
@@ -135,7 +130,6 @@ Which method is more convenient is up the user.
             final_condition = np.logical_and(is_within_radius, is_top_layer)
             state[final_condition] = False
             return state
-
         return modifier
 
 .. note::
@@ -177,7 +171,6 @@ lets us control the intensity of the strain.
             ux = 2*c * x*y
             uy = c * (x**2 - y**2)
             return x + ux, y + uy, z
-
         return displacement
 
 The modifier function takes the `x`, `y`, `z` coordinates as arguments. The displacement `ux`, `uy`
@@ -203,9 +196,10 @@ hopping element of the Hamiltonian matrix is equal to the hopping energy of pris
     True
 
 We now need to use the new position data to modify the hopping energy according to the relation
-:math:`t = t_0 e^{-3.37 (\frac{d}{a_{cc}} - 1)}`, where :math:`t_0` is the original unstrained
-hopping energy, :math:`d` is the strained distance between two atoms and :math:`a_{cc}` is the
-unstrained carbon-carbon distance. This can be implemented using a
+:math:`t = t_0 e^{-\beta (\frac{d}{a_{cc}} - 1)}`, where :math:`t_0` is the original unstrained
+hopping energy, :math:`\beta` controls the strength of the strain-induced hopping modulation,
+:math:`d` is the strained distance between two atoms and :math:`a_{cc}` is the unstrained
+carbon-carbon distance. This can be implemented using a
 :func:`@hopping_energy_modifier <.hopping_energy_modifier>`:
 
 .. plot::
@@ -215,8 +209,9 @@ unstrained carbon-carbon distance. This can be implemented using a
         @pb.hopping_energy_modifier
         def strained_hopping(energy, x1, y1, z1, x2, y2, z2):
             d = np.sqrt((x1-x2)**2 + (y1-y2)**2 + (z1-z2)**2)
+            beta = 3.37
             w = d / graphene.a_cc - 1
-            return energy * np.exp(-3.37 * w)
+            return energy * np.exp(-beta*w)
 
 The structural modifiers (site state and position) are always automatically applied to the model
 before energy modifiers (onsite and hopping). Thus, our `strain_hopping` modifier will get the new
@@ -245,7 +240,7 @@ Instead, we can package them together in one function which is going to return b
     :nofigs:
     :context:
 
-    def triaxial_strain(c):
+    def triaxial_strain(c, beta=3.37):
         """Produce both the displacement and hopping energy modifier"""
         @pb.site_position_modifier
         def displacement(x, y, z):
@@ -257,7 +252,7 @@ Instead, we can package them together in one function which is going to return b
         def strained_hopping(energy, x1, y1, z1, x2, y2, z2):
             l = np.sqrt((x1-x2)**2 + (y1-y2)**2 + (z1-z2)**2)
             w = l / graphene.a_cc - 1
-            return energy * np.exp(-3.37 * w)
+            return energy * np.exp(-beta*w)
 
         return displacement, strained_hopping
 

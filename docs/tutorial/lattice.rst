@@ -3,7 +3,6 @@ Lattice
 
 .. meta::
    :description: Crystal lattice definition in Pybinding
-   :keywords: tight-binding lattice, primitive vector, sublattice, hopping energy, Brillouin zone
 
 A :class:`.Lattice` object describes the unit cell of a crystal lattice. This includes the
 primitive vectors, positions of sublattice sites and hopping parameters which connect those sites.
@@ -30,11 +29,9 @@ Starting from the basics, we'll create a simple square lattice.
 
     # create a simple 2D lattice with vectors a1 and a2
     lattice = pb.Lattice(a1=[d, 0], a2=[0, d])
-
     lattice.add_sublattices(
         ('A', [0, 0])  # add an atom called 'A' at position [0, 0]
     )
-
     lattice.add_hoppings(
         # (relative_index, from_sublattice, to_sublattice, energy)
         ([0, 1], 'A', 'A', t),
@@ -85,13 +82,11 @@ are function arguments, which makes the lattice easily configurable.
     def square_lattice(d, t):
         lat = pb.Lattice(a1=[d, 0], a2=[0, d])
         lat.add_sublattices(('A', [0, 0]))
-        lat.add_hoppings(
-            ([0, 1], 'A', 'A', t),
-            ([1, 0], 'A', 'A', t),
-        )
+        lat.add_hoppings(([0, 1], 'A', 'A', t),
+                         ([1, 0], 'A', 'A', t))
         return lat
 
-    # configure the lattice with vector length `d` and hopping energy `t`
+    # we can quickly set a shorter unit length `d`
     lattice = square_lattice(d=0.1, t=1)
     lattice.plot()
     plt.show()
@@ -100,7 +95,7 @@ are function arguments, which makes the lattice easily configurable.
 Graphene
 --------
 
-The next example shows a slightly more complicate two-atom lattice of graphene.
+The next example shows a slightly more complicated two-atom lattice of graphene.
 
 .. plot::
     :context: close-figs
@@ -113,16 +108,10 @@ The next example shows a slightly more complicate two-atom lattice of graphene.
         a_cc = 0.142  # [nm] carbon-carbon distance
         t = -2.8      # [eV] nearest neighbour hopping
 
-        lat = pb.Lattice(
-            a1=[a, 0],
-            a2=[a/2, a/2 * sqrt(3)]
-        )
-
-        lat.add_sublattices(
-            ('A', [0, -a_cc/2]),
-            ('B', [0,  a_cc/2])
-        )
-
+        lat = pb.Lattice(a1=[a, 0],
+                         a2=[a/2, a/2 * sqrt(3)])
+        lat.add_sublattices(('A', [0, -a_cc/2]),
+                            ('B', [0,  a_cc/2]))
         lat.add_hoppings(
             # inside the main cell
             ([0,  0], 'A', 'B', t),
@@ -130,7 +119,6 @@ The next example shows a slightly more complicate two-atom lattice of graphene.
             ([1, -1], 'A', 'B', t),
             ([0, -1], 'A', 'B', t)
         )
-
         return lat
 
     lattice = monolayer_graphene()
@@ -199,7 +187,7 @@ Example
 
 .. only:: html
 
-    This is a full example file which you can download and run with `python lattice_example.py`.
+    This is a full example file which you can download and run with `python3 lattice_example.py`.
 
     :download:`Download source code</tutorial/lattice_example.py>`
 

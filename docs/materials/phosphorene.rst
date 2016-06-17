@@ -3,7 +3,6 @@ Phosphorene
 
 .. meta::
    :description: Collection of phosphorene lattices, constants and fields for Pybinding
-   :keywords: tight-binding, python, phosphorene
 
 .. plot::
     :context: reset
