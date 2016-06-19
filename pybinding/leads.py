@@ -179,6 +179,7 @@ class Lead:
         """
         bands = self.calc_bands(start, end, step)
         bands.plot(**kwargs)
+        plt.title("lead {}".format(self.index))
 
 
 class Leads:

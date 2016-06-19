@@ -251,7 +251,7 @@ While we're working with a nanoribbon, let's add a PN junction along its main ax
     :context: close-figs
     :nofigs:
 
-    def pn_juction(y0, v1, v2):
+    def pn_junction(y0, v1, v2):
         @pb.onsite_energy_modifier
         def potential(energy, y):
             energy[y < y0] += v1
@@ -270,7 +270,7 @@ potential (in eV) before and after the junction. Let's add it to the nanoribbon:
         graphene.monolayer(),
         pb.rectangle(1.2),
         pb.translational_symmetry(a1=True, a2=False),
-        pn_juction(y0=0, v1=-5, v2=5)
+        pn_junction(y0=0, v1=-5, v2=5)
     )
     model.onsite_map.plot_structure(cmap="coolwarm", site_radius=0.04)
     pb.pltutils.colorbar(label="U (eV)")
@@ -302,8 +302,8 @@ But lets take a different approach and create the well by composing two PN junct
         graphene.monolayer(),
         pb.rectangle(1.2),
         pb.translational_symmetry(a1=True, a2=False),
-        pn_juction(y0=-0.2, v1=5, v2=0),
-        pn_juction(y0=0.2, v1=0, v2=5)
+        pn_junction(y0=-0.2, v1=5, v2=0),
+        pn_junction(y0=0.2, v1=0, v2=5)
     )
     model.onsite_map.plot_structure(cmap="coolwarm", site_radius=0.04)
     pb.pltutils.colorbar(label="U (eV)")
