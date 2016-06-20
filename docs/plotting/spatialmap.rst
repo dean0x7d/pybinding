@@ -1,0 +1,4 @@
+Spatial map
+===========
+
+TODO

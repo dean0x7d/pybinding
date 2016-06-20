@@ -56,11 +56,13 @@ where you can also post any questions, comments or issues that you might have.
 
 
 .. toctree::
-    :caption: Getting started
+    :caption: User guide
     :maxdepth: 2
 
     install/index
     tutorial/index
+    advanced/index
+    plotting/index
     examples/index
 
 
