@@ -223,7 +223,7 @@ class System:
         **kwargs
             Additional plot arguments as specified in :func:`.structure_plot_properties`.
         """
-        props = structure_plot_properties(**kwargs)
+        props = structure_plot_properties(self.lattice, **kwargs)
         props['site'].setdefault('radius', self.lattice.site_radius_for_plot())
 
         plot_hoppings(self.positions, self.hoppings.tocoo(), **props['hopping'])
@@ -234,11 +234,14 @@ class System:
         decorate_structure_plot(**props)
 
 
-def structure_plot_properties(axes='xyz', site=None, hopping=None, boundary=None, **kwargs):
+def structure_plot_properties(lattice=None, axes='xyz', site=None, hopping=None,
+                              boundary=None, **kwargs):
     """Process structure plot properties
 
     Parameters
     ----------
+    lattice : :class:`.Lattice`
+        Lattice information needed to look up sublattice and hopping names.
     axes : str
         The spatial axes to plot. E.g. 'xy' for the default view,
         or 'yz', 'xz' and similar to plot a rotated view.
@@ -257,7 +260,7 @@ def structure_plot_properties(axes='xyz', site=None, hopping=None, boundary=None
     """
     props = {'axes': axes, 'add_margin': kwargs.get('add_margin', True),
              'site': with_defaults(site, axes=axes),
-             'hopping': with_defaults(hopping, axes=axes)}
+             'hopping': with_defaults(hopping, lattice=lattice, axes=axes)}
     props['boundary'] = with_defaults(boundary, props['hopping'], colors='#d40a0c', width=1.6)
     return props
 
@@ -373,7 +376,7 @@ def plot_sites(positions, data, radius=0.025, offset=(0, 0, 0), blend=1.0,
 
 
 def plot_hoppings(positions, hoppings, width=1.0, offset=(0, 0, 0), blend=1.0, colors='#666666',
-                  axes='xyz', boundary=(), **kwargs):
+                  axes='xyz', boundary=(), draw_only=(), lattice=None, **kwargs):
     """Plot lines between lattice sites at `positions` based on the `hoppings` matrix
 
     Parameters
@@ -401,6 +404,10 @@ def plot_hoppings(positions, hoppings, width=1.0, offset=(0, 0, 0), blend=1.0, c
         (colormap) parameter should be used instead.
     boundary : Tuple[int, array_like]
         If given, apply the boundary (sign, shift).
+    draw_only : Iterable[str]
+        Only draw lines for the hoppings named in this list.
+    lattice : :class:`.Lattice`
+        The lattice information where the `draw_only` hopping names will be looked up.
     **kwargs
         Forwarded to :class:`matplotlib.collections.LineCollection`.
 
@@ -423,6 +430,15 @@ def plot_hoppings(positions, hoppings, width=1.0, offset=(0, 0, 0), blend=1.0, c
     rotate = functools.partial(_rotate, axes=axes)
     positions, offset = map(rotate, (positions, offset))
     hoppings = hoppings.tocoo()
+
+    # leave only the desired hoppings
+    if draw_only and lattice:
+        keep = np.zeros_like(hoppings.data, dtype=np.bool)
+        for hop_id in draw_only:
+            keep = np.logical_or(keep, hoppings.data == lattice(hop_id))
+        hoppings.data = hoppings.data[keep]
+        hoppings.col = hoppings.col[keep]
+        hoppings.row = hoppings.row[keep]
 
     ax = plt.gca()
     ndims = 3 if ax.name == '3d' else 2

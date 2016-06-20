@@ -94,6 +94,16 @@ def despine_all():
     ax.set_yticks([])
 
 
+def respine():
+    """Redraw all spines"""
+    ax = plt.gca()
+    for side in ['top', 'right', 'bottom', 'left']:
+        ax.spines[side].set_visible(True)
+        ax.spines[side].set_smart_bounds(False)
+    ax.xaxis.set_ticks_position('both')
+    ax.yaxis.set_ticks_position('both')
+
+
 def set_min_axis_length(length, axis='xy'):
     """Set minimum axis length
 
