@@ -178,7 +178,7 @@ This allows us to compute the eigenvalues at various points in k-space. For exam
         inner_bands.append(solver.eigenvalues)
 
     for bands in [outer_bands, inner_bands]:
-        result = pb.results.Bands([-kx_lim, kx_lim], kx_path, bands)
+        result = pb.results.Bands(kx_path, bands)
         result.plot()
 
 This example shows the basic principle of iterating over a path in k-space in order to calculate

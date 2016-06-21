@@ -19,15 +19,100 @@ __all__ = ['make_path', 'DOS', 'LDOS', 'SpatialMap', 'StructureMap',
            'Eigenvalues', 'Bands', 'Sweep', 'NDSweep']
 
 
+class Path(np.ndarray):
+    """An ndarray which represents a path connecting certain points
+
+    Attributes
+    ----------
+    point_indices : List[int]
+        Indices of the significant points along the path. Minimum 2: start and end.
+    """
+    def __new__(cls, array, point_indices):
+        obj = np.asarray(array).view(cls)
+        assert len(point_indices) >= 2
+        obj.point_indices = point_indices
+        return obj
+
+    def __array_finalize__(self, obj):
+        if obj is None:
+            return
+        default_indices = [0, obj.shape[0] - 1] if len(obj.shape) >= 1 else []
+        self.point_indices = getattr(obj, 'point_indices', default_indices)
+
+    @property
+    def points(self):
+        """Significant points along the path, including start and end"""
+        return self[self.point_indices]
+
+    @property
+    def is_simple(self):
+        """Is it just a simple path between two points?"""
+        return len(self.point_indices) == 2
+
+    def as_1d(self):
+        """Return a 1D representation of the path -- useful for plotting
+
+        For simple paths (2 points) the closest 1D path with real positions is returned.
+        Otherwise, an `np.arange(size)` is returned, where `size` matches the path. This doesn't
+        have any real meaning, but it's something that can be used as the x-axis in a line plot.
+
+        Examples
+        --------
+        >>> np.allclose(make_path(-2, 1, step=1).as_1d().T, [-2, -1, 0, 1])
+        True
+        >>> np.allclose(make_path([0, -2], [0, 1], step=1).as_1d().T, [-2, -1, 0, 1])
+        True
+        >>> np.allclose(make_path(1, -1, 4, step=1).as_1d().T, [0, 1, 2, 3, 4, 5, 6, 7])
+        True
+        """
+        if self.is_simple:
+            if len(self.shape) == 1:
+                return self
+            else:  # return the first axis with non-zero length
+                return self[:, np.flatnonzero(np.diff(self.points, axis=0))[0]]
+        else:
+            return np.arange(self.shape[0])
+
+    def plot(self, point_labels=None, **kwargs):
+        """Quiver plot of the path
+
+        Parameters
+        ----------
+        point_labels : List[str]
+            Labels for the :attr:`.Path.points`.
+        **kwargs
+            Forwarded to :func:`~matplotlib.pyplot.quiver`.
+        """
+        ax = plt.gca()
+        ax.set_aspect('equal')
+
+        default_color = pltutils.get_palette('Set1')[1]
+        kwargs = with_defaults(kwargs, scale_units='xy', angles='xy', scale=1, zorder=2,
+                               lw=1.5, color=default_color, edgecolor=default_color)
+
+        x, y = map(np.array, zip(*self.points))
+        plt.quiver(x[:-1], y[:-1], np.diff(x), np.diff(y), **kwargs)
+
+        ax.autoscale_view()
+        pltutils.add_margin(0.5)
+        pltutils.despine(trim=True)
+
+        if point_labels:
+            for k_point, label in zip(self.points, point_labels):
+                ha, va = pltutils.align(*(-k_point))
+                pltutils.annotate_box(label, k_point * 1.05, fontsize='large',
+                                      ha=ha, va=va, bbox=dict(lw=0))
+
+
 def make_path(k0, k1, *ks, step=0.1):
-    """Create a path which connects the given k points.
+    """Create a path which connects the given k points
 
     Parameters
     ----------
     k0, k1, *ks
         Points in k-space to connect.
     step : float
-        Length in k-space between two samples.
+        Length in k-space between two samples. Smaller step -> finer detail.
 
     Examples
     --------
@@ -38,17 +123,21 @@ def make_path(k0, k1, *ks, step=0.1):
     True
     """
     k_points = [np.atleast_1d(k) for k in (k0, k1) + ks]
+    if not all(k.shape == k_points[0].shape for k in k_points[:1]):
+        raise RuntimeError("All k-points must have the same shape")
 
     k_paths = []
+    point_indices = [0]
     for k_start, k_end in zip(k_points[:-1], k_points[1:]):
-        num_steps = np.linalg.norm(k_end - k_start) // step
+        num_steps = int(np.linalg.norm(k_end - k_start) // step)
         # k_path.shape == num_steps, k_space_dimensions
         k_path = np.array([np.linspace(s, e, num_steps, endpoint=False)
                            for s, e in zip(k_start, k_end)]).T
         k_paths.append(k_path)
+        point_indices.append(point_indices[-1] + num_steps)
     k_paths.append(k_points[-1])
 
-    return np.vstack(k_paths)
+    return Path(np.vstack(k_paths), point_indices)
 
 
 @pickleable
@@ -436,19 +525,21 @@ class Bands:
 
     Attributes
     ----------
-    k_points : List[Tuple[float]]
-    k_path : array_like
-    bands : array_like
+    k_path : :class:`Path`
+        The path in reciprocal space along which the bands were calculated.
+        E.g. constructed using :func:`make_path`.
+    energy : array_like
+        Energy values for the bands along the path in k-space.
     """
-    def __init__(self, k_points, k_path, bands):
-        self.k_points = [np.atleast_1d(k) for k in k_points]
-        self.k_path = k_path
-        self.bands = bands
+    def __init__(self, k_path, energy):
+        self.k_path = np.atleast_1d(k_path).view(Path)
+        self.energy = energy
 
     @staticmethod
     def _point_names(k_points):
         names = []
         for k_point in k_points:
+            k_point = np.atleast_1d(k_point)
             values = map(x_pi, k_point)
             fmt = "[{}]" if len(k_point) > 1 else "{}"
             names.append(fmt.format(', '.join(values)))
@@ -465,24 +556,23 @@ class Bands:
             Forwarded to `plt.plot()`.
         """
         default_color = pltutils.get_palette('Set1')[1]
-        plt.plot(self.bands, **with_defaults(kwargs, color=default_color))
+        k_space = self.k_path.as_1d()
+        plt.plot(k_space, self.energy, **with_defaults(kwargs, color=default_color))
 
-        plt.xlim(0, len(self.bands) - 1)
+        plt.xlim(k_space.min(), k_space.max())
         plt.xlabel('k-space')
         plt.ylabel('E (eV)')
         pltutils.add_margin()
         pltutils.despine(trim=True)
 
-        border_indices = [idx for idx, k in enumerate(self.k_path)
-                          if any(np.allclose(k, k0) for k0 in self.k_points)]
+        point_labels = point_labels or self._point_names(self.k_path.points)
+        plt.xticks(k_space[self.k_path.point_indices], point_labels)
 
-        if not point_labels:
-            point_labels = self._point_names(self.k_points)
-        plt.xticks(border_indices, point_labels)
-
-        for idx in border_indices:
-            ymax = plt.gca().transLimits.transform([0, max(self.bands[idx])])[1]
-            plt.axvline(idx, ymax=ymax, color='0.4', ls=':', zorder=-1)
+        # Draw vertical lines at significant points. Because of the `transLimits.transform`,
+        # this must be the done last, after all other plot elements are positioned.
+        for idx in self.k_path.point_indices:
+            ymax = plt.gca().transLimits.transform([0, max(self.energy[idx])])[1]
+            plt.axvline(k_space[idx], ymax=ymax, color='0.4', ls=':', zorder=-1)
 
     def plot_kpath(self, point_labels=None, **kwargs):
         """Quiver plot of path in k-space along which the bands were computed
@@ -492,29 +582,11 @@ class Bands:
         Parameters
         ----------
         point_labels : List[str]
-            Labels for the `k_points`.
+            Labels for the k-points.
         **kwargs
-            Forwarded to `plt.quiver()`.
+            Forwarded to :func:`~matplotlib.pyplot.quiver`.
         """
-        ax = plt.gca()
-        ax.set_aspect('equal')
-
-        default_color = pltutils.get_palette('Set1')[1]
-        kwargs = with_defaults(kwargs, scale_units='xy', angles='xy', scale=1, zorder=2,
-                               lw=1.5, color=default_color, edgecolor=default_color)
-
-        x, y = map(np.array, zip(*self.k_points))
-        plt.quiver(x[:-1], y[:-1], np.diff(x), np.diff(y), **kwargs)
-
-        ax.autoscale_view()
-        pltutils.add_margin(0.5)
-        pltutils.despine(trim=True)
-
-        if point_labels:
-            for k_point, label in zip(self.k_points, point_labels):
-                ha, va = pltutils.align(*(-k_point))
-                pltutils.annotate_box(label, k_point * 1.05, fontsize='large',
-                                      ha=ha, va=va, bbox=dict(lw=0))
+        self.k_path.plot(point_labels, **kwargs)
 
 
 @pickleable

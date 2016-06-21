@@ -11,3 +11,4 @@ a few more examples which did not fit into :doc:`/tutorial/index` or :doc:`/adva
 
     lattice/index
     finite/index
+    ribbons/index

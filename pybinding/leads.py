@@ -81,7 +81,7 @@ class Lead:
 
         k_path = results.make_path(start, end, step=step).flatten()
         bands = [eigenvalues(k) for k in k_path]
-        return results.Bands([start, end], k_path, np.vstack(bands))
+        return results.Bands(k_path, np.vstack(bands))
 
     def plot(self, lead_length=6, **kwargs):
         """Plot the sites, hoppings and periodic boundaries of the lead

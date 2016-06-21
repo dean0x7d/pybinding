@@ -247,7 +247,7 @@ class Solver:
             self.set_wave_vector(k)
             bands.append(self.eigenvalues)
 
-        return results.Bands(k_points, k_path, np.vstack(bands))
+        return results.Bands(k_path, np.vstack(bands))
 
     @staticmethod
     def find_degenerate_states(energies, abs_tolerance=1e-5):
