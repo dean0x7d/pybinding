@@ -35,10 +35,10 @@ extensions = [
 
 autodoc_member_order = 'groupwise'
 
-intersphinx_mapping = {'python': ('http://docs.python.org/3', None),
+intersphinx_mapping = {'python': ('https://docs.python.org/3', None),
                        'numpy': ('http://docs.scipy.org/doc/numpy/', None),
                        'scipy': ('http://docs.scipy.org/doc/scipy/reference/', None),
-                       'matplotlib': ('http://www.matplotlib.org/', None)}
+                       'matplotlib': ('http://matplotlib.org/', None)}
 
 numpydoc_class_members_toctree = False
 numpydoc_show_class_members = False
