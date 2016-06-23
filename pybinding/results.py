@@ -201,17 +201,35 @@ class SpatialMap:
 
     Attributes
     ----------
-    data : np.ndarray
+    data : array_like
         1D array of values which correspond to x, y, z coordinates.
-    pos : tuple of np.ndarray
+    positions : Tuple[array_like, array_like, array_like]
         Lattice site positions. Named tuple with x, y, z fields, each a 1D array.
-    sub : np.ndarray
+    sublattices : Optional[array_like]
         Sublattice ID for each position.
     """
-    def __init__(self, data, positions, sublattices):
+    def __init__(self, data, positions, sublattices=None):
         self.data = np.atleast_1d(data)
-        self.pos = Positions(*positions)  # maybe convert from tuple
-        self.sub = np.atleast_1d(sublattices)
+        self.positions = Positions(*positions)  # maybe convert from tuple
+        if sublattices is not None:
+            self.sublattices = np.atleast_1d(sublattices)
+        else:
+            self.sublattices = np.zeros_like(self.data)
+
+    @property
+    def x(self) -> np.ndarray:
+        """1D array of x coordinates"""
+        return self.positions.x
+
+    @property
+    def y(self) -> np.ndarray:
+        """1D array of y coordinates"""
+        return self.positions.y
+
+    @property
+    def z(self) -> np.ndarray:
+        """1D array of z coordinates"""
+        return self.positions.z
 
     @classmethod
     def from_system(cls, data, system):
@@ -231,7 +249,7 @@ class SpatialMap:
     def save_txt(self, filename):
         with open(filename + '.dat', 'w') as file:
             file.write('# {:12}{:13}{:13}\n'.format('x(nm)', 'y(nm)', 'data'))
-            for x, y, d in zip(self.pos.x, self.pos.y, self.data):
+            for x, y, d in zip(self.x, self.y, self.data):
                 file.write(("{:13.5e}" * 3 + '\n').format(x, y, d))
 
     def filter(self, idx):
@@ -243,8 +261,8 @@ class SpatialMap:
         """
         # TODO: consider making this class immutable and use __getitem__ instead of filter
         self.data = self.data[idx]
-        self.pos = Positions(*map(lambda v: v[idx], self.pos))
-        self.sub = self.sub[idx]
+        self.positions = Positions(*map(lambda v: v[idx], self.positions))
+        self.sublattices = self.sublattices[idx]
 
     def crop(self, **limits):
         """Leave only the sites that are within the given limits
@@ -258,16 +276,11 @@ class SpatialMap:
         --------
         Leave only the data where -10 <= x < 10 and 2 <= y < 4::
 
-            s.crop(x=(-10, 10), y=(2, 4))
+            s.crop(x=[-10, 10], y=[2, 4])
         """
-        idx = np.ones(self.pos.x.size, dtype=bool)
-        attrib = {'x': self.pos.x, 'y': self.pos.y, 'z': self.pos.z,
-                  'sub': self.sub, 'data': self.data}
-        for key, limit in limits.items():
-            if key not in attrib:
-                raise AttributeError("'{}' not found in SpatialMap".format(key))
-
-            v = attrib[key]
+        idx = np.ones(self.x.size, dtype=np.bool)
+        for name, limit in limits.items():
+            v = getattr(self, name)
             idx = np.logical_and(idx, v >= limit[0])
             idx = np.logical_and(idx, v < limit[1])
 
@@ -278,7 +291,7 @@ class SpatialMap:
 
     def convolve(self, sigma=0.25):
         # TODO: slow and only works in the xy-plane
-        x, y, _ = self.pos
+        x, y, _ = self.positions
         r = np.sqrt(x**2 + y**2)
 
         data = np.empty_like(self.data)
@@ -303,9 +316,9 @@ class SpatialMap:
         Parameters
         ----------
         **kwargs
-            Forwarded to `plt.tripcolor()`.
+            Forwarded to :func:`~matplotlib.pyplot.tripcolor`.
         """
-        x, y, _ = self.pos
+        x, y, _ = self.positions
         kwargs = with_defaults(kwargs, shading='gouraud', rasterized=True)
         pcolor = plt.tripcolor(x, y, self.data, **kwargs)
         self._decorate_plot()
@@ -319,10 +332,10 @@ class SpatialMap:
         num_levels : int
             Number of contour levels.
         **kwargs
-            Forwarded to `plt.tricontourf()`.
+            Forwarded to :func:`~matplotlib.pyplot.tricontourf`.
         """
         levels = np.linspace(self.data.min(), self.data.max(), num=num_levels)
-        x, y, _ = self.pos
+        x, y, _ = self.positions
         kwargs = with_defaults(kwargs, levels=levels, rasterized=True)
         contourf = plt.tricontourf(x, y, self.data, **kwargs)
         self._decorate_plot()
@@ -334,9 +347,9 @@ class SpatialMap:
         Parameters
         ----------
         **kwargs
-            Forwarded to `plt.tricontour()`.
+            Forwarded to :func:`~matplotlib.pyplot.tricontour`.
         """
-        x, y, _ = self.pos
+        x, y, _ = self.positions
         contour = plt.tricontour(x, y, self.data, **kwargs)
         self._decorate_plot()
         return contour
@@ -344,16 +357,16 @@ class SpatialMap:
 
 @pickleable
 class StructureMap(SpatialMap):
-    """A `SpatialMap` that also includes hoppings between sites
+    """A subclass of :class:`.SpatialMap` that also includes hoppings between sites
 
     Attributes
     ----------
-    hoppings : scipy.csr_matrix
-        Sparse matrix of hopping IDs. See `System.hoppings`.
-    boundaries : list of scipy.csr_matrix
-        Boundary hoppings. See 'System.boundaries`.
+    hoppings : :class:`~scipy.sparse.csr_matrix`
+        Sparse matrix of hopping IDs. See :attr:`.System.hoppings`.
+    boundaries : List[:class:`~scipy.sparse.csr_matrix`]
+        Boundary hoppings. See :attr:`.System.boundaries`.
     """
-    def __init__(self, data, positions, sublattices, hoppings, boundaries):
+    def __init__(self, data, positions, sublattices, hoppings, boundaries=()):
         super().__init__(data, positions, sublattices)
         self.hoppings = hoppings
         self.boundaries = boundaries
@@ -370,7 +383,7 @@ class StructureMap(SpatialMap):
     @property
     def spatial_map(self) -> SpatialMap:
         """Just the :class:`SpatialMap` subset without hoppings"""
-        return SpatialMap(self.data, self.pos, self.sub)
+        return SpatialMap(self.data, self.positions, self.sublattices)
 
     @staticmethod
     def _filter_csr_matrix(csr, idx):
@@ -424,14 +437,15 @@ class StructureMap(SpatialMap):
 
         props = structure_plot_properties(**kwargs)
         props['site'] = with_defaults(props['site'], radius=to_radii(self.data), cmap=cmap)
-        collection = plot_sites(self.pos, self.data, **props['site'])
+        collection = plot_sites(self.positions, self.data, **props['site'])
 
         hop = self.hoppings.tocoo()
         props['hopping'] = with_defaults(props['hopping'], colors='#bbbbbb')
-        plot_hoppings(self.pos, hop, **props['hopping'])
+        plot_hoppings(self.positions, hop, **props['hopping'])
 
         props['site']['alpha'] = props['hopping']['alpha'] = 0.5
-        plot_periodic_boundaries(self.pos, hop, self.boundaries, self.data, num_periods, **props)
+        plot_periodic_boundaries(self.positions, hop, self.boundaries, self.data,
+                                 num_periods, **props)
 
         pltutils.despine(trim=True)
         pltutils.add_margin()

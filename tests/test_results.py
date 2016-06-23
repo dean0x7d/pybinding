@@ -43,27 +43,27 @@ def test_sweep():
 
 def test_spatial_map(model):
     system = model.system
-    zeros = np.zeros_like(system.positions.x)
+    zeros = np.zeros_like(system.x)
 
     spatial_map = pb.results.SpatialMap.from_system(zeros, system)
 
-    assert system.positions.x.data == spatial_map.pos.x.data
-    assert system.positions.y.data == spatial_map.pos.y.data
-    assert system.positions.z.data == spatial_map.pos.z.data
-    assert system.sublattices.data == spatial_map.sub.data
+    assert system.x.data == spatial_map.x.data
+    assert system.y.data == spatial_map.y.data
+    assert system.z.data == spatial_map.z.data
+    assert system.sublattices.data == spatial_map.sublattices.data
 
     tmp = spatial_map.copy()
-    tmp.filter(tmp.sub == 'A')
-    assert len(spatial_map.pos.x) == 2 * len(tmp.pos.x)
+    tmp.filter(tmp.sublattices == 'A')
+    assert len(spatial_map.x) == 2 * len(tmp.x)
 
     tmp = spatial_map.copy()
     tmp.crop(x=(-0.1, 0.1), y=(0, 0.1))
-    assert len(tmp.pos.x) == 1
+    assert len(tmp.x) == 1
 
 
 def test_structure_map(model):
     system = model.system
-    zeros = np.zeros_like(system.positions.x)
+    zeros = np.zeros_like(system.x)
 
     spatial_map = pb.results.SpatialMap.from_system(zeros, system)
     structure_map = pb.results.StructureMap.from_system(zeros, system)
@@ -71,7 +71,7 @@ def test_structure_map(model):
     assert pytest.fuzzy_equal(spatial_map, structure_map.spatial_map)
 
     tmp = structure_map.copy()
-    tmp.filter(tmp.pos.x < 0.05)
+    tmp.filter(tmp.x < 0.05)
     assert structure_map.hoppings.nnz == 41
     assert tmp.hoppings.nnz == 21
     assert tmp.hoppings.data.mapping == model.lattice.hop_name_map

@@ -1,6 +1,13 @@
 # Changelog
 
-### v0.7.3 | in development
+### v0.8.0 | in development
+
+##### Breaking changes
+
+* The interfaces for the `SpatialMap` and `StructureMap` result objects have changed significantly.
+  See the "Plotting Guide" section of the documentation for details. 
+
+##### Bug fixes
 
 * Fixed translational symmetry skipping directions for some 2D systems.
 
@@ -24,7 +31,7 @@
 * Fixed a bug where using a single KPM object for multiple calculations could return wrong results.
 
 * *Experimental* `hopping_generator` which can be used to add a new hopping family connecting
-  arbitrary sites independent of the main `Lattice` definition. This is useful for creating 
+  arbitrary sites independent of the main `Lattice` definition. This is useful for creating
   additional local hoppings, e.g. to model defects.
 
 
