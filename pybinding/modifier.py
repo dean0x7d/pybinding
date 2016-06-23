@@ -12,6 +12,7 @@ import numpy as np
 from . import _cpp
 from .system import Sites
 from .support.inspect import get_call_signature
+from .support.alias import AliasArray
 from .utils.misc import decorator_decorator
 
 __all__ = ['site_state_modifier', 'site_position_modifier', 'onsite_energy_modifier',
@@ -19,44 +20,9 @@ __all__ = ['site_state_modifier', 'site_position_modifier', 'onsite_energy_modif
            'hopping_generator']
 
 
-class _AliasArray(np.ndarray):
-    """Helper class for modifier arguments
-
-    This ndarray subclass enables comparing sub_id and hop_id arrays directly with
-    their friendly string identifiers. The mapping parameter translates sublattice
-    or hopping names into their number IDs.
-
-    Examples
-    --------
-    >>> a = _AliasArray([0, 1, 0], {'A': 0, 'B': 1})
-    >>> list(a == 0)
-    [True, False, True]
-    >>> list(a == 'A')
-    [True, False, True]
-    """
-    def __new__(cls, array, mapping):
-        obj = np.asarray(array).view(cls)
-        obj.mapping = mapping
-        return obj
-
-    def __array_finalize__(self, obj):
-        if obj is None:
-            return
-        self.mapping = getattr(obj, 'mapping', None)
-
-    def __eq__(self, other):
-        if isinstance(other, str):
-            return super().__eq__(self.mapping[other])
-        else:
-            return super().__eq__(other)
-
-    def __ne__(self, other):
-        return np.logical_not(self.__eq__(other))
-
-
 def _make_alias_array(obj):
     if isinstance(obj, (_cpp.SubIdRef, _cpp.HopIdRef)):
-        return _AliasArray(obj.ids, obj.name_map)
+        return AliasArray(obj.ids, obj.name_map)
     else:
         return obj
 
@@ -118,7 +84,7 @@ def _check_modifier_return(func, num_arguments, num_return, can_be_complex):
         Is this modifier allowed to have a complex return value.
     """
     in_shape = 10,
-    dummy_input = [_AliasArray(np.ones(in_shape), defaultdict(int))] * num_arguments
+    dummy_input = [AliasArray(np.ones(in_shape), defaultdict(int))] * num_arguments
 
     try:
         out_data = func(*dummy_input)

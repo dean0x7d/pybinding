@@ -3,11 +3,10 @@
 Result objects hold computed data and offer postprocessing and plotting functions
 which are specifically adapted to the nature of the stored data.
 """
-from copy import deepcopy
+from copy import copy, deepcopy
 
 import numpy as np
 import matplotlib.pyplot as plt
-from scipy.sparse import csr_matrix
 
 from . import pltutils
 from .utils import with_defaults, x_pi
@@ -376,9 +375,12 @@ class StructureMap(SpatialMap):
     @staticmethod
     def _filter_csr_matrix(csr, idx):
         """Indexing must preserve all data, even zeros"""
-        plus_one = csr_matrix((csr.data + 1, csr.indices, csr.indptr), csr.shape)
-        plus_one = plus_one[idx][:, idx]
-        return csr_matrix((plus_one.data - 1, plus_one.indices, plus_one.indptr), plus_one.shape)
+        m = copy(csr)  # shallow copy
+        m.data = m.data.copy()
+        m.data += 1  # increment by 1 to preserve zeroes when slicing
+        m = m[idx][:, idx]
+        m.data -= 1
+        return m
 
     def filter(self, idx):
         super().filter(idx)
@@ -400,6 +402,8 @@ class StructureMap(SpatialMap):
             represent the magnitude of the data.
         num_periods : int
             Number of times to repeat periodic boundaries.
+        **kwargs
+            Additional plot arguments as specified in :func:`.structure_plot_properties`.
         """
         ax = plt.gca()
         ax.set_aspect('equal', 'datalim')

@@ -1,7 +1,7 @@
 from functools import singledispatch, update_wrapper
 
 import numpy as np
-from scipy.sparse import csr_matrix
+from scipy.sparse import csr_matrix, coo_matrix
 
 import pybinding as pb
 
@@ -115,6 +115,11 @@ class FuzzyEqual:
     @_assert.register(csr_matrix)
     def _(self, actual, expected):
         for s in ['shape', 'data', 'indices', 'indptr']:
+            self._assert(getattr(actual, s), getattr(expected, s), context=".{}".format(s))
+
+    @_assert.register(coo_matrix)
+    def _(self, actual, expected):
+        for s in ['shape', 'data', 'row', 'col']:
             self._assert(getattr(actual, s), getattr(expected, s), context=".{}".format(s))
 
     @_assert.register(tuple)

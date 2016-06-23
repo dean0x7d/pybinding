@@ -13,6 +13,7 @@ from .lattice import Lattice
 from .utils import with_defaults
 from .support.pickle import pickleable
 from .support.fuzzy_set import FuzzySet
+from .support.alias import AliasArray, AliasCSRMatrix
 
 __all__ = ['Positions', 'System', 'Sites', 'plot_sites', 'plot_hoppings',
            'plot_periodic_boundaries', 'structure_plot_properties']
@@ -183,7 +184,7 @@ class System:
     @property
     def hoppings(self) -> csr_matrix:
         """Sparse matrix of hopping IDs"""
-        return self.impl.hoppings
+        return AliasCSRMatrix(self.impl.hoppings, mapping=self.lattice.hop_name_map)
 
     @property
     def boundaries(self) -> list:
@@ -223,25 +224,22 @@ class System:
         **kwargs
             Additional plot arguments as specified in :func:`.structure_plot_properties`.
         """
-        props = structure_plot_properties(self.lattice, **kwargs)
+        props = structure_plot_properties(**kwargs)
         props['site'].setdefault('radius', self.lattice.site_radius_for_plot())
 
-        plot_hoppings(self.positions, self.hoppings.tocoo(), **props['hopping'])
+        plot_hoppings(self.positions, self.hoppings, **props['hopping'])
         plot_sites(self.positions, self.sublattices, **props['site'])
-        plot_periodic_boundaries(self.positions, self.hoppings.tocoo(), self.boundaries,
+        plot_periodic_boundaries(self.positions, self.hoppings, self.boundaries,
                                  self.sublattices, num_periods, **props)
 
         decorate_structure_plot(**props)
 
 
-def structure_plot_properties(lattice=None, axes='xyz', site=None, hopping=None,
-                              boundary=None, **kwargs):
+def structure_plot_properties(axes='xyz', site=None, hopping=None, boundary=None, **kwargs):
     """Process structure plot properties
 
     Parameters
     ----------
-    lattice : :class:`.Lattice`
-        Lattice information needed to look up sublattice and hopping names.
     axes : str
         The spatial axes to plot. E.g. 'xy' for the default view,
         or 'yz', 'xz' and similar to plot a rotated view.
@@ -260,7 +258,7 @@ def structure_plot_properties(lattice=None, axes='xyz', site=None, hopping=None,
     """
     props = {'axes': axes, 'add_margin': kwargs.get('add_margin', True),
              'site': with_defaults(site, axes=axes),
-             'hopping': with_defaults(hopping, lattice=lattice, axes=axes)}
+             'hopping': with_defaults(hopping, axes=axes)}
     props['boundary'] = with_defaults(boundary, props['hopping'], colors='#d40a0c', width=1.6)
     return props
 
@@ -376,7 +374,7 @@ def plot_sites(positions, data, radius=0.025, offset=(0, 0, 0), blend=1.0,
 
 
 def plot_hoppings(positions, hoppings, width=1.0, offset=(0, 0, 0), blend=1.0, colors='#666666',
-                  axes='xyz', boundary=(), draw_only=(), lattice=None, **kwargs):
+                  axes='xyz', boundary=(), draw_only=(), **kwargs):
     """Plot lines between lattice sites at `positions` based on the `hoppings` matrix
 
     Parameters
@@ -384,7 +382,7 @@ def plot_hoppings(positions, hoppings, width=1.0, offset=(0, 0, 0), blend=1.0, c
     positions : Tuple[array_like, array_like, array_like]
         Site coordinates in the form of an (x, y, z) tuple of 1D arrays.
     hoppings : :class:`~scipy.sparse.coo_matrix`
-        Sparse matrix with the hopping data, usually :meth:`System.hoppings`.
+        Sparse matrix with the hopping data, usually :attr:`System.hoppings`.
         The `row` and `col` indices of the sparse matrix are used to draw lines between
         lattice sites, while `data` determines the color.
     width : float
@@ -406,8 +404,6 @@ def plot_hoppings(positions, hoppings, width=1.0, offset=(0, 0, 0), blend=1.0, c
         If given, apply the boundary (sign, shift).
     draw_only : Iterable[str]
         Only draw lines for the hoppings named in this list.
-    lattice : :class:`.Lattice`
-        The lattice information where the `draw_only` hopping names will be looked up.
     **kwargs
         Forwarded to :class:`matplotlib.collections.LineCollection`.
 
@@ -432,10 +428,10 @@ def plot_hoppings(positions, hoppings, width=1.0, offset=(0, 0, 0), blend=1.0, c
     hoppings = hoppings.tocoo()
 
     # leave only the desired hoppings
-    if draw_only and lattice:
+    if draw_only:
         keep = np.zeros_like(hoppings.data, dtype=np.bool)
         for hop_id in draw_only:
-            keep = np.logical_or(keep, hoppings.data == lattice(hop_id))
+            keep = np.logical_or(keep, hoppings.data == hop_id)
         hoppings.data = hoppings.data[keep]
         hoppings.col = hoppings.col[keep]
         hoppings.row = hoppings.row[keep]

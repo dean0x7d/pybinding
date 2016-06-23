@@ -99,7 +99,7 @@ class Lead:
         boundary = self.system.boundaries[0]
         outer_hoppings = boundary.hoppings.tocoo()
 
-        props = structure_plot_properties(self.system.lattice, **kwargs)
+        props = structure_plot_properties(**kwargs)
         props['site'].setdefault('radius', self.system.lattice.site_radius_for_plot())
 
         blend_gradient = np.linspace(0.5, 0.1, lead_length)
