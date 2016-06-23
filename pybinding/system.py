@@ -39,13 +39,9 @@ class Sites:
     x, y, z : np.ndarray
     sublattices : np.ndarray
     """
-    def __init__(self, positions, sublattices, lattice=None):
+    def __init__(self, positions, sublattices):
         self.x, self.y, self.z = map(np.atleast_1d, positions)
         self.sublattices = np.atleast_1d(sublattices)
-        self.lattice = lattice
-
-    def _translate_sublattice(self, value):
-        return self.lattice[value] if self.lattice else value
 
     @property
     def positions(self):
@@ -100,7 +96,6 @@ class Sites:
         if target_sublattice is None:
             return np.argmin(distances)
         else:
-            target_sublattice = self._translate_sublattice(target_sublattice)
             return ma.argmin(ma.array(distances, mask=(self.sublattices != target_sublattice)))
 
     def argsort_nearest(self, target_position, target_sublattice=None):
@@ -128,7 +123,6 @@ class Sites:
         if target_sublattice is None:
             return np.argsort(distances)
         else:
-            target_sublattice = self._translate_sublattice(target_sublattice)
             return ma.argsort(ma.array(distances, mask=(self.sublattices != target_sublattice)))
 
 
@@ -179,7 +173,7 @@ class System:
     @property
     def sublattices(self) -> np.ndarray:
         """1D array of sublattice IDs"""
-        return self.impl.sublattices
+        return AliasArray(self.impl.sublattices, self.lattice.sub_name_map)
 
     @property
     def hoppings(self) -> csr_matrix:

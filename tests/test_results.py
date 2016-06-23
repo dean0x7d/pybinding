@@ -53,7 +53,7 @@ def test_spatial_map(model):
     assert system.sublattices.data == spatial_map.sub.data
 
     tmp = spatial_map.copy()
-    tmp.filter(tmp.sub == 0)
+    tmp.filter(tmp.sub == 'A')
     assert len(spatial_map.pos.x) == 2 * len(tmp.pos.x)
 
     tmp = spatial_map.copy()

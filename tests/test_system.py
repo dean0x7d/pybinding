@@ -52,7 +52,7 @@ def test_sites():
     model = pb.Model(graphene.monolayer(), pb.primitive(2, 2))
     system = model.system
 
-    sites = pb.system.Sites(system.positions, system.sublattices, system.lattice)
+    sites = pb.system.Sites(system.positions, system.sublattices)
     idx = system.num_sites // 2
     assert idx == sites.find_nearest(system.xyz[idx])
     assert idx == sites.find_nearest(system.xyz[idx], system.sublattices[idx])
