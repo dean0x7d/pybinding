@@ -7,6 +7,7 @@ from . import results
 from .system import System, decorate_structure_plot
 from .lattice import Lattice
 from .leads import Leads
+from .results import StructureMap
 
 
 class Model(_cpp.Model):
@@ -74,6 +75,21 @@ class Model(_cpp.Model):
             For a 3D lattice it's the area described by a 2D :class:`.FreeformShape`.
         """
         super().attach_lead(direction, contact)
+
+    def structure_map(self, data=None):
+        """Return a :class:`.StructureMap` of the model system mapped to the specified `data`
+
+        Parameters
+        ----------
+        data : Optional[array_like]
+            Data array to map to site positions. Defaults to sublattice IDs if not specified.
+
+        Returns
+        -------
+        :class:`~pybinding.results.StructureMap`
+        """
+        data = data if data is not None else self.system.sublattices
+        return StructureMap.from_system(data, self.system)
 
     def tokwant(self):
         """Convert this model into `kwant <http://kwant-project.org/>`_ format (finalized)
