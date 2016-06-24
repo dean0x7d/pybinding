@@ -217,6 +217,11 @@ class SpatialMap:
             self.sublattices = np.zeros_like(self.data)
 
     @property
+    def num_sites(self) -> int:
+        """Total number of lattice sites"""
+        return self.data.size
+
+    @property
     def x(self) -> np.ndarray:
         """1D array of x coordinates"""
         return self.positions.x
@@ -242,52 +247,46 @@ class SpatialMap:
         """
         return cls(data, system.positions, system.sublattices)
 
-    def copy(self) -> 'SpatialMap':
-        """Return a deep copy"""
-        return deepcopy(self)
-
     def save_txt(self, filename):
         with open(filename + '.dat', 'w') as file:
             file.write('# {:12}{:13}{:13}\n'.format('x(nm)', 'y(nm)', 'data'))
             for x, y, d in zip(self.x, self.y, self.data):
                 file.write(("{:13.5e}" * 3 + '\n').format(x, y, d))
 
-    def filter(self, idx):
-        """Leave only the sites indicated by `idx`: same rules as numpy indexing
+    def __getitem__(self, idx):
+        """Same rules as numpy indexing"""
+        return self.__class__(self.data[idx], (v[idx] for v in self.positions),
+                              self.sublattices[idx])
 
-        Parameters
-        ----------
-        idx : array_like
-        """
-        # TODO: consider making this class immutable and use __getitem__ instead of filter
-        self.data = self.data[idx]
-        self.positions = Positions(*map(lambda v: v[idx], self.positions))
-        self.sublattices = self.sublattices[idx]
-
-    def crop(self, **limits):
-        """Leave only the sites that are within the given limits
+    def cropped(self, **limits):
+        """Return a copy which retains only the sites within the given limits
 
         Parameters
         ----------
         **limits
-            Attribute names and corresponding limits.
+            Attribute names and corresponding limits. See example.
+
+        Returns
+        -------
+        StructureMap
 
         Examples
         --------
         Leave only the data where -10 <= x < 10 and 2 <= y < 4::
 
-            s.crop(x=[-10, 10], y=[2, 4])
+            new = original.cropped(x=[-10, 10], y=[2, 4])
         """
-        idx = np.ones(self.x.size, dtype=np.bool)
+        idx = np.ones(self.num_sites, dtype=np.bool)
         for name, limit in limits.items():
             v = getattr(self, name)
             idx = np.logical_and(idx, v >= limit[0])
             idx = np.logical_and(idx, v < limit[1])
 
-        self.filter(idx)
+        return self[idx]
 
-    def clip(self, v_min, v_max):
-        self.data = np.clip(self.data, v_min, v_max)
+    def clipped(self, v_min, v_max):
+        """Clip (limit) the values in the `data` array, see :func:`~numpy.clip`"""
+        return self.__class__(np.clip(self.data, v_min, v_max), self.positions, self.sublattices)
 
     def convolve(self, sigma=0.25):
         # TODO: slow and only works in the xy-plane
@@ -376,10 +375,6 @@ class StructureMap(SpatialMap):
         return cls(data, system.positions, system.sublattices,
                    system.hoppings.tocsr(), system.boundaries)
 
-    def copy(self) -> 'StructureMap':
-        """Return a deep copy"""
-        return deepcopy(self)
-
     @property
     def spatial_map(self) -> SpatialMap:
         """Just the :class:`SpatialMap` subset without hoppings"""
@@ -395,11 +390,17 @@ class StructureMap(SpatialMap):
         m.data -= 1
         return m
 
-    def filter(self, idx):
-        super().filter(idx)
-        self.hoppings = self._filter_csr_matrix(self.hoppings, idx)
-        for boundary in self.boundaries:
-            boundary.hoppings = self._filter_csr_matrix(boundary.hoppings, idx)
+    @staticmethod
+    def _filter_boundary(boundary, idx):
+        b = copy(boundary)
+        b.hoppings = StructureMap._filter_csr_matrix(b.hoppings, idx)
+        return b
+
+    def __getitem__(self, idx):
+        """Same rules as numpy indexing"""
+        return self.__class__(self.data[idx], (v[idx] for v in self.positions),
+                              self.sublattices[idx], self._filter_csr_matrix(self.hoppings, idx),
+                              [self._filter_boundary(b, idx) for b in self.boundaries])
 
     def plot_structure(self, cmap='YlGnBu', site_radius=(0.03, 0.05), num_periods=1, **kwargs):
         """Plot the spatial structure with a colormap of :attr:`data` at the lattice sites

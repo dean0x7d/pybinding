@@ -61,9 +61,9 @@ def test_spatial_ldos(solver, baseline, plot_if_fails):
 
     x_max = solver.system.x.max()
     y_max = solver.system.y.max()
-    ldos_map.crop(x=(x_max - 1, x_max + 1), y=(y_max - 1, y_max + 1))
+    ldos_map = ldos_map.cropped(x=(x_max - 1, x_max + 1), y=(y_max - 1, y_max + 1))
 
-    expected = ldos_map.copy()
+    expected = ldos_map[:]
     expected.data = baseline(ldos_map.data)
     plot_if_fails(ldos_map, expected, 'plot_structure')
 
