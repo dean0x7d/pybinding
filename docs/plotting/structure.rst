@@ -13,35 +13,37 @@ Draw only certain hoppings
 --------------------------
 
 The system structure plot usually draws lines for all hoppings. We can see an example here with
-the third-nearest-neighbor model of graphene:
+the third-nearest-neighbor model of graphene. Note the huge number of hoppings in the figure below.
+The extra information may be useful for calculations, but it is not always desirable for figures
+because of the extra noise. To filter out some of the lines, we can pass the `draw_only` argument
+as a list of hopping names. For example, if we only want the first-nearest neighbors:
 
 .. plot::
     :context: close-figs
 
     from pybinding.repository import graphene
 
+    plt.figure(figsize=(8, 3))
     model = pb.Model(graphene.monolayer(nearest_neighbors=3), graphene.hexagon_ac(1))
-    model.system.plot()
-    plt.title("Unfiltered: all 3 hoppings")
 
-Note the huge number of hoppings. The extra information may be useful for calculations, but it is
-not always desirable for illustration figures because of the extra noise. To filter out some of the
-hopping lines, we can pass the `draw_only` argument as a list of hopping names. For example,
-if we only want the first-nearest neighbors:
+    plt.subplot(121, title="Unfiltered: all 3 hoppings")
+    model.plot()
 
-.. plot::
-    :context: close-figs
+    plt.subplot(122, title="Filtered: shows only nearest")
+    model.plot(hopping={'draw_only': ['t']})
 
-    model.system.plot(hopping={'draw_only': ['t']})
-    plt.title("Filtered: shows only nearest")
-
-We can also select hopping in any combination. Here are the first- and third-nearest neighbors:
+We can also select hoppings in any combination:
 
 .. plot::
     :context: close-figs
 
-    model.system.plot(hopping={'draw_only': ['t', 't_nnn']})
-    plt.title("Filtered: $t$ and $t_{nnn}$")
+    plt.figure(figsize=(8, 3))
+
+    plt.subplot(121, title="$t$ and $t_{nn}$")
+    model.plot(hopping={'draw_only': ['t', 't_nn']})
+
+    plt.subplot(122, title="$t$ and $t_{nnn}$")
+    model.plot(hopping={'draw_only': ['t', 't_nnn']})
 
 
 Redraw all axes spines
@@ -54,5 +56,43 @@ call the :func:`.pltutils.respine` function.
     :context: close-figs
 
     model = pb.Model(graphene.monolayer(), graphene.hexagon_ac(1))
-    model.system.plot()
+    model.plot()
     pb.pltutils.respine()
+
+
+Site radius and color
+---------------------
+
+The site radius is given in data units (nanometers in this example). Colors are passed as a list
+of colors or a matplotlib colormap.
+
+.. plot::
+    :context: close-figs
+
+    plt.figure(figsize=(8, 3))
+    model = pb.Model(graphene.monolayer(), graphene.hexagon_ac(0.5))
+
+    plt.subplot(121, title="Default")
+    model.plot()
+
+    plt.subplot(122, title="Customized")
+    model.plot(site={'radius': 0.04, 'cmap': ['blue', 'red']})
+
+
+Hopping width and color
+-----------------------
+
+By default, all hopping kinds (nearest, next-nearest, etc.) are shown using the same line color,
+but they can be colorized using the `cmap` parameter.
+
+.. plot::
+    :context: close-figs
+
+    plt.figure(figsize=(8, 3))
+    model = pb.Model(graphene.monolayer(nearest_neighbors=3), pb.rectangle(0.6))
+
+    plt.subplot(121, title="Default")
+    model.plot()
+
+    plt.subplot(122, title="Customized")
+    model.plot(hopping={'width': 2, 'cmap': 'auto'})

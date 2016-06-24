@@ -250,10 +250,14 @@ def structure_plot_properties(axes='xyz', site=None, hopping=None, boundary=None
     -------
     dict
     """
+    invalid_args = kwargs.keys() - {'add_margin'}
+    if invalid_args:
+        raise RuntimeError("Invalid arguments: {}".format(','.join(invalid_args)))
+
     props = {'axes': axes, 'add_margin': kwargs.get('add_margin', True),
              'site': with_defaults(site, axes=axes),
              'hopping': with_defaults(hopping, axes=axes)}
-    props['boundary'] = with_defaults(boundary, props['hopping'], colors='#d40a0c', width=1.6)
+    props['boundary'] = with_defaults(boundary, props['hopping'], color='#d40a0c', width=1.6)
     return props
 
 
@@ -282,7 +286,7 @@ def _rotate(position, axes):
 
 
 def plot_sites(positions, data, radius=0.025, offset=(0, 0, 0), blend=1.0,
-               colors='auto', axes='xyz', **kwargs):
+               cmap='auto', axes='xyz', **kwargs):
     """Plot circles at lattice site `positions` with colors based on `data`
 
     Parameters
@@ -300,12 +304,13 @@ def plot_sites(positions, data, radius=0.025, offset=(0, 0, 0), blend=1.0,
         Offset all positions by a constant value.
     blend : float
         Blend all colors to white (fake alpha blending): expected values between 0 and 1.
-    colors : Union[List[str], str]
-        List of colors to apply to the drawn circles. This assumes that `data` is discrete
-        with only a few unique values. For example, sublattice data for graphene will only
-        contain two unique values for the A and B sublattices, which will be assigned the
-        first two colors from the `colors` list. For continuous data, the `cmap` (colormap)
-        parameter should be used instead.
+    cmap : Union[str, List[str]]
+        Either a regular matplotlib colormap or a list of discrete colors to apply to the
+        drawn circles. In the latter case, it is assumed that `data` is discrete with only
+        a few unique values. For example, sublattice data for graphene will only contain two
+        unique values for the A and B sublattices which will be assigned the first two colors
+        from the `cmap` list. For continuous data, a regular matplotlib colormap should be
+        used instead.
     axes : str
         The spatial axes to plot. E.g. 'xy', 'yz', etc.
     **kwargs
@@ -320,15 +325,18 @@ def plot_sites(positions, data, radius=0.025, offset=(0, 0, 0), blend=1.0,
 
     kwargs = with_defaults(kwargs, alpha=0.97, lw=0.1, edgecolor=str(1-blend))
 
+    if cmap == 'auto':
+        cmap = ['#377ec8', '#ff7f00', '#41ae76', '#e41a1c',
+                '#984ea3', '#ffff00', '#a65628', '#f781bf']
+    elif cmap == 'pairs':
+        cmap = ['#a6cee3', '#1f78b4', '#b2df8a', '#33a02c', '#fb9a99', '#e31a1c',
+                '#fdbf6f', '#ff7f00', '#cab2d6', '#6a3d9a']
+
     # create colormap from discrete colors
-    if 'cmap' not in kwargs:
-        if not colors or colors == 'auto':
-            colors = ["#377ec8", "#ff7f00", "#41ae76", "#e41a1c",
-                      "#984ea3", "#ffff00", "#a65628", "#f781bf"]
-        elif colors == 'pairs':
-            colors = ["#a6cee3", "#1f78b4", "#b2df8a", "#33a02c", "#fb9a99", "#e31a1c",
-                      "#fdbf6f", "#ff7f00", "#cab2d6", "#6a3d9a"]
-        kwargs['cmap'], kwargs['norm'] = pltutils.direct_cmap_norm(data, colors, blend)
+    if isinstance(cmap, (list, tuple)):
+        kwargs['cmap'], kwargs['norm'] = pltutils.direct_cmap_norm(data, cmap, blend)
+    else:
+        kwargs['cmap'] = cmap
 
     rotate = functools.partial(_rotate, axes=axes)
     positions, offset = map(rotate, (positions, offset))
@@ -367,7 +375,7 @@ def plot_sites(positions, data, radius=0.025, offset=(0, 0, 0), blend=1.0,
     return col
 
 
-def plot_hoppings(positions, hoppings, width=1.0, offset=(0, 0, 0), blend=1.0, colors='#666666',
+def plot_hoppings(positions, hoppings, width=1.0, offset=(0, 0, 0), blend=1.0, color='#666666',
                   axes='xyz', boundary=(), draw_only=(), **kwargs):
     """Plot lines between lattice sites at `positions` based on the `hoppings` matrix
 
@@ -387,13 +395,9 @@ def plot_hoppings(positions, hoppings, width=1.0, offset=(0, 0, 0), blend=1.0, c
         Blend all colors to white (fake alpha blending): expected values between 0 and 1.
     axes : str
         The spatial axes to plot. E.g. 'xy', 'yz', etc.
-    colors : Union[List[str], str]
-        By default, all hopping lines are grey. Pass `colors='auto'` to colorize them.
-        In addition, a list of colors can be passed. Line colors are assigned based on
-        `hoppings.data` and it is assumed to be discrete with only a few unique values.
-        For example, :meth:`System.hoppings` returns lattice hopping ids, so each unique
-        hopping will be assigned a color from `colors`. For continuous data, the `cmap`
-        (colormap) parameter should be used instead.
+    color : str
+        Set the same color for all hopping lines. To assign a different color for each
+        hopping ID, use the `cmap` parameter.
     boundary : Tuple[int, array_like]
         If given, apply the boundary (sign, shift).
     draw_only : Iterable[str]
@@ -410,12 +414,16 @@ def plot_hoppings(positions, hoppings, width=1.0, offset=(0, 0, 0), blend=1.0, c
 
     kwargs = with_defaults(kwargs, zorder=-1)
 
+    cmap = kwargs.get('cmap', [color])
+    if cmap == 'auto':
+        cmap = ['#666666', '#1b9e77', '#e6ab02', '#7570b3', '#e7298a', '#66a61e', '#a6761d']
+
     # create colormap from discrete colors
-    if 'cmap' not in kwargs:
-        if not colors or colors == 'auto':
-            colors = ["#666666", "#1b9e77", "#7570b3", "#e7298a", "#66a61e", "#e6ab02", "#a6761d"]
+    if isinstance(cmap, (list, tuple)):
         unique_hop_ids = np.arange(hoppings.data.max() + 1)
-        kwargs['cmap'], kwargs['norm'] = pltutils.direct_cmap_norm(unique_hop_ids, colors, blend)
+        kwargs['cmap'], kwargs['norm'] = pltutils.direct_cmap_norm(unique_hop_ids, cmap, blend)
+    else:
+        kwargs['cmap'] = cmap
 
     rotate = functools.partial(_rotate, axes=axes)
     positions, offset = map(rotate, (positions, offset))

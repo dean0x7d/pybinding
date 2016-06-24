@@ -441,7 +441,7 @@ class StructureMap(SpatialMap):
         collection = plot_sites(self.positions, self.data, **props['site'])
 
         hop = self.hoppings.tocoo()
-        props['hopping'] = with_defaults(props['hopping'], colors='#bbbbbb')
+        props['hopping'] = with_defaults(props['hopping'], color='#bbbbbb')
         plot_hoppings(self.positions, hop, **props['hopping'])
 
         props['site']['alpha'] = props['hopping']['alpha'] = 0.5
