@@ -407,7 +407,7 @@ computation time low for the tutorial (under 1 second for this LDOS calculation)
 Further reading
 ---------------
 
-Take a look at the :doc:`/api/modifier` reference page for more information.
+Take a look at the :ref:`modifiers_api` API reference for more information.
 
 
 Example

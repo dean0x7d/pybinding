@@ -10,7 +10,7 @@ from recommonmark.parser import CommonMarkParser
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
-sys.path.insert(0, os.path.abspath('.'))
+sys.path.insert(0, os.path.abspath('./_ext'))
 sys.path.insert(0, os.path.abspath('..'))
 import pybinding as pb
 
@@ -30,10 +30,14 @@ extensions = [
     'sphinx.ext.intersphinx',
     'numpydoc',
     'matplotlib.sphinxext.plot_directive',
-    'nbexport'
+    'nbexport',
+    'generate'
 ]
 
 autodoc_member_order = 'groupwise'
+autodoc_default_flags = ['members', 'special-members', 'inherited-members']
+autodoc_allowed_special_members = ['__call__', '__getitem__']
+generate_from_files = ['api.rst']
 
 intersphinx_mapping = {'python': ('https://docs.python.org/3', None),
                        'numpy': ('http://docs.scipy.org/doc/numpy/', None),
@@ -325,5 +329,26 @@ def copy_changelog(app):
         shutil.copy(src, dst)
 
 
+# noinspection PyUnusedLocal
+def autodoc_skip_member(app, what, name, obj, skip, options):
+    """Skip special members which aren't on the allowed list"""
+    if skip:
+        return True
+    elif name.startswith('__'):
+        skip = name not in autodoc_allowed_special_members
+    return skip
+
+
+# noinspection PyUnusedLocal
+def autodoc_process_signature(app, what, name, obj, options, signature, return_annotation):
+    """Remove 'self' and return type annotation from C++ methods"""
+    if what == 'method' and "self:" in signature:
+        s = signature.strip("()").split(",")[1:]
+        return "({})".format(",".join(s)), ""
+
+
 def setup(app):
     app.connect('builder-inited', copy_changelog)
+    app.connect('autodoc-skip-member', autodoc_skip_member)
+    app.connect('autodoc-process-signature', autodoc_process_signature)
+    app.add_config_value('autodoc_allowed_special_members', [], 'env')

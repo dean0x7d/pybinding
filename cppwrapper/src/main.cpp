@@ -8,6 +8,7 @@
 #include <boost/python/module.hpp>
 #include <boost/python/def.hpp>
 #include <boost/python/class.hpp>
+#include <boost/python/docstring_options.hpp>
 
 using namespace boost::python;
 using namespace tbm;
@@ -21,6 +22,9 @@ void export_modifiers();
 void export_parallel();
 
 BOOST_PYTHON_MODULE(_pybinding) {
+    docstring_options doc_options;
+    doc_options.disable_cpp_signatures();
+
     // init numpy and register converters
     import_array1(void());
     eigen3_numpy_register_type<ArrayXf>();

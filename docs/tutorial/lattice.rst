@@ -6,7 +6,7 @@ Lattice
 
 A :class:`.Lattice` object describes the unit cell of a crystal lattice. This includes the
 primitive vectors, positions of sublattice sites and hopping parameters which connect those sites.
-All of this structural information is used to build-up a larger system by translation.
+All of this structural information is used to build up a larger system by translation.
 
 .. only:: html
 

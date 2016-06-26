@@ -1,4 +1,4 @@
-"""Green's function computation
+"""Green's function computation and related methods
 
 The main approach uses the Kernel Polynomial Method. This is the only approach
 which is implemented at this time, but the :class:`Greens` interface is quite

@@ -5,7 +5,11 @@
 ##### Breaking changes
 
 * The interfaces for the `SpatialMap` and `StructureMap` result objects have changed significantly.
-  See the "Plotting Guide" section of the documentation for details. 
+  See the "Plotting Guide" section of the documentation for details.
+
+##### Documentation
+
+* The API reference has been completely revised and now includes a summary on the main page.
 
 ##### Bug fixes
 

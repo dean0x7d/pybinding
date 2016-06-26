@@ -1,6 +1,6 @@
 """A few useful physical constants
 
-Energy is expressed in eV which is preferable in solid state physics.
+Note that energy is expressed in units of eV.
 """
 from math import pi
 

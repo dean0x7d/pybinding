@@ -14,7 +14,7 @@ if sys.platform.startswith("linux"):
 
 import _pybinding as _cpp
 
-from .model import Model
+from .model import *
 from .lattice import *
 from .shape import *
 from .modifier import *

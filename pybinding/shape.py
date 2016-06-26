@@ -1,3 +1,4 @@
+"""System shape and symmetry"""
 import numpy as np
 import matplotlib.pyplot as plt
 
@@ -5,8 +6,8 @@ from . import _cpp
 from . import pltutils
 from .utils import with_defaults
 
-__all__ = ['Polygon', 'FreeformShape', 'primitive', 'line', 'rectangle',
-           'regular_polygon', 'circle', 'translational_symmetry']
+__all__ = ['FreeformShape', 'Polygon', 'circle', 'line', 'primitive', 'rectangle',
+           'regular_polygon', 'translational_symmetry']
 
 
 class Line(_cpp.Line):
@@ -39,11 +40,11 @@ class Line(_cpp.Line):
 
 
 class Polygon(_cpp.Polygon):
-    """Shape defined by a list of vertices
+    """Shape defined by a list of vertices in a 2D plane
 
-    Parameters
+    Attributes
     ----------
-    vertices : list of array_like
+    vertices : List[array_like]
         Must be defined in clockwise or counterclockwise order.
     """
     def __init__(self, vertices):
@@ -73,7 +74,10 @@ class Polygon(_cpp.Polygon):
 
 
 class FreeformShape(_cpp.FreeformShape):
-    """Shape defined by a bounding box and a function
+    """Shape in 1 to 3 dimensions, defined by a function and a bounding box
+
+    Note that this class can describe 3D shapes, but the :meth:`.plot` method can currently
+    only draw in 2D. Nevertheless, a :class:`.Model` will accept 3D shapes without a problem.
 
     Parameters
     ----------
@@ -119,36 +123,48 @@ class FreeformShape(_cpp.FreeformShape):
 
 
 def primitive(a1=1, a2=1, a3=1):
-    """Repeat the lattice unit cell a number of times
+    """Follow the primitive lattice shape -- just repeat the unit cell a number of times
 
     Parameters
     ----------
     a1, a2, a3 : int or float
         Number of times to repeat the unit cell in the respective lattice vector directions.
+
+    Returns
+    -------
+    :class:`~_pybinding.Primitive`
     """
     return _cpp.Primitive(a1, a2, a3)
 
 
 def line(a, b):
-    """A simple line shape intended for 1D lattices or for specifying leads for 2D lattices
+    """A line shape intended for 1D lattices or to specify leads for 2D lattices
 
     Parameters
     ----------
     a, b : Union[float, array_like]
         Start and end points.
+
+    Returns
+    -------
+    :class:`~pybinding.shape.Line`
     """
     return Line(a, b)
 
 
 def rectangle(x, y=None):
-    """A simple rectangle shape
+    """A rectangle in the xy plane
 
     Parameters
     ----------
     x : float
         Width of the rectangle.
     y : float, optional
-        Height of the rectangle. If not give, assumed equal to `x`.
+        Height of the rectangle. If not given, assumed equal to `x`.
+
+    Returns
+    -------
+    :class:`~pybinding.Polygon`
     """
     y = y or x
     x0, y0 = x / 2, y / 2
@@ -166,6 +182,10 @@ def regular_polygon(num_sides, radius, angle=0):
         Radius of the circle which connects all the vertices of the polygon.
     angle : float
         Rotate the polygon.
+
+    Returns
+    -------
+    :class:`~pybinding.Polygon`
     """
     from math import pi, sin, cos
     angles = [angle + 2 * n * pi / num_sides for n in range(num_sides)]
@@ -173,18 +193,21 @@ def regular_polygon(num_sides, radius, angle=0):
 
 
 def circle(radius, center=(0, 0, 0)):
-    """Perfect circle
+    """A circle in the xy plane
 
     Parameters
     ----------
     radius : float
     center : array_like
-        Position of the center.
+
+    Returns
+    -------
+    :class:`~pybinding.FreeformShape`
     """
     def contains(x, y, z):
         return np.sqrt(x**2 + y**2 + z**2) < radius
 
-    return FreeformShape(contains, [2 * radius, 2 * radius], center)
+    return FreeformShape(contains, [2 * radius] * 3, center)
 
 
 def translational_symmetry(a1=True, a2=True, a3=True):

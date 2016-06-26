@@ -161,8 +161,8 @@ void export_system() {
     .add_property("sublattices", &Lattice::sublattices, "List of :class:`~_pybinding.Sublattice`")
     .add_property("hopping_energies", &Lattice::hopping_energies,
                   "Unique energies indexed by hopping IDs")
-    .add_property("sub_name_map", &Lattice::sub_name_map)
-    .add_property("hop_name_map", &Lattice::hop_name_map)
+    .add_property("sub_name_map", &Lattice::sub_name_map, "")
+    .add_property("hop_name_map", &Lattice::hop_name_map, "")
     .add_property("offset", return_copy(&Lattice::offset), &Lattice::set_offset, R"(
         Global lattice offset: sublattice offsets are defined relative to this
 

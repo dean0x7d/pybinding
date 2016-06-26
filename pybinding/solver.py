@@ -23,7 +23,7 @@ from .model import Model
 from .system import System
 from .support.pickle import pickleable
 
-__all__ = ['Solver', 'feast', 'lapack', 'arpack']
+__all__ = ['Solver', 'arpack', 'feast', 'lapack']
 
 
 @pickleable(impl='system. eigenvalues eigenvectors')

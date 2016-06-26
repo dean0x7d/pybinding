@@ -1,3 +1,4 @@
+"""Multi-threaded functions for parameter sweeps"""
 import sys
 import inspect
 import itertools
@@ -310,7 +311,9 @@ def parallel_for(factory, make_result=None):
 
 @decorator_decorator
 def parallelize(num_threads=num_cores, queue_size=num_cores, **kwargs):
-    """A decorator which creates factory functions for :func:`parallel_for`
+    """parallelize(num_threads=num_cores, queue_size=num_cores, **kwargs)
+
+    A decorator which creates factory functions for :func:`parallel_for`
 
     The decorated function must return a `Deferred` compute kernel.
 

@@ -1,3 +1,8 @@
 .rst-content p, .rst-content ul li {
     text-align: justify;
 }
+
+/* wrap text in tables */
+.wy-table-responsive table td, .wy-table-responsive table th {
+    white-space: normal;
+}

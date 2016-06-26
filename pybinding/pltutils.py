@@ -8,6 +8,9 @@ import matplotlib.pyplot as plt
 
 from .utils import with_defaults
 
+__all__ = ['cm2inch', 'colorbar', 'despine', 'despine_all', 'get_palette', 'legend', 'respine',
+           'set_palette', 'use_style']
+
 
 @contextmanager
 def axes(ax):
@@ -95,7 +98,7 @@ def despine_all():
 
 
 def respine():
-    """Redraw all spines"""
+    """Redraw all spines, opposite of :func:`despine`"""
     ax = plt.gca()
     for side in ['top', 'right', 'bottom', 'left']:
         ax.spines[side].set_visible(True)
@@ -179,20 +182,20 @@ def blend_colors(color, bg, factor):
     return (1 - factor) * bg + factor * color
 
 
-def colorbar(mappable=None, cax=None, ax=None, powerlimits=(0, 0), label="", **kwargs):
-    """Custom colorbar
+def colorbar(mappable=None, cax=None, ax=None, label="", powerlimits=(0, 0), **kwargs):
+    """Custom colorbar with modified style and optional label
 
-    Changes default `pad` and `aspect` argument values turns on rasterization for a
+    Changes default `pad` and `aspect` argument values and turns on rasterization for a
     nicer looking colorbar with smaller size in vector formats (pdf, svg).
 
     Parameters
     ----------
-    powerlimits : Tuple[int, int]
-        Sets size thresholds for scientific notation.
     label : str
         Color data label.
+    powerlimits : Tuple[int, int]
+        Sets size thresholds for scientific notation.
     mappable, cax, ax, **kwargs
-        Forwarded to `plt.colorbar()`.
+        Forwarded to :func:`matplotlib.pyplot.colorbar`.
     """
     cbar = plt.colorbar(mappable, cax, ax, **with_defaults(kwargs, pad=0.02, aspect=28))
 
@@ -262,7 +265,7 @@ def cm2inch(*values):
 
 
 def legend(*args, reverse=False, facecolor='0.98', lw=0, **kwargs):
-    """Custom legend
+    """Custom legend with modified style and option to reverse label order
 
     Parameters
     ----------
@@ -273,7 +276,7 @@ def legend(*args, reverse=False, facecolor='0.98', lw=0, **kwargs):
     lw : float
         Frame width.
     *args, **kwargs
-        Forwarded to `plt.legend()`.
+        Forwarded to :func:`matplotlib.pyplot.legend`.
     """
     h, l = plt.gca().get_legend_handles_labels()
     if not h:
@@ -304,7 +307,7 @@ def get_palette(name=None, num_colors=8, start=0):
 
     Returns
     -------
-    List
+    list
     """
     if not name:
         return [x['color'] for x in mpl.rcParams["axes.prop_cycle"]]
@@ -472,12 +475,14 @@ def _reset_notebook_inline_backend():
 
 
 def use_style(style=pb_style):
-    """Shortcut for `matplotlib.style.use()`
+    """use_style(style=pb_style)
+
+    Shortcut for :func:`matplotlib.style.use` with pybinding style applied by default
 
     Parameters
     ----------
     style : dict
-        The default value is the preferred pybinding figure style.
+        A matplotlib style specification.
     """
     mpl_style.use(style)
 

@@ -1,3 +1,4 @@
+"""Crystal lattice specification"""
 from copy import copy
 from math import pi, atan2
 
@@ -9,12 +10,18 @@ from . import pltutils
 from .utils import x_pi, with_defaults
 from .support.pickle import pickleable
 
-__all__ = ['Lattice', 'make_lattice']
+__all__ = ['Lattice']
 
 
 @pickleable(version=1)
 class Lattice(_cpp.Lattice):
-    """Holds the specification of a tight-binding lattice
+    """Unit cell of a Bravais lattice, the basic building block of a tight-binding model
+
+    This class describes the primitive vectors, positions of sublattice sites and hopping
+    parameters which connect those sites. All of this structural information is used to
+    build up a larger system by translation.
+
+    A few prebuilt lattices are available in the :doc:`/materials/index`.
 
     Parameters
     ----------
@@ -223,9 +230,15 @@ class Lattice(_cpp.Lattice):
         cp.min_neighbors = number
         return cp
 
-    def reciprocal_vectors(self) -> list:
+    def reciprocal_vectors(self):
         """Calculate the reciprocal space lattice vectors
 
+        Returns
+        -------
+        list
+
+        Examples
+        --------
         >>> lat = Lattice(a1=[0, 1], a2=[0.5, 0.5])
         >>> np.allclose(lat.reciprocal_vectors(), [[4*pi, 0, 0], [-2*pi, 2*pi, 0]])
         True
@@ -323,6 +336,8 @@ class Lattice(_cpp.Lattice):
 
         Based on the smallest inter-atomic spacing in a primitive unit cell.
 
+        Parameters
+        ----------
         scale : float
             Multiply inter-atomic spacing by this number to get the final site radius.
 
@@ -435,11 +450,3 @@ class Lattice(_cpp.Lattice):
             ax.set_ylabel(r"$k_y (nm^{-1})$")
 
         pltutils.despine(trim=True)
-
-
-def make_lattice(vectors, sublattices, hoppings, min_neighbors=1):
-    lat = Lattice(*vectors)
-    lat.add_sublattices(*sublattices)
-    lat.add_hoppings(*hoppings)
-    lat.min_neighbors = min_neighbors
-    return lat

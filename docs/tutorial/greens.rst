@@ -116,4 +116,4 @@ Further reading
 
 For an additional examples see the :ref:`magnetic-field-modifier` subsection of :doc:`fields` as
 well as the :ref:`Strain modifier <strain-modifier>` subsection of :doc:`strain`.
-The reference page for :doc:`/api/greens` contains more information.
+The reference page for the :mod:`.greens` submodule contains more information.

@@ -1,4 +1,4 @@
-"""Lead interface for transport calculations
+"""Lead interface for scattering models
 
 The only way to create leads is using the :meth:`.Model.attach_lead` method.
 The classes represented here are the final product of that process, listed

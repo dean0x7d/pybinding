@@ -14,8 +14,8 @@ from .system import (Positions, plot_sites, plot_hoppings, plot_periodic_boundar
                      structure_plot_properties)
 from .support.pickle import pickleable
 
-__all__ = ['make_path', 'DOS', 'LDOS', 'SpatialMap', 'StructureMap',
-           'Eigenvalues', 'Bands', 'Sweep', 'NDSweep']
+__all__ = ['Bands', 'DOS', 'Eigenvalues', 'LDOS', 'NDSweep', 'SpatialMap', 'StructureMap',
+           'Sweep', 'make_path']
 
 
 class Path(np.ndarray):

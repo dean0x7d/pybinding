@@ -287,7 +287,7 @@ zero on the other: this is a unique feature of the strain-induced pseudo-magneti
 Further reading
 ---------------
 
-Take a look at the :doc:`/api/modifier` reference page for more information.
+Take a look at the :ref:`modifiers_api` API reference for more information.
 
 
 Example

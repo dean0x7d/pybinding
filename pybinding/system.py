@@ -1,3 +1,4 @@
+"""Structural information and utilities"""
 import functools
 import itertools
 from collections import namedtuple
@@ -15,8 +16,8 @@ from .support.pickle import pickleable
 from .support.fuzzy_set import FuzzySet
 from .support.alias import AliasArray, AliasCSRMatrix
 
-__all__ = ['Positions', 'System', 'Sites', 'plot_sites', 'plot_hoppings',
-           'plot_periodic_boundaries', 'structure_plot_properties']
+__all__ = ['Sites', 'System', 'plot_hoppings', 'plot_periodic_boundaries', 'plot_sites',
+           'structure_plot_properties']
 
 
 Positions = namedtuple('Positions', 'x y z')
@@ -128,7 +129,7 @@ class Sites:
 
 @pickleable(version=1)
 class System:
-    """Structural data of the model
+    """Structural data of a tight-binding model
 
     Stores positions, sublattice and hopping IDs for all lattice sites.
     """

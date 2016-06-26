@@ -191,5 +191,5 @@ preferred way.
 Further reading
 ---------------
 
-Take a look at the :doc:`/api/solver` and :doc:`/api/results` reference pages for more detailed
+Take a look at the :mod:`.solver` and :mod:`.results` reference pages for more detailed
 information. More solver examples are available throughout this tutorial.

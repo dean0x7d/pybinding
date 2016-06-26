@@ -71,7 +71,7 @@ where you can also post any questions, comments or issues that you might have.
     :maxdepth: 2
 
     materials/index
-    api/index
+    api
 
 * :ref:`genindex`
 

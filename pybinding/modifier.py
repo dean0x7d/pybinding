@@ -1,4 +1,4 @@
-"""Modifier decorators
+"""Modifier function decorators
 
 Used to create functions which express some feature of a tight-binding model,
 such as various fields, defects or geometric deformations.
@@ -15,9 +15,9 @@ from .support.inspect import get_call_signature
 from .support.alias import AliasArray
 from .utils.misc import decorator_decorator
 
-__all__ = ['site_state_modifier', 'site_position_modifier', 'onsite_energy_modifier',
-           'hopping_energy_modifier', 'constant_potential', 'force_double_precision',
-           'hopping_generator']
+__all__ = ['constant_potential', 'force_double_precision', 'hopping_energy_modifier',
+           'hopping_generator', 'onsite_energy_modifier', 'site_position_modifier',
+           'site_state_modifier']
 
 
 def _make_alias_array(obj):
@@ -180,7 +180,7 @@ def _make_modifier(func, kind, init, keywords, has_sites=True, num_return=1, can
 
 @decorator_decorator
 def site_state_modifier(min_neighbors=0):
-    """Modify the state (valid or invalid) of lattice sites, e.g. to create vacancies
+    """Modify the state (valid or invalid) of lattice sites, e.g.\  to create vacancies
 
     Parameters
     ----------
@@ -207,6 +207,23 @@ def site_state_modifier(min_neighbors=0):
 
     ndarray
         A modified `state` argument or an `ndarray` of the same dtype and shape.
+
+    Examples
+    --------
+    ::
+
+        def vacancy(position, radius):
+            @pb.site_state_modifier
+            def f(state, x, y):
+                x0, y0 = position
+                state[(x-x0)**2 + (y-y0)**2 < radius**2] = False
+                return state
+            return f
+
+        model = pb.Model(
+            ... # lattice, shape, etc.
+            vacancy(position=[0, 0], radius=0.1)
+        )
     """
     return functools.partial(_make_modifier, kind=_cpp.SiteStateModifier,
                              init=dict(min_neighbors=min_neighbors),
@@ -215,7 +232,7 @@ def site_state_modifier(min_neighbors=0):
 
 @decorator_decorator
 def site_position_modifier():
-    """Modify the position of lattice sites, e.g. to apply geometric deformations
+    """Modify the position of lattice sites, e.g.\  to apply geometric deformations
 
     Notes
     -----
@@ -234,6 +251,23 @@ def site_position_modifier():
 
     tuple of ndarray
         Modified 'x, y, z' arguments or 3 `ndarray` objects of the same dtype and shape.
+
+    Examples
+    --------
+    ::
+
+        def triaxial_displacement(c):
+            @pb.site_position_modifier
+            def displacement(x, y, z):
+                ux = 2*c * x*y
+                uy = c * (x**2 - y**2)
+                return x + ux, y + uy, z
+            return displacement
+
+        model = pb.Model(
+            ... # lattice, shape, etc.
+            triaxial_displacement(c=0.15)
+        )
     """
     return functools.partial(_make_modifier, kind=_cpp.PositionModifier, init={},
                              keywords="x, y, z, sub_id", num_return=3)
@@ -241,7 +275,7 @@ def site_position_modifier():
 
 @decorator_decorator
 def onsite_energy_modifier(double=False):
-    """Modify the onsite energy, e.g. to apply an electric field
+    """Modify the onsite energy, e.g.\  to apply an electric field
 
     Parameters
     ----------
@@ -268,6 +302,21 @@ def onsite_energy_modifier(double=False):
 
     ndarray
         A modified `potential` argument or an `ndarray` of the same dtype and shape.
+
+    Examples
+    --------
+    ::
+
+        def wavy(a, b):
+            @pb.onsite_energy_modifier
+            def f(x, y):
+                return np.sin(a * x)**2 + np.cos(b * y)**2
+            return f
+
+        model = pb.Model(
+            ... # lattice, shape, etc.
+            wavy(a=0.6, b=0.9)
+        )
     """
     return functools.partial(_make_modifier, kind=_cpp.OnsiteModifier,
                              init=dict(is_double=double),
@@ -276,7 +325,7 @@ def onsite_energy_modifier(double=False):
 
 @decorator_decorator
 def hopping_energy_modifier(double=False):
-    """Modify the hopping energy, e.g. to apply a magnetic field
+    """Modify the hopping energy, e.g.\  to apply a magnetic field
 
     Parameters
     ----------
@@ -301,6 +350,23 @@ def hopping_energy_modifier(double=False):
 
     ndarray
         A modified `hopping` argument or an `ndarray` of the same dtype and shape.
+
+    Examples
+    --------
+    ::
+
+        def constant_magnetic_field(B):
+            @pb.hopping_energy_modifier
+            def f(energy, x1, y1, x2, y2):
+                y = 0.5 * (y1 + y2) * 1e-9
+                peierls = B * y * (x1 - x2) * 1e-9
+                return energy * np.exp(1j * 2*pi/phi0 * peierls)
+            return f
+
+        model = pb.Model(
+            ... # lattice, shape, etc.
+            constant_magnetic_field(B=10)
+        )
     """
     return functools.partial(_make_modifier, kind=_cpp.HoppingModifier,
                              init=dict(is_double=double), can_be_complex=True, has_sites=False,
@@ -316,19 +382,17 @@ def constant_potential(magnitude):
         In units of eV.
     """
     @onsite_energy_modifier
-    def function(energy):
+    def f(energy):
         return energy + magnitude
-
-    return function
+    return f
 
 
 def force_double_precision():
     """Forces the model to use double precision even if no other modifier requires it"""
     @onsite_energy_modifier(double=True)
-    def mod(energy):
+    def f(energy):
         return energy
-
-    return mod
+    return f
 
 
 def _make_generator(func, kind, name, energy, keywords):
@@ -375,7 +439,7 @@ def _make_generator(func, kind, name, energy, keywords):
 
 @decorator_decorator
 def hopping_generator(name, energy):
-    """Introduce a new hopping family (with new hop_id) via a list of index pairs
+    """Introduce a new hopping family (with a new `hop_id`) via a list of index pairs
 
     This can be used to create new hoppings independent of the main :class:`Lattice` definition.
     It's especially useful for creating additional local hoppings, e.g. to model defects.

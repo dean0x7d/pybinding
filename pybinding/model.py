@@ -9,27 +9,27 @@ from .lattice import Lattice
 from .leads import Leads
 from .results import StructureMap
 
+__all__ = ['Model']
+
 
 class Model(_cpp.Model):
-    """Builds a tight-binding Hamiltonian from a model description
+    """Builds a Hamiltonian from lattice, shape, symmetry and modifier parameters
 
-    The most important properties are :attr:`.system` and :attr:`.hamiltonian` which are
+    The most important attributes are :attr:`.system` and :attr:`.hamiltonian` which are
     constructed based on the input parameters. The :class:`.System` contains structural
     data like site positions. The tight-binding Hamiltonian is a sparse matrix in the
     :class:`.scipy.sparse.csr_matrix` format.
 
-    The main class implementation is in C++ via the `_cpp.Model` base class.
-
     Parameters
     ----------
-    lattice : Lattice
+    lattice : :class:`~pybinding.Lattice`
         The lattice specification.
     *args
         Can be any of: shape, symmetry or various modifiers. Note that:
 
         * There can be at most one shape and at most one symmetry. Shape and symmetry
           can be composed as desired, but physically impossible scenarios will result
-          in an empty system and Hamiltonian.
+          in an empty system.
         * Any number of modifiers can be added. Adding the same modifier more than once
           is allowed: this will usually multiply the modifier's effect.
     """
@@ -69,7 +69,7 @@ class Model(_cpp.Model):
             For example, `direction=2` would create a lead which intersects the main system
             in the :math:`a_2` lattice vector direction. Setting `direction=-2` would create
             a lead on the opposite side of the system, but along the same lattice vector.
-        contact : Shape
+        contact : :class:`~_pybinding.Shape`
             The place where the lead should contact the main system. For a 2D lattice it's
             just a :func:`.line` describing the intersection of the lead and the system.
             For a 3D lattice it's the area described by a 2D :class:`.FreeformShape`.
@@ -106,7 +106,7 @@ class Model(_cpp.Model):
 
     @property
     def system(self) -> System:
-        """:class:`.System` site positions and other structural data"""
+        """Structural data like site positions and hoppings, see :class:`.System` for details"""
         return System(super().system)
 
     @property
@@ -121,12 +121,12 @@ class Model(_cpp.Model):
     
     @property
     def leads(self):
-        """List of :class:`.Lead`"""
+        """List of :class:`.Lead` objects"""
         return Leads(super().leads)
 
     @property
     def shape(self):
-        """:class:`.Polygon` or :class:`.FreeformShape`"""
+        """:class:`.Polygon` or :class:`.FreeformShape` object"""
         return self._shape
 
     @property
