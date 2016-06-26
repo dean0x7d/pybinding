@@ -3,7 +3,7 @@
 Result objects hold computed data and offer postprocessing and plotting functions
 which are specifically adapted to the nature of the stored data.
 """
-from copy import copy, deepcopy
+from copy import copy
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -633,16 +633,25 @@ class Sweep:
         self.labels = with_defaults(labels, title="", x="x", y="y", data="data")
         self.tags = tags
 
-    def copy(self) -> 'Sweep':
-        return deepcopy(self)
+    def __getitem__(self, item):
+        """Same rules as numpy indexing"""
+        if isinstance(item, tuple):
+            idx_x, idx_y = item
+        else:
+            idx_x = item
+            idx_y = slice(None)
+        return self._with_data(self.x[idx_x], self.y[idx_y], self.data[idx_x, idx_y])
+
+    def _with_data(self, x, y, data):
+        return self.__class__(x, y, data, self.labels, self.tags)
 
     @property
-    def plain_labels(self):
-        """Labels dict with latex symbols stripped out."""
+    def _plain_labels(self):
+        """Labels with latex symbols stripped out"""
         trans = str.maketrans('', '', '$\\')
         return {k: v.translate(trans) for k, v in self.labels.items()}
 
-    def xy_grids(self):
+    def _xy_grids(self):
         """Expand x and y into 2D arrays matching data."""
         xgrid = np.column_stack([self.x] * self.y.size)
         ygrid = np.row_stack([self.y] * self.x.size)
@@ -656,100 +665,117 @@ class Sweep:
         filename : str
         """
         with open(filename, 'w') as file:
-            file.write("#{x:>11} {y:>12} {data:>12}\n".format(**self.plain_labels))
+            file.write("#{x:>11} {y:>12} {data:>12}\n".format(**self._plain_labels))
 
-            xgrid, ygrid = self.xy_grids()
+            xgrid, ygrid = self._xy_grids()
             for row in zip(xgrid.flat, ygrid.flat, self.data.flat):
                 values = ("{:12.5e}".format(v) for v in row)
                 file.write(" ".join(values) + "\n")
 
-    def filter(self, idx_x=None, idx_y=None):
-        idx_x = np.ones(self.x.size, dtype=bool) if idx_x is None else idx_x
-        idx_y = np.ones(self.y.size, dtype=bool) if idx_y is None else idx_y
+    def cropped(self, x=None, y=None):
+        """Return a copy with data cropped to the limits in the x and/or y axes
 
-        self.x = self.x[idx_x]
-        self.y = self.y[idx_y]
-        self.data = self.data[np.ix_(idx_x, idx_y)]
-
-    def crop(self, x=None, y=None):
-        """Crop data to limits in the x and/or y axes.
-
-        A call with x=(-1, 2) will leave data only where -1 < x < 2.
+        A call with x=[-1, 2] will leave data only where -1 <= x <= 2.
 
         Parameters
         ----------
         x, y : Tuple[float, float]
             Min and max data limit.
-        """
-        xlim, ylim = x, y
-        idx_x = np.logical_and(self.x >= xlim[0], self.x <= xlim[1]) if xlim else None
-        idx_y = np.logical_and(self.y >= ylim[0], self.y <= ylim[1]) if ylim else None
-        self.filter(idx_x, idx_y)
 
-    def mirror(self, axis='x'):
-        """Mirror data in the specified axis. Only makes sense if the axis starts at 0.
+        Returns
+        -------
+        :class:`~pybinding.Sweep`
+        """
+        idx_x = np.logical_and(x[0] <= self.x, self.x <= x[1]) if x else np.arange(self.x.size)
+        idx_y = np.logical_and(y[0] <= self.y, self.y <= y[1]) if y else np.arange(self.y.size)
+        return self._with_data(self.x[idx_x], self.y[idx_y], self.data[np.ix_(idx_x, idx_y)])
+
+    def mirrored(self, axis='x'):
+        """Return a copy with data mirrored in around specified axis
+
+         Only makes sense if the axis starts at 0.
 
         Parameters
         ----------
         axis : 'x' or 'y'
+
+        Returns
+        -------
+        :class:`~pybinding.Sweep`
         """
         if axis == 'x':
-            self.x = np.concatenate((-self.x[::-1], self.x[1:]))
-            self.data = np.vstack((self.data[::-1], self.data[1:]))
+            x = np.concatenate((-self.x[::-1], self.x[1:]))
+            data = np.vstack((self.data[::-1], self.data[1:]))
+            return self._with_data(x, self.y, data)
         elif axis == 'y':
-            self.y = np.concatenate((-self.y[::-1], self.y[1:]))
-            self.data = np.hstack((self.data[:, ::-1], self.data[:, 1:]))
+            y = np.concatenate((-self.y[::-1], self.y[1:]))
+            data = np.hstack((self.data[:, ::-1], self.data[:, 1:]))
+            return self._with_data(self.x, y, data)
+        else:
+            RuntimeError("Invalid axis")
 
-    def interpolate(self, multiply=None, size=None, kind='linear'):
-        """Interpolate data using scipy's interp1d.
+    def interpolated(self, mul=None, size=None, kind='linear'):
+        """Return a copy with interpolate data using :class:`scipy.interpolate.interp1d`
 
-        Call with multiply=2 to double the size of the x-axis and interpolate data to match.
-        To interpolate in both axes pass a tuple, e.g. multiply=(4, 2).
+        Call with `mul=2` to double the size of the x-axis and interpolate data to match.
+        To interpolate in both axes pass a tuple, e.g. `mul=(4, 2)`.
 
         Parameters
         ----------
-        multiply : int or tuple of int
+        mul : Union[int, Tuple[int, int]]
             Number of times the size of the axes should be multiplied.
-        size : int or tuple of int
+        size : Union[int, Tuple[int, int]]
             New size of the axes. Zero will leave size unchanged.
         kind
-            Passed to scipy.interpolate.interp1d.
-        """
-        from scipy.interpolate import interp1d
-        if not multiply and not size:
-            return
+            Forwarded to :class:`scipy.interpolate.interp1d`.
 
-        if multiply:
+        Returns
+        -------
+        :class:`~pybinding.Sweep`
+        """
+        if not mul and not size:
+            return self
+
+        from scipy.interpolate import interp1d
+        x, y, data = self.x, self.y, self.data
+
+        if mul:
             try:
-                mul_x, mul_y = multiply
+                mul_x, mul_y = mul
             except TypeError:
-                mul_x, mul_y = multiply, 1
-            size_x = self.x.size * mul_x
-            size_y = self.y.size * mul_y
+                mul_x, mul_y = mul, 1
+            size_x = x.size * mul_x
+            size_y = y.size * mul_y
         else:
             try:
                 size_x, size_y = size
             except TypeError:
                 size_x, size_y = size, 0
 
-        if size_x > 0 and size_x != self.x.size:
-            interp_x = interp1d(self.x, self.data, axis=0, kind=kind)
-            self.x = np.linspace(self.x.min(), self.x.max(), size_x, dtype=self.x.dtype)
-            self.data = interp_x(self.x)
+        if size_x > 0 and size_x != x.size:
+            interpolate = interp1d(x, data, axis=0, kind=kind)
+            x = np.linspace(x.min(), x.max(), size_x, dtype=x.dtype)
+            data = interpolate(x)
 
-        if size_y > 0 and size_y != self.y.size:
-            interp_y = interp1d(self.y, self.data, kind=kind)
-            self.y = np.linspace(self.y.min(), self.y.max(), size_y, dtype=self.x.dtype)
-            self.data = interp_y(self.y)
+        if size_y > 0 and size_y != y.size:
+            interpolate = interp1d(y, data, kind=kind)
+            y = np.linspace(y.min(), y.max(), size_y, dtype=y.dtype)
+            data = interpolate(y)
 
-    def convolve_gaussian(self, sigma, axis='x'):
-        """Convolve the data with a Gaussian function.
+        return self._with_data(x, y, data)
+
+    def _convolved(self, sigma, axis='x'):
+        """Return a copy where the data is convolved with a Gaussian function
 
         Parameters
         ----------
         sigma : float
             Gaussian broadening.
         axis : 'x' or 'y'
+
+        Returns
+        -------
+        :class:`~pybinding.Sweep`
         """
         def convolve(v, data0):
             v0 = v[v.size // 2]
@@ -757,37 +783,20 @@ class Sweep:
             gaussian /= gaussian.sum()
 
             extend = 10  # TODO: rethink this
-            data = np.concatenate((data0[extend::-1], data0, data0[:-extend:-1]))
-            data = np.convolve(data, gaussian, 'same')
-            return data[extend:-extend]
+            data1 = np.concatenate((data0[extend::-1], data0, data0[:-extend:-1]))
+            data1 = np.convolve(data1, gaussian, 'same')
+            return data1[extend:-extend]
+
+        x, y, data = self.x, self.y, self.data.copy()
 
         if 'x' in axis:
-            for i in range(self.y.size):
-                self.data[:, i] = convolve(self.x, self.data[:, i])
-
+            for i in range(y.size):
+                data[:, i] = convolve(x, data[:, i])
         if 'y' in axis:
-            for i in range(self.x.size):
-                self.data[i, :] = convolve(self.y, self.data[i, :])
+            for i in range(x.size):
+                data[i, :] = convolve(y, data[i, :])
 
-    def slice_x(self, x):
-        """Return a slice of data nearest to x and the found values of x.
-
-        Parameters
-        ----------
-        x : float
-        """
-        idx = np.abs(self.x - x).argmin()
-        return self.data[idx, :], self.x[idx]
-
-    def slice_y(self, y):
-        """Return a slice of data nearest to y and the found values of y.
-
-        Parameters
-        ----------
-        y : float
-        """
-        idx = np.abs(self.y - y).argmin()
-        return self.data[:, idx], self.y[idx]
+        return self._with_data(x, y, data)
 
     def plot(self, **kwargs):
         """Plot a 2D colormap of :attr:`Sweep.data`
@@ -828,18 +837,38 @@ class Sweep:
         plt.ylabel(self.labels['data'])
         pltutils.despine()
 
+    def _slice_x(self, x):
+        """Return a slice of data nearest to x and the found values of x.
+
+        Parameters
+        ----------
+        x : float
+        """
+        idx = np.abs(self.x - x).argmin()
+        return self.data[idx, :], self.x[idx]
+
+    def _slice_y(self, y):
+        """Return a slice of data nearest to y and the found values of y.
+
+        Parameters
+        ----------
+        y : float
+        """
+        idx = np.abs(self.y - y).argmin()
+        return self.data[:, idx], self.y[idx]
+
     def plot_slice_x(self, x, **kwargs):
-        z, value = self.slice_x(x)
+        z, value = self._slice_x(x)
         self._plot_slice('x', self.y, z, value, **kwargs)
 
     def plot_slice_y(self, y, **kwargs):
-        z, value = self.slice_y(y)
+        z, value = self._slice_y(y)
         self._plot_slice('y', self.x, z, value, **kwargs)
 
 
 @pickleable
 class NDSweep:
-    """ND parameter sweep.
+    """ND parameter sweep
 
     Attributes
     ----------
@@ -862,6 +891,3 @@ class NDSweep:
             self.labels[axis] = label
 
         self.tags = tags
-
-    def copy(self) -> 'NDSweep':
-        return deepcopy(self)

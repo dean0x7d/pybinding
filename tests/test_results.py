@@ -19,25 +19,40 @@ def test_sweep():
         labels=dict(title="test sweep", x="$\\alpha$", y=r"$\beta$ (eV)", data=r"$\gamma$")
     )
 
-    assert sweep.plain_labels == dict(title="test sweep", x="alpha", y="beta (eV)", data="gamma")
+    assert sweep._plain_labels == dict(title="test sweep", x="alpha", y="beta (eV)", data="gamma")
 
-    xgrid, ygrid = sweep.xy_grids()
+    xgrid, ygrid = sweep._xy_grids()
     assert np.all(xgrid == [[v] * 3 for v in x0])
     assert np.all(ygrid == [y0] * 3)
 
-    tmp = sweep.copy()
-    tmp.crop(x=[0, 1], y=[0, 1])
+    tmp = sweep[np.ix_([0, 1], [1, 2])]
+    assert np.all(tmp.x == [[0], [1]]) and np.all(tmp.y == [0, 1])
+    assert np.all(tmp.data == [[1, 2], [4, 5]])
+
+    tmp = sweep.cropped(x=[0, 1])
+    assert np.all(tmp.x == [0, 1]) and np.all(tmp.y == sweep.y)
+    assert np.all(tmp.data == [[0, 1, 2], [3, 4, 5]])
+
+    tmp = sweep.cropped(y=[0, 1])
+    assert np.all(tmp.x == sweep.x) and np.all(tmp.y == [0, 1])
+    assert np.all(tmp.data == [[1, 2], [4, 5], [7, 8]])
+
+    tmp = sweep.cropped(x=[0, 1], y=[0, 1])
     assert np.all(tmp.x == [0, 1]) and np.all(tmp.y == [0, 1])
     assert np.all(tmp.data == [[1, 2], [4, 5]])
 
-    tmp = sweep.copy()
-    tmp.mirror(axis='x')
+    tmp = sweep.mirrored(axis='x')
     assert np.all(tmp.x == [-2, -1, 0, 1, 2])
     assert np.all(tmp.data == [[6, 7, 8], [3, 4, 5], [0, 1, 2], [3, 4, 5], [6, 7, 8]])
 
-    s, x = sweep.slice_x(1.2)
+    tmp = sweep.interpolated(mul=[2, 2])
+    assert tmp.x.shape[0] == 6
+    assert tmp.y.shape[0] == 6
+    assert tmp.data.shape == (6, 6)
+
+    s, x = sweep._slice_x(1.2)
     assert np.all(s == [3, 4, 5]) and x == 1
-    s, y = sweep.slice_y(0.4)
+    s, y = sweep._slice_y(0.4)
     assert np.all(s == [1, 4, 7]) and y == 0
 
 
