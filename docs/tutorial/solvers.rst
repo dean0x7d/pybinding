@@ -147,6 +147,8 @@ The total density of states can be calculated with :meth:`~.Solver.calc_dos`:
 Our example system is quite small so the DOS does not resemble bulk graphene. The zero-energy peak
 stands out as the signature of the zigzag edge states.
 
+.. _manual_band_calculation:
+
 For periodic systems, the wave vector can be controlled using :meth:`.Solver.set_wave_vector`.
 This allows us to compute the eigenvalues at various points in k-space. For example:
 

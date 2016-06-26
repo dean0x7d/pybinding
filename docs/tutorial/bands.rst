@@ -31,9 +31,17 @@ The result is not very exciting: just a single graphene unit cell, with 2 atoms 
 hopping between them. The model does not assume translational symmetry or any other physical
 property. Given a lattice it will just create a single unit cell. The model has a :class:`.System`
 attribute which keeps track of structural properties like the positions of lattice sites and the
-way they are connected, as seen in the figure above.
+way they are connected, as seen in the figure above. The raw data can be accessed directly::
 
-The model also has a :attr:`.hamiltonian` attribute::
+    >>> model.system.x
+    [0, 0]
+    >>> model.system.y
+    [-0.071  0.071]
+    >>> model.system.sublattices
+    [0 1]
+
+Each attribute is a 1D array where the number of elements is equal to the total number of lattice
+sites in the system. The model also has a :attr:`.hamiltonian` attribute::
 
     >>> model.hamiltonian
     (0, 1)   -2.8
@@ -120,6 +128,12 @@ can simply plot both:
 
 The extra argument for :meth:`.Lattice.plot_brillouin_zone` turns off the reciprocal lattice
 vectors and vertex coordinate labels (as seen in the previous section).
+
+.. note::
+
+    The band structure along a path in k-space can also be calculated manually by saving an
+    array of :attr:`.Solver.eigenvalues` at different k-points. This process is shown on the
+    :ref:`Eigensolver <manual_band_calculation>` page.
 
 
 Switching lattices

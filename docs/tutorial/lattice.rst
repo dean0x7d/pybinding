@@ -50,16 +50,22 @@ have a convenient :meth:`.Lattice.plot()` method to easily visualize the constru
     plt.show()      # standard matplotlib show() function
 
 In the figure we see lattice vectors :math:`a_1` and :math:`a_2` which were used to initialize
-:class:`.Lattice`. The blue circle labeled 'A' represents the atom which was created with the
-:meth:`.Lattice.add_sublattices()` method. The slightly faded out circles represent translations
-of the lattice in the primitive vector directions.
+:class:`.Lattice`. These vectors describe a Bravais lattice with an infinite set of positions,
+
+.. math::
+    \vec{R} = n_1 \vec{a}_1 + n_2 \vec{a}_2,
+
+where :math:`n_1` and :math:`n_2` are integers. The blue circle labeled A represents the atom
+which was created with the :meth:`.Lattice.add_sublattices()` method. The slightly faded out
+circles represent translations of the lattice in the primitive vector directions, i.e. using
+the integer index :math:`[n_1, n_2]`.
 
 The hoppings are specified using the :meth:`.Lattice.add_hoppings()` method and each one consists
 of `(relative_index, from_sublattice, to_sublattice, energy)`:
 
-* The main cell always has the index [0, 0]. The `relative_index` represents the number of steps
-  needed to reach another cell starting from the main one. Each cell is labeled with its
-  `relative_index`, as seen in the figure.
+* The main cell always has the index :math:`[n_1, n_2]` = [0, 0]. The `relative_index` represents
+  the number of integer steps needed to reach another cell starting from the main one. Each cell
+  is labeled with its `relative_index`, as seen in the figure.
 
 * A hopping is created between the main cell and a neighboring cell specified by `relative_index`.
   Two hoppings are added in the definition: [0, 1] and [1, 0]. The opposite hoppings [0, -1] and
@@ -125,8 +131,12 @@ The next example shows a slightly more complicated two-atom lattice of graphene.
     lattice.plot()
     plt.show()
 
-The :meth:`.Lattice.add_sublattices()` method creates atoms A and B (blue and orange) at
-different offsets: :math:`[0, -a_{cc}/2]` and :math:`[0, a_{cc}/2]`.
+The :meth:`.Lattice.add_sublattices()` method creates atoms A and B (blue and orange) at different
+offsets: :math:`[0, -a_{cc}/2]` and :math:`[0, a_{cc}/2]`. Once again, the translated cells are
+given at positions :math:`\vec{R} = n_1 \vec{a}_1 + n_2 \vec{a}_2`, however, this time the lattice
+vectors are not perpendicular which makes the integer indices :math:`[n_1, n_2]` slightly more
+complicate (see the labels in the figure).
+
 The hoppings are defined as follows:
 
 * `([0,  0], 'A', 'B', t)` specifies the hopping inside the main cell, from atom A to B. The main
