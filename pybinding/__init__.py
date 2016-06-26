@@ -18,8 +18,8 @@ from .model import *
 from .lattice import *
 from .shape import *
 from .modifier import *
+from .results import *
 
-from .results import make_path
 from .support.pickle import save, load
 from .parallel import parallel_for, parallelize
 

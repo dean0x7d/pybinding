@@ -307,7 +307,7 @@ def get_palette(name=None, num_colors=8, start=0):
 
     Returns
     -------
-    list
+    List[color]
     """
     if not name:
         return [x['color'] for x in mpl.rcParams["axes.prop_cycle"]]

@@ -117,7 +117,7 @@ class Solver:
 
         Returns
         -------
-        results.Eigenvalues
+        :class:`~pybinding.Eigenvalues`
         """
         if not map_probability_at:
             return results.Eigenvalues(self.eigenvalues)
@@ -152,7 +152,7 @@ class Solver:
 
         Returns
         -------
-        results.StructureMap
+        :class:`~pybinding.StructureMap`
         """
         if reduce and np.isscalar(n):
             n = np.flatnonzero(abs(self.eigenvalues[n] - self.eigenvalues) < reduce)
@@ -181,7 +181,7 @@ class Solver:
 
         Returns
         -------
-        results.DOS
+        :class:`~pybinding.DOS`
         """
         if hasattr(self.impl, 'calc_dos'):
             return results.DOS(energies, self.impl.calc_dos(energies, broadening))
@@ -211,7 +211,7 @@ class Solver:
 
         Returns
         -------
-        results.StructureMap
+        :class:`~pybinding.StructureMap`
         """
         if hasattr(self.impl, 'calc_spatial_ldos'):
             ldos = self.impl.calc_spatial_ldos(energy, broadening)
@@ -237,7 +237,7 @@ class Solver:
 
         Returns
         -------
-        results.Bands
+        :class:`~pybinding.Bands`
         """
         k_points = [np.atleast_1d(k) for k in (k0, k1) + ks]
         k_path = results.make_path(*k_points, step=step)
@@ -356,7 +356,7 @@ def lapack(model, **kwargs):
 
     Returns
     -------
-    Solver
+    :class:`~pybinding.solver.Solver`
     """
     def solver_func(hamiltonian, **kw):
         from scipy.linalg import eigh
@@ -388,7 +388,7 @@ def arpack(model, k, sigma=0, **kwargs):
 
     Returns
     -------
-    Solver
+    :class:`~pybinding.solver.Solver`
     """
     from scipy.sparse.linalg import eigsh
     if sigma == 0:
@@ -423,7 +423,7 @@ def feast(model, energy_range, initial_size_guess, recycle_subspace=False, is_ve
 
     Returns
     -------
-    Solver
+    :class:`~pybinding.solver.Solver`
     """
     try:
         # noinspection PyUnresolvedReferences

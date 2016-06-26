@@ -85,7 +85,7 @@ class Greens:
 
         Returns
         -------
-        results.LDOS
+        :class:`~pybinding.LDOS`
         """
         sublattice = self.system.lattice[sublattice] if sublattice is not None else -1
         ldos = self.impl.calc_ldos(energy, broadening, position, sublattice)
@@ -150,7 +150,7 @@ def kpm(model, lambda_value=4.0, energy_range=None, optimization_level=3, lanczo
 
     Returns
     -------
-    Greens
+    :class:`~pybinding.greens.Greens`
     """
     kpm_implementation = _cpp.KPM(model, lambda_value, energy_range or (0, 0),
                                   optimization_level, lanczos_precision)
@@ -172,7 +172,7 @@ def kpm_cuda(model, lambda_value=4.0, energy_range=None, optimization_level=1):
 
     Returns
     -------
-    Greens
+    :class:`~pybinding.greens.Greens`
     """
     try:
         # noinspection PyUnresolvedReferences

@@ -114,14 +114,22 @@ as some approximative compute methods. Follow the links below for details.
 Results
 -------
 
-Result objects are usually produced by compute functions, but they are also used to express some
-model properties. They hold data and offer postprocessing and plotting methods which are
-specifically adapted to the nature of the physical properties which the stored data represents.
+Result objects are usually produced by compute functions, but they are also used to express certain
+model properties. They hold data and offer postprocessing and plotting methods specifically adapted
+to the nature of the physical properties (i.e. the stored data).
 
 .. autosummary::
     :toctree: _api
 
-    results
+    make_path
+    Bands
+    Eigenvalues
+    DOS
+    LDOS
+    SpatialMap
+    StructureMap
+    Sweep
+    NDSweep
 
 
 Components

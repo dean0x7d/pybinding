@@ -374,7 +374,7 @@ def sweep(factory, plot=lambda r: r.plot(), labels=None, tags=None, silent=False
 
     Returns
     -------
-    :class:`.Sweep`
+    :class:`~pybinding.Sweep`
     """
     x = factory.variables[0]
     energy = factory.fixtures['energy']
@@ -408,7 +408,7 @@ def ndsweep(factory, plot=None, labels=None, tags=None, silent=False):
 
     Returns
     -------
-    :class:`.NDSweep`
+    :class:`~pybinding.NDSweep`
     """
     energy = factory.fixtures['energy']
     variables = factory.variables + (energy,)

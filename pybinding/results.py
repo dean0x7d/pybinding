@@ -594,7 +594,7 @@ class Bands:
             plt.axvline(k_space[idx], ymax=ymax, color='0.4', ls=':', zorder=-1)
 
     def plot_kpath(self, point_labels=None, **kwargs):
-        """Quiver plot of path in k-space along which the bands were computed
+        """Quiver plot of the k-path along which the bands were computed
 
         Combine with :meth:`.Lattice.plot_brillouin_zone` to see the path in context.
 
@@ -610,16 +610,16 @@ class Bands:
 
 @pickleable
 class Sweep:
-    """2D parameter sweep with 'x' and 'y' 1D array parameters and 'data' 2D array result.
+    """2D parameter sweep with `x` and `y` 1D array parameters and `data` 2D array result
 
     Attributes
     ----------
-    x : np.ndarray
-        1D array with x-axis values - usually the primary parameter being swept.
-    y : np.ndarray
-        1D array with y-axis values - usually the secondary parameter.
-    data : np.ndarray
-        2D array with shape == (x.size, y.size) containing the main result data.
+    x : array_like
+        1D array with x-axis values -- usually the primary parameter being swept.
+    y : array_like
+        1D array with y-axis values -- usually the secondary parameter.
+    data : array_like
+        2D array with `shape == (x.size, y.size)` containing the main result data.
     labels : dict
         Plot labels: 'title', 'x', 'y' and 'data'.
     tags : dict
