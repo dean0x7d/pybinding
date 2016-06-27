@@ -127,7 +127,7 @@ if(PB_CUDA)
     cuda_add_library(pybinding_cuda src/greens/kpm/calc_moments.cu)
     target_link_libraries(pybinding_cppcore PUBLIC pybinding_cuda ${CUDA_cublas_LIBRARY})
     target_compile_definitions(pybinding_cppcore PUBLIC PB_CUDA)
-    target_include_directories(pybinding_cppcore PUBLIC ${CUDA_INCLUDE_DIRS})
+    target_include_directories(pybinding_cppcore SYSTEM PUBLIC ${CUDA_INCLUDE_DIRS})
 endif()
 
 if(PB_TESTS)

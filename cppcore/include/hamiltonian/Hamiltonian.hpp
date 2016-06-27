@@ -69,8 +69,7 @@ void build_main(SparseMatrixX<scalar_t>& matrix, System const& system,
 template<class scalar_t>
 void build_periodic(SparseMatrixX<scalar_t>& matrix, System const& system,
                     HamiltonianModifiers const& modifiers, Cartesian k_vector) {
-    auto const num_boundaries = static_cast<int>(system.boundaries.size());
-    for (auto n = 0; n < num_boundaries; ++n) {
+    for (auto n = size_t{0}, size = system.boundaries.size(); n < size; ++n) {
         using constant::i1;
         auto const& d = system.boundaries[n].shift;
         auto const phase = num::complex_cast<scalar_t>(exp(i1 * k_vector.dot(d)));

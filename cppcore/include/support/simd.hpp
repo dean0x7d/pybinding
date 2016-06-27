@@ -169,7 +169,7 @@ namespace detail {
         static Vec call(Scalar const* data, Index const* indices) {
             static constexpr auto index_step = Vec::base_length * element_size / sizeof(Scalar);
             Vec r;
-            for (auto i = 0u; i < Vec::vec_length; ++i) {
+            for (auto i = size_t{0}; i < Vec::vec_length; ++i) {
                 r.vec(i) = Gather<BaseVec>::call(data, indices + i * index_step);
             }
             return r;

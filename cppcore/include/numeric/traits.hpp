@@ -104,9 +104,9 @@ bool approx_equal(T x, T y, int ulp = 1) {
     aligned_size<float, 16>(3) -> 4
     aligned_size<std::complex<double>, 16>(2) -> 2
  */
-template<class scalar_t, int align_bytes>
-int aligned_size(int size) {
-    static constexpr auto step = align_bytes / sizeof(scalar_t);
+template<class scalar_t, int align_bytes, class T>
+T aligned_size(T size) {
+    static constexpr auto step = static_cast<T>(align_bytes / sizeof(scalar_t));
     while (size % step != 0) {
         ++size;
     }

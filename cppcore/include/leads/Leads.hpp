@@ -37,7 +37,7 @@ public:
     int size() const { return static_cast<int>(specs.size()); }
 
     /// Description of lead number `i`
-    Lead operator[](int i) const { return {specs.at(i), structures.at(i), hamiltonians.at(i)}; }
+    Lead operator[](size_t i) const { return {specs.at(i), structures.at(i), hamiltonians.at(i)}; }
 
     /// Add a lead specified by `direction` and `shape`
     void add(int direction, Shape const& shape) { specs.emplace_back(direction, shape); }

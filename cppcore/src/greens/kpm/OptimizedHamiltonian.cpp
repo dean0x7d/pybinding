@@ -70,7 +70,7 @@ void OptimizedHamiltonian<scalar_t>::create_reordered(Indices const& idx, Scale<
     index_queue.push_back(idx.row); // starting from the given index
 
     // Map from original matrix indices to reordered matrix indices
-    auto reorder_map = std::vector<int>(static_cast<std::size_t>(system_size), -1);
+    auto reorder_map = ArrayXi{ArrayXi::Constant(system_size, -1)};
     // The point of the reordering is to have the target become index number 0
     reorder_map[idx.row] = 0;
 
@@ -151,7 +151,7 @@ OptimizedHamiltonian<scalar_t>::convert_to_ellpack(SparseMatrixX<scalar_t> const
 
 template<class scalar_t>
 Indices OptimizedHamiltonian<scalar_t>::reorder_indices(Indices const& original_idx,
-                                                        std::vector<int> const& reorder_map) {
+                                                        ArrayXi const& reorder_map) {
     auto const size = original_idx.cols.size();
     ArrayXi cols(size);
     for (auto i = 0; i < size; ++i) {
@@ -167,13 +167,13 @@ namespace {
         int rows;
 
         template<class scalar_t>
-        int operator()(SparseMatrixX<scalar_t> const& csr) {
-            return csr.outerIndexPtr()[rows];
+        std::uint64_t operator()(SparseMatrixX<scalar_t> const& csr) {
+            return static_cast<std::uint64_t>(csr.outerIndexPtr()[rows]);
         }
 
         template<class scalar_t>
-        int operator()(num::EllMatrix<scalar_t> const& ell) {
-            return (rows - 1) * ell.nnz_per_row;
+        std::uint64_t operator()(num::EllMatrix<scalar_t> const& ell) {
+            return static_cast<std::uint64_t>((rows - 1) * ell.nnz_per_row);
         }
     };
 }
@@ -195,7 +195,7 @@ std::uint64_t OptimizedHamiltonian<scalar_t>::operations(int num_moments) const 
     if (optimized_idx.is_diagonal()) {
         ops /= 2;
         for (auto n = 0; n <= num_moments / 2; ++n) {
-            ops += 2 * optimized_sizes.optimal(n, num_moments);
+            ops += 2 * static_cast<std::uint64_t>(optimized_sizes.optimal(n, num_moments));
         }
     }
     return ops;

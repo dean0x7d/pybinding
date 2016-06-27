@@ -2,7 +2,7 @@ function(set_higher_warning_level TARGET)
     if(MSVC)
         target_compile_options(${TARGET} PRIVATE /W3)
     else()
-        target_compile_options(${TARGET} PRIVATE -Wall -Wextra)
+        target_compile_options(${TARGET} PRIVATE -Wall -Wextra -Wsign-compare)
     endif()
 
     if(PB_WERROR)

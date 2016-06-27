@@ -59,7 +59,7 @@ public: // get results
     /// Return all leads
     Leads const& leads() const;
     /// Return lead at index
-    Lead lead(int i) const { return leads()[i]; }
+    Lead lead(size_t i) const { return leads()[i]; }
 
 public: // get information
     /// Report of the last build operation: system and Hamiltonian

@@ -186,7 +186,7 @@ void parallel_for(size_t size, size_t num_threads, size_t queue_size,
     // This thread produces new jobs and adds them to the work queue
     std::thread production_thread([&] {
         detail::QueueGuard<Job> guard{work_queue};
-        for (auto id = 0u; id < size; ++id) {
+        for (auto id = size_t{0}; id < size; ++id) {
             work_queue.push({id, produce(id)});
         }
     });

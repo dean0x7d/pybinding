@@ -60,7 +60,7 @@ std::vector<Translation> TranslationalSymmetry::translations(Foundation const& f
         }
 
         auto boundary_slice = SliceIndex3D();
-        for (auto n = 0u; n < lattice.vectors.size(); ++n) {
+        for (auto n = 0, size = lattice.ndim(); n < size; ++n) {
             if (direction[n] > 0)
                 boundary_slice[n] = symmetry_area.left[n];
             else if (direction[n] < 0)
@@ -70,7 +70,7 @@ std::vector<Translation> TranslationalSymmetry::translations(Foundation const& f
         auto const shift_index = direction.cwiseProduct(symmetry_area.middle);
 
         auto shift_lenght = Cartesian{0, 0, 0};
-        for (auto n = 0u; n < lattice.vectors.size(); ++n) {
+        for (auto n = 0, size = lattice.ndim(); n < size; ++n) {
             auto const shift = static_cast<float>(direction[n] * symmetry_area.middle[n]);
             shift_lenght += shift * lattice.vectors[n];
         }

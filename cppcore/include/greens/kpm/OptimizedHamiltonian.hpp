@@ -109,8 +109,7 @@ private:
     /// Convert CSR matrix into ELLPACK format
     static num::EllMatrix<scalar_t> convert_to_ellpack(SparseMatrixX<scalar_t> const& csr);
     /// Get optimized indices which map to the given originals
-    static Indices reorder_indices(Indices const& original_idx,
-                                   std::vector<int> const& reorder_map);
+    static Indices reorder_indices(Indices const& original_idx, ArrayXi const& reorder_map);
 };
 
 TBM_EXTERN_TEMPLATE_CLASS(OptimizedHamiltonian)

@@ -43,7 +43,7 @@ ArrayX<bool> is_acute_angle(Cartesian a, Cartesian b, CartesianArray const& c) {
 
 WithinPolygon::WithinPolygon(Shape::Vertices const& vertices)
     : x(vertices.size()), y(vertices.size()) {
-    for (auto i = 0u; i < vertices.size(); ++i) {
+    for (auto i = size_t{0}, size = vertices.size(); i < size; ++i) {
         x[i] = vertices[i].x();
         y[i] = vertices[i].y();
     }

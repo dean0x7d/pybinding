@@ -73,7 +73,7 @@ struct HamiltonianModifiers {
     };
 
     template<class scalar_t, class Fn>
-    void apply_to_hoppings(System const& system, int boundary_index, Fn fn) const {
+    void apply_to_hoppings(System const& system, size_t boundary_index, Fn fn) const {
         apply_to_hoppings_impl<scalar_t>(system.boundaries[boundary_index],
                                          system.positions, system.lattice, fn);
     };

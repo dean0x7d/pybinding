@@ -25,7 +25,7 @@ CartesianArray generate_positions(Cartesian origin, Index3D size, Lattice const&
     // The nested loops look messy, but it's the fastest way to calculate all the positions
     // because the intermediate a, b, c positions are reused.
     auto const num_sublattices = lattice.sublattices.size();
-    auto const num_sites = static_cast<int>(size.prod() * num_sublattices);
+    auto const num_sites = size.prod() * static_cast<int>(num_sublattices);
     CartesianArray positions(num_sites);
 
     auto idx = 0;
@@ -35,7 +35,7 @@ CartesianArray generate_positions(Cartesian origin, Index3D size, Lattice const&
             Cartesian pb = (b == 0) ? pa : pa + static_cast<float>(b) * lattice.vectors[1];
             for (auto c = 0; c < size[2]; ++c) {
                 Cartesian pc = (c == 0) ? pb : pb + static_cast<float>(c) * lattice.vectors[2];
-                for (auto sub = 0u; sub < num_sublattices; ++sub) {
+                for (auto sub = size_t{0}; sub < num_sublattices; ++sub) {
                     positions[idx++] = pc + lattice[sub].offset;
                 } // sub
             } // c

@@ -92,7 +92,7 @@ public:
     int ndim() const { return static_cast<int>(vectors.size()); }
 
     /// Convenient way to access sublattices
-    const Sublattice& operator[](int n) const { return sublattices[n]; }
+    Sublattice const& operator[](size_t n) const { return sublattices[n]; }
 
     /// Calculate the spatial position of a unit cell or a sublattice site if specified
     Cartesian calc_position(Index3D index, sub_id sublattice = -1) const;
