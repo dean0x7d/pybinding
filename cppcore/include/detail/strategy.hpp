@@ -2,7 +2,7 @@
 #include "hamiltonian/Hamiltonian.hpp"
 #include "support/cppfuture.hpp"
 
-namespace tbm { namespace detail {
+namespace cpb { namespace detail {
 
 /**
  Function object which creates a new Strategy with the appropriate scalar type for the given Model
@@ -45,4 +45,4 @@ private:
     }
 };
 
-}} // namespace tbm::detail
+}} // namespace cpb::detail

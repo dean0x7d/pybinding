@@ -2,7 +2,7 @@
 #include "numeric/dense.hpp"
 #include "compute/mkl/wrapper.hpp"
 
-namespace tbm { namespace compute {
+namespace cpb { namespace compute {
 
 template<class Derived, class scalar_t = typename Derived::Scalar>
 inline ArrayX<scalar_t> tridiagonal_eigenvalues(DenseBase<Derived> const& alpha,
@@ -20,4 +20,4 @@ inline ArrayX<scalar_t> tridiagonal_eigenvalues(DenseBase<Derived> const& alpha,
     return eigenvalues;
 }
 
-}} // namespace tbm::compute
+}} // namespace cpb::compute

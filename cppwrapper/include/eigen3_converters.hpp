@@ -39,7 +39,7 @@ namespace boost { namespace python {
 
 template<class ArrayVariant>
 struct arrayref_to_python {
-    static constexpr auto is_const = std::is_base_of<tbm::num::ArrayConstRef, ArrayVariant>::value;
+    static constexpr auto is_const = std::is_base_of<cpb::num::ArrayConstRef, ArrayVariant>::value;
     static constexpr auto base_flags = NPY_ARRAY_ALIGNED | (!is_const ? NPY_ARRAY_WRITEABLE : 0);
 
     static PyObject* convert(ArrayVariant const& ref) {
@@ -53,7 +53,7 @@ struct arrayref_to_python {
             shape[1] = ref.cols;
         }
 
-        using tbm::num::Tag;
+        using cpb::num::Tag;
         auto const type = [&]{
             switch (ref.tag) {
                 case Tag::f32:  return NPY_FLOAT;
@@ -288,7 +288,7 @@ struct ExtractArray {
 namespace detail {
     template<class scalar_t>
     void copy_data(bp::object from, int size, scalar_t* to) {
-        using Array = tbm::ArrayX<scalar_t>;
+        using Array = cpb::ArrayX<scalar_t>;
         bp::extract<Eigen::Map<Array>> extract_map(from);
         if (extract_map.check()) {
             std::copy_n(extract_map().data(), size, to);
@@ -300,13 +300,13 @@ namespace detail {
 
 template<class scalar_t>
 struct csr_eigen3_to_scipy {
-    static PyObject* convert(tbm::SparseMatrixX<scalar_t> const& s) {
+    static PyObject* convert(cpb::SparseMatrixX<scalar_t> const& s) {
         auto scipy_sparse = bp::import("scipy.sparse");
         auto csr_matrix = scipy_sparse.attr("csr_matrix");
 
-        auto data = tbm::arrayref(s.valuePtr(), s.nonZeros());
-        auto indices = tbm::arrayref(s.innerIndexPtr(), s.nonZeros());
-        auto indptr = tbm::arrayref(s.outerIndexPtr(), s.outerSize() + 1);
+        auto data = cpb::arrayref(s.valuePtr(), s.nonZeros());
+        auto indices = cpb::arrayref(s.innerIndexPtr(), s.nonZeros());
+        auto indptr = cpb::arrayref(s.outerIndexPtr(), s.outerSize() + 1);
         auto matrix = csr_matrix(bp::make_tuple(data, indices, indptr),
                                  bp::make_tuple(s.rows(), s.cols()),
                                  /*dtype*/bp::object{}, /*copy*/bp::object{false});
@@ -334,7 +334,7 @@ inline void register_csrref_converter() {
 
 template<class scalar_t>
 struct scipy_sparse_to_eigen3 {
-    using SparseMatrix = tbm::SparseMatrixX<scalar_t>;
+    using SparseMatrix = cpb::SparseMatrixX<scalar_t>;
 
     scipy_sparse_to_eigen3() {
         bp::converter::registry::insert_rvalue_converter(
@@ -384,5 +384,5 @@ struct scipy_sparse_to_eigen3 {
 template<class scalar_t>
 inline void register_csr_converter() {
     scipy_sparse_to_eigen3<scalar_t>{};
-    bp::to_python_converter<tbm::SparseMatrixX<scalar_t>, csr_eigen3_to_scipy<scalar_t>>();
+    bp::to_python_converter<cpb::SparseMatrixX<scalar_t>, csr_eigen3_to_scipy<scalar_t>>();
 }

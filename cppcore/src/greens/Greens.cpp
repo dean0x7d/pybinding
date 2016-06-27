@@ -1,6 +1,6 @@
 #include "greens/Greens.hpp"
 
-namespace tbm {
+namespace cpb {
 using constant::pi;
 
 BaseGreens::BaseGreens(Model const& model, MakeStrategy const& make_strategy)
@@ -80,4 +80,4 @@ std::string BaseGreens::report(bool shortform) const {
     return strategy ? strategy->report(shortform) + " " + calculation_timer.str() : "";
 }
 
-} // namespace tbm
+} // namespace cpb

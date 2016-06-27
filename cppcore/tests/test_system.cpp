@@ -1,7 +1,7 @@
 #include <catch.hpp>
 
 #include "Model.hpp"
-using namespace tbm;
+using namespace cpb;
 
 Lattice square_lattice() {
     auto lattice = Lattice({1, 0, 0}, {0, 1, 0});

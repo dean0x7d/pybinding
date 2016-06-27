@@ -2,7 +2,7 @@
 #include <complex>
 
 #include "detail/typelist.hpp"
-using namespace tbm;
+using namespace cpb;
 
 namespace static_test_typelist {
     using List = TypeList<float, double, std::complex<float>, std::complex<double>>;

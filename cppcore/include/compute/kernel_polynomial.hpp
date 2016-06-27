@@ -8,20 +8,20 @@
 #include "detail/macros.hpp"
 #include "support/simd.hpp"
 
-#ifdef TBM_USE_MKL
+#ifdef CPB_USE_MKL
 # include "compute/mkl/wrapper.hpp"
 #endif
 
-namespace tbm { namespace compute {
+namespace cpb { namespace compute {
 
 /**
  Off-diagonal KPM compute kernel for CSR matrix
 
  Equivalent to: y = matrix * x - y
  */
-#ifndef TBM_USE_MKL
+#ifndef CPB_USE_MKL
 
-template<class scalar_t> TBM_ALWAYS_INLINE
+template<class scalar_t> CPB_ALWAYS_INLINE
 void kpm_kernel(int start, int end, SparseMatrixX<scalar_t> const& matrix,
                 VectorX<scalar_t> const& x, VectorX<scalar_t>& y) {
     auto const data = matrix.valuePtr();
@@ -37,9 +37,9 @@ void kpm_kernel(int start, int end, SparseMatrixX<scalar_t> const& matrix,
     }
 }
 
-#else // TBM_USE_MKL
+#else // CPB_USE_MKL
 
-template<class scalar_t> TBM_ALWAYS_INLINE
+template<class scalar_t> CPB_ALWAYS_INLINE
 void kpm_kernel(int start, int end, SparseMatrixX<scalar_t> const& matrix,
                 VectorX<scalar_t> const& x, VectorX<scalar_t>& y) {
     if (end <= start) {
@@ -72,7 +72,7 @@ void kpm_kernel(int start, int end, SparseMatrixX<scalar_t> const& matrix,
     );
 }
 
-#endif // TBM_USE_MKL
+#endif // CPB_USE_MKL
 
 /**
  Diagonal KPM compute kernel for CSR matrix
@@ -82,7 +82,7 @@ void kpm_kernel(int start, int end, SparseMatrixX<scalar_t> const& matrix,
    m2 = x^2
    m3 = dot(x, y)
  */
-template<class scalar_t> TBM_ALWAYS_INLINE
+template<class scalar_t> CPB_ALWAYS_INLINE
 void kpm_diag_kernel(int start, int end, SparseMatrixX<scalar_t> const& matrix,
                      VectorX<scalar_t> const& x, VectorX<scalar_t>& y,
                      scalar_t& m2, scalar_t& m3) {
@@ -99,7 +99,7 @@ void kpm_diag_kernel(int start, int end, SparseMatrixX<scalar_t> const& matrix,
  */
 #if SIMDPP_USE_NULL // generic version
 
-template<class scalar_t> TBM_ALWAYS_INLINE
+template<class scalar_t> CPB_ALWAYS_INLINE
 void kpm_kernel(int start, int end, num::EllMatrix<scalar_t> const& matrix,
                 VectorX<scalar_t> const& x, VectorX<scalar_t>& y) {
     for (auto row = start; row < end; ++row) {
@@ -118,7 +118,7 @@ void kpm_kernel(int start, int end, num::EllMatrix<scalar_t> const& matrix,
 #else // vectorized using SIMD intrinsics
 
 template<class scalar_t, int skip_last_n = 0,
-         int step = simd::detail::traits<scalar_t>::size> TBM_ALWAYS_INLINE
+         int step = simd::detail::traits<scalar_t>::size> CPB_ALWAYS_INLINE
 simd::split_loop_t<step> kpm_kernel(int start, int end, num::EllMatrix<scalar_t> const& matrix,
                                     VectorX<scalar_t> const& x, VectorX<scalar_t>& y) {
     using simd_register_t = simd::select_vector_t<scalar_t>;
@@ -168,7 +168,7 @@ simd::split_loop_t<step> kpm_kernel(int start, int end, num::EllMatrix<scalar_t>
  */
 #if SIMDPP_USE_NULL // generic version
 
-template<class scalar_t> TBM_ALWAYS_INLINE
+template<class scalar_t> CPB_ALWAYS_INLINE
 void kpm_diag_kernel(int start, int end, num::EllMatrix<scalar_t> const& matrix,
                      VectorX<scalar_t> const& x, VectorX<scalar_t>& y,
                      scalar_t& m2, scalar_t& m3) {
@@ -180,7 +180,7 @@ void kpm_diag_kernel(int start, int end, num::EllMatrix<scalar_t> const& matrix,
 
 #else // vectorized using SIMD intrinsics
 
-template<class scalar_t> TBM_ALWAYS_INLINE
+template<class scalar_t> CPB_ALWAYS_INLINE
 void kpm_diag_kernel(int start, int end, num::EllMatrix<scalar_t> const& matrix,
                      VectorX<scalar_t> const& x, VectorX<scalar_t>& y,
                      scalar_t& m2, scalar_t& m3) {
@@ -232,4 +232,4 @@ void kpm_diag_kernel(int start, int end, num::EllMatrix<scalar_t> const& matrix,
 }
 
 #endif // SIMDPP_USE_NULL
-}} // namespace tbm::compute
+}} // namespace cpb::compute

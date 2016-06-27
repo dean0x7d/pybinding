@@ -9,7 +9,7 @@
 #include "utils/Chrono.hpp"
 #include "detail/macros.hpp"
 
-namespace tbm { namespace kpm {
+namespace cpb { namespace kpm {
 
 /**
  Indices of the Green's function matrix that will be computed
@@ -112,6 +112,6 @@ private:
     static Indices reorder_indices(Indices const& original_idx, ArrayXi const& reorder_map);
 };
 
-TBM_EXTERN_TEMPLATE_CLASS(OptimizedHamiltonian)
+CPB_EXTERN_TEMPLATE_CLASS(OptimizedHamiltonian)
 
-}} // namespace tbm::kpm
+}} // namespace cpb::kpm

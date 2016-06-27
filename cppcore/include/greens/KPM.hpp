@@ -7,7 +7,7 @@
 
 #include "detail/macros.hpp"
 
-namespace tbm { namespace kpm {
+namespace cpb { namespace kpm {
 
 struct KPMConfig {
     float lambda = 4.0f; ///< controls the accuracy of the kernel polynomial method
@@ -66,7 +66,7 @@ public:
     std::string report(bool shortform) const override;
 };
 
-TBM_EXTERN_TEMPLATE_CLASS_VARGS(Strategy, DefaultCalcMoments)
+CPB_EXTERN_TEMPLATE_CLASS_VARGS(Strategy, DefaultCalcMoments)
 } // namespace kpm
 
 using kpm::KPMConfig;
@@ -74,18 +74,18 @@ using kpm::KPMConfig;
 template<class scalar_t>
 using KPM = kpm::Strategy<scalar_t, kpm::DefaultCalcMoments>;
 
-#ifdef PB_CUDA
+#ifdef CPB_USE_CUDA
 namespace kpm {
 /**
  Cuda GPU implementation for computing KPM moments
  */
 struct CudaCalcMoments;
 
-TBM_EXTERN_TEMPLATE_CLASS_VARGS(Strategy, CudaCalcMoments)
+CPB_EXTERN_TEMPLATE_CLASS_VARGS(Strategy, CudaCalcMoments)
 } // namespace kpm
 
 template<class scalar_t>
 using KPMcuda = kpm::Strategy<scalar_t, kpm::CudaCalcMoments>;
-#endif // PB_CUDA
+#endif // CPB_USE_CUDA
 
-} // namespace tbm
+} // namespace cpb

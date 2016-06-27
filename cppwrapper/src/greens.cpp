@@ -7,7 +7,7 @@
 #include <boost/python/make_constructor.hpp>
 
 using namespace boost::python;
-using namespace tbm;
+using namespace cpb;
 
 namespace {
 
@@ -111,7 +111,7 @@ void export_greens() {
     )
     ;
 
-#ifdef PB_CUDA
+#ifdef CPB_USE_CUDA
     class_<Greens<KPMcuda>, bases<BaseGreens>, noncopyable>{"KPMcuda", no_init}
     .def("__init__", make_constructor([](Model const& model, float lambda,
                                          std::pair<float, float> energy, int opt) {
@@ -129,5 +129,5 @@ void export_greens() {
          )
     )
     ;
-#endif // PB_CUDA
+#endif // CPB_USE_CUDA
 }

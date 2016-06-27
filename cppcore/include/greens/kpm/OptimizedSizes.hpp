@@ -3,7 +3,7 @@
 #include <vector>
 #include <cassert>
 
-namespace tbm { namespace kpm {
+namespace cpb { namespace kpm {
 
 struct Indices;
 
@@ -51,4 +51,4 @@ public:
     int get_offset() const { return offset; }
 };
 
-}} // namespace tbm::kpm
+}} // namespace cpb::kpm

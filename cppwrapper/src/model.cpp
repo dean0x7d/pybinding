@@ -4,7 +4,7 @@
 #include <boost/python/class.hpp>
 
 using namespace boost::python;
-using namespace tbm;
+using namespace cpb;
 
 void export_core() {
     class_<Model>{"Model", init<Lattice const&>(args("self", "lattice"))}

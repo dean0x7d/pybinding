@@ -6,7 +6,7 @@
 #include <boost/python/class.hpp>
 
 using namespace boost::python;
-using namespace tbm;
+using namespace cpb;
 
 class PyOnsiteModifier : public OnsiteModifier,
                          public wrapper<OnsiteModifier> {

@@ -1,7 +1,7 @@
 #include "leads/Structure.hpp"
 #include "system/Foundation.hpp"
 
-namespace tbm { namespace leads {
+namespace cpb { namespace leads {
 
 Structure::Structure(Foundation const& foundation, HamiltonianIndices const& hamiltonian_indices,
                      Spec const& lead)
@@ -82,4 +82,4 @@ Structure::Structure(Foundation const& foundation, HamiltonianIndices const& ham
     }());
 }
 
-}} // namespace tbm::leads
+}} // namespace cpb::leads

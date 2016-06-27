@@ -4,7 +4,7 @@
 #include <string>
 #include <unordered_map>
 
-namespace tbm {
+namespace cpb {
 
 /// Sublattice and hopping ID data types
 using sub_id = std::int8_t;
@@ -112,4 +112,4 @@ public:
     Lattice with_min_neighbors(int number) const;
 };
 
-} // end namespace tbm
+} // end namespace cpb

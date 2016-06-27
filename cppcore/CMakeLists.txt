@@ -116,7 +116,7 @@ endif()
 if(PB_MKL)
     include(mkl)
     target_link_mkl(pybinding_cppcore PUBLIC)
-    target_compile_definitions(pybinding_cppcore PUBLIC TBM_USE_MKL)
+    target_compile_definitions(pybinding_cppcore PUBLIC CPB_USE_MKL)
 endif()
 
 if(PB_CUDA)
@@ -126,7 +126,7 @@ if(PB_CUDA)
 
     cuda_add_library(pybinding_cuda src/greens/kpm/calc_moments.cu)
     target_link_libraries(pybinding_cppcore PUBLIC pybinding_cuda ${CUDA_cublas_LIBRARY})
-    target_compile_definitions(pybinding_cppcore PUBLIC PB_CUDA)
+    target_compile_definitions(pybinding_cppcore PUBLIC CPB_USE_CUDA)
     target_include_directories(pybinding_cppcore SYSTEM PUBLIC ${CUDA_INCLUDE_DIRS})
 endif()
 

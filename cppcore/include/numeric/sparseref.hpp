@@ -1,7 +1,7 @@
 #pragma once
 #include "numeric/arrayref.hpp"
 
-namespace tbm { namespace num {
+namespace cpb { namespace num {
 
 namespace detail {
     /**
@@ -128,4 +128,4 @@ using ComplexEllConstRef = VariantEllConstRef<
     float, double, std::complex<float>, std::complex<double>
 >;
 
-}} // namespace tbm::num
+}} // namespace cpb::num

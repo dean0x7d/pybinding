@@ -7,7 +7,7 @@
 #include <algorithm>
 #include <memory>
 
-namespace tbm {
+namespace cpb {
 
 /**
  Modify the state (valid or invalid) of lattice sites, e.g. to create vacancies
@@ -42,4 +42,4 @@ struct SystemModifiers {
     bool empty() const;
 };
 
-} // namespace tbm
+} // namespace cpb

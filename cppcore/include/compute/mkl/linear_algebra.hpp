@@ -3,7 +3,7 @@
 #include "numeric/sparse.hpp"
 #include "compute/mkl/wrapper.hpp"
 
-namespace tbm { namespace compute {
+namespace cpb { namespace compute {
 
 template<class real_t>
 inline std::complex<real_t> dot_product(VectorX<std::complex<real_t>> const& x,
@@ -52,4 +52,4 @@ inline void matrix_vector_mul(SparseMatrixX<scalar_t> const& matrix,
     );
 }
 
-}} // namespace tbm::compute
+}} // namespace cpb::compute

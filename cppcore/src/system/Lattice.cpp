@@ -2,7 +2,7 @@
 
 #include <Eigen/Dense>  // for `colPivHouseholderQr()`
 
-namespace tbm {
+namespace cpb {
 
 void Sublattice::add_hopping(Index3D relative_index, sub_id to_sub, hop_id hop, bool is_conj) {
     bool already_exists = std::any_of(hoppings.begin(), hoppings.end(), [&](Hopping const& h) {
@@ -166,4 +166,4 @@ Lattice Lattice::with_min_neighbors(int number) const {
     return new_lattice;
 }
 
-} // namespace tbm
+} // namespace cpb

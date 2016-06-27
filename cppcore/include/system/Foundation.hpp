@@ -9,7 +9,7 @@
 #include <vector>
 #include <cstdint>
 
-namespace tbm {
+namespace cpb {
 
 class Primitive;
 class Shape;
@@ -288,4 +288,4 @@ inline Foundation::NonConstSlice Foundation::operator[](SliceIndex3D const& inde
     return {this, index};
 }
 
-} // namespace tbm
+} // namespace cpb

@@ -4,7 +4,7 @@
 
 #include <Eigen/SparseCore>
 
-namespace tbm {
+namespace cpb {
 
 template <class scalar_t>
 using SparseMatrixX = Eigen::SparseMatrix<scalar_t, Eigen::RowMajor, int>;
@@ -179,4 +179,4 @@ int max_nnz_per_row(SparseMatrixX<scalar_t> const& m) {
     return max;
 }
 
-}} // namespace tbm::sparse
+}} // namespace cpb::sparse

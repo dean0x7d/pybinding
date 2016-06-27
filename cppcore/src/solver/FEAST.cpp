@@ -1,11 +1,11 @@
 #include "solver/FEAST.hpp"
 
-#ifdef TBM_USE_FEAST
+#ifdef CPB_USE_FEAST
 # include "support/format.hpp"
 # include "compute/mkl/wrapper.hpp"
 
 using namespace fmt::literals;
-using namespace tbm;
+using namespace cpb;
 
 template<class scalar_t>
 void FEAST<scalar_t>::solve() {
@@ -239,11 +239,11 @@ void FEAST<scalar_t>::call_feast_impl() {
     );
 }
 
-template class tbm::FEAST<float>;
-template class tbm::FEAST<std::complex<float>>;
-template class tbm::FEAST<double>;
-template class tbm::FEAST<std::complex<double>>;
+template class cpb::FEAST<float>;
+template class cpb::FEAST<std::complex<float>>;
+template class cpb::FEAST<double>;
+template class cpb::FEAST<std::complex<double>>;
 
-#else // TBM_USE_FEAST
+#else // CPB_USE_FEAST
 void _suppress_FEAST_has_no_symbols_warning() {}
-#endif // TBM_USE_FEAST
+#endif // CPB_USE_FEAST

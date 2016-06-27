@@ -1,6 +1,6 @@
 #include "leads/Leads.hpp"
 
-namespace tbm {
+namespace cpb {
 
 void Leads::create_attachment_area(Foundation& foundation) const {
     for (auto const& spec : specs) {
@@ -38,4 +38,4 @@ void Leads::clear_hamiltonian() {
     hamiltonians.clear();
 }
 
-} // namespace tbm
+} // namespace cpb

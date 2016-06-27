@@ -3,7 +3,7 @@
 
 #include "support/format.hpp"
 
-namespace tbm {
+namespace cpb {
 
 void Model::set_primitive(Primitive new_primitive) {
     primitive = new_primitive;
@@ -170,4 +170,4 @@ void Model::clear_hamiltonian() {
     _leads.clear_hamiltonian();
 }
 
-} // namespace tbm
+} // namespace cpb

@@ -4,7 +4,7 @@
 #include "detail/slice.hpp"
 #include "numeric/dense.hpp"
 
-namespace tbm {
+namespace cpb {
 
 class Foundation;
 
@@ -46,4 +46,4 @@ namespace detail {
     };
 } // namespace detail
 
-}} // namespace tbm::leads
+}} // namespace cpb::leads

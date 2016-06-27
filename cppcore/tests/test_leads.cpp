@@ -1,7 +1,7 @@
 #include <catch.hpp>
 
 #include "fixtures.hpp"
-using namespace tbm;
+using namespace cpb;
 
 /// Return the data array of a Hamiltonian CSR matrix
 template<class scalar_t = float>

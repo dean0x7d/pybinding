@@ -3,7 +3,7 @@
 #include "numeric/dense.hpp"
 #include <vector>
 
-namespace tbm {
+namespace cpb {
 
 class Foundation;
 
@@ -50,4 +50,4 @@ namespace detail {
     std::vector<Index3D> make_masks(Vector3b enabled_directions, int ndim);
 }
 
-} // namespace tbm
+} // namespace cpb

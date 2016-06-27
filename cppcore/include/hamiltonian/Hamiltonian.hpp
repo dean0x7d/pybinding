@@ -8,7 +8,7 @@
 
 #include "support/variant.hpp"
 
-namespace tbm {
+namespace cpb {
 
 template<class scalar_t>
 using SparseMatrixRC = std::shared_ptr<SparseMatrixX<scalar_t> const>;
@@ -124,4 +124,4 @@ Hamiltonian make(System const& system, HamiltonianModifiers const& modifiers, Ca
 }
 
 } // namespace ham
-} // namespace tbm
+} // namespace cpb

@@ -3,7 +3,7 @@
 
 #include "compute/lanczos.hpp"
 
-namespace tbm { namespace kpm {
+namespace cpb { namespace kpm {
 
 template<class scalar_t>
 void Bounds<scalar_t>::compute_factors() {
@@ -25,6 +25,6 @@ std::string Bounds<scalar_t>::report(bool shortform) const {
     return format_report(msg, timer, shortform);
 }
 
-TBM_INSTANTIATE_TEMPLATE_CLASS(Bounds)
+CPB_INSTANTIATE_TEMPLATE_CLASS(Bounds)
 
-}} // namespace tbm::kpm
+}} // namespace cpb::kpm

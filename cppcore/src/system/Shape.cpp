@@ -1,6 +1,6 @@
 #include "system/Shape.hpp"
 
-namespace tbm {
+namespace cpb {
 
 Primitive::Primitive(int a1, int a2, int a3) : size(a1, a2, a3) {
     if (any_of(size.array() <= 0)) {
@@ -114,4 +114,4 @@ Shape::Vertices make_freeformshape_vertices(Cartesian width, Cartesian center) {
 FreeformShape::FreeformShape(Contains const& contains, Cartesian width, Cartesian center)
     : Shape(make_freeformshape_vertices(width, center), contains) {}
 
-} // namespace tbm
+} // namespace cpb

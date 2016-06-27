@@ -1,6 +1,6 @@
 #include "solver/Solver.hpp"
 
-namespace tbm { namespace compute {
+namespace cpb { namespace compute {
 
 struct CalcDOS {
     ArrayXf const& target_energies;
@@ -99,4 +99,4 @@ std::string BaseSolver::report(bool shortform) const {
     return strategy->report(shortform) + " " + calculation_timer.str();
 }
 
-} // namespace tbm
+} // namespace cpb

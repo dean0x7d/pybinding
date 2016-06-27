@@ -3,7 +3,7 @@
 #include <type_traits>
 
 // helper functions for use until C++14 brings this into std
-namespace tbm { namespace std14 {
+namespace cpb { namespace std14 {
 
 template<class T, class... Args>
 std::unique_ptr<T> make_unique(Args&&... args) {
@@ -41,4 +41,4 @@ constexpr std14::add_const_t<T>& as_const(T& x) noexcept { return x; }
 template <class T>
 void as_const(const T&&) = delete;
 
-}} // namespace tbm::std17
+}} // namespace cpb::std17

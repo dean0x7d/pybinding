@@ -66,7 +66,7 @@ object return_reference(Data Class::* d) {
 template<class Class, class Data>
 object return_arrayref(Data (Class::*pmf)() const) {
     return make_function(
-        [pmf](Class& c) { return tbm::arrayref((c.*pmf)()); },
+        [pmf](Class& c) { return cpb::arrayref((c.*pmf)()); },
         return_value_policy<return_by_value, with_custodian_and_ward_postcall<0, 1>>{}
     );
 }
@@ -74,7 +74,7 @@ object return_arrayref(Data (Class::*pmf)() const) {
 template<class Class, class Data, class = cpp14::enable_if_t<!std::is_function<Data>::value>>
 object return_arrayref(Data Class::* d) {
     return make_function(
-        [d](Class& c) { return tbm::arrayref(c.*d); },
+        [d](Class& c) { return cpb::arrayref(c.*d); },
         return_value_policy<return_by_value, with_custodian_and_ward_postcall<0, 1>>{}
     );
 }

@@ -4,7 +4,7 @@
 
 #include <random>
 
-namespace tbm { namespace num {
+namespace cpb { namespace num {
 
 namespace detail {
     template<class Container>
@@ -45,4 +45,4 @@ Container make_random(Args&&... args) {
     return container;
 };
 
-}} // namespace tbm::num
+}} // namespace cpb::num

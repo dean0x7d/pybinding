@@ -21,7 +21,7 @@
 #include "detail/macros.hpp"
 #include <complex>
 
-namespace tbm { namespace simd {
+namespace cpb { namespace simd {
 using namespace simdpp;
 
 namespace detail {
@@ -79,7 +79,7 @@ struct split_loop_t {
      it may be nice to revisit this idea someday.
      */
     template<class FnScalar, class FnVector>
-    TBM_ALWAYS_INLINE void for_each(FnScalar fn_scalar, FnVector fn_vector) const {
+    CPB_ALWAYS_INLINE void for_each(FnScalar fn_scalar, FnVector fn_vector) const {
 #if defined(__clang__)
 # pragma clang loop vectorize(disable) unroll(disable)
 #endif
@@ -187,7 +187,7 @@ namespace detail {
         v[i] = data[indices[i]]
     }
  */
-template<class Vec, class Scalar, class Index> TBM_ALWAYS_INLINE
+template<class Vec, class Scalar, class Index> CPB_ALWAYS_INLINE
 Vec gather(Scalar const* data, Index const* indices) {
     static_assert(std::is_integral<Index>::value, "");
     return detail::Gather<Vec>::call(data, indices);
@@ -204,30 +204,30 @@ Vec gather(Scalar const* data, Index const* indices) {
      r3 = a3 + b3
      ...
  */
-template<template<unsigned, class> class Vec, unsigned N, class E1, class E2> TBM_ALWAYS_INLINE
+template<template<unsigned, class> class Vec, unsigned N, class E1, class E2> CPB_ALWAYS_INLINE
 Vec<N, void> addsub(Vec<N, E1> const& a, Vec<N, E2> const& b) {
     return a + simd::shuffle4x2<0, 5, 2, 7>(simd::neg(b), b);
 }
 
 #if SIMDPP_USE_SSE3
-template<class E1, class E2> TBM_ALWAYS_INLINE
+template<class E1, class E2> CPB_ALWAYS_INLINE
 float32x4 addsub(float32<4, E1> const& a, float32<4, E2> const& b) {
     return _mm_addsub_ps(a.eval(), b.eval());
 }
 
-template<class E1, class E2> TBM_ALWAYS_INLINE
+template<class E1, class E2> CPB_ALWAYS_INLINE
 float64x2 addsub(float64<2, E1> const& a, float64<2, E2> const& b) {
     return _mm_addsub_pd(a.eval(), b.eval());
 }
 #endif // SIMDPP_USE_SSE3
 
 #if SIMDPP_USE_AVX
-template<class E1, class E2> TBM_ALWAYS_INLINE
+template<class E1, class E2> CPB_ALWAYS_INLINE
 float32x8 addsub(float32<8, E1> const& a, float32<8, E2> const& b) {
     return _mm256_addsub_ps(a.eval(), b.eval());
 }
 
-template<class E1, class E2> TBM_ALWAYS_INLINE
+template<class E1, class E2> CPB_ALWAYS_INLINE
 float64x4 addsub(float64<4, E1> const& a, float64<4, E2> const& b) {
     return _mm256_addsub_pd(a.eval(), b.eval());
 }
@@ -236,7 +236,7 @@ float64x4 addsub(float64<4, E1> const& a, float64<4, E2> const& b) {
 /**
  Complex multiplication
  */
-template<template<unsigned, class> class Vec, unsigned N, class E1, class E2> TBM_ALWAYS_INLINE
+template<template<unsigned, class> class Vec, unsigned N, class E1, class E2> CPB_ALWAYS_INLINE
 Vec<N, void> complex_mul(Vec<N, E1> const& ab, Vec<N, E2> const& xy) {
     // (a + ib) * (x + iy) = (ax - by) + i(ay + bx)
     auto const aa = permute2<0, 0>(ab);
@@ -264,7 +264,7 @@ namespace detail {
     template<class scalar_t, bool /*conjugate*/ = false>
     struct FMADD {
         template<template<unsigned, class> class Vec, unsigned N,
-                 class E1, class E2, class E3> TBM_ALWAYS_INLINE
+                 class E1, class E2, class E3> CPB_ALWAYS_INLINE
         static Vec<N, void> call(Vec<N, E1> const& a, Vec<N, E2> const& b, Vec<N, E3> const& c) {
             return a * b + c;
         }
@@ -273,7 +273,7 @@ namespace detail {
     template<class real_t>
     struct FMADD<std::complex<real_t>, /*conjugate*/false> {
         template<template<unsigned, class> class Vec, unsigned N,
-                 class E1, class E2, class E3> TBM_ALWAYS_INLINE
+                 class E1, class E2, class E3> CPB_ALWAYS_INLINE
         static Vec<N, void> call(Vec<N, E1> const& a, Vec<N, E2> const& b, Vec<N, E3> const& c) {
             return complex_mul(a, b) + c;
         }
@@ -282,7 +282,7 @@ namespace detail {
     template<class real_t>
     struct FMADD<std::complex<real_t>, /*conjugate*/true> {
         template<template<unsigned, class> class Vec, unsigned N,
-                 class E1, class E2, class E3> TBM_ALWAYS_INLINE
+                 class E1, class E2, class E3> CPB_ALWAYS_INLINE
         static Vec<N, void> call(Vec<N, E1> const& a, Vec<N, E2> const& b, Vec<N, E3> const& c) {
             return complex_mul(conjugate(a), b) + c;
         }
@@ -293,7 +293,7 @@ namespace detail {
  Multiply and add `a * b + c` for real or complex arguments
  */
 template<class scalar_t, template<unsigned, class> class Vec, unsigned N,
-         class E1, class E2, class E3> TBM_ALWAYS_INLINE
+         class E1, class E2, class E3> CPB_ALWAYS_INLINE
 Vec<N, void> madd_rc(Vec<N, E1> const& a, Vec<N, E2> const& b, Vec<N, E3> const& c) {
     return detail::FMADD<scalar_t>::call(a, b, c);
 }
@@ -302,7 +302,7 @@ Vec<N, void> madd_rc(Vec<N, E1> const& a, Vec<N, E2> const& b, Vec<N, E3> const&
  Conjugate multiply and add `conjugate(a) * b + c` for real or complex arguments
  */
 template<class scalar_t, template<unsigned, class> class Vec, unsigned N,
-         class E1, class E2, class E3> TBM_ALWAYS_INLINE
+         class E1, class E2, class E3> CPB_ALWAYS_INLINE
 Vec<N, void> conjugate_madd_rc(Vec<N, E1> const& a, Vec<N, E2> const& b, Vec<N, E3> const& c) {
     return detail::FMADD<scalar_t, /*conjugate*/true>::call(a, b, c);
 }
@@ -310,7 +310,7 @@ Vec<N, void> conjugate_madd_rc(Vec<N, E1> const& a, Vec<N, E2> const& b, Vec<N, 
 namespace detail {
     template<class scalar_t>
     struct ReduceAdd {
-        template<class Vec> TBM_ALWAYS_INLINE
+        template<class Vec> CPB_ALWAYS_INLINE
         static scalar_t call(Vec const& a) {
             return reduce_add(a);
         }
@@ -318,7 +318,7 @@ namespace detail {
 
     template<class real_t>
     struct ReduceAdd<std::complex<real_t>> {
-        template<template<unsigned, class> class V, unsigned N, class E> TBM_ALWAYS_INLINE
+        template<template<unsigned, class> class V, unsigned N, class E> CPB_ALWAYS_INLINE
         static std::complex<real_t> call(V<N, E> const& a) {
             using Vec = V<N, void>;
             auto real = Vec{a};
@@ -332,9 +332,9 @@ namespace detail {
 /**
  Reduce add for real or complex arguments
  */
-template<class scalar_t, class Vec> TBM_ALWAYS_INLINE
+template<class scalar_t, class Vec> CPB_ALWAYS_INLINE
 scalar_t reduce_add_rc(Vec const& a) {
     return detail::ReduceAdd<scalar_t>::call(a);
 }
 
-}} // namespace tbm::simd
+}} // namespace cpb::simd

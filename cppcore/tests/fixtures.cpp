@@ -1,10 +1,10 @@
 #include "fixtures.hpp"
 #include "numeric/constant.hpp"
-using namespace tbm;
+using namespace cpb;
 
 namespace lattice {
 
-tbm::Lattice square(float a, float t) {
+cpb::Lattice square(float a, float t) {
     auto lattice = Lattice({a, 0, 0}, {0, a, 0});
     auto const subid = lattice.add_sublattice("A", {0, 0, 0}, 4 * t);
     auto const hopid = lattice.register_hopping_energy("-t", -t);
@@ -57,7 +57,7 @@ namespace {
     };
 }
 
-tbm::OnsiteModifier constant_potential(float value) {
+cpb::OnsiteModifier constant_potential(float value) {
     return {[value](ComplexArrayRef energy, CartesianArray const&, SubIdRef) {
         num::match<ArrayX>(energy, OnsiteEnergyOp{value});
     }};
@@ -85,7 +85,7 @@ namespace {
     };
 }
 
-tbm::HoppingModifier constant_magnetic_field(float value) {
+cpb::HoppingModifier constant_magnetic_field(float value) {
     return {[value](ComplexArrayRef energy, CartesianArray const& pos1,
                     CartesianArray const& pos2, HopIdRef) {
         num::match<ArrayX>(energy, MagneticFieldOp{value, pos1, pos2});
@@ -105,7 +105,7 @@ namespace {
     };
 }
 
-tbm::OnsiteModifier linear_onsite(float k) {
+cpb::OnsiteModifier linear_onsite(float k) {
     return {[k](ComplexArrayRef energy, CartesianArray const& pos, SubIdRef) {
         num::match<ArrayX>(energy, LinearOnsite{k, pos.x});
     }};
@@ -124,21 +124,21 @@ namespace {
     };
 }
 
-tbm::HoppingModifier linear_hopping(float k) {
+cpb::HoppingModifier linear_hopping(float k) {
     return {[k](ComplexArrayRef energy, CartesianArray const& pos1,
                 CartesianArray const& pos2, HopIdRef) {
         num::match<ArrayX>(energy, LinearHopping{k, 0.5f * (pos1.x + pos2.x)});
     }, /*is_complex*/false, /*is_double*/false};
 }
 
-tbm::HoppingModifier force_double_precision() {
+cpb::HoppingModifier force_double_precision() {
     auto nop = [](ComplexArrayRef, CartesianArray const&, CartesianArray const&, HopIdRef) {};
-    return tbm::HoppingModifier(nop, /*is_complex*/false, /*is_double*/true);
+    return cpb::HoppingModifier(nop, /*is_complex*/false, /*is_double*/true);
 }
 
-tbm::HoppingModifier force_complex_numbers() {
+cpb::HoppingModifier force_complex_numbers() {
     auto nop = [](ComplexArrayRef, CartesianArray const&, CartesianArray const&, HopIdRef) {};
-    return tbm::HoppingModifier(nop, /*is_complex*/true, /*is_double*/false);
+    return cpb::HoppingModifier(nop, /*is_complex*/true, /*is_double*/false);
 }
 
 } // namespace field

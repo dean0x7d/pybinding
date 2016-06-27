@@ -1,7 +1,7 @@
 #include "system/Foundation.hpp"
 #include "system/Shape.hpp"
 
-namespace tbm { namespace detail {
+namespace cpb { namespace detail {
 
 std::pair<Index3D, Index3D> find_bounds(Shape const& shape, Lattice const& lattice) {
     Array3i lower_bound = Array3i::Constant(std::numeric_limits<int>::max());
@@ -142,4 +142,4 @@ HamiltonianIndices::HamiltonianIndices(Foundation const& foundation)
     }
 }
 
-} // namespace tbm
+} // namespace cpb

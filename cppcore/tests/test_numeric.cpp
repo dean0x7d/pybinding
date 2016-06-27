@@ -1,7 +1,7 @@
 #include <catch.hpp>
 
 #include "numeric/dense.hpp"
-using namespace tbm;
+using namespace cpb;
 
 struct ArrayRefTestOp {
     template<class Vector>

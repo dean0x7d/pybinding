@@ -7,7 +7,7 @@
 #include <condition_variable>
 
 
-namespace tbm { namespace detail {
+namespace cpb { namespace detail {
 
 template<class T>
 class Queue {
@@ -97,7 +97,7 @@ public:
     ~QueueGuard() { wq.remove_producer(); }
 };
 
-#ifdef TBM_USE_MKL
+#ifdef CPB_USE_MKL
 # include <mkl.h>
 
 class MKLDisableThreading {
@@ -170,7 +170,7 @@ private:
 template<class Produce, class Compute, class Retire>
 void parallel_for(size_t size, size_t num_threads, size_t queue_size,
                   Produce produce, Compute compute, Retire retire) {
-#ifdef TBM_USE_MKL
+#ifdef CPB_USE_MKL
     detail::MKLDisableThreading disable_mkl_internal_threading_if{num_threads > 1};
 #endif
 
@@ -220,5 +220,5 @@ void parallel_for(size_t size, size_t num_threads, size_t queue_size,
     report_thread.join();
 }
 
-} // namespace tbm
+} // namespace cpb
 

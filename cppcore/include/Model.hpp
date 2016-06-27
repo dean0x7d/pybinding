@@ -14,7 +14,7 @@
 #include <string>
 #include <vector>
 
-namespace tbm {
+namespace cpb {
 
 class Model {
 public:
@@ -97,4 +97,4 @@ private:
     mutable Chrono hamiltonian_build_time;
 };
 
-} // namespace tbm
+} // namespace cpb

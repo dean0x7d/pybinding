@@ -3,7 +3,7 @@
 #include <vector>
 #include <functional>
 
-namespace tbm {
+namespace cpb {
 
 /**
  Shape of the primitive unit cell
@@ -81,4 +81,4 @@ namespace detail {
     };
 } // namespace detail
 
-} // namespace tbm
+} // namespace cpb

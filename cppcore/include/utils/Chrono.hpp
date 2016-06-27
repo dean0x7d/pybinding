@@ -3,7 +3,7 @@
 #include <chrono>
 #include <ostream>
 
-namespace tbm {
+namespace cpb {
 
 /**
  High resolution timer (below 1 microsecond accuracy).
@@ -44,4 +44,4 @@ private:
     std::chrono::nanoseconds elapsed{0};
 };
 
-} // namespace tbm
+} // namespace cpb

@@ -4,7 +4,7 @@
 
 #include <vector>
 
-namespace tbm { namespace leads {
+namespace cpb { namespace leads {
 
 /**
  Lead structural information: sites, hoppings and connection to main system
@@ -27,4 +27,4 @@ struct Structure {
     }
 };
 
-}} // namespace tbm::leads
+}} // namespace cpb::leads

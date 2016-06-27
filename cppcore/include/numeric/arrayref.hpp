@@ -6,7 +6,7 @@
 #include <algorithm>
 #include <stdexcept>
 
-namespace tbm { namespace num {
+namespace cpb { namespace num {
 
 /// Array scalar type
 enum class Tag {f32, cf32, f64, cf64, b, i8, i16, i32, i64, u8, u16, u32, u64};
@@ -211,4 +211,4 @@ Result match2sp(Variant1 ref1, Variant2 ref2, Function lambda) {
     return detail::try_match2<Result, Container1, Container2>(ref1, ref2, lambda, FilteredList{});
 }
 
-}} // namespace tbm::num
+}} // namespace cpb::num

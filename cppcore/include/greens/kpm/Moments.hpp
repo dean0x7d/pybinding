@@ -4,7 +4,7 @@
 
 #include "detail/macros.hpp"
 
-namespace tbm { namespace kpm {
+namespace cpb { namespace kpm {
 
 namespace detail {
     /// Put the kernel in *Kernel* polynomial method
@@ -100,4 +100,4 @@ public:
     }
 };
 
-}} // namespace tbm::kpm
+}} // namespace cpb::kpm

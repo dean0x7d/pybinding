@@ -1,7 +1,7 @@
 #include "leads/Spec.hpp"
 #include "system/Foundation.hpp"
 
-namespace tbm { namespace leads {
+namespace cpb { namespace leads {
 
 Spec::Spec(int direction, Shape const& shape)
     : axis(abs(direction) - 1),
@@ -46,7 +46,7 @@ namespace detail {
 SliceIndex3D shape_slice(Foundation const& foundation, Shape const& shape) {
     auto const size = foundation.get_size();
     auto const foundation_bounds = foundation.get_bounds();
-    auto const lead_bounds = tbm::detail::find_bounds(shape, foundation.get_lattice());
+    auto const lead_bounds = cpb::detail::find_bounds(shape, foundation.get_lattice());
 
     auto slice_index = SliceIndex3D();
     for (auto i = 0; i < slice_index.ndims(); ++i) {
@@ -102,4 +102,4 @@ Junction::Junction(Foundation const& foundation, Spec const& spec)
 
 } // namespace detail
 
-}} // namespace tbm::leads
+}} // namespace cpb::leads

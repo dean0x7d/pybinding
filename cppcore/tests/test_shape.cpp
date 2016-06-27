@@ -1,7 +1,7 @@
 #include <catch.hpp>
 
 #include "system/Shape.hpp"
-using namespace tbm;
+using namespace cpb;
 
 TEST_CASE("FreeformShape", "[shape]") {
     auto const contains = [](CartesianArray const& p) -> ArrayX<bool> { return p.x > 0.5f; };

@@ -1,5 +1,6 @@
 #include "hamiltonian/HamiltonianModifiers.hpp"
-using namespace tbm;
+
+namespace cpb {
 
 bool HamiltonianModifiers::any_complex() const {
     const auto complex_potential = std::any_of(
@@ -25,3 +26,5 @@ void HamiltonianModifiers::clear() {
     onsite.clear();
     hopping.clear();
 }
+
+} // namespace cpb

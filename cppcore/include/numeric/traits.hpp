@@ -4,7 +4,7 @@
 #include <type_traits>
 #include <limits>
 
-namespace tbm { namespace num {
+namespace cpb { namespace num {
 
 namespace detail {
     template<class T>
@@ -113,4 +113,4 @@ T aligned_size(T size) {
     return size;
 };
 
-}} // namespace tbm::num
+}} // namespace cpb::num

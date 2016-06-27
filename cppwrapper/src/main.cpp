@@ -11,7 +11,7 @@
 #include <boost/python/docstring_options.hpp>
 
 using namespace boost::python;
-using namespace tbm;
+using namespace cpb;
 
 void export_core();
 void export_system();
@@ -69,7 +69,7 @@ BOOST_PYTHON_MODULE(_pybinding) {
     export_modifiers();
     export_parallel();
 
-#ifdef TBM_USE_MKL
+#ifdef CPB_USE_MKL
     def("get_max_threads", MKL_Get_Max_Threads,
         "Get the maximum number of MKL threads. (<= logical theads)");
     def("set_num_threads", MKL_Set_Num_Threads, arg("number"),

@@ -4,6 +4,6 @@
 #endif
 #include <variant.hpp>
 
-namespace tbm {
+namespace cpb {
     namespace var = mapbox::util;
 }

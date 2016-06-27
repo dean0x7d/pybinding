@@ -1,10 +1,10 @@
 #pragma once
 #include "detail/config.hpp"
 
-#ifdef TBM_USE_FEAST
+#ifdef CPB_USE_FEAST
 #include "solver/Solver.hpp"
 
-namespace tbm {
+namespace cpb {
 
 struct FEASTConfig {
     // required user config
@@ -88,10 +88,10 @@ private:
     ArrayX<real_t> residual; ///< relative residual
 };
 
-extern template class tbm::FEAST<float>;
-extern template class tbm::FEAST<std::complex<float>>;
-extern template class tbm::FEAST<double>;
-extern template class tbm::FEAST<std::complex<double>>;
+extern template class cpb::FEAST<float>;
+extern template class cpb::FEAST<std::complex<float>>;
+extern template class cpb::FEAST<double>;
+extern template class cpb::FEAST<std::complex<double>>;
 
-} // namespace tbm
-#endif // TBM_USE_FEAST
+} // namespace cpb
+#endif // CPB_USE_FEAST

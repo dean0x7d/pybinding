@@ -3,7 +3,7 @@
 #include "system/Foundation.hpp"
 #include "system/Symmetry.hpp"
 
-namespace tbm {
+namespace cpb {
 
 System::System(Foundation const& foundation, HamiltonianIndices const& hamiltonian_indices,
                TranslationalSymmetry const& symmetry, HoppingGenerators const& hopping_generators)
@@ -182,4 +182,4 @@ ArrayXi nonzeros_per_row(SparseMatrixX<hop_id> const& hoppings,  bool has_onsite
     return nnz;
 }
 
-} // namespace tbm
+} // namespace cpb

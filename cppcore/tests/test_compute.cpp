@@ -2,7 +2,7 @@
 
 #include "compute/lanczos.hpp"
 #include "fixtures.hpp"
-using namespace tbm;
+using namespace cpb;
 
 TEST_CASE("Lanczos", "[lanczos]") {
     auto const lattice = graphene::monolayer();

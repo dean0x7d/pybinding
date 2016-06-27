@@ -1,15 +1,15 @@
 #pragma once
 #include "hamiltonian/Hamiltonian.hpp"
 
-namespace tbm { namespace leads {
+namespace cpb { namespace leads {
 
 namespace detail {
     template<class scalar_t>
     Hamiltonian make_h0(System const& lead_system, HamiltonianModifiers const& modifiers) {
         auto h0 = std::make_shared<SparseMatrixX<scalar_t>>();
-        tbm::detail::build_main(*h0, lead_system, modifiers);
+        cpb::detail::build_main(*h0, lead_system, modifiers);
         h0->makeCompressed();
-        tbm::detail::throw_if_invalid(*h0);
+        cpb::detail::throw_if_invalid(*h0);
         return h0;
     }
 
@@ -27,7 +27,7 @@ namespace detail {
         });
 
         h1->makeCompressed();
-        tbm::detail::throw_if_invalid(*h1);
+        cpb::detail::throw_if_invalid(*h1);
 
         return h1;
     }
@@ -62,4 +62,4 @@ struct HamiltonianPair {
     }
 };
 
-}} // namespace tbm::leads
+}} // namespace cpb::leads

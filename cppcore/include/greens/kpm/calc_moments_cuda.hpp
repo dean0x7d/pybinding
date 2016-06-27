@@ -5,7 +5,7 @@
 #include "numeric/sparseref.hpp"
 #include "support/thrust.hpp"
 
-namespace tbm { namespace cuda {
+namespace cpb { namespace cuda {
 
 /**
  The Cuda functions must be defined only in nvcc-compiled translation units,
@@ -38,6 +38,6 @@ public:
                            kpm::OptimizedSizes const& sizes);
 };
 
-TBM_EXTERN_TEMPLATE_CLASS(I)
+CPB_EXTERN_TEMPLATE_CLASS(I)
 
-}} // namespace tbm::cuda
+}} // namespace cpb::cuda

@@ -1,7 +1,7 @@
 #pragma once
 #include <type_traits>
 
-namespace tbm {
+namespace cpb {
 
 template<class...> struct TypeList {};
 
@@ -83,4 +83,4 @@ namespace impl {
 template<class List, class Target>
 using AnyOf = std::integral_constant<bool, impl::AnyOf<List, Target>::value>;
 
-}} // namespace tbm:tl
+}} // namespace cpb:tl

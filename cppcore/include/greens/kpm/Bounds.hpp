@@ -5,7 +5,7 @@
 #include "utils/Chrono.hpp"
 #include "detail/macros.hpp"
 
-namespace tbm { namespace kpm {
+namespace cpb { namespace kpm {
 
 /**
  The KPM scaling factors `a` and `b`
@@ -77,6 +77,6 @@ private:
     void compute_factors();
 };
 
-TBM_EXTERN_TEMPLATE_CLASS(Bounds)
+CPB_EXTERN_TEMPLATE_CLASS(Bounds)
 
-}} // namespace tbm::kpm
+}} // namespace cpb::kpm

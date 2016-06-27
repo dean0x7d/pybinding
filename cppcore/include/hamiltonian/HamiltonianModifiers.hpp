@@ -8,7 +8,7 @@
 #include <algorithm>
 #include <memory>
 
-namespace tbm {
+namespace cpb {
 
 /**
  Modify the onsite energy, e.g. to apply an electric field
@@ -188,4 +188,4 @@ void HamiltonianModifiers::apply_to_hoppings_impl(SystemOrBoundary const& system
     }
 }
 
-} // namespace tbm
+} // namespace cpb

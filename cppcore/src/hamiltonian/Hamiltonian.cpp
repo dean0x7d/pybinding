@@ -1,6 +1,6 @@
 #include "hamiltonian/Hamiltonian.hpp"
 
-namespace tbm {
+namespace cpb {
 namespace {
 
 struct IsValid {
@@ -59,4 +59,4 @@ int Hamiltonian::cols() const {
     return var::apply_visitor(Cols(), variant_matrix);
 }
 
-} // namespace tbm
+} // namespace cpb

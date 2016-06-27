@@ -1,6 +1,6 @@
 #pragma once
 
-#ifdef TBM_USE_MKL
+#ifdef CPB_USE_MKL
 # include "mkl/lanczos.hpp"
 #else
 # include "eigen3/lanczos.hpp"
@@ -10,7 +10,7 @@
 #include "numeric/random.hpp"
 #include "compute/linear_algebra.hpp"
 
-namespace tbm { namespace compute {
+namespace cpb { namespace compute {
 
 template<class real_t>
 struct LanczosBounds {
@@ -88,4 +88,4 @@ LanczosBounds<real_t> minmax_eigenvalues(SparseMatrixX<scalar_t> const& matrix,
     throw std::runtime_error{"Lanczos algorithm did not converge for the min/max eigenvalues."};
 }
 
-}} // namespace tbm::compute
+}} // namespace cpb::compute

@@ -1,10 +1,10 @@
 #include "greens/KPM.hpp"
 #include "greens/kpm/calc_moments.hpp"
-#ifdef PB_CUDA
+#ifdef CPB_USE_CUDA
 # include "greens/kpm/calc_moments_cuda.hpp"
 #endif
 
-namespace tbm { namespace kpm {
+namespace cpb { namespace kpm {
 
 namespace {
     template<class scalar_t>
@@ -121,9 +121,9 @@ struct DefaultCalcMoments {
     }
 };
 
-TBM_INSTANTIATE_TEMPLATE_CLASS_VARGS(Strategy, DefaultCalcMoments)
+CPB_INSTANTIATE_TEMPLATE_CLASS_VARGS(Strategy, DefaultCalcMoments)
 
-#ifdef PB_CUDA
+#ifdef CPB_USE_CUDA
 struct CudaCalcMoments {
     static MatrixConfig matrix_config(int opt_level) {
         switch (opt_level) {
@@ -158,7 +158,7 @@ struct CudaCalcMoments {
     }
 };
 
-TBM_INSTANTIATE_TEMPLATE_CLASS_VARGS(Strategy, CudaCalcMoments)
-#endif // PB_CUDA
+CPB_INSTANTIATE_TEMPLATE_CLASS_VARGS(Strategy, CudaCalcMoments)
+#endif // CPB_USE_CUDA
 
-}} // namespace tbm::kpm
+}} // namespace cpb::kpm

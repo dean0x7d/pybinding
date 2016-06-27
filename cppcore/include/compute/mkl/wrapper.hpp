@@ -2,7 +2,7 @@
 #include <mkl.h>
 #include <complex>
 
-namespace tbm { namespace mkl {
+namespace cpb { namespace mkl {
 
 namespace detail {
     template<class scalar_t> struct typemap;
@@ -54,4 +54,4 @@ template<> struct feast_hcsrev<double> { static constexpr auto call = dfeast_scs
 template<> struct feast_hcsrev<std::complex<float>> { static constexpr auto call = cfeast_hcsrev; };
 template<> struct feast_hcsrev<std::complex<double>> { static constexpr auto call = zfeast_hcsrev; };
 
-}} // namespace tbm::mkl
+}} // namespace cpb::mkl

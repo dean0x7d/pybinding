@@ -2,7 +2,7 @@
 
 #include "fixtures.hpp"
 #include "greens/KPM.hpp"
-using namespace tbm;
+using namespace cpb;
 
 Model make_test_model(bool is_double = false, bool is_complex = false) {
     auto model = Model(graphene::monolayer());
@@ -135,7 +135,7 @@ std::vector<TestGreensResult> test_greens_strategy() {
 }
 
 TEST_CASE("KPM strategy", "[kpm]") {
-#ifndef PB_CUDA
+#ifndef CPB_USE_CUDA
     test_greens_strategy<KPM, 3>();
 #else
     auto const cpu_results = test_greens_strategy<KPM, 3>();
@@ -145,6 +145,6 @@ TEST_CASE("KPM strategy", "[kpm]") {
         REQUIRE(cpu_results[i].g_ii.isApprox(cuda_results[i].g_ii, precision));
         REQUIRE(cpu_results[i].g_ij.isApprox(cuda_results[i].g_ij, precision));
     }
-#endif // PB_CUDA
+#endif // CPB_USE_CUDA
 }
 

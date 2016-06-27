@@ -8,7 +8,7 @@
 #include <algorithm>
 #include <vector>
 
-namespace tbm {
+namespace cpb {
 
 // add common math functions to the global namespace
 using std::abs;
@@ -56,7 +56,7 @@ using num::ArrayRef;
 using num::RealArrayRef;
 using num::ComplexArrayRef;
 
-} // namespace tbm
+} // namespace cpb
 
 namespace Eigen {
     // add being() and end() to Eigen namespace
@@ -82,7 +82,7 @@ namespace Eigen {
     }
 } // namespace Eigen
 
-namespace tbm {
+namespace cpb {
 
 /**
  Map std::vector-like object data to an Eigen type
@@ -219,4 +219,4 @@ inline ArrayRef arrayref(std::vector<scalar_t>& v) {
     return {num::detail::get_tag<scalar_t>(), true, v.data(), 1, static_cast<int>(v.size())};
 }
 
-} // namespace tbm
+} // namespace cpb

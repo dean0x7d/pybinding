@@ -1,7 +1,7 @@
 #include "greens/kpm/OptimizedHamiltonian.hpp"
 #include "greens/kpm/Stats.hpp"
 
-namespace tbm { namespace kpm {
+namespace cpb { namespace kpm {
 
 OptimizedSizes::OptimizedSizes(std::vector<int> sizes, Indices const& idx) : data(sizes) {
     assert(idx.cols.size() != 0);
@@ -216,6 +216,6 @@ std::string OptimizedHamiltonian<scalar_t>::report(int num_moments, bool shortfo
     return format_report(msg, timer, shortform);
 }
 
-TBM_INSTANTIATE_TEMPLATE_CLASS(OptimizedHamiltonian)
+CPB_INSTANTIATE_TEMPLATE_CLASS(OptimizedHamiltonian)
 
-}} // namespace tbm::kpm
+}} // namespace cpb::kpm

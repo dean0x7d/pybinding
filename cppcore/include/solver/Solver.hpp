@@ -9,7 +9,7 @@
 
 #include <memory>
 
-namespace tbm {
+namespace cpb {
 
 /**
  Abstract base class for an eigensolver
@@ -71,4 +71,4 @@ public:
         : BaseSolver(model, MakeStrategy(config)) {}
 };
 
-} // namespace tbm
+} // namespace cpb

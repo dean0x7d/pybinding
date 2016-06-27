@@ -3,7 +3,7 @@
 #include "support/thrust.hpp"
 #include <cuComplex.h>
 
-namespace tbm { namespace num {
+namespace cpb { namespace num {
 
 namespace detail {
     template<class T>
@@ -56,4 +56,4 @@ using get_host_t = typename detail::host_scalar<thrust_scalar_t>::type;
 template<class scalar_t>
 using get_cuda_t = typename detail::cuda_scalar<scalar_t>::type;
 
-}} // namespace tbm::num
+}} // namespace cpb::num

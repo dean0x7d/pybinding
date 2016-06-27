@@ -9,7 +9,7 @@
 using namespace boost::python;
 
 void export_solver() {
-    using tbm::BaseSolver;
+    using cpb::BaseSolver;
 
     class_<BaseSolver, noncopyable>{
         "Solver", "Abstract base solver", no_init
@@ -25,14 +25,14 @@ void export_solver() {
     .add_property("eigenvectors", return_internal_copy(&BaseSolver::eigenvectors))
     ;
 
-#ifdef TBM_USE_FEAST
-    using tbm::Solver;
-    using tbm::FEAST;
-    auto const feast_defaults = tbm::FEASTConfig{};
+#ifdef CPB_USE_FEAST
+    using cpb::Solver;
+    using cpb::FEAST;
+    auto const feast_defaults = cpb::FEASTConfig{};
     class_<Solver<FEAST>, bases<BaseSolver>, noncopyable>{"FEAST", no_init}
-    .def("__init__", make_constructor([](tbm::Model const& model, std::pair<double, double> energy,
+    .def("__init__", make_constructor([](cpb::Model const& model, std::pair<double, double> energy,
                                          int size_guess, bool recycle, bool verbose) {
-            tbm::FEASTConfig config;
+            cpb::FEASTConfig config;
             config.energy_min = static_cast<float>(energy.first);
             config.energy_max = static_cast<float>(energy.second);
             config.initial_size_guess = size_guess;
@@ -48,5 +48,5 @@ void export_solver() {
         )
     )
     ;
-#endif // TBM_USE_FEAST
+#endif // CPB_USE_FEAST
 }

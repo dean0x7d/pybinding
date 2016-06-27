@@ -7,7 +7,7 @@
 #include "detail/strategy.hpp"
 #include "detail/thread.hpp"
 
-namespace tbm {
+namespace cpb {
 
 /**
  Abstract base class for Green's function strategy.
@@ -79,4 +79,4 @@ std::unique_ptr<GreensStrategy> make_greens_strategy(Hamiltonian const& h, Confi
     return detail::MakeStrategy<GreensStrategy, Strategy>(c)(h);
 }
 
-} // namespace tbm
+} // namespace cpb

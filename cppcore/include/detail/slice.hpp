@@ -2,7 +2,7 @@
 #include <algorithm>
 #include <numeric>
 
-namespace tbm {
+namespace cpb {
 
 /**
  Holds the start and end index of an array slice in 1 dimension
@@ -58,4 +58,4 @@ public:
 
 using SliceIndex3D = SliceIndexND<3>;
 
-} // namespace tbm
+} // namespace cpb

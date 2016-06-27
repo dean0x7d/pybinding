@@ -5,7 +5,7 @@
 #include <thrust/device_vector.h>
 #include <thrust/inner_product.h>
 
-namespace tbm { namespace cuda {
+namespace cpb { namespace cuda {
 
 /**
  Return the square of a real or complex number (the result is always real)
@@ -160,7 +160,7 @@ constexpr int required_num_blocks(int size, int block_size) noexcept {
 
  Equivalent to: y = matrix * x - y
  */
-template<class scalar_t, class thr_scalar_t> TBM_ALWAYS_INLINE
+template<class scalar_t, class thr_scalar_t> CPB_ALWAYS_INLINE
 void kpm_kernel(int start, int end, EllMatrix<scalar_t> const& ell,
                 thr::device_vector<thr_scalar_t> const& x,
                 thr::device_vector<thr_scalar_t>& y) {
@@ -238,6 +238,6 @@ I<scalar_t>::calc_diag_moments1(num::EllConstRef<scalar_t> ellref, int i, int nu
     return moments;
 }
 
-TBM_INSTANTIATE_TEMPLATE_CLASS(I)
+CPB_INSTANTIATE_TEMPLATE_CLASS(I)
 
-}} // namespace tbm::cuda
+}} // namespace cpb::cuda

@@ -5,7 +5,7 @@
 #include <boost/python/tuple.hpp>
 
 using namespace boost::python;
-using namespace tbm;
+using namespace cpb;
 
 void export_leads() {
     class_<leads::Spec>{"LeadSpec", no_init}

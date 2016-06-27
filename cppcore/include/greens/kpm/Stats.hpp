@@ -1,7 +1,7 @@
 #pragma once
 #include "support/format.hpp"
 
-namespace tbm { namespace kpm {
+namespace cpb { namespace kpm {
 
 inline std::string format_report(std::string msg, Chrono const& time, bool shortform) {
     auto const fmt_str = shortform ? "{:s} [{}] " : "- {:<80s} | {}\n";
@@ -28,4 +28,4 @@ struct Stats {
     }
 };
 
-}} // namespace tbm::kpm
+}} // namespace cpb::kpm

@@ -8,7 +8,7 @@
 #include <vector>
 #include <memory>
 
-namespace tbm {
+namespace cpb {
 
 class Foundation;
 class HamiltonianIndices;
@@ -62,4 +62,4 @@ namespace detail {
  */
 ArrayXi nonzeros_per_row(SparseMatrixX<hop_id> const& hoppings, bool has_onsite_energy = false);
 
-} // namespace tbm
+} // namespace cpb

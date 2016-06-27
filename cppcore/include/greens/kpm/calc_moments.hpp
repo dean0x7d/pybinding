@@ -4,7 +4,7 @@
 
 #include "compute/kernel_polynomial.hpp"
 
-namespace tbm { namespace kpm {
+namespace cpb { namespace kpm {
 
 /**
  Return the number of moments needed to compute Green's at the specified broadening
@@ -230,4 +230,4 @@ ArrayX<scalar_t> calc_diag_moments2(Matrix const& h2, int i, int num_moments,
     return moments;
 }
 
-}} // namespace tbm::kpm
+}} // namespace cpb::kpm

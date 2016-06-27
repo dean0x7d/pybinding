@@ -2,7 +2,7 @@
 #include "numeric/dense.hpp"
 #include "numeric/sparseref.hpp"
 
-namespace tbm { namespace num {
+namespace cpb { namespace num {
 
 /**
  ELLPACK format sparse matrix
@@ -62,4 +62,4 @@ inline EllConstRef<scalar_t> ellref(EllMatrix<scalar_t> const& m) {
             m.data.data(), m.indices.data()};
 }
 
-}} // namespace tbm::num
+}} // namespace cpb::num

@@ -2,7 +2,7 @@
 #include "system/Lattice.hpp"
 #include "system/Foundation.hpp"
 
-namespace tbm {
+namespace cpb {
 
 TranslationalSymmetry::TranslationalSymmetry(float a1, float a2, float a3)
     : length(a1, a2, a3), enabled_directions(a1 >= 0, a2 >= 0, a3 >= 0) {}
@@ -121,4 +121,4 @@ std::vector<Index3D> make_masks(Vector3b enabled_directions, int ndim) {
 }
 
 } // namespace detail
-} // namespace tbm
+} // namespace cpb

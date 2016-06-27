@@ -4,7 +4,7 @@
 #include <functional>
 #include <string>
 
-namespace tbm {
+namespace cpb {
 
 /**
  Introduces a new hopping family (with new hop_id) via a list of index pairs
@@ -19,7 +19,7 @@ public:
         ArrayXi from;
         ArrayXi to;
     };
-    using Function = std::function<Result(tbm::CartesianArray const&, SubIdRef)>;
+    using Function = std::function<Result(cpb::CartesianArray const&, SubIdRef)>;
 
     std::string name; ///< friendly hopping identifier - will be added to lattice registry
     std::complex<double> energy; ///< hopping energy - also added to lattice registry
@@ -33,4 +33,4 @@ public:
 
 using HoppingGenerators = std::vector<HoppingGenerator>;
 
-} // namespace tbm
+} // namespace cpb

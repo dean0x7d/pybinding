@@ -3,7 +3,7 @@
 #include "leads/Structure.hpp"
 #include "leads/HamiltonianPair.hpp"
 
-namespace tbm {
+namespace cpb {
 
 /**
  Full description of a single lead
@@ -57,4 +57,4 @@ public:
     void clear_hamiltonian();
 };
 
-} // namespace tbm
+} // namespace cpb
