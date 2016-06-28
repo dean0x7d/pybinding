@@ -15,8 +15,9 @@ inline std::string with_suffix(double number) {
 
     auto const result = [&]{
         for (auto const& bucket : mapping) {
-            if (number > bucket.value)
+            if (number > 0.999 * bucket.value) {
                 return Pair{number / bucket.value, bucket.suffix};
+            }
         }
         return Pair{number, ""};
     }();
