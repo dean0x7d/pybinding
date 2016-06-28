@@ -84,7 +84,7 @@ TEST_CASE("Lattice", "[lattice]") {
         REQUIRE(lattice.calc_position({1, 2, 0}, a).isApprox(Cartesian(1, 2, 0.5)));
     }
 
-    SECTION("Set origin") {
+    SECTION("Set offset") {
         REQUIRE_NOTHROW(lattice.set_offset({0.5f, 0.5f, 0}));
         REQUIRE_THROWS(lattice.set_offset({0.6f, 0, 0}));
         REQUIRE_THROWS(lattice.set_offset({0, -0.6f, 0}));
