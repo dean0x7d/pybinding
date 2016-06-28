@@ -189,7 +189,8 @@ quickly by importing one of them. For example:
 Further reading
 ---------------
 
-For more lattice specifications check out the :doc:`examples section </examples/lattice/index>`.
+Additional features of the :class:`.Lattice` class are explained in the :doc:`Advanced Topics </advanced/lattice>`
+section. For more lattice specifications check out the :doc:`examples section </examples/lattice/index>`.
 
 
 Example

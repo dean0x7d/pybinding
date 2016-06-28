@@ -166,6 +166,8 @@ The decorator checks this at definition time and decides if the given function i
 or not, so any errors will be caught early.
 
 
+.. _graphene_mass_term:
+
 Opening a band gap
 ------------------
 

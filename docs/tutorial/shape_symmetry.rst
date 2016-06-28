@@ -12,6 +12,8 @@ creative and combine the two.
     :nbexport:`Download this page as a Jupyter notebook <self>`
 
 
+.. _graphene_nanoribbons:
+
 Nanoribbons
 -----------
 
