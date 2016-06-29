@@ -49,10 +49,13 @@ class Model(_cpp.Model):
             Any of: shape, symmetry, modifiers. Tuples and lists of parameters are expanded
             automatically, so `M.add(p0, [p1, p2])` is equivalent to `M.add(p0, p1, p2)`.
         """
-        for arg in filter(None, args):
-            if isinstance(arg, (tuple, list)):
+        for arg in args:
+            if arg is None:
+                raise RuntimeError("`None` was passed to Model: check that all "
+                                   "modifier functions have return values")
+            try:
                 self.add(*arg)
-            else:
+            except TypeError:
                 super().add(arg)
                 if isinstance(arg, _cpp.Shape):
                     self._shape = arg

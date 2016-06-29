@@ -16,6 +16,23 @@ def model():
     return pb.Model(graphene.monolayer())
 
 
+def test_api():
+    lattice = graphene.monolayer()
+    shape = pb.rectangle(1)
+    model = pb.Model(lattice, shape)
+
+    assert model.lattice is lattice
+    assert model.shape is shape
+
+    # empty sequences are no-ops
+    model.add(())
+    model.add([])
+
+    with pytest.raises(RuntimeError) as excinfo:
+        model.add(None)
+    assert "None" in str(excinfo.value)
+
+
 def test_report(model):
     report = model.report()
     assert "2 lattice sites" in report
