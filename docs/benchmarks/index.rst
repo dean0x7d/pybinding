@@ -46,3 +46,10 @@ Please note that at the time of writing Pybinding v0.8 does lack certain system 
 features compared to Kwant. Specifically, it is currently not possible to build heterostructures
 in Pybinding, but this will be resolved in the near future. New features will be added while
 maintaining good performance.
+
+At first glance it may seem like system build time is not really relevant because it is only done
+once and then multiple calculations can be applied to the constructed system. However, every time
+a parameter is changed (like some field strength) the Hamiltonian matrix will need to be rebuilt.
+Even though Kwant does take this into account and only does a partial rebuild, Pybinding is still
+much faster and this is very apparent in transport calculations which sweep over some model
+parameter. For more information and a direct comparison, see the :doc:`/advanced/kwant` section.

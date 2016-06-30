@@ -131,9 +131,9 @@ This is expected as lead 0 has armchair edges, while lead 1 has zigzag edges.
 Fields in the leads
 -------------------
 
-There is no need to specifically apply a field to a lead. Field (and modifier functions in general)
-are always applied globally to both the main system and all leads. For example, we can define
-a PN junction at :math:`x_0 = 0` and pass it to the model:
+There is no need to specifically apply a field to a lead. Fields (and all modifier functions) are
+always applied globally to both the main system and all leads. For example, we can define a PN
+junction at :math:`x_0 = 0` and pass it to the model:
 
 .. plot::
     :context: close-figs
@@ -183,10 +183,10 @@ The leads are identical, except for a :math:`\pm1` eV shift due to the PN juncti
 Solving a scattering problem
 ----------------------------
 
-At this time, pybinding doesn't have a builtin solver for scattering problems. However, they can
-be solved using the kwant package. An arbitrary model can be constructed in pybinding and then
-exported using the :meth:`.Model.tokwant` method. See the Kwant compatibility page for more
-details.
+At this time, Pybinding doesn't have a builtin solver for scattering problems. However, they can
+be solved using `Kwant <http://kwant-project.org/>`_. An arbitrary model can be constructed in
+Pybinding and then exported using the :meth:`.Model.tokwant` method. See the :doc:`/advanced/kwant`
+page for details.
 
 Alternatively, any user-defined solver and/or computation routine can be used. Pybinding generates
 the model information in a standard CSR matrix format. The required Hamiltonian matrices are

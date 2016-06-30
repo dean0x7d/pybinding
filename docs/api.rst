@@ -90,6 +90,8 @@ tight-binding model, such as various fields, defects or geometric deformations.
     hopping_generator
 
 
+.. _compute_api:
+
 Compute
 -------
 
