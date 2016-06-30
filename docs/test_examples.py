@@ -3,7 +3,7 @@ import pathlib
 
 
 docs = pathlib.Path(__file__).parent
-examples = [p for p in docs.glob('*/**/*.py') if "_ext" not in str(p)]
+examples = list(docs.glob("tutorial/**/*.py")) + list(docs.glob("examples/**/*.py"))
 assert len(examples) != 0
 
 

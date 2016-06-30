@@ -52,6 +52,7 @@ where you can also post any questions, comments or issues that you might have.
     :hidden:
 
     intro
+    benchmarks/index
     changelog
 
 
