@@ -73,6 +73,7 @@ where you can also post any questions, comments or issues that you might have.
 
     materials/index
     api
+    experimental/index
 
 * :ref:`genindex`
 

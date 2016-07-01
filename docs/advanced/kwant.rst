@@ -198,15 +198,15 @@ required to calculate the transmission:
 
     plt.figure(figsize=(3, 2.4))
     pb.pltutils.set_palette("Set1", start=3)
+    plt.plot(sizes, pb_times, label="pybinding", marker='o', markersize=5, lw=2, zorder=20)
     plt.plot(sizes, kwant_times, label="kwant", marker='o', markersize=5, lw=2, zorder=10)
-    plt.plot(sizes, pb_times, label="pybinding", marker='o', markersize=5, lw=2, zorder=10)
     plt.grid(True, which='major', color='gray', ls=':', alpha=0.5)
     plt.title("transmission calculation time")
     plt.xlabel("system size (nm)")
     plt.ylabel("time (seconds)")
     plt.xlim(0.8 * min(sizes), 1.05 * max(sizes))
     pb.pltutils.despine()
-    pb.pltutils.legend(loc='upper left')
+    pb.pltutils.legend(loc='upper left', reverse=True)
 
 For each system size, the transmission is calculated as a function of barrier height for 100
 values. Even though Pybinding reconstruct the entire model every time the barrier is changed, the
