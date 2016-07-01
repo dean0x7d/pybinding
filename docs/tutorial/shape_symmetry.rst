@@ -31,7 +31,7 @@ while the infinite length is achieved by imposing translational symmetry.
         pb.rectangle(1.2),  # nm
         pb.translational_symmetry(a1=True, a2=False)
     )
-    model.system.plot()
+    model.plot()
     model.lattice.plot_vectors(position=[-0.6, 0.3])  # nm
 
 As before, the central darker circles represent the main cell of the nanoribbon, the lighter
@@ -70,7 +70,7 @@ change, but we will still have a zigzag nanoribbon.
         pb.rectangle(1.2),  # nm
         pb.translational_symmetry(a1=False, a2=True)
     )
-    model.system.plot()
+    model.plot()
     model.lattice.plot_vectors(position=[0.6, -0.25])  # nm
 
 Because of the nature of graphene's 2-atom unit cell and lattice vector, only zigzag edges can
@@ -82,7 +82,7 @@ atoms.
     :alt: Graphene lattice with 4-atom unit cell
 
     model = pb.Model(graphene.monolayer_4atom())
-    model.system.plot()
+    model.plot()
     model.lattice.plot_vectors(position=[-0.13, -0.13])
 
 Note that the lattice vectors :math:`a_1` and :math:`a_2` are at a right angle, unlike the sharp
@@ -98,7 +98,7 @@ but the new geometry helps to create armchair edges.
         pb.primitive(a1=5),
         pb.translational_symmetry(a1=False, a2=True)
     )
-    model.system.plot()
+    model.plot()
     model.lattice.plot_vectors(position=[-0.59, -0.6])
 
 To calculate the band structure we must enter at least two points in k-space between which the
@@ -132,7 +132,7 @@ period length.
         pb.rectangle(x=2, y=2),
         pb.translational_symmetry(a1=1.2, a2=False)
     )
-    model.system.plot()
+    model.plot()
 
 The period length is given in nanometers. Note that our base shape is a square with 2 nm sides.
 The base shape forms the supercell of the periodic structure, but because the period length
@@ -149,7 +149,7 @@ will not be applied because the periodic boundary will not have anything to bind
         pb.rectangle(x=1.5, y=1.5),  # don't combine a small shape
         pb.translational_symmetry(a1=1.7, a2=False)  # with large period length
     )
-    model.system.plot()
+    model.plot()
 
 As you can see, making the period larger than the shape (1.7 nm vs. 1.5 nm), results in just the
 finite-sized part of the system. Don't do this.
@@ -174,7 +174,7 @@ structure.
         pb.translational_symmetry(a1=3.8, a2=False)
     )
     plt.figure(figsize=[8, 3])
-    model.system.plot()
+    model.plot()
 
 The period length of the translation in the :math:`a_1` direction is set to 3.8 nm. This ensures
 that the inner ring shape is preserved and the periodic boundaries are placed on the outer edges.

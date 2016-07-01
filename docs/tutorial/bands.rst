@@ -25,7 +25,7 @@ material repository.
     from pybinding.repository import graphene
 
     model = pb.Model(graphene.monolayer())
-    model.system.plot()
+    model.plot()
 
 The result is not very exciting: just a single graphene unit cell, with 2 atoms and a single
 hopping between them. The model does not assume translational symmetry or any other physical
@@ -65,7 +65,7 @@ Next, we include :func:`.translational_symmetry` to create an infinite graphene 
         graphene.monolayer(),
         pb.translational_symmetry()
     )
-    model.system.plot()
+    model.plot()
 
 The red lines indicate hoppings on periodic boundaries. The lighter colored circles represent the
 translations of the unit cell. The number of translations is infinite, but the plot only presents
@@ -148,18 +148,18 @@ section: :doc:`/tutorial/lattice`.
     :context: close-figs
 
     model = pb.Model(graphene.bilayer())
-    model.system.plot()
+    model.plot()
 
 Without :func:`.translational_symmetry`, the model is just a single unit cell with 4 atoms. Our
 bilayer lattice uses AB-stacking where a pair of atoms are positioned one on top of the another.
-By default, the :meth:`.System.plot` method shows the xy-plane, so one of the bottom atoms isn't
+By default, the :meth:`.Model.plot` method shows the xy-plane, so one of the bottom atoms isn't
 visible. We can pass an additional plot argument to see the yz-plane:
 
 .. plot::
     :context: close-figs
 
     model = pb.Model(graphene.bilayer())
-    model.system.plot(axes='yz')
+    model.plot(axes='yz')
 
 To compute the band structure, we'll need to include :func:`.translational_symmetry`.
 
@@ -167,7 +167,7 @@ To compute the band structure, we'll need to include :func:`.translational_symme
     :context: close-figs
 
     model = pb.Model(graphene.bilayer(), pb.translational_symmetry())
-    model.system.plot()
+    model.plot()
 
 As before, the red hoppings indicate periodic boundaries and the lighter colored circles represent
 the first of an infinite number of translation units. We'll compute the band structure for the same

@@ -77,7 +77,7 @@ calculation methods. We'll demonstrate these on a simple rectangular graphene sy
         graphene.monolayer(),
         pb.rectangle(x=3, y=1.2)
     )
-    model.system.plot()
+    model.plot()
 
 First, we'll take a look at the :meth:`~.Solver.calc_eigenvalues` method. While its job is
 essentially the same as the :attr:`~.Solver.eigenvalues` property, there is one key difference:

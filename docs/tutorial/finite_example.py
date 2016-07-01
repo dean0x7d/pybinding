@@ -21,7 +21,7 @@ model = pb.Model(
     ring(inner_radius=1.4, outer_radius=2)  # length in nanometers
 )
 
-model.system.plot()
+model.plot()
 plt.show()
 
 

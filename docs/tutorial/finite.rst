@@ -25,7 +25,7 @@ The simplest finite-sized system is just the unit cell of the crystal lattice.
     from pybinding.repository import graphene
 
     model = pb.Model(graphene.monolayer())
-    model.system.plot()
+    model.plot()
 
 The unit cell can also be replicated a number of times to create a bigger system.
 
@@ -36,7 +36,7 @@ The unit cell can also be replicated a number of times to create a bigger system
         graphene.monolayer(),
         pb.primitive(a1=5, a2=3)
     )
-    model.system.plot()
+    model.plot()
     model.lattice.plot_vectors(position=[0.6, -0.25])
 
 The :func:`.primitive` parameter tells the model to replicate the unit cell 5 times in the
@@ -72,7 +72,7 @@ counterclockwise order. When added to a :class:`.Model` the lattice will expand 
         graphene.monolayer(),
         rectangle(width=1.6, height=1.2)
     )
-    model.system.plot()
+    model.plot()
 
 To help visualize the shape and the expanded lattice, the polygon outline can be plotted on top
 of the system by calling both plot methods one after another.
@@ -88,7 +88,7 @@ of the system by calling both plot methods one after another.
         graphene.monolayer(),
         trapezoid(a=3.2, b=1.4, h=1.5)
     )
-    model.system.plot()
+    model.plot()
     model.shape.plot()
 
 In general, a shape does not depend on a specific material, so it can be easily reused. Here, we
@@ -103,7 +103,7 @@ the same `trapezoid` shape as defined earlier:
         graphene.bilayer(),
         trapezoid(a=3.2, b=1.4, h=1.5)
     )
-    model.system.plot()
+    model.plot()
 
 
 Freeform shape
@@ -125,7 +125,7 @@ defined by a `contains` function which determines if a lattice site is inside th
         graphene.monolayer(),
         circle(radius=2.5)
     )
-    model.system.plot()
+    model.plot()
 
 The `width` parameter of :class:`.FreeformShape` specifies the bounding box width. Only sites
 inside the bounding box will be considered for the shape. It's like carving a sculpture from a
@@ -157,7 +157,7 @@ will cause the lattice to fill in the shape.
         graphene.monolayer(),
         ring(inner_radius=1.4, outer_radius=2)
     )
-    model.system.plot()
+    model.plot()
     model.shape.plot()
 
 Note that the `ring` example uses `np.logical_and` instead of the plain `and` keyword. This is
@@ -205,7 +205,7 @@ case, we are interested only in the 20 lowest energy states.
 The convenient :meth:`.Solver.calc_spatial_ldos` method calculates the local density of states
 (LDOS) at every site for the given energy with a Gaussian broadening. The returned object is a
 :class:`.StructureMap` which holds the LDOS data. The :meth:`.StructureMap.plot` method will
-produce a figure similar to :meth:`.System.plot`, but with a colormap indicating the LDOS value
+produce a figure similar to :meth:`.Model.plot`, but with a colormap indicating the LDOS value
 at each lattice site. In addition, the `site_radius` argument specifies a range of sizes which
 will cause the low intensity sites to appear as small circles while high intensity ones become
 large. The states with a high LDOS are clearly visible on the outer and inner edges of the

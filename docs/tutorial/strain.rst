@@ -57,7 +57,7 @@ it with any existing shapes:
         pb.rectangle(2),
         vacancy(position=[0, 0], radius=0.1)
     )
-    model.system.plot()
+    model.plot()
 
 The resulting 2-atom vacancy is visible in the center of the system. The two vacant sites are
 completely removed from the final Hamiltonian matrix. If we were to inspect the number of rows
@@ -79,7 +79,7 @@ take advantage of this and create four different vacancies, with 1 to 4 missing 
         vacancy(position=[-0.45, -0.45], radius=0.15),
         vacancy(position=[ 0.50, -0.50], radius=0.2),
     )
-    model.system.plot()
+    model.plot()
 
 
 Layer defect
@@ -112,7 +112,7 @@ the bottom.
         pb.rectangle(2),
         scrape_top_layer(position=[0, 0], radius=0.5)
     )
-    model.system.plot()
+    model.plot()
 
 The central monolayer area is nicely visible in the figure. We can actually create the same
 structure in a different way: by considering the `z` position of the lattice site to distinguish
@@ -155,7 +155,7 @@ displacement caused by strain. Let's start with a simple triangular system:
         graphene.monolayer(),
         pb.regular_polygon(num_sides=3, radius=2, angle=pi),
     )
-    model.system.plot()
+    model.plot()
 
 We're going to apply strain in three directions, as if we are pulling outward on the vertices of
 the triangle. The displacement function for this kind of strain is given below. The `c` parameter
@@ -186,7 +186,7 @@ we still need it here because the modifier is expected to always return all thre
         pb.regular_polygon(num_sides=3, radius=2, angle=pi),
         triaxial_displacement(c=0.15)
     )
-    model.system.plot()
+    model.plot()
 
 As seen in the figure, the displacement has been applied to the lattice sites and the new position
 data is saved in the system. However, the hopping energies have not been modified yet. Every

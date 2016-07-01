@@ -10,7 +10,7 @@ model = pb.Model(
     graphene.monolayer(),
     pb.rectangle(x=2, y=1.2)
 )
-model.system.plot()
+model.plot()
 plt.show()
 
 
@@ -18,7 +18,7 @@ model = pb.Model(
     graphene.monolayer(),
     pb.regular_polygon(num_sides=6, radius=1.4, angle=pi/6)
 )
-model.system.plot()
+model.plot()
 plt.show()
 
 
@@ -27,5 +27,5 @@ model = pb.Model(
     graphene.bilayer(),
     graphene.hexagon_ac(side_width=1)
 )
-model.system.plot()
+model.plot()
 plt.show()

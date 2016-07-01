@@ -208,7 +208,7 @@ just remind ourselves what a pristine zigzag nanoribbon looks like:
         pb.rectangle(1.2),
         pb.translational_symmetry(a1=True, a2=False)
     )
-    model.system.plot()
+    model.plot()
 
 And let's see its band structure:
 

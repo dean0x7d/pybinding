@@ -24,7 +24,7 @@ model = pb.Model(
 )
 
 plt.figure(figsize=pb.pltutils.cm2inch(20, 7))
-model.system.plot()
+model.plot()
 plt.show()
 
 

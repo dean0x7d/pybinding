@@ -30,7 +30,7 @@ model = pb.Model(
     pb.regular_polygon(num_sides=3, radius=2, angle=pi),
     triaxial_strain(c=0.1)
 )
-model.system.plot()
+model.plot()
 plt.show()
 
 

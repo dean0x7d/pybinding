@@ -40,7 +40,7 @@ model = pb.Model(
     mass_term(delta=2.5),  # eV
     pn_juction(y0=0, v1=-2.5, v2=2.5)  # y0 in [nm] and v1, v2 in [eV]
 )
-model.system.plot()
+model.plot()
 plt.show()
 
 

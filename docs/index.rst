@@ -32,7 +32,7 @@ and then applies a custom asymmetric strain function:
         pb.regular_polygon(num_sides=3, radius=1.1),
         asymmetric_strain(c=0.42)
     )
-    model.system.plot()
+    model.plot()
 
 Within the Pybinding framework, tight-binding models are assembled from logical parts which
 can be mixed and matched in various ways. The package comes with a few predefined components:
