@@ -1,6 +1,6 @@
 """Package for numerical tight-binding calculations in solid state physics"""
 __title__ = "pybinding"
-__version__ = "0.8.0"
+__version__ = "0.8.1.dev"
 __summary__ = "Package for tight-binding calculations"
 __url__ = "https://github.com/dean0x7d/pybinding"
 
