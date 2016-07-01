@@ -207,7 +207,7 @@ def circle(radius, center=(0, 0, 0)):
     def contains(x, y, z):
         return np.sqrt(x**2 + y**2 + z**2) < radius
 
-    return FreeformShape(contains, [2 * radius] * 3, center)
+    return FreeformShape(contains, [2 * radius] * 2, center)
 
 
 def translational_symmetry(a1=True, a2=True, a3=True):

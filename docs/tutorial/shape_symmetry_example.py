@@ -40,7 +40,7 @@ solver.set_wave_vector(k=0)
 ldos = solver.calc_spatial_ldos(energy=0, broadening=0.01)  # LDOS around 0 eV
 
 plt.figure(figsize=pb.pltutils.cm2inch(20, 7))
-ldos.plot_structure(site_radius=(0.03, 0.12))
+ldos.plot(site_radius=(0.03, 0.12))
 pb.pltutils.colorbar(label="LDOS")
 plt.show()
 
@@ -49,6 +49,6 @@ solver.set_wave_vector(k=pi/a)
 ldos = solver.calc_spatial_ldos(energy=0, broadening=0.01)  # LDOS around 0 eV
 
 plt.figure(figsize=pb.pltutils.cm2inch(20, 7))
-ldos.plot_structure(site_radius=(0.03, 0.12))
+ldos.plot(site_radius=(0.03, 0.12))
 pb.pltutils.colorbar(label="LDOS")
 plt.show()

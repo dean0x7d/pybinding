@@ -199,16 +199,16 @@ case, we are interested only in the 20 lowest energy states.
     solver = pb.solver.arpack(model, k=20)  # only the 20 lowest eigenstates
 
     ldos = solver.calc_spatial_ldos(energy=0, broadening=0.05)  # eV
-    ldos.plot_structure(site_radius=(0.03, 0.12))
+    ldos.plot(site_radius=(0.03, 0.12))
     pb.pltutils.colorbar(label="LDOS")
 
 The convenient :meth:`.Solver.calc_spatial_ldos` method calculates the local density of states
 (LDOS) at every site for the given energy with a Gaussian broadening. The returned object is a
-:class:`.StructureMap` which holds the LDOS data. The :meth:`.StructureMap.plot_structure` method
-will produce a figure similar to :meth:`.System.plot`, but with a colormap indicating the LDOS
-value at each lattice site. In addition, the `site_radius` argument specifies a range of sizes
-which will cause the low intensity sites to appear as small circles while high intensity ones
-become large. The states with a high LDOS are clearly visible on the outer and inner edges of the
+:class:`.StructureMap` which holds the LDOS data. The :meth:`.StructureMap.plot` method will
+produce a figure similar to :meth:`.System.plot`, but with a colormap indicating the LDOS value
+at each lattice site. In addition, the `site_radius` argument specifies a range of sizes which
+will cause the low intensity sites to appear as small circles while high intensity ones become
+large. The states with a high LDOS are clearly visible on the outer and inner edges of the
 graphene ring structure.
 
 

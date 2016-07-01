@@ -274,13 +274,13 @@ potential (in eV) before and after the junction. Let's add it to the nanoribbon:
         pb.translational_symmetry(a1=True, a2=False),
         pn_junction(y0=0, v1=-5, v2=5)
     )
-    model.onsite_map.plot_structure(cmap="coolwarm", site_radius=0.04)
+    model.onsite_map.plot(cmap="coolwarm", site_radius=0.04)
     pb.pltutils.colorbar(label="U (eV)")
 
 Remember that the :attr:`.Model.onsite_map` property is a :class:`.StructureMap`, which has
 several plotting methods. A contour plot would not look at all good for such a small nanoribbon,
-but the method :meth:`.StructureMap.plot_structure` is perfect. As before, the ribbon has infinite
-length along the x-axis and the transparent sites represent the periodic boundaries. The PN junction
+but the method :meth:`.StructureMap.plot` is perfect. As before, the ribbon has infinite length
+along the x-axis and the transparent sites represent the periodic boundaries. The PN junction
 splits the ribbon in half along its main axis.
 
 We can compute and plot the band structure:
@@ -307,7 +307,7 @@ But lets take a different approach and create the well by composing two PN junct
         pn_junction(y0=-0.2, v1=5, v2=0),
         pn_junction(y0=0.2, v1=0, v2=5)
     )
-    model.onsite_map.plot_structure(cmap="coolwarm", site_radius=0.04)
+    model.onsite_map.plot(cmap="coolwarm", site_radius=0.04)
     pb.pltutils.colorbar(label="U (eV)")
 
 It works as expected. This can sometimes be a nice and quick way to extend a model.

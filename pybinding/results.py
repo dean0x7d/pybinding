@@ -402,7 +402,7 @@ class StructureMap(SpatialMap):
                               self.sublattices[idx], self._filter_csr_matrix(self.hoppings, idx),
                               [self._filter_boundary(b, idx) for b in self.boundaries])
 
-    def plot_structure(self, cmap='YlGnBu', site_radius=(0.03, 0.05), num_periods=1, **kwargs):
+    def plot(self, cmap='YlGnBu', site_radius=(0.03, 0.05), num_periods=1, **kwargs):
         """Plot the spatial structure with a colormap of :attr:`data` at the lattice sites
 
         Both the site size and color are used to display the data.

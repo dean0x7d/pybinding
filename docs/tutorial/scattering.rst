@@ -160,7 +160,7 @@ We can view the potential applied to the main system using the :attr:`.Model.ons
 .. plot::
    :context: close-figs
 
-    model.onsite_map.plot_structure(cmap="coolwarm", site_radius=0.06)
+    model.onsite_map.plot(cmap="coolwarm", site_radius=0.06)
     pb.pltutils.colorbar(label="U (eV)")
 
 The appropriate potential is automatically applied to the leads depending on their position, left

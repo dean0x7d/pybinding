@@ -215,6 +215,12 @@ extremely fast build actually enables Pybinding to outperform Kwant in the overa
 calculation. Even though Kwant only repopulates field data at each loop iteration, this still
 takes more time than it does for Pybinding to fully reconstruct the system.
 
+Note that this example presents a relatively simple system with a square barrier. This is done
+to keep the run time to only a few minutes, for convenience. Here, Pybinding speeds up the
+overall calculation by about 40%. For more realistic examples with larger scattering regions and
+complicated field functions with multiple parameters, a speedup of 3-4 times can be achieved by
+using Pybinding's model builder.
+
 
 Floating-point precision
 ------------------------

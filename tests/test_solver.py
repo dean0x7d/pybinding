@@ -65,7 +65,7 @@ def test_spatial_ldos(solver, baseline, plot_if_fails):
 
     expected = ldos_map[:]
     expected.data = baseline(ldos_map.data)
-    plot_if_fails(ldos_map, expected, 'plot_structure')
+    plot_if_fails(ldos_map, expected, 'plot')
 
     assert pytest.fuzzy_equal(ldos_map, expected, rtol=1e-2, atol=1e-5)
 

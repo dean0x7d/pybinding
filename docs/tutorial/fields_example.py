@@ -45,7 +45,7 @@ plt.show()
 
 
 # plot the potential: note that pn_junction cancels out delta on some sites
-model.onsite_map.plot_structure(cmap="coolwarm", site_radius=0.04)
+model.onsite_map.plot(cmap="coolwarm", site_radius=0.04)
 pb.pltutils.colorbar(label="U (eV)")
 plt.show()
 

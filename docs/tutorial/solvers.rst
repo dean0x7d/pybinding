@@ -117,7 +117,7 @@ numbers 9 and 10. We can take a look at the spatial map of state 9 using the
     :alt: Spatial map of the probability density of a graphene quantum dot
 
     probability_map = solver.calc_probability(9)
-    probability_map.plot_structure()
+    probability_map.plot()
 
 The result object in this case is a :class:`.StructureMap` with the probability density
 :math:`|\Psi(\vec{r})|^2` as its data attribute. As expected, the most prominent states are at
@@ -133,7 +133,7 @@ function with the specified broadening:
     :alt: Spatial LDOS of a graphene quantum dot
 
     ldos_map = solver.calc_spatial_ldos(energy=0, broadening=0.05)  # [eV]
-    ldos_map.plot_structure()
+    ldos_map.plot()
 
 The total density of states can be calculated with :meth:`~.Solver.calc_dos`:
 

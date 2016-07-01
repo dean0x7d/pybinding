@@ -1,10 +1,22 @@
-Spatial map
-===========
+Structure-mapped data
+=====================
 
-TODO
+As shown in the previous section, many classes in Pybinding use structure plots in a similar way.
+One class stands out here: :class:`.StructureMap` can be used to map any arbitrary data onto the
+spatial structure of a model. :class:`.StructureMap` objects are produced in two cases: as the
+results of various computation functions (e.g. :meth:`.Solver.calc_spatial_ldos`) or returned
+from :meth:`.Model.structure_map` which can map custom user data.
+
+.. only:: html
+
+    :nbexport:`Download this page as a Jupyter notebook <self>`
+
 
 Draw only certain hoppings
 --------------------------
+
+Just as before, we can draw only the desired hoppings. Note that `smap` is a :class:`.StructureMap`
+returned by :meth:`.Solver.calc_probability`.
 
 .. plot::
     :context: close-figs
@@ -20,12 +32,14 @@ Draw only certain hoppings
     plt.subplot(122, title="$|\Psi|^2$")
     solver = pb.solver.arpack(model, k=10)
     smap = solver.calc_probability(n=2)
-    smap.plot_structure(hopping={'draw_only': ['t']})
+    smap.plot(hopping={'draw_only': ['t']})
     pb.pltutils.colorbar()
 
 
-Slicing
--------
+Slicing a structure
+-------------------
+
+This follows a syntax similar to numpy fancy indexing where we can give a condition as the index.
 
 .. plot::
     :context: close-figs
@@ -33,11 +47,11 @@ Slicing
     plt.figure(figsize=(8, 3))
 
     plt.subplot(121, title="Original")
-    smap.plot_structure(hopping={'draw_only': ['t']})
+    smap.plot(hopping={'draw_only': ['t']})
 
     plt.subplot(122, title="Sliced: y > 0")
     upper = smap[smap.y > 0]
-    upper.plot_structure(hopping={'draw_only': ['t']})
+    upper.plot(hopping={'draw_only': ['t']})
 
 
 .. plot::
@@ -46,11 +60,11 @@ Slicing
     plt.figure(figsize=(8, 3))
 
     plt.subplot(121, title="Original: A and B")
-    smap.plot_structure(hopping={'draw_only': ['t', 't_nn']})
+    smap.plot(hopping={'draw_only': ['t', 't_nn']})
 
     plt.subplot(122, title="Sliced: A only")
     a_only = smap[smap.sublattices == 'A']
-    a_only.plot_structure(hopping={'draw_only': ['t', 't_nn']})
+    a_only.plot(hopping={'draw_only': ['t', 't_nn']})
 
 
 Mapping custom data
@@ -72,7 +86,7 @@ a 1D array with the same size as the total number of sites in the system.
     plt.subplot(122, title="Custom color data")
     custom_data = np.linspace(0, 2, num=model.system.num_sites)
     smap = model.structure_map(custom_data)
-    smap.plot_structure()
+    smap.plot()
     pb.pltutils.colorbar()
 
 
@@ -83,12 +97,12 @@ a 1D array with the same size as the total number of sites in the system.
 
     plt.subplot(121, title="sin(10x)")
     smap = model.structure_map(np.sin(10 * model.system.x))
-    smap.plot_structure()
+    smap.plot()
     pb.pltutils.colorbar()
 
     plt.subplot(122, title="cos(5y)")
     smap = model.structure_map(np.cos(5 * model.system.y))
-    smap.plot_structure()
+    smap.plot()
     pb.pltutils.colorbar()
 
 
