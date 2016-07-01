@@ -61,13 +61,32 @@ See the [documentation] for more details and a guide to get started.
 * Green's function: fast kernel polynomial method implementation
 * Eigensolvers: standard dense and sparse solvers (always available)
   and the [FEAST] solver (only available when compiled with Intel's MKL)
+* Transport: scattering systems with semi-infinite leads can be constructed in Pybinding and then
+  solved using the [Kwant compatibility] layer.
 * Model and result objects have builtin plotting functions for easy visualization
 
 #### Planned work
 
-* Support for transport calculations
 * Improvements for 3D systems (mostly related to plotting functions)
 * Multiple orbitals and spins are already supported, but could use a nicer interface
+
+
+## Benchmarks
+
+One of the main features of Pybinding is an easy-to-use and fast model builder. This can be a
+demanding task for large or complicated systems. Great care was taken to make this process fast.
+
+The following figures compare the performance of Pybinding with the [Kwant] package. They present
+the time and memory required to build a Hamiltonian matrix which describes a tight-binding system.
+Pybinding features good performance and a low memory footprint by using contiguous data structures
+and vectorized operations.
+
+<p align="center">
+  <img src="/docs/benchmarks/system_build.png?raw=true" alt="Tight-binding model build benchmark"/>
+</p>
+
+See the [benchmarks] section of the documentation for details on the testbed hardware and software,
+as well as the source code which can be used to reproduce the results.
 
 
 ## Questions?
@@ -79,7 +98,10 @@ You can also open an issue at the [tracker].
 [documentation]: http://docs.pybinding.site/
 [install instructions]: http://docs.pybinding.site/page/install/index.html
 [Python]: https://www.python.org/
-[SciPy]: http://www.scipy.org/>
+[SciPy]: http://www.scipy.org/
 [FEAST]: http://www.ecs.umass.edu/~polizzi/feast/index.htm
+[Kwant compatibility]: http://docs.pybinding.site/page/advanced/kwant.html
+[Kwant]: http://kwant-project.org/
+[benchmarks]: http://docs.pybinding.site/page/benchmarks/index.html
 [chat room on Gitter]: https://gitter.im/dean0x7d/pybinding
 [tracker]: https://github.com/dean0x7d/pybinding/issues
