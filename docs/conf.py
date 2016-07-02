@@ -63,7 +63,7 @@ nbexport_pre_code = plot_pre_code + """
 pb.pltutils.use_style()
 %matplotlib inline
 """
-nbexport_baseurl = "http://docs.pybinding.site/en/latest/"
+nbexport_baseurl = "http://docs.pybinding.site/page/"
 nbexport_execute = False
 
 # Add any paths that contain templates here, relative to this directory.
