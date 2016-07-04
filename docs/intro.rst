@@ -81,3 +81,26 @@ properties. To that end, there are the following possibilities:
 After the main computation is complete, various utility functions are available for post-processing
 the raw result data. The included plotting functions are tailored for tight-binding problems to
 help visualize the model structure and to make sense of the results.
+
+
+Citing
+------
+
+Pybinding is free to use under the simple conditions of the BSD open source license (included
+below). If you wish to use results produced with this package in a scientific publication, please
+just mention the package name in the text and cite the Zenodo DOI of this project:
+
+.. raw:: html
+
+    <a href="https://zenodo.org/badge/latestdoi/20541/dean0x7d/pybinding">
+        <img src="https://zenodo.org/badge/20541/dean0x7d/pybinding.svg" alt="Zenodo DOI">
+    </a>
+
+You'll find a *"Cite as"* section in the bottom right of the Zenodo page. You can select a citation
+style from the dropdown menu or export the data in BibTeX and similar formats.
+
+
+BSD License
+-----------
+
+.. include:: ../license.md

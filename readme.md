@@ -1,10 +1,11 @@
 # pybinding
 
-[![DOI](https://zenodo.org/badge/20541/dean0x7d/pybinding.svg)](https://zenodo.org/badge/latestdoi/20541/dean0x7d/pybinding)
-[![Gitter](https://badges.gitter.im/dean0x7d/pybinding.svg)](https://gitter.im/dean0x7d/pybinding?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge)
-[![Documentation Status](https://readthedocs.org/projects/pybinding/badge/?version=latest)](http://docs.pybinding.site/)
 [![Build Status](https://travis-ci.org/dean0x7d/pybinding.svg?branch=master)](https://travis-ci.org/dean0x7d/pybinding)
 [![Build status](https://ci.appveyor.com/api/projects/status/vd84e6gxixsu9l81/branch/master?svg=true)](https://ci.appveyor.com/project/dean0x7d/pybinding)
+[![Documentation Status](https://readthedocs.org/projects/pybinding/badge/?version=stable)](http://docs.pybinding.site/)
+[![Gitter](https://img.shields.io/gitter/room/dean0x7d/pybinding.svg?maxAge=2592000)](https://gitter.im/dean0x7d/pybinding)
+[![License](https://img.shields.io/badge/license-BSD-blue.svg?maxAge=2592000)](license.md)
+[![DOI](https://zenodo.org/badge/20541/dean0x7d/pybinding.svg)](https://zenodo.org/badge/latestdoi/20541/dean0x7d/pybinding)
 
 Pybinding is a Python package for numerical tight-binding calculations in solid state physics.
 The main features include:
@@ -63,7 +64,7 @@ See the [documentation] for more details and a guide to get started.
 * Eigensolvers: standard dense and sparse solvers (always available)
   and the [FEAST] solver (only available when compiled with Intel's MKL)
 * Transport: scattering systems with semi-infinite leads can be constructed in Pybinding and then
-  solved using the [Kwant compatibility] layer.
+  solved using the [Kwant compatibility] layer
 * Model and result objects have builtin plotting functions for easy visualization
 
 #### Planned work
@@ -88,6 +89,17 @@ and vectorized operations.
 
 See the [benchmarks] section of the documentation for details on the testbed hardware and software,
 as well as the source code which can be used to reproduce the results.
+
+## Citing
+
+Pybinding is free to use under the simple conditions of the [BSD open source license](license.md).
+If you wish to use results produced with this package in a scientific publication, please just
+mention the package name in the text and cite the Zenodo DOI of this project:
+
+[![DOI](https://zenodo.org/badge/20541/dean0x7d/pybinding.svg)](https://zenodo.org/badge/latestdoi/20541/dean0x7d/pybinding)
+
+You'll find a *"Cite as"* section in the bottom right of the Zenodo page. You can select a citation
+style from the dropdown menu or export the data in BibTeX and similar formats.
 
 
 ## Questions?

@@ -48,10 +48,15 @@ where you can also post any questions, comments or issues that you might have.
 
 
 .. toctree::
-    :titlesonly:
     :hidden:
+    :maxdepth: 2
 
     intro
+
+.. toctree::
+    :hidden:
+    :titlesonly:
+
     benchmarks/index
     changelog
 
