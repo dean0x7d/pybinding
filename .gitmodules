@@ -2,3 +2,6 @@
 	path = cppwrapper/deps/boost_python
 	url = https://github.com/dean0x7d/python.git
 	branch = boostless
+[submodule "cppmodule/deps/pybind11"]
+	path = cppmodule/deps/pybind11
+	url = https://github.com/pybind/pybind11

@@ -83,6 +83,7 @@ add_library(pybinding_cppcore
 )
 
 target_include_directories(pybinding_cppcore PUBLIC include)
+set_target_properties(pybinding_cppcore PROPERTIES POSITION_INDEPENDENT_CODE TRUE)
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/cmake")
 include(download)

@@ -4,7 +4,6 @@ import numpy as np
 import pybinding as pb
 from pybinding.repository import graphene
 
-
 solvers = ['arpack']
 if hasattr(pb._cpp, 'FEAST'):
     solvers.append('feast')
