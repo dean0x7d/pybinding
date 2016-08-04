@@ -307,7 +307,6 @@ class SpatialMap:
         ax.set_aspect('equal')
         ax.set_xlabel('x (nm)')
         ax.set_ylabel('y (nm)')
-        pltutils.despine(trim=True)
 
     def plot_pcolor(self, **kwargs):
         """Color plot of the xy plane
@@ -814,9 +813,6 @@ class Sweep:
         plt.title(self.labels['title'])
         plt.xlabel(self.labels['x'])
         plt.ylabel(self.labels['y'])
-
-        plt.gca().get_xaxis().tick_bottom()
-        plt.gca().get_yaxis().tick_left()
 
         return mesh
 
