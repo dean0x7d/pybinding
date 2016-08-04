@@ -1,1 +1,1 @@
-Support scripts for Travis CI and Read the Docs.
+Support scripts for Read the Docs.

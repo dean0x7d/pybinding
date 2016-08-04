@@ -1,5 +1,8 @@
 version: '{build}'
 os: Visual Studio 2015
+platform:
+- x86
+- x64
 environment:
   PB_WERROR: ON
   PB_TESTS: ON
@@ -9,25 +12,26 @@ environment:
   PYPI_PASS:
     secure: gqNQRQIXkXmSul5JkOKj4owHUprr3Q4gJ6U6Mtlgm4M=
   matrix:
-  - PATH: C:\Miniconda35-x64\Scripts\;%PATH%
-  - PATH: C:\Miniconda35\Scripts\;%PATH%
+  - CONDA: 35
 install:
-  - cmd: git submodule update -q --init --recursive
-  - cmd: conda update -y -q conda
-  - cmd: conda create -y -q -n pb35 python=3.5 numpy scipy=0.17.0=np111py35_1 matplotlib
-  - cmd: activate pb35
-  - cmd: pip install -U -q wheel
-  - cmd: pip install -q twine
+- git submodule update -q --init --recursive
+- ps: |
+    if ($env:PLATFORM -eq "x64") { $env:CONDA = "$env:CONDA-x64" }
+    $env:PATH = "C:\Miniconda$env:CONDA\;C:\Miniconda$env:CONDA\Scripts\;$env:PATH"
+    conda update -y -q conda
+    conda install -y -q numpy scipy matplotlib
 build_script:
-  - cmd: python setup.py build_ext
-  - cmd: python setup.py install > nul
-  - cmd: python -m pybinding.utils.cpuinfo
+- python setup.py build_ext
+- python setup.py install > nul
+- python -m pybinding.utils.cpuinfo
 test_script:
-  - cmd: .\build\cmake\cppcore\tests\Release\catch
-  - cmd: py.test
+- .\build\cmake\cppcore\tests\Release\catch
+- py.test
 deploy_script:
-  - ps: >-
-      if ($env:APPVEYOR_REPO_TAG -eq "true") {
-        python setup.py bdist_wheel > $null
-        twine upload -u $env:PYPI_USER -p $env:PYPI_PASS --skip-existing dist\*.whl
-      }
+- ps: |
+    pip install -U -q wheel
+    pip install -q twine
+    if ($env:APPVEYOR_REPO_TAG -eq "true") {
+      python setup.py bdist_wheel > $null
+      twine upload -u $env:PYPI_USER -p $env:PYPI_PASS --skip-existing dist\*.whl
+    }
