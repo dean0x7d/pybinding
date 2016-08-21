@@ -21,6 +21,16 @@ matrix:
   - os: osx
     osx_image: xcode7.3
     env: PYTHON=3.5
+  - os: linux
+    compiler: gcc-4.8
+    env: PYTHON=3.5 SDIST
+    install:
+    - python setup.py sdist && cd dist
+    - PB_TESTS=OFF pip install *.tar.gz
+    script:
+    - python -c "import pybinding as pb; exit(pb.tests())"
+    cache: false
+    deploy: false
 addons:
   apt:
     sources:
@@ -53,7 +63,6 @@ before_install:
 install:
 - python setup.py build_ext
 - python setup.py install
-before_script:
 - ccache -s
 script:
 - catch

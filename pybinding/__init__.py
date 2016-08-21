@@ -38,6 +38,7 @@ def tests(options=None, plugins=None):
     """
     import pytest
     import pathlib
+    import matplotlib as mpl
     from .utils.misc import cd
 
     args = options or []
@@ -48,13 +49,10 @@ def tests(options=None, plugins=None):
     if (module_path / 'tests').exists():
         # tests are inside installed package -> use read-only mode
         args.append('--failpath=' + os.getcwd() + '/failed')
-        with cd(module_path):
+        with cd(module_path), pltutils.backend('Agg'):
             args += ['-c', str(module_path / 'tests/local.cfg'), str(module_path)]
-            pytest.main(args, plugins)
+            return pytest.main(args, plugins)
     else:
         # tests are in dev environment -> use development mode
-        import matplotlib as mpl
-        import matplotlib.pyplot as plt
-
         with cd(module_path.parent), pltutils.backend('Agg'):
-            pytest.main(args, plugins)
+            return pytest.main(args, plugins)
