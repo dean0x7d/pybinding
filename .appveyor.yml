@@ -4,9 +4,6 @@ platform:
 - x86
 - x64
 environment:
-  PB_WERROR: ON
-  PB_TESTS: ON
-  PB_NATIVE_SIMD: OFF
   PYPI_USER:
     secure: VNmO0xqOUrgWa0uT/HO/mg==
   PYPI_PASS:
@@ -16,22 +13,27 @@ environment:
 install:
 - git submodule update -q --init --recursive
 - ps: |
-    if ($env:PLATFORM -eq "x64") { $env:CONDA = "$env:CONDA-x64" }
+    if ($env:PLATFORM -eq "x64") {
+      $env:CMAKE_ARCH = "x64"
+      $env:CONDA = "$env:CONDA-x64"
+    }
+    $env:AppVeyorLogger = "C:\Program Files\AppVeyor\BuildAgent\Appveyor.MSBuildLogger.dll"
     $env:PATH = "C:\Miniconda$env:CONDA\;C:\Miniconda$env:CONDA\Scripts\;$env:PATH"
     conda update -y -q conda
     conda install -y -q numpy scipy matplotlib
+    pip install --disable-pip-version-check pytest py-cpuinfo
 build_script:
-- python setup.py build_ext
-- python setup.py install > nul
-- python -m pybinding.utils.cpuinfo
+- mkdir build && cd build && cmake -A "%CMAKE_ARCH%" -DPB_WERROR=ON -DPB_NATIVE_SIMD=OFF ..
+- cmake --build . --config Release -- /m /v:m /logger:"%AppVeyorLogger%"
 test_script:
-- .\build\cmake\cppcore\tests\Release\catch
-- py.test
+- cmake --build . --config Release --target tests -- /v:m
 deploy_script:
 - ps: |
     pip install -U -q wheel
     pip install -q twine
+    cd $env:APPVEYOR_BUILD_FOLDER
     if ($env:APPVEYOR_REPO_TAG -eq "true") {
-      python setup.py bdist_wheel > $null
+      $env:PB_NATIVE_SIMD = "OFF"
+      python setup.py bdist_wheel
       twine upload -u $env:PYPI_USER -p $env:PYPI_PASS --skip-existing dist\*.whl
     }

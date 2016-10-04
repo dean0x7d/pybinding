@@ -13,4 +13,4 @@ add_executable(catch
 target_include_directories(catch PRIVATE ${CATCH_INCLUDE_DIR})
 target_link_libraries(catch PRIVATE pybinding_cppcore)
 
-add_custom_target(cpptest COMMAND $<TARGET_FILE:catch> \${ARGS})
+add_custom_target(cpptest COMMAND $<TARGET_FILE:catch>)

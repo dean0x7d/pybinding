@@ -1,10 +1,6 @@
 language: cpp
 env:
-  global:
-  - PB_WERROR=ON  # make warnings into errors
-  - PB_TESTS=ON  # generate cpp tests
-  - PB_NATIVE_SIMD=OFF  # only generate generic SIMD for deployment
-  - MAKEFLAGS=-j2
+  global: # PYPI USER and PASS
   - secure: GmqIQsQ0VZT8AtmvrGSeIfr8LH/F1XlWAXkwYT4Duq4OrlOObcrdOnCie8CQm6NxLnUfZpVZQugEDrN9vX7/WTxx+SrHt5i/LGH7ZxYN6ihFujO/xgKkRmoXpqaMqfVtwEygKPeFRWvfpYorGeh+Zpwv0Mgc0iTBo2oQUec1QDk1+uebZISTYN4RhFJ8idmjIcO/9JwiNzWBwsKPjfgKXQmFGyofBtKOy5C9UWTuvwKqWeroUD7MruvWJb109aHcuCSuZfIO6MR7soY4Mfe4JyNyLRF6rwFpVOJQPR7fA0ACJy0jWllI5NcLxa38/oHL/M1xuc4gHaD9wzvbQdwK2h8Qc9nV/qv8DdzcLpEldFFrbgpPo+w56SOypNlBlDWQasXMODSo2iGmsusN8QOcSrkdaXFoNLpDhbxMujqozakdXWWtmGer+rhDuXg7tm2+WLnU2AUFYoLhwSZzSo1+TtblSC/Y1XvaP5HgimCWiLh8JPlptv6xRmEoGEhM9VdWquOmxnlcNRr6Bplti+f1pSEqYtqrihyNXC7KezFHQAP17A9fsw9lr+C4Ilp2R1Aob9DYLQ6xKbwZi8lZjqEPSGJO/xu/6OSVsqJ4k9GpmjZFSh36/0gZEwQHbwx/5RYm/U43zO/pXSKxR6OxbAIQrCke24MSf51317xAKlEtP3g=
   - secure: a5KJzF5EB/kDXa0j0HM9wXDgUttDHMv1KPRsMKueCeXckGcnHkQ9Jx6Rtllhmk/8ZPJOA8gDqA5C9RVeP0GBmtq8xsS6/axKQQTnbs0IZp2SF+j2KhgH/1tV9y/npK3CWkZ93pQGP/ogBxrf7PBLU9ryEsSc3YD1jP0vQRynchUXN9rRbY7TffkLkDilpk8UsnKyeyWLKhtqTjrSS/+TAZ2k4gsykbAKOk+5V7kcvOnl5yHRZqPmVoeGf/yLyrGg1Pqh5L0XKXKsOZdmaZCTcIcPfksgNsIvUBlPnmo18ObyuuRXV01IbnHrzXqO/UKxmC/A4XRBdoZVm4cOLQy43b9RS/r/5d5qGd0KIoTwWZDQbnjZUS+CT0EDFcE/9JejcOMEHmLXrtsXUecWNeVhRhV97vSRi0F8axQnb7aTghRjVeftSJFLDHkMHj9ISsJcpqfkl5TmOslDPnwK+5uEHgRG2forqb/XC1iKUF6/PxKjwhS7vd3uwNSnb4RFe8bZWAeKsLIfSA1BnnKAFaBp1OW6K93zMySZyQkXXsMs5j1YctRdaj2HkZpniqGj7+6IwLlvadW79ZQL3s7fCQaH4KV/j57HMII8RT8rhsVBZoMcRc6M0/VQruHLMHFZGNk/lwsX5ZxiK5RysVNn4AYfrWSse933MuojlUUpergfC/g=
 matrix:
@@ -26,11 +22,10 @@ matrix:
     env: PYTHON=3.5 SDIST
     install:
     - python setup.py sdist && cd dist
-    - PB_TESTS=OFF pip install *.tar.gz
+    - PB_WERROR=ON pip install *.tar.gz
     script:
     - python -c "import pybinding as pb; exit(pb.tests())"
     cache: false
-    deploy: false
 addons:
   apt:
     sources:
@@ -47,7 +42,6 @@ before_install:
     export CXX=clang++ CC=clang;
     brew install ccache;
   fi
-  export PATH="$TRAVIS_BUILD_DIR/build/cmake/cppcore/tests/:$PATH"
 - |
   echo "install miniconda"
   if [ "$TRAVIS_OS_NAME" = "linux" ]; then OS=Linux-x86_64; else OS=MacOSX-x86_64; fi
@@ -60,13 +54,13 @@ before_install:
   conda create -q -n test-env python=$PYTHON nomkl numpy scipy matplotlib cmake
   source activate test-env
   conda info -a
+  pip install pytest py-cpuinfo
 install:
-- python setup.py build_ext
-- python setup.py install
+- mkdir build && cd build && cmake -DPB_WERROR=ON -DPB_NATIVE_SIMD=OFF ..
+- make -j2
 - ccache -s
 script:
-- catch
-- py.test
+- make tests
 before_deploy:
 - |
   pip install -U wheel
@@ -75,11 +69,11 @@ deploy:
   provider: script
   script:
   - |
-    if [ "$TRAVIS_OS_NAME" = "linux" ] && [ "$PYTHON" = "3.5" ]; then
-      python setup.py sdist # deploy only one sdist: linux with python3.5
+    cd $TRAVIS_BUILD_DIR
+    if [ "$TRAVIS_OS_NAME" = "linux" ] && [ ${SDIST+x} ]; then
       twine upload -u $PYPI_USER -p $PYPI_PASS --skip-existing dist/*.tar.gz
     elif [ "$TRAVIS_OS_NAME" = "osx" ]; then
-      python setup.py bdist_wheel --plat-name macosx-10.9-x86_64
+      PB_NATIVE_SIMD=OFF python setup.py bdist_wheel --plat-name macosx-10.9-x86_64
       twine upload -u $PYPI_USER -p $PYPI_PASS --skip-existing dist/*.whl
     fi
   skip_cleanup: true
