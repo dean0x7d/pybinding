@@ -19,8 +19,7 @@ void wrap_lattice(py::module& m) {
             new (&h) Hopping();
             h = {t[0].cast<decltype(h.relative_index)>(), t[1].cast<decltype(h.to_sublattice)>(),
                  t[2].cast<decltype(h.id)>(), t[3].cast<decltype(h.is_conjugate)>()};
-        })
-    ;
+        });
 
     py::class_<Sublattice>(m, "Sublattice")
         .def_readonly("offset", &Sublattice::offset, "Relative to global lattice offset")
@@ -35,53 +34,31 @@ void wrap_lattice(py::module& m) {
             new (&s) Sublattice();
             s = {t[0].cast<decltype(s.offset)>(), t[1].cast<decltype(s.onsite)>(),
                  t[2].cast<decltype(s.alias)>(), t[3].cast<decltype(s.hoppings)>()};
-        })
-    ;
+        });
 
     py::class_<Lattice>(m, "Lattice")
         .def(py::init<Cartesian, Cartesian, Cartesian>(),
              "a1"_a, "a2"_a=Cartesian{0, 0, 0}, "a3"_a=Cartesian{0, 0, 0})
-        .def("_add_sublattice", &Lattice::add_sublattice,
+        .def("add_sublattice", &Lattice::add_sublattice,
              "name"_a, "offset"_a, "onsite_potential"_a, "alias"_a)
-        .def("_add_hopping", &Lattice::add_hopping,
+        .def("add_hopping", &Lattice::add_hopping,
              "relative_index"_a, "from_sublattice"_a, "to_sublattice"_a, "energy"_a)
-        .def("_register_hopping_energy", &Lattice::register_hopping_energy, "name"_a, "energy"_a)
-        .def("_add_registered_hopping", &Lattice::add_registered_hopping,
+        .def("register_hopping_energy", &Lattice::register_hopping_energy, "name"_a, "energy"_a)
+        .def("add_registered_hopping", &Lattice::add_registered_hopping,
              "relative_index"_a, "from_sublattice"_a, "to_sublattice"_a, "id"_a)
-        .def_readonly("vectors", &Lattice::vectors, "Primitive lattice vectors")
-        .def_readonly("sublattices", &Lattice::sublattices, "List of :class:`~_pybinding.Sublattice`")
-        .def_readonly("hopping_energies", &Lattice::hopping_energies,
-                      "Unique energies indexed by hopping IDs")
-        .def_readonly("sub_name_map", &Lattice::sub_name_map, "")
-        .def_readonly("hop_name_map", &Lattice::hop_name_map, "")
-        .def_property("offset", [](Lattice const& l) { return l.offset; }, &Lattice::set_offset, R"(
-            Global lattice offset: sublattice offsets are defined relative to this
-    
-            It must be within half the length of a primitive lattice vector.)")
-        .def_readwrite("min_neighbors", &Lattice::min_neighbors, R"(
-            Minimum number of neighbours required at each lattice site
-    
-            When constructing a finite-sized system, lattice sites with less neighbors
-            than this minimum will be considered as "dangling" and they will be removed.)")
+        .def_readonly("vectors", &Lattice::vectors)
+        .def_readonly("sublattices", &Lattice::sublattices)
+        .def_readonly("hopping_energies", &Lattice::hopping_energies)
+        .def_readonly("sub_name_map", &Lattice::sub_name_map)
+        .def_readonly("hop_name_map", &Lattice::hop_name_map)
+        .def_property("offset", [](Lattice const& l) { return l.offset; }, &Lattice::set_offset)
+        .def_readwrite("min_neighbors", &Lattice::min_neighbors)
         .def("__getstate__", [](Lattice const& l) {
-            return py::make_tuple(l.vectors,
-                                  l.sublattices, l.hopping_energies,
-                                  l.sub_name_map, l.hop_name_map,
-                                  l.min_neighbors, l.offset);
+            return py::make_tuple(l.vectors, l.sublattices, l.hopping_energies, l.sub_name_map,
+                                  l.hop_name_map, l.offset, l.min_neighbors);
         })
         .def("__setstate__", [](Lattice& l, py::tuple t) {
-            auto const vectors = t[0].cast<py::list>();
-            if (py::len(vectors) == 1) {
-                new (&l) Lattice(vectors[0].cast<Cartesian>());
-            } else if (py::len(vectors) == 2) {
-                new (&l) Lattice(vectors[0].cast<Cartesian>(),
-                                 vectors[1].cast<Cartesian>());
-            } else {
-                new (&l) Lattice(vectors[0].cast<Cartesian>(),
-                                 vectors[1].cast<Cartesian>(),
-                                 vectors[2].cast<Cartesian>());
-            }
-            
+            new (&l) Lattice(t[0].cast<decltype(l.vectors)>());
             l.sublattices = t[1].cast<decltype(l.sublattices)>();
             l.has_onsite_energy = std::any_of(l.sublattices.begin(), l.sublattices.end(),
                                               [](Sublattice const& sub) { return sub.onsite != 0; });
@@ -90,8 +67,7 @@ void wrap_lattice(py::module& m) {
                                                 [](std::complex<double> e) { return e.imag() != .0; });
             l.sub_name_map = t[3].cast<decltype(l.sub_name_map)>();
             l.hop_name_map = t[4].cast<decltype(l.hop_name_map)>();
-            l.min_neighbors = t[5].cast<decltype(l.min_neighbors)>();
-            l.offset = t[6].cast<decltype(l.offset)>();
-        })
-    ;
+            l.offset = t[5].cast<decltype(l.offset)>();
+            l.min_neighbors = t[6].cast<decltype(l.min_neighbors)>();
+        });
 }

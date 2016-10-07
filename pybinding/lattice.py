@@ -1,6 +1,6 @@
 """Crystal lattice specification"""
 import itertools
-from copy import copy
+from copy import deepcopy
 from math import pi, atan2, sqrt
 
 import numpy as np
@@ -9,13 +9,11 @@ import matplotlib.pyplot as plt
 from . import _cpp
 from . import pltutils
 from .utils import x_pi, with_defaults
-from .support.pickle import pickleable
 
 __all__ = ['Lattice']
 
 
-@pickleable(version=1)
-class Lattice(_cpp.Lattice):
+class Lattice:
     """Unit cell of a Bravais lattice, the basic building block of a tight-binding model
 
     This class describes the primitive vectors, positions of sublattice sites and hopping
@@ -34,32 +32,76 @@ class Lattice(_cpp.Lattice):
     """
     def __init__(self, a1, a2=None, a3=None):
         vectors = (np.atleast_1d(v) for v in (a1, a2, a3) if v is not None)
-        super().__init__(*vectors)
+        self.impl = _cpp.Lattice(*vectors)
+
+    @classmethod
+    def from_impl(cls, impl: _cpp.Lattice) -> 'Lattice':
+        lat = cls.__new__(cls)
+        lat.impl = impl
+        return lat
+
+    @property
+    def ndim(self):
+        """The dimensionality of the lattice: number of primitive vectors"""
+        return len(self.vectors)
+
+    @property
+    def vectors(self):
+        """Primitive lattice vectors"""
+        return self.impl.vectors
+
+    @property
+    def sublattices(self):
+        """List of :class:`~_pybinding.Sublattice`"""
+        return self.impl.sublattices
+
+    @property
+    def hopping_energies(self):
+        """Unique energies indexed by hopping IDs"""
+        return self.impl.hopping_energies
+
+    @property
+    def offset(self):
+        """Global lattice offset: sublattice offsets are defined relative to this
+            
+        It must be within half the length of a primitive lattice vector."""
+        return self.impl.offset
+
+    @offset.setter
+    def offset(self, value):
+        self.impl.offset = value
+    
+    @property
+    def min_neighbors(self):
+        """Minimum number of neighbours required at each lattice site
+
+        When constructing a finite-sized system, lattice sites with less neighbors
+        than this minimum will be considered as "dangling" and they will be removed."""
+        return self.impl.min_neighbors
+
+    @min_neighbors.setter
+    def min_neighbors(self, value):
+        self.impl.min_neighbors = value
 
     def __getitem__(self, name):
         """Get sublattice ID from its user-friendly `name`"""
         if isinstance(name, str):
             try:
-                return self.sub_name_map[name]
+                return self.impl.sub_name_map[name]
             except KeyError:
                 raise KeyError("There is no sublattice named '{}'".format(name))
         else:  # an ID was given instead of a name, verify it
             sub_id = name
-            if sub_id not in self.sub_name_map.values():
+            if sub_id not in self.impl.sub_name_map.values():
                 raise KeyError("There is no sublattice with ID = {}".format(sub_id))
             return sub_id
 
     def __call__(self, name):
         """Get the hopping ID from its user-friendly `name`"""
         try:
-            return self.hop_name_map[name]
+            return self.impl.hop_name_map[name]
         except KeyError:
             raise KeyError("There is no hopping named '{}'".format(name))
-
-    @property
-    def ndim(self):
-        """The dimensionality of the lattice: number of primitive vectors"""
-        return len(self.vectors)
 
     def register_hopping_energies(self, mapping):
         """Register a mapping of user-friendly names to hopping energies
@@ -71,7 +113,7 @@ class Lattice(_cpp.Lattice):
             of the hopping energy.
         """
         for name, energy in sorted(mapping.items(), key=lambda item: item[0]):
-            self._register_hopping_energy(name, energy)
+            self.impl.register_hopping_energy(name, energy)
 
     def add_one_sublattice(self, name, offset, onsite_energy=0.0, alias=None):
         """Add a new sublattice
@@ -93,7 +135,7 @@ class Lattice(_cpp.Lattice):
         """
         offset = np.atleast_1d(offset)
         alias = self.__getitem__(alias) if alias is not None else -1
-        self._add_sublattice(name, offset, onsite_energy, alias)
+        self.impl.add_sublattice(name, offset, onsite_energy, alias)
 
     def add_sublattices(self, *sublattices):
         """Add multiple new sublattices
@@ -146,9 +188,9 @@ class Lattice(_cpp.Lattice):
         from_sub, to_sub = map(self.__getitem__, (from_sublattice, to_sublattice))
         if isinstance(hop_name_or_energy, str):
             hop_id = self.__call__(hop_name_or_energy)
-            self._add_registered_hopping(relative_index, from_sub, to_sub, hop_id)
+            self.impl.add_registered_hopping(relative_index, from_sub, to_sub, hop_id)
         else:
-            self._add_hopping(relative_index, from_sub, to_sub, hop_name_or_energy)
+            self.impl.add_hopping(relative_index, from_sub, to_sub, hop_name_or_energy)
 
     def add_hoppings(self, *hoppings):
         """Add multiple new hoppings
@@ -211,7 +253,7 @@ class Lattice(_cpp.Lattice):
         -------
         :class:`Lattice`
         """
-        cp = copy(self)
+        cp = deepcopy(self)
         cp.offset = position
         return cp
 
@@ -227,7 +269,7 @@ class Lattice(_cpp.Lattice):
         -------
         :class:`Lattice`
         """
-        cp = copy(self)
+        cp = deepcopy(self)
         cp.min_neighbors = number
         return cp
 
@@ -391,7 +433,7 @@ class Lattice(_cpp.Lattice):
             self.plot_vectors(sub_center if vector_position == 'center' else vector_position)
 
         # annotate sublattice names
-        sub_names = {sub_id: name for name, sub_id in self.sub_name_map.items()}
+        sub_names = {sub_id: name for name, sub_id in self.impl.sub_name_map.items()}
         for sub in self.sublattices:
             pltutils.annotate_box(sub_names[sub.alias], xy=sub.offset[:2],
                                   bbox=dict(boxstyle="circle,pad=0.3", alpha=0.2, lw=0))

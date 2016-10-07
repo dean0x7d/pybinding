@@ -34,7 +34,7 @@ class Model(_cpp.Model):
           is allowed: this will usually multiply the modifier's effect.
     """
     def __init__(self, lattice, *args):
-        super().__init__(lattice)
+        super().__init__(lattice.impl)
 
         self._lattice = lattice
         self._shape = None

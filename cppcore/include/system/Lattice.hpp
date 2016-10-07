@@ -66,6 +66,7 @@ struct Lattice {
 
 public:
     Lattice(Cartesian a1, Cartesian a2 = {0, 0, 0}, Cartesian a3 = {0, 0, 0});
+    Lattice(std::vector<Cartesian> vectors) : vectors(std::move(vectors)) {}
 
     /// Create a new sublattice and return it's ID
     sub_id add_sublattice(std::string const& name, Cartesian offset = {0, 0, 0},

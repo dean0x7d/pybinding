@@ -107,11 +107,14 @@ class FuzzyEqual:
 
     @_assertdispatch
     def _assert(self, actual, expected):
-        try:
-            return np.testing.assert_almost_equal(actual, expected, self.decimal)
-        except TypeError:
-            pass
-        np.testing.assert_equal(actual, expected)
+        if hasattr(actual, "__dict__"):
+            return self._assert(self.actual.__dict__, self.expected.__dict__)
+        else:
+            try:
+                return np.testing.assert_almost_equal(actual, expected, self.decimal)
+            except TypeError:
+                pass
+            return np.testing.assert_equal(actual, expected)
 
     @_assert.register(csr_matrix)
     def _(self, actual, expected):

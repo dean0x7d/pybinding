@@ -34,6 +34,23 @@ def mock_lattice():
     return lat
 
 
+def test_init():
+    lat1d = pb.Lattice(1)
+    assert len(lat1d.vectors) == 1
+    assert pytest.fuzzy_equal(lat1d.vectors[0], [1, 0, 0])
+
+    lat2d = pb.Lattice([1, 0], [0, 1])
+    assert len(lat2d.vectors) == 2
+    assert pytest.fuzzy_equal(lat2d.vectors[0], [1, 0, 0])
+    assert pytest.fuzzy_equal(lat2d.vectors[1], [0, 1, 0])
+
+    lat3d = pb.Lattice([1, 0, 0], [0, 1, 0], [0, 0, 1])
+    assert len(lat3d.vectors) == 3
+    assert pytest.fuzzy_equal(lat3d.vectors[0], [1, 0, 0])
+    assert pytest.fuzzy_equal(lat3d.vectors[1], [0, 1, 0])
+    assert pytest.fuzzy_equal(lat3d.vectors[2], [0, 0, 1])
+
+
 def test_add_sublattice(mock_lattice):
     with pytest.raises(RuntimeError) as excinfo:
         mock_lattice.add_one_sublattice('a', (0, 0))
@@ -125,18 +142,14 @@ def test_pickle_round_trip(lattice, tmpdir):
     pb.save(lattice, file_name)
     from_file = pb.load(file_name)
 
-    assert lattice.sub_name_map == from_file.sub_name_map
-    assert lattice.hop_name_map == from_file.hop_name_map
     assert pytest.fuzzy_equal(lattice, from_file)
 
 
-@pytest.mark.skip
+@pytest.mark.skip(reason="TODO: revise Lattice before committing to a new binary format")
 def test_expected(lattice, baseline, plot_if_fails):
     expected = baseline(lattice)
     plot_if_fails(lattice, expected, 'plot')
 
-    assert lattice.sub_name_map == expected.sub_name_map
-    assert lattice.hop_name_map == expected.hop_name_map
     assert pytest.fuzzy_equal(lattice, expected)
 
 

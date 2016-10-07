@@ -139,7 +139,7 @@ class System:
     @property
     def lattice(self) -> Lattice:
         """:class:`.Lattice` specification"""
-        return self.impl.lattice
+        return Lattice.from_impl(self.impl.lattice)
 
     @property
     def num_sites(self) -> int:
@@ -174,12 +174,12 @@ class System:
     @property
     def sublattices(self) -> np.ndarray:
         """1D array of sublattice IDs"""
-        return AliasArray(self.impl.sublattices, self.lattice.sub_name_map)
+        return AliasArray(self.impl.sublattices, self.lattice.impl.sub_name_map)
 
     @property
     def hoppings(self) -> csr_matrix:
         """Sparse matrix of hopping IDs"""
-        return AliasCSRMatrix(self.impl.hoppings, mapping=self.lattice.hop_name_map)
+        return AliasCSRMatrix(self.impl.hoppings, mapping=self.lattice.impl.hop_name_map)
 
     @property
     def boundaries(self) -> list:
