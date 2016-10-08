@@ -5,8 +5,11 @@ pybind11_add_module(_pybinding2
     include/wrappers.hpp
     src/greens.cpp
     src/lattice.cpp
+    src/leads.cpp
     src/main.cpp
     src/model.cpp
+    src/modifiers.cpp
+    src/shape.cpp
     src/solver.cpp
     src/system.cpp
 )
