@@ -343,6 +343,7 @@ def set_palette(name=None, num_colors=8, start=0):
     palette = get_palette(name, num_colors, start)
     mpl.rcParams["axes.prop_cycle"] = plt.cycler('color', palette)
     mpl.rcParams["patch.facecolor"] = palette[0]
+    plt.gca().set_prop_cycle(mpl.rcParams["axes.prop_cycle"])
 
 
 def direct_cmap_norm(data, colors, blend=1):
