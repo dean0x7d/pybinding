@@ -9,6 +9,7 @@ pybind11_add_module(_pybinding2
     src/main.cpp
     src/model.cpp
     src/modifiers.cpp
+    src/parallel.cpp
     src/shape.cpp
     src/solver.cpp
     src/system.cpp

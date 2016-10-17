@@ -14,6 +14,7 @@ PYBIND11_PLUGIN(_pybinding2) {
     wrap_leads(m);
     wrap_model(m);
     wrap_modifiers(m);
+    wrap_parallel(m);
     wrap_shape(m);
     wrap_solver(m);
     wrap_system(m);
