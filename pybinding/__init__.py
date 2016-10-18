@@ -16,7 +16,7 @@ if sys.platform.startswith("linux"):
     import scipy.spatial
     sys.setdlopenflags(sys.getdlopenflags() | os.RTLD_GLOBAL)
 
-import _pybinding2 as _cpp
+import _pybinding as _cpp
 
 from .model import *
 from .lattice import *

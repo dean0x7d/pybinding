@@ -6,8 +6,8 @@
 using namespace cpb;
 
 
-PYBIND11_PLUGIN(_pybinding2) {
-    auto m = py::module("_pybinding2");
+PYBIND11_PLUGIN(_pybinding) {
+    auto m = py::module("_pybinding");
 
     wrap_greens(m);
     wrap_lattice(m);

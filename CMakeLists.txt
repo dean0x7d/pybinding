@@ -12,17 +12,13 @@ if(NOT PYTHON_VERSION)
 endif()
 
 add_subdirectory(cppcore)
-add_subdirectory(cppwrapper)
 add_subdirectory(cppmodule)
 
 if(NOT CMAKE_LIBRARY_OUTPUT_DIRECTORY)
     set_target_properties(_pybinding PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${CMAKE_CURRENT_LIST_DIR})
-    set_target_properties(_pybinding2 PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${CMAKE_CURRENT_LIST_DIR})
     foreach(config ${CMAKE_CONFIGURATION_TYPES})
         string(TOUPPER ${config} config)
         set_target_properties(_pybinding PROPERTIES
-                              LIBRARY_OUTPUT_DIRECTORY_${config} ${CMAKE_CURRENT_LIST_DIR})
-        set_target_properties(_pybinding2 PROPERTIES
                               LIBRARY_OUTPUT_DIRECTORY_${config} ${CMAKE_CURRENT_LIST_DIR})
     endforeach()
 endif()
