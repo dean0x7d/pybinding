@@ -6,6 +6,7 @@ option(PB_TESTS "Enable testing" ON)
 option(PB_NATIVE_SIMD "Enable all instruction sets supported by the local machine" ON)
 option(PB_MKL "Use Intel's Math Kernel Library" OFF)
 option(PB_CUDA "Enable compilation of components written in CUDA" OFF)
+set(PB_CPP_STANDARD "-std=c++11" CACHE STRING "Required C++ standard flag")
 
 add_library(pybinding_cppcore
     include/compute/eigen3/lanczos.hpp
@@ -104,7 +105,7 @@ include(cppformat)
 target_link_libraries(pybinding_cppcore PUBLIC cppformat)
 
 if(NOT WIN32)
-    target_compile_options(pybinding_cppcore PUBLIC -std=c++11)
+    target_compile_options(pybinding_cppcore PUBLIC ${PB_CPP_STANDARD})
 endif()
 
 include(warnings)
