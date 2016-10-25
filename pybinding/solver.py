@@ -99,7 +99,7 @@ class Solver:
             Wave vector in reciprocal space.
         """
         self.clear()
-        self.model.set_wave_vector(np.atleast_1d(k))
+        self.model.set_wave_vector(k)
 
     def calc_eigenvalues(self, map_probability_at=None):
         """Return an :class:`.Eigenvalues` result object with an optional probability colormap

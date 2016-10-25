@@ -2,77 +2,55 @@
 #include "numeric/arrayref.hpp"
 #include "numeric/sparseref.hpp"
 
-#include <pybind11/cast.h>
-#include <pybind11/numpy.h>
-
-PYBIND11_DECLARE_HOLDER_TYPE(T, std::shared_ptr<T>);
-
 namespace pybind11 { namespace detail {
 
-// TODO: Remove this in favor of an explicit conversion in Python
-template<class T>
-struct eigen_compiletime_vector_caster {
-    using Scalar = typename T::Scalar;
-    static constexpr bool is_row_major = T::Flags & Eigen::RowMajorBit;
+/// Only for statically sized vectors: accepts smaller source arrays and zero-fills the remainder
+template<class Vector>
+struct static_vec_caster {
+    using Scalar = typename Vector::Scalar;
+    using Strides = Eigen::InnerStride<>;
+    using Map = Eigen::Map<Eigen::Matrix<Scalar, 1, Eigen::Dynamic> const, 0, Strides>;
 
     bool load(handle src, bool) {
-        auto buffer = array_t<Scalar>(src, true);
-        if (!buffer.check()) {
-            return false;
-        }
+        auto const a = array_t<Scalar>::ensure(src);
+        if (!a) { return false; }
 
-        auto const info = buffer.request();
-        if (info.ndim != 1) {
-            return false;
-        }
+        auto const ndim = a.ndim();
+        if (ndim > 1) { return false; }
 
-        using Strides = Eigen::InnerStride<>;
-        auto const strides = Strides(info.strides[0] / sizeof(Scalar));
-        auto const size = static_cast<Strides::Index>(info.shape[0]);
-        if (size > T::SizeAtCompileTime) {
-            return false;
-        }
-        
-        value = T::Zero();
-        value.head(size) = Eigen::Map<Eigen::Matrix<Scalar, -1, -1>, 0, Strides>(
-            static_cast<Scalar*>(info.ptr),
-            is_row_major ? 1 : size,
-            is_row_major ? size : 1,
-            strides
-        );
+        value = Vector::Zero();
+        if (ndim == 0) {
+            value[0] = a.data()[0];
+        } else {
+            auto const size = static_cast<int>(a.size());
+            if (size > Vector::SizeAtCompileTime) { return false; }
 
+            auto const strides = Strides(a.strides()[0] / sizeof(Scalar));
+            value.head(size) = Map(a.data(), size, strides);
+        }
         return true;
     }
 
-    static handle cast(T const& src, return_value_policy /* policy */, handle /* parent */) {
+    static handle cast(Vector const& src, return_value_policy, handle /*parent*/) {
         return array_t<Scalar>(src.size(), src.data()).release();
     }
 
-    PYBIND11_TYPE_CASTER(T, _("numpy.ndarray[") + npy_format_descriptor<Scalar>::name()
-        + _("[") + _<T::RowsAtCompileTime>() + _(", ") + _<T::ColsAtCompileTime>() + _("]]"));
+    PYBIND11_TYPE_CASTER(Vector, _("numpy.ndarray"));
 };
 
-template<>
-struct type_caster<Eigen::Vector3f> : eigen_compiletime_vector_caster<Eigen::Vector3f> {};
-template<>
-struct type_caster<Eigen::Vector3i> : eigen_compiletime_vector_caster<Eigen::Vector3i> {};
-
+template<> struct type_caster<Eigen::Vector3f> : static_vec_caster<Eigen::Vector3f> {};
+template<> struct type_caster<Eigen::Vector3i> : static_vec_caster<Eigen::Vector3i> {};
 
 template<bool is_const>
-struct type_caster<cpb::num::BasicArrayRef<is_const>> {
+struct arrayref_caster {
     using Type = cpb::num::BasicArrayRef<is_const>;
     using Shape = std::array<Py_intptr_t, 2>;
+    static constexpr auto writable = !is_const ? npy_api::NPY_ARRAY_WRITEABLE_ : 0;
+    static constexpr auto base_flags = npy_api::NPY_ARRAY_ALIGNED_ | writable;
 
-    static constexpr auto base_flags = npy_api::NPY_ARRAY_ALIGNED_
-                                       | (!is_const ? npy_api::NPY_ARRAY_WRITEABLE_ : 0);
-
-    [[noreturn]] bool load(handle, bool) {
-        pybind11_fail("An ArrayRef cannot be created from a Python object");
-    }
-
-    static handle cast(Type const& src, return_value_policy /*policy*/, handle parent) {
+    static handle cast(Type const& src, return_value_policy, handle parent) {
         using cpb::num::Tag;
-        auto data_type = [&]() {
+        auto data_type = [&] {
             switch (src.tag) {
                 case Tag::f32:  return dtype::of<float>();
                 case Tag::cf32: return dtype::of<std::complex<float>>();
@@ -97,43 +75,27 @@ struct type_caster<cpb::num::BasicArrayRef<is_const>> {
 
         auto result = npy_api::get().PyArray_NewFromDescr_(
             npy_api::get().PyArray_Type_, data_type.release().ptr(), ndim, shape.data(),
-            /*strides*/nullptr, const_cast<void *>(src.data), flags, nullptr
+            /*strides*/nullptr, const_cast<void*>(src.data), flags, nullptr
         );
-        if (!result) {
-            pybind11_fail("ArrayRef: unable to create array");
-        }
-
-        if (parent) {
-            detail::keep_alive_impl(result, parent);
-        }
-
+        if (!result) { pybind11_fail("ArrayRef: unable to create array"); }
+        if (parent) { detail::keep_alive_impl(result, parent); }
         return result;
     }
 
-    PYBIND11_TYPE_CASTER(Type, _("numpy.ndarray"));
+    static PYBIND11_DESCR name() { return type_descr(_("numpy.ndarray")); }
 };
 
+template<bool is_const>
+struct type_caster<cpb::num::BasicArrayRef<is_const>> : arrayref_caster<is_const> {};
 template<class T, class... Ts>
-struct type_caster<cpb::num::VariantArrayConstRef<T, Ts...>>
-    : type_caster<cpb::num::BasicArrayRef<true>> {};
-
+struct type_caster<cpb::num::VariantArrayConstRef<T, Ts...>> : arrayref_caster<true> {};
 template<class T, class... Ts>
-struct type_caster<cpb::num::VariantArrayRef<T, Ts...>>
-    : type_caster<cpb::num::BasicArrayRef<false>> {};
+struct type_caster<cpb::num::VariantArrayRef<T, Ts...>> : arrayref_caster<false> {};
 
-template<>
-struct type_caster<cpb::num::AnyCsrConstRef> {
+struct csrref_caster {
     using Type = cpb::num::AnyCsrConstRef;
 
-    [[noreturn]] bool load(handle, bool) {
-        pybind11_fail("A CsrConstRef cannot be created from a Python object");
-    }
-
     static handle cast(Type const& src, return_value_policy policy, handle parent) {
-        if (parent) {
-            policy = return_value_policy::reference_internal;
-        }
-
         auto const data = pybind11::cast(src.data_ref(), policy, parent);
         auto const indices = pybind11::cast(src.indices_ref(), policy, parent);
         auto const indptr = pybind11::cast(src.indptr_ref(), policy, parent);
@@ -143,21 +105,17 @@ struct type_caster<cpb::num::AnyCsrConstRef> {
             pybind11::make_tuple(src.rows, src.cols),
             /*dtype*/none(), /*copy*/false
         );
-        if (parent) {
-            detail::keep_alive_impl(result, parent);
-        }
+        if (parent) { detail::keep_alive_impl(result, parent); }
         return result.release();
     }
 
-    PYBIND11_TYPE_CASTER(Type, _("scipy.sparse.csr_matrix"));
+    static PYBIND11_DESCR name() { return type_descr(_("scipy.sparse.csr_matrix")); }
 };
 
+template<> struct type_caster<cpb::num::AnyCsrConstRef> : csrref_caster {};
 template<class T, class... Ts>
-struct type_caster<cpb::num::VariantCsrConstRef<T, Ts...>>
-    : type_caster<cpb::num::AnyCsrConstRef> {};
-
+struct type_caster<cpb::num::VariantCsrConstRef<T, Ts...>> : csrref_caster {};
 template<class T>
-struct type_caster<cpb::num::CsrConstRef<T>>
-    : type_caster<cpb::num::AnyCsrConstRef> {};
+struct type_caster<cpb::num::CsrConstRef<T>> : csrref_caster {};
 
 }} // namespace pybind11::detail

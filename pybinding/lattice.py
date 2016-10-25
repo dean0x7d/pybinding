@@ -31,7 +31,7 @@ class Lattice:
         three vectors will create a 3D lattice.
     """
     def __init__(self, a1, a2=None, a3=None):
-        vectors = (np.atleast_1d(v) for v in (a1, a2, a3) if v is not None)
+        vectors = (v for v in (a1, a2, a3) if v is not None)
         self.impl = _cpp.Lattice(*vectors)
 
     @classmethod
@@ -133,7 +133,6 @@ class Lattice:
             a supercell which contains multiple sites of one sublattice family at
             different positions.
         """
-        offset = np.atleast_1d(offset)
         alias = self.__getitem__(alias) if alias is not None else -1
         self.impl.add_sublattice(name, offset, onsite_energy, alias)
 
@@ -184,7 +183,6 @@ class Lattice:
             The numeric value of the hopping energy or the name of a previously
             registered hopping.
         """
-        relative_index = np.atleast_1d(relative_index)
         from_sub, to_sub = map(self.__getitem__, (from_sublattice, to_sublattice))
         if isinstance(hop_name_or_energy, str):
             hop_id = self.__call__(hop_name_or_energy)
