@@ -1,4 +1,5 @@
 """Crystal lattice specification"""
+import itertools
 from copy import copy
 from math import pi, atan2
 
@@ -250,58 +251,43 @@ class Lattice(_cpp.Lattice):
         return [v.squeeze() for v in reversed(np.hsplit(mat, n))]
 
     def brillouin_zone(self):
-        """Return a list of vertices which form the Brillouin zone (2D only)
+        """Return a list of vertices which form the Brillouin zone (1D and 2D only)
 
         Returns
         -------
-        list of array_like
+        List[array_like]
 
         Examples
         --------
-        >>> lat = Lattice(a1=[0, 1], a2=[0.5, 0.5])
-        >>> np.allclose(lat.brillouin_zone(), [[-2*pi, 0], [0, -2*pi], [2*pi, 0], [0, 2*pi]])
+        >>> lat_1d = Lattice(a1=1)
+        >>> np.allclose(lat_1d.brillouin_zone(), [-pi, pi])
+        True
+        >>> lat_2d = Lattice(a1=[0, 1], a2=[0.5, 0.5])
+        >>> np.allclose(lat_2d.brillouin_zone(), [[0, -2*pi], [2*pi, 0], [0, 2*pi], [-2*pi, 0]])
         True
         """
-        def _perp(vec):
-            """Make 'a*x + b*y = c' line which is perpendicular to the vector"""
-            v_rot90 = [-vec[1], vec[0], 0]
-            x1, y1, _ = 0.5 * (vec + v_rot90)
-            x2, y2, _ = 0.5 * (vec - v_rot90)
-
-            a, b = y1 - y2, x2 - x1
-            c = x2 * y1 - x1 * y2
-            return a, b, c
-
-        def _intersection(line1, line2):
-            """Return (x, y) coordinates of the intersection via Cramer's rule"""
-            d = np.linalg.det([line1[:2], line2[:2]])
-            dx = np.linalg.det([line1[1:], line2[1:]])
-            dy = np.linalg.det([line1[::2], line2[::2]])
-            return np.array([dx / d, dy / d]) if d != 0 else None
+        from scipy.spatial import Voronoi
 
         if self.ndim == 1:
             v1, = self.reciprocal_vectors()
-            return [v1[0], -v1[0]]
+            l = np.linalg.norm(v1)
+            return [-l/2, l/2]
         elif self.ndim == 2:
-            # list all combinations of primitive reciprocal vectors
-            v1, v2 = self.reciprocal_vectors()
-            vectors = [n1 * v1 + n2 * v2 for n1 in (-1, 0, 1) for n2 in (-1, 0, 1) if n1 != -n2]
+            # The closest reciprocal lattice points are combinations of the primitive vectors
+            vectors = self.reciprocal_vectors()
+            points = [sum(n * v for n, v in zip(ns, vectors))
+                      for ns in itertools.product([-1, 0, 1], repeat=self.ndim)]
 
-            vertices = []
-            for v1 in vectors:
-                intersections = [_intersection(_perp(v1), _perp(v2)) for v2 in vectors]
-                intersections = filter(lambda v: v is not None, intersections)
+            # Voronoi doesn't like trailing zeros in coordinates
+            vor = Voronoi([p[:self.ndim] for p in points])
 
-                # keep only the two closest to (0, 0)
-                vertices += sorted(intersections, key=lambda v: np.linalg.norm(v))[:2]
-
-            unique_vertices = []
-            for vertex in vertices:
-                if not any(np.allclose(vertex, v0) for v0 in unique_vertices):
-                    unique_vertices.append(vertex)
+            # See scipy's Voronoi documentation for details (-1 indicates infinity)
+            finite_regions = [r for r in vor.regions if len(r) != 0 and -1 not in r]
+            assert len(finite_regions) == 1
+            bz_vertices = [vor.vertices[i] for i in finite_regions[0]]
 
             # sort counter-clockwise
-            return sorted(unique_vertices, key=lambda v: atan2(v[1], v[0]))
+            return sorted(bz_vertices, key=lambda v: atan2(v[1], v[0]))
         else:
             raise RuntimeError("3D Brillouin zones are not currently supported")
 

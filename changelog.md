@@ -1,5 +1,11 @@
 # Changelog
 
+### v0.8.1 | in development
+
+* Fixed Brillouin zone calculation for cases where the angle between lattice vectors is obtuse
+  ([#1](https://github.com/dean0x7d/pybinding/issues/1)). Thanks to
+  [@obgeneralao (Oliver B Generalao)](https://github.com/obgeneralao) for reporting the issue.
+
 ### v0.8.0 | 2016-07-01
 
 ##### New features
