@@ -4,12 +4,16 @@ from .__about__ import (__author__, __copyright__, __doc__, __email__, __license
 import os
 import sys
 if sys.platform.startswith("linux"):
-    # In case the pybinding C++ extension is compiled with MKL, it will not play nice
-    # with sparse.linalg (segfaults). As a workaround, sparse.linalg is imported first
-    # with default dlopenflags.
-    # After that RTLD_GLOBAL must be set for MKL to load properly. It's not possible
-    # to set RTLD_GLOBAL, import _pybinding (with MKL) and then reset to default flags.
+    # When the _pybinding C++ extension is compiled with MKL, it requires specific
+    # dlopen flags on Linux: RTLD_GLOBAL. This will not play nice with some scipy
+    # modules, i.e. it will produce segfaults. As a workaround, specific modules
+    # are imported first with default dlopenflags.
+    # After that, RTLD_GLOBAL must be set for MKL to load properly. It's not possible
+    # to set RTLD_GLOBAL, import _pybinding and then reset to default flags. This is
+    # fundamentally an MKL issue which makes it difficult to resolve. This workaround
+    # is the best solution at the moment.
     import scipy.sparse.linalg
+    import scipy.spatial
     sys.setdlopenflags(sys.getdlopenflags() | os.RTLD_GLOBAL)
 
 import _pybinding as _cpp
