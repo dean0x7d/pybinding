@@ -1,3 +1,4 @@
+import math
 from functools import singledispatch, update_wrapper
 
 import numpy as np
@@ -31,58 +32,47 @@ def _assertdispatch(func):
     return wrapper
 
 
-class FuzzyReport:
+def _assert_fuzzy_equal(actual, expected, rtol, atol):
     """Explains failed fuzzy_equal asserts
 
     For example:
 
         actual =   array([3, 1, 7, 2, 9])
         expected = array([3, 5, 7, 4, 6])
-        assert pytest.fuzzy_equal(actual, expected)
-
-            @_assert.register(np.ndarray)
-            def _(self, actual, expected):
-        >       assert FuzzyReport(actual, self.rtol, self.atol) == expected
-        E       assert failed on 3 of 5 values: 60 percent
-        E         diff indices: [1, 3, 4]
-        E         actual:   [1, 2, 9]
-        E         expected: [5, 4, 6]
+    >   assert pytest.fuzzy_equal(actual, expected)
+    E   AssertionError:
+    E
+    E   Failed on 3 of 5 values: 60%
+    E    actual:   [1, 2, 9]
+    E    expected: [5, 4, 6]
+    E    indices:  [1, 3, 4]
     """
-    def __init__(self, value, rtol, atol):
-        self.value = value
-        self.rtol = rtol
-        self.atol = atol
-        self.explanation = []
+    actual, expected = map(np.asanyarray, (actual, expected))
+    if actual.shape != expected.shape:
+        raise AssertionError("\n".join([
+            "\nFailed on shape mismatch",
+            "actual:   {}".format(actual.shape),
+            "expected: {}".format(expected.shape),
+        ]))
 
-    def __eq__(self, other):
-        actual, expected = map(np.atleast_1d, (self.value, other))
-        if actual.shape != expected.shape:
-            self.explanation = [
-                "failed on shape mismatch",
-                "actual:   {}".format(actual.shape),
-                "expected: {}".format(expected.shape),
-            ]
-            return False
+    isclose = np.isclose(actual, expected, rtol, atol)
+    if np.all(isclose):
+        return
 
-        isclose = np.isclose(actual, expected, self.rtol, self.atol)
-        if np.all(isclose):
-            return True
-
-        notclose = np.logical_not(isclose)
-        num_failed = np.sum(notclose)
-        a = actual[notclose]
-        b = expected[notclose]
-        self.explanation = [
-            "failed on {} of {} values: {:.0f} percent".format(num_failed, actual.size,
-                                                               100 * num_failed / actual.size),
-            "actual:   {}".format(a),
-            "expected: {}".format(b),
-            "diff indices: {}".format([idx[0] if idx.size == 1 else list(idx)
-                                       for idx in np.argwhere(notclose)]),
-            "abs diff: {}".format(abs(a - b)),
-            "rel diff: {}".format(abs(a - b) / abs(b)),
-        ]
-        return False
+    notclose = np.logical_not(isclose)
+    num_failed = np.sum(notclose)
+    a = actual[notclose]
+    b = expected[notclose]
+    raise AssertionError("\n".join([
+        "\nFailed on {} of {} values: {:.0%}".format(num_failed, actual.size,
+                                                     num_failed / actual.size),
+        " actual:   {}".format(a),
+        " expected: {}".format(b),
+        " indices:  {}".format([idx[0] if idx.size == 1 else list(idx)
+                               for idx in np.argwhere(notclose)]),
+        " abs diff: {}".format(abs(a - b)),
+        " rel diff: {}".format(abs(a - b) / abs(b)),
+    ]))
 
 
 class FuzzyEqual:
@@ -95,22 +85,33 @@ class FuzzyEqual:
         self.expected = expected
         self.rtol = rtol
         self.atol = atol
+        self.decimal = -math.frexp(rtol)[1]
         self.stack = []
 
     def __bool__(self):
-        self._assert(self.actual, self.expected)
-        return True
+        # noinspection PyUnusedLocal
+        __tracebackhide__ = True  # hide traceback for pytest
+        try:
+            self._assert(self.actual, self.expected)
+        except AssertionError as e:
+            msg = str(e)
+        else:
+            return True
+
+        if self.stack:
+            msg = ''.join(self.stack) + "\n" + msg
+        raise AssertionError(msg.strip())
 
     def __repr__(self):
         return ''.join(self.stack)
 
     @_assertdispatch
     def _assert(self, actual, expected):
-        assert actual == expected
-
-    @_assert.register(np.ndarray)
-    def _(self, actual, expected):
-        assert FuzzyReport(actual, self.rtol, self.atol) == expected
+        try:
+            return np.testing.assert_almost_equal(actual, expected, self.decimal)
+        except TypeError:
+            pass
+        np.testing.assert_equal(actual, expected)
 
     @_assert.register(csr_matrix)
     def _(self, actual, expected):
@@ -124,7 +125,13 @@ class FuzzyEqual:
 
     @_assert.register(tuple)
     @_assert.register(list)
+    @_assert.register(np.ndarray)
     def _(self, actual, expected):
+        try:
+            return _assert_fuzzy_equal(actual, expected, rtol=self.rtol, atol=self.atol)
+        except TypeError:
+            pass
+        # Fallback for non-numeric lists and tuples
         assert len(actual) == len(expected)
         for index, (a, b) in enumerate(zip(actual, expected)):
             self._assert(a, b, context="[{}]".format(index))

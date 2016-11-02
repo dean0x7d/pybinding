@@ -10,16 +10,11 @@ import pybinding as pb
 
 from .utils.path import path_from_fixture
 from .utils.compare_figures import CompareFigure
-from .utils.fuzzy_equal import FuzzyEqual, FuzzyReport
+from .utils.fuzzy_equal import FuzzyEqual
 
 
 def pytest_namespace():
     return {'fuzzy_equal': FuzzyEqual}
-
-
-def pytest_assertrepr_compare(op, left, right):
-    if isinstance(left, FuzzyReport) and right is not None and op == "==":
-        return left.explanation
 
 
 def pytest_addoption(parser):
