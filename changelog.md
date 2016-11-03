@@ -6,6 +6,8 @@
   ([#1](https://github.com/dean0x7d/pybinding/issues/1)). Thanks to
   [@obgeneralao (Oliver B Generalao)](https://github.com/obgeneralao) for reporting the issue.
 
+* Fixed missing CUDA source files in PyPI sdist package.
+
 ### v0.8.0 | 2016-07-01
 
 ##### New features
