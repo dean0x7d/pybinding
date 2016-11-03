@@ -38,19 +38,25 @@ function(download_tar_gz URL DIR)
     file(REMOVE_RECURSE ${tmp_dir})
 endfunction()
 
+# Download a dependency from the given URL. The files to download
+# are given by ARGN. If the first file is *.tar.gz, the following
+# argument must be a glob pattern specifying the files to extract.
+# The version number is saved in a file along with the dependency.
+# If a matching version already exists, the download is skipped.
 function(download_dependency NAME VERSION URL_FMT FIRST_FILE_FMT)
     set(dir "${CMAKE_CURRENT_SOURCE_DIR}/deps/${NAME}")
-    string(TOUPPER ${NAME} upper_name)
-    set(cached_version CACHED_${upper_name}_VERSION)
-    if(NOT ${cached_version} OR NOT ${${cached_version}} STREQUAL ${VERSION})
-        if(EXISTS ${dir})
-            file(REMOVE_RECURSE ${dir})
-            message(STATUS "Removed cached ${NAME} ${${cached_version}}")
-        endif()
-        set(${cached_version} ${VERSION} CACHE INTENAL "" FORCE)
+
+    set(version_file "${dir}/_pybinding_dependency_version")
+    if(EXISTS ${version_file})
+        file(READ ${version_file} cached_version)
     endif()
 
-    if(NOT EXISTS ${dir})
+    if(NOT "${cached_version}" STREQUAL "${VERSION}")
+        if(EXISTS ${dir})
+            file(REMOVE_RECURSE ${dir})
+            message(STATUS "Removed cached ${NAME} ${cached_version}")
+        endif()
+
         message(STATUS "Downloading ${NAME} v${VERSION}...")
         string(CONFIGURE ${URL_FMT} url)
         string(CONFIGURE ${FIRST_FILE_FMT} first_file)
@@ -63,8 +69,11 @@ function(download_dependency NAME VERSION URL_FMT FIRST_FILE_FMT)
                 download("${url}/${file}" "${dir}/${file}")
             endforeach()
         endif()
+
+        file(WRITE ${version_file} ${VERSION})
     endif()
 
+    string(TOUPPER ${NAME} upper_name)
     set(${upper_name}_VERSION ${VERSION} PARENT_SCOPE)
     set(${upper_name}_INCLUDE_DIR ${dir} PARENT_SCOPE)
 endfunction()
