@@ -19,10 +19,10 @@ def phosphorene_4band():
     h = a * sin(phi - pi / 2)
     s = 0.5 * ax - a * cos(theta / 2)
     lat.add_sublattices(
-        ('A', [-ax/4 - s/2, -ay/4, h], 0),
-        ('B', [-ax/4 + s/2, -ay/4, 0], 0),
-        ('C', [ ax/4 - s/2,  ay/4, 0], 0),
-        ('D', [ ax/4 + s/2,  ay/4, h], 0)
+        ('A', [-s/2,        -ay/2, h], 0),
+        ('B', [ s/2,        -ay/2, 0], 0),
+        ('C', [-s/2 + ax/2,     0, 0], 0),
+        ('D', [ s/2 + ax/2,     0, h], 0)
     )
 
     lat.register_hopping_energies({
@@ -58,11 +58,7 @@ def phosphorene_4band():
         ([-1, -1], 'B', 'D', 't4'),
         # t5
         ([-1,  0], 'A', 'B', 't5'),
-        ([ 0,  1], 'A', 'B', 't5'),
-        ([ 0, -1], 'A', 'B', 't5'),
-        ([-1,  0], 'C', 'D', 't5'),
-        ([ 0,  1], 'C', 'D', 't5'),
-        ([ 0, -1], 'C', 'D', 't5'),
+        ([-1,  0], 'C', 'D', 't5')
     )
 
     return lat

@@ -6,6 +6,9 @@
   ([#1](https://github.com/dean0x7d/pybinding/issues/1)). Thanks to
   [@obgeneralao (Oliver B Generalao)](https://github.com/obgeneralao) for reporting the issue.
 
+* Fixed a flaw in the example of a phosphorene lattice (there were extraneous t5 hoppings).
+  Thanks to Longlong Li for pointing this out.
+
 * Fixed missing CUDA source files in PyPI sdist package.
 
 ### v0.8.0 | 2016-07-01
