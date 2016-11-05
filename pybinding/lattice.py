@@ -1,7 +1,7 @@
 """Crystal lattice specification"""
 import itertools
 from copy import copy
-from math import pi, atan2
+from math import pi, atan2, sqrt
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -317,25 +317,57 @@ class Lattice(_cpp.Lattice):
         """
         self._plot_vectors(self.vectors, position, scale=scale)
 
-    def site_radius_for_plot(self, scale=0.177):
+    def site_radius_for_plot(self, max_fraction=0.33):
         """Return a good estimate for the lattice site radius for plotting
 
-        Based on the smallest inter-atomic spacing in a primitive unit cell.
+        Calculated heuristically base on the length (1D) or area (2D) of the unit cell.
+        In order to prevent overlap between sites, if the computed radius is too large,
+        it will be clamped to a fraction of the shortest inter-atomic spacing.
 
         Parameters
         ----------
-        scale : float
-            Multiply inter-atomic spacing by this number to get the final site radius.
+        max_fraction : float
+            Set the upper limit of the calculated radius as this fraction of the
+            shortest inter-atomic spacing in the lattice unit cell. Should be less
+            than 0.5 to avoid overlap between neighboring lattice sites.
 
         Returns
         -------
         float
         """
-        if len(self.sublattices) == 1:
-            return scale * np.min([np.linalg.norm(v) for v in self.vectors])
-        else:
+        def heuristic_radius(lattice):
+            """The `magic` numbers were picked base on what looks nice in figures"""
+            if lattice.ndim == 1:
+                magic = 0.12
+                return magic * np.linalg.norm(lattice.vectors[0])
+            elif lattice.ndim == 2:
+                v1, v2 = lattice.vectors
+                unit_cell_area = np.linalg.norm(np.cross(v1, v2))
+
+                num_sublattices = len(lattice.sublattices)
+                num_layers = len(np.unique([s.offset[2] for s in lattice.sublattices]))
+                site_area = unit_cell_area * num_layers / num_sublattices
+
+                magic = 0.33
+                return magic * sqrt(site_area / pi)
+            else:
+                raise RuntimeError("Not implemented for 3D lattices")
+
+        def shortest_site_spacing(lattice):
             from scipy.spatial.distance import pdist
-            return scale * np.min(pdist([s.offset for s in self.sublattices]))
+
+            distances = pdist([s.offset for s in lattice.sublattices])
+            distances = distances[distances > 0]
+
+            if np.any(distances):
+                return np.min(distances)
+            else:
+                vector_lengths = [np.linalg.norm(v) for v in lattice.vectors]
+                return np.min(vector_lengths)
+
+        r1 = heuristic_radius(self)
+        r2 = max_fraction * shortest_site_spacing(self)
+        return min(r1, r2)
 
     def plot(self, vector_position='center', **kwargs):
         """Illustrate the lattice by plotting the primitive cell and its nearest neighbors
@@ -361,7 +393,8 @@ class Lattice(_cpp.Lattice):
         # annotate sublattice names
         sub_names = {sub_id: name for name, sub_id in self.sub_name_map.items()}
         for sub in self.sublattices:
-            pltutils.annotate_box(sub_names[sub.alias], xy=sub.offset[:2], bbox=dict(lw=0))
+            pltutils.annotate_box(sub_names[sub.alias], xy=sub.offset[:2],
+                                  bbox=dict(boxstyle="circle,pad=0.3", alpha=0.2, lw=0))
 
         # annotate neighboring cell indices
         offsets = [(0, 0, 0)]

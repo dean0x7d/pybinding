@@ -307,6 +307,7 @@ class SpatialMap:
         ax.set_aspect('equal')
         ax.set_xlabel('x (nm)')
         ax.set_ylabel('y (nm)')
+        pltutils.despine(trim=True)
 
     def plot_pcolor(self, **kwargs):
         """Color plot of the xy plane

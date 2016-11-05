@@ -2,6 +2,9 @@
 
 ### v0.8.1 | in development
 
+* Structure plotting functions have been improved with better automatic scaling of lattice site
+  radii and hopping line widths.
+
 * Fixed Brillouin zone calculation for cases where the angle between lattice vectors is obtuse
   ([#1](https://github.com/dean0x7d/pybinding/issues/1)). Thanks to
   [@obgeneralao (Oliver B Generalao)](https://github.com/obgeneralao) for reporting the issue.

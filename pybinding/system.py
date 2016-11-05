@@ -258,7 +258,7 @@ def structure_plot_properties(axes='xyz', site=None, hopping=None, boundary=None
     props = {'axes': axes, 'add_margin': kwargs.get('add_margin', True),
              'site': with_defaults(site, axes=axes),
              'hopping': with_defaults(hopping, axes=axes)}
-    props['boundary'] = with_defaults(boundary, props['hopping'], color='#d40a0c', width=1.6)
+    props['boundary'] = with_defaults(boundary, props['hopping'], color='#f40a0c')
     return props
 
 
@@ -284,6 +284,15 @@ def _rotate(position, axes):
 
     mapping = dict(x=0, y=1, z=2)
     return tuple(position[mapping[a]] for a in axes)
+
+
+def _data_units_to_points(ax, value):
+    """Convert a value from data units to points"""
+    fig = ax.get_figure()
+    length = fig.bbox_inches.width * ax.get_position().width
+    length *= 72  # convert to points
+    data_range = np.diff(ax.get_xlim())
+    return value * (length / data_range)
 
 
 def plot_sites(positions, data, radius=0.025, offset=(0, 0, 0), blend=1.0,
@@ -324,7 +333,7 @@ def plot_sites(positions, data, radius=0.025, offset=(0, 0, 0), blend=1.0,
     if np.all(radius == 0):
         return
 
-    kwargs = with_defaults(kwargs, alpha=0.97, lw=0.1, edgecolor=str(1-blend))
+    kwargs = with_defaults(kwargs, alpha=0.97, lw=0.2, edgecolor=str(1-blend))
 
     if cmap == 'auto':
         cmap = ['#377ec8', '#ff7f00', '#41ae76', '#e41a1c',
@@ -361,6 +370,20 @@ def plot_sites(positions, data, radius=0.025, offset=(0, 0, 0), blend=1.0,
 
         ax.add_collection(col)
         ax.autoscale_view()
+
+        def dynamic_scale(active_ax):
+            """Rescale the circumference line width and radius based on data units"""
+            scale = _data_units_to_points(active_ax, 0.005)  # [nm] reference for 1 screen point
+            line_scale = np.clip(scale, 0.2, 1.1)  # don't make the line too thin or thick
+            col.set_linewidth(line_scale * kwargs['lw'])
+            if np.isscalar(radius):
+                scale = _data_units_to_points(active_ax, 0.01)  # [nm]
+                radius_scale = np.clip(2 - scale, 0.85, 1.3)
+                col.radius = radius_scale * np.atleast_1d(radius)
+
+        dynamic_scale(ax)
+        ax.callbacks.connect('xlim_changed', dynamic_scale)
+        ax.callbacks.connect('ylim_changed', dynamic_scale)
     else:
         from pybinding.support.collections import Circle3DCollection
         col = Circle3DCollection(radius/8, offsets=points, transOffset=ax.transData, **kwargs)
@@ -456,10 +479,20 @@ def plot_hoppings(positions, hoppings, width=1.0, offset=(0, 0, 0), blend=1.0, c
     if ndims == 2:
         from matplotlib.collections import LineCollection
 
-        col = LineCollection(lines, lw=width, **kwargs)
+        col = LineCollection(lines, **kwargs)
         col.set_array(hoppings.data)
         ax.add_collection(col)
         ax.autoscale_view()
+
+        def dynamic_scale(active_ax):
+            """Rescale the line width based on data units"""
+            scale = _data_units_to_points(active_ax, 0.005)  # [nm] reference for 1 screen point
+            scale = np.clip(scale, 0.6, 1.2)  # don't make the line too thin or thick
+            col.set_linewidth(scale * width)
+
+        dynamic_scale(ax)
+        ax.callbacks.connect('xlim_changed', dynamic_scale)
+        ax.callbacks.connect('ylim_changed', dynamic_scale)
     else:
         from mpl_toolkits.mplot3d.art3d import Line3DCollection
 
