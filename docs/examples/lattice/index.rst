@@ -44,6 +44,16 @@ Monolayer graphene NN
     :alt: Monolayer graphene with next-nearest neighbor, Brillouin zone and band structure
 
 
+Bilayer graphene
+----------------
+
+:download:`Source code </examples/lattice/bilayer_graphene.py>`
+
+.. plot:: examples/lattice/bilayer_graphene.py
+    :include-source:
+    :alt: Simple bilayer graphene lattice, Brillouin zone and band structure
+
+
 Phosphorene
 -----------
 

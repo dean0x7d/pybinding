@@ -7,10 +7,10 @@ pb.pltutils.use_style()
 
 
 def monolayer_graphene_nn():
-    a = 0.24595   # (nm) unit cell length
-    a_cc = 0.142  # (nm) carbon-carbon distance
-    t = -2.8      # (eV) nearest neighbour hopping
-    t_nn = 0.1    # (eV) next-nearest neighbour hopping
+    a = 0.24595   # [nm] unit cell length
+    a_cc = 0.142  # [nm] carbon-carbon distance
+    t = -2.8      # [eV] nearest neighbour hopping
+    t_nn = 0.25   # [eV] next-nearest neighbour hopping
 
     lat = pb.Lattice(
         a1=[a, 0],
@@ -53,6 +53,7 @@ K1 = [-4*pi / (3*sqrt(3)*a_cc), 0]
 M = [0, 2*pi / (3*a_cc)]
 K2 = [2*pi / (3*sqrt(3)*a_cc), 2*pi / (3*a_cc)]
 
+# Note the elector-hole asymmetry in the band structure (due to t_nn).
 bands = solver.calc_bands(K1, Gamma, M, K2)
 bands.plot(point_labels=['K', r'$\Gamma$', 'M', 'K'])
 plt.show()
