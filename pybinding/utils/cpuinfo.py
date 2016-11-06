@@ -1,3 +1,4 @@
+import os
 from .. import _cpp
 
 _cached_info = None
@@ -28,12 +29,12 @@ def physical_core_count():
         # noinspection PyUnresolvedReferences
         return _cpp.physical_core_count
     except AttributeError:
-        return get_cpu_info()['count']
+        return os.cpu_count()
 
 
 def virtual_core_count():
     """Return the number of threads the CPU can process simultaniously"""
-    return get_cpu_info()['count']
+    return os.cpu_count()
 
 
 def summary():
