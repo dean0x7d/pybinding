@@ -23,7 +23,7 @@ object return_copy(Data (Class::*pmf)() const) {
                          return_value_policy<return_by_value>());
 }
 
-template<class Class, class Data, class = cpp14::enable_if_t<!std::is_function<Data>::value>>
+template<class Class, class Data>
 object return_copy(Data Class::* d) {
     return make_getter(d, return_value_policy<return_by_value>());
 }
@@ -71,7 +71,7 @@ object return_arrayref(Data (Class::*pmf)() const) {
     );
 }
 
-template<class Class, class Data, class = cpp14::enable_if_t<!std::is_function<Data>::value>>
+template<class Class, class Data>
 object return_arrayref(Data Class::* d) {
     return make_function(
         [d](Class& c) { return cpb::arrayref(c.*d); },
@@ -97,7 +97,7 @@ object extended(Data (Class::*pmf)() const, char const* class_name,
     });
 }
 
-template<class Class, class Data, class = cpp14::enable_if_t<!std::is_function<Data>::value>>
+template<class Class, class Data>
 object extended(Data Class::* d, char const* class_name, char const* module_name = "pybinding") {
     return make_function([=](Class const& c) {
         return detail::with_changed_class(c.*d, class_name, module_name);
