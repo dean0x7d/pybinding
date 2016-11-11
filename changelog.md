@@ -1,9 +1,9 @@
 # Changelog
 
-### v0.8.1 | in development
+### v0.8.1 | 2016-11-11
 
 * Structure plotting functions have been improved with better automatic scaling of lattice site
-  radii and hopping line widths.
+  circle sizes and hopping line widths.
 
 * Fixed Brillouin zone calculation for cases where the angle between lattice vectors is obtuse
   ([#1](https://github.com/dean0x7d/pybinding/issues/1)). Thanks to
@@ -13,6 +13,9 @@
   Thanks to Longlong Li for pointing this out.
 
 * Fixed missing CUDA source files in PyPI sdist package.
+
+* Revised advanced installation instructions: compiling from source code and development.
+
 
 ### v0.8.0 | 2016-07-01
 
