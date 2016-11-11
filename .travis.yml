@@ -62,21 +62,9 @@ install:
 - ccache -s
 script:
 - make tests
-before_deploy:
-- |
-  pip install -U wheel
-  pip install twine
 deploy:
   provider: script
-  script:
-  - |
-    cd $TRAVIS_BUILD_DIR
-    if [ "$TRAVIS_OS_NAME" = "linux" ] && [ ${SDIST+x} ]; then
-      twine upload -u $PYPI_USER -p $PYPI_PASS --skip-existing dist/*.tar.gz
-    elif [ "$TRAVIS_OS_NAME" = "osx" ]; then
-      PB_NATIVE_SIMD=OFF python setup.py bdist_wheel --plat-name macosx-10.9-x86_64
-      twine upload -u $PYPI_USER -p $PYPI_PASS --skip-existing dist/*.whl
-    fi
+  script: $TRAVIS_BUILD_DIR/support/deploy.sh
   skip_cleanup: true
   on:
     tags: true
