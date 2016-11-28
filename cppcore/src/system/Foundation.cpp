@@ -24,19 +24,19 @@ std::pair<Index3D, Index3D> find_bounds(Shape const& shape, Lattice const& latti
 CartesianArray generate_positions(Cartesian origin, Index3D size, Lattice const& lattice) {
     // The nested loops look messy, but it's the fastest way to calculate all the positions
     // because the intermediate a, b, c positions are reused.
-    auto const num_sublattices = lattice.sublattices.size();
-    auto const num_sites = size.prod() * static_cast<int>(num_sublattices);
+    auto const nsub = lattice.nsub();
+    auto const num_sites = size.prod() * nsub;
     CartesianArray positions(num_sites);
 
     auto idx = 0;
     for (auto a = 0; a < size[0]; ++a) {
-        Cartesian pa = origin + static_cast<float>(a) * lattice.vectors[0];
+        Cartesian pa = origin + static_cast<float>(a) * lattice.vector(0);
         for (auto b = 0; b < size[1]; ++b) {
-            Cartesian pb = (b == 0) ? pa : pa + static_cast<float>(b) * lattice.vectors[1];
+            Cartesian pb = (b == 0) ? pa : pa + static_cast<float>(b) * lattice.vector(1);
             for (auto c = 0; c < size[2]; ++c) {
-                Cartesian pc = (c == 0) ? pb : pb + static_cast<float>(c) * lattice.vectors[2];
-                for (auto sub = size_t{0}; sub < num_sublattices; ++sub) {
-                    positions[idx++] = pc + lattice[sub].offset;
+                Cartesian pc = (c == 0) ? pb : pb + static_cast<float>(c) * lattice.vector(2);
+                for (auto s = 0; s < nsub; ++s) {
+                    positions[idx++] = pc + lattice[s].position;
                 } // sub
             } // c
         } // b
@@ -116,7 +116,7 @@ Foundation::Foundation(Lattice const& lattice, Primitive const& primitive)
     : lattice(lattice),
       bounds(-primitive.size.array() / 2, (primitive.size.array() - 1) / 2),
       size(primitive.size),
-      size_n(static_cast<int>(lattice.sublattices.size())),
+      size_n(lattice.nsub()),
       num_sites(size.prod() * size_n),
       positions(detail::generate_positions(lattice.calc_position(bounds.first), size, lattice)),
       is_valid(ArrayX<bool>::Constant(num_sites, true)) {}
@@ -125,11 +125,11 @@ Foundation::Foundation(Lattice const& lattice, Shape const& shape)
     : lattice(lattice),
       bounds(detail::find_bounds(shape, lattice)),
       size((bounds.second - bounds.first) + Index3D::Ones()),
-      size_n(static_cast<int>(lattice.sublattices.size())),
+      size_n(lattice.nsub()),
       num_sites(size.prod() * size_n),
       positions(detail::generate_positions(lattice.calc_position(bounds.first), size, lattice)),
       is_valid(shape.contains(positions)) {
-    remove_dangling(*this, lattice.min_neighbors);
+    remove_dangling(*this, lattice.get_min_neighbors());
 }
 
 HamiltonianIndices::HamiltonianIndices(Foundation const& foundation)

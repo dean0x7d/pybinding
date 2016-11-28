@@ -1,6 +1,5 @@
 #pragma once
 #include "system/System.hpp"
-#include "system/Lattice.hpp"
 #include "system/Shape.hpp"
 #include "system/Symmetry.hpp"
 #include "system/SystemModifiers.hpp"

@@ -23,31 +23,36 @@ TEST_CASE("Sublattice", "[lattice]") {
 
 TEST_CASE("Lattice", "[lattice]") {
     auto lattice = Lattice({1, 0, 0}, {0, 1, 0});
-    REQUIRE(lattice.vectors.size() == 2);
-    REQUIRE(lattice.vectors.capacity() == 2);
+    REQUIRE(lattice.ndim() == 2);
+    REQUIRE(lattice.get_vectors().capacity() == 2);
     REQUIRE(lattice.max_hoppings() == 0);
 
     SECTION("Add sublattices") {
         lattice.add_sublattice("A");
-        REQUIRE_FALSE(lattice.has_onsite_energy);
+        REQUIRE_FALSE(lattice.has_onsite_energy());
         REQUIRE_THROWS(lattice.add_sublattice("A"));
 
         lattice.add_sublattice("B", {0, 0, 0}, 1.0);
-        REQUIRE(lattice.has_onsite_energy);
+        REQUIRE(lattice.has_onsite_energy());
 
-        lattice.sublattices.resize(std::numeric_limits<sub_id>::max());
+        while (lattice.nsub() != std::numeric_limits<sub_id>::max() + 1) {
+            lattice.add_sublattice(std::to_string(lattice.nsub()));
+        }
         REQUIRE_THROWS(lattice.add_sublattice("overflow"));
     }
 
     SECTION("Register hoppings") {
         lattice.register_hopping_energy("t1", 1.0);
-        REQUIRE_FALSE(lattice.has_complex_hopping);
+        REQUIRE_FALSE(lattice.has_complex_hoppings());
         REQUIRE_THROWS(lattice.register_hopping_energy("t1", 1.0));
 
         lattice.register_hopping_energy("t2", {0, 1.0});
-        REQUIRE(lattice.has_complex_hopping);
+        REQUIRE(lattice.has_complex_hoppings());
 
-        lattice.hopping_energies.resize(std::numeric_limits<hop_id>::max());
+        while (lattice.get_hoppings().energy.size() != std::numeric_limits<hop_id>::max() + 1) {
+            auto e = static_cast<double>(lattice.get_hoppings().energy.size());
+            lattice.register_hopping_energy(std::to_string(e), e);
+        }
         REQUIRE_THROWS(lattice.register_hopping_energy("overflow", 1.0));
     }
 
@@ -75,7 +80,7 @@ TEST_CASE("Lattice", "[lattice]") {
         REQUIRE(lattice.max_hoppings() == 3);
 
         auto const t2 = lattice.add_hopping({1, 1, 0}, a, a, 2.0);
-        REQUIRE(lattice.hopping_energies.size() == 2);
+        REQUIRE(lattice.get_hoppings().energy.size() == 2);
         REQUIRE(lattice.add_hopping({1, 1, 0}, a, b, 2.0) == t2);
     }
 
@@ -95,7 +100,7 @@ TEST_CASE("Lattice", "[lattice]") {
 
     SECTION("Min neighbors") {
         auto const copy = lattice.with_min_neighbors(3);
-        REQUIRE(copy.min_neighbors == 3);
+        REQUIRE(copy.get_min_neighbors() == 3);
     }
 }
 
@@ -185,7 +190,7 @@ TEST_CASE("HoppingGenerator", "[generator]") {
         return lattice;
     }());
     REQUIRE_FALSE(model.is_complex());
-    REQUIRE(model.get_lattice().hopping_energies.size() == 1);
+    REQUIRE(model.get_lattice().get_hoppings().energy.size() == 1);
     REQUIRE(model.system()->hoppings.isCompressed());
     REQUIRE(model.system()->hoppings.rows() == 2);
     REQUIRE(model.system()->hoppings.nonZeros() == 0);
@@ -199,13 +204,13 @@ TEST_CASE("HoppingGenerator", "[generator]") {
         }});
 
         REQUIRE_FALSE(model.is_complex());
-        REQUIRE(model.get_lattice().hopping_energies.size() == 2);
+        REQUIRE(model.get_lattice().get_hoppings().energy.size() == 2);
         REQUIRE(model.system()->hoppings.isCompressed());
         REQUIRE(model.system()->hoppings.rows() == 2);
         REQUIRE(model.system()->hoppings.nonZeros() == 1);
 
-        auto const hopping_it = model.get_lattice().hop_name_map.find("t2");
-        REQUIRE(hopping_it != model.get_lattice().hop_name_map.end());
+        auto const hopping_it = model.get_lattice().get_hoppings().id.find("t2");
+        REQUIRE(hopping_it != model.get_lattice().get_hoppings().id.end());
         auto const hopping_id = hopping_it->second;
         REQUIRE(model.system()->hoppings.coeff(0, 1) == hopping_id);
     }

@@ -67,7 +67,7 @@ def test_add_sublattice(mock_lattice):
     with pytest.raises(RuntimeError) as excinfo:
         for i in range(127):
             mock_lattice.add_one_sublattice(str(i), (0, 0))
-    assert "Cannot create more sublattices" in str(excinfo.value)
+    assert "Exceeded maximum number of unique sublattices" in str(excinfo.value)
 
 
 def test_add_sublattice_alias(mock_lattice):
@@ -121,7 +121,7 @@ def test_add_hopping(mock_lattice):
     with pytest.raises(RuntimeError) as excinfo:
         for i in range(1, 128):
             mock_lattice.add_one_hopping((0, i), 'a', 'b', i)
-    assert "Can't create any more hoppings" in str(excinfo.value)
+    assert "Exceeded maximum number of unique hoppings energies" in str(excinfo.value)
 
 
 def test_builder():

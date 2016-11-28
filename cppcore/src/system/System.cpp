@@ -95,7 +95,7 @@ void populate_boundaries(System& system, Foundation const& foundation,
 
         // the reservation number is intentionally overestimated
         auto const reserve_nonzeros = [&]{
-            auto nz = static_cast<int>(lattice.sublattices.size() * lattice.max_hoppings() / 2);
+            auto nz = lattice.nsub() * lattice.max_hoppings() / 2;
             for (auto i = 0; i < translation.boundary_slice.ndims(); ++i) {
                 if (translation.boundary_slice[i].end < 0)
                     nz *= foundation.get_size()[i];
@@ -130,7 +130,7 @@ void populate_boundaries(System& system, Foundation const& foundation,
 
 void add_extra_hoppings(System& system, HoppingGenerator const& gen) {
     auto const& lattice = system.lattice;
-    auto const pairs = gen.make(system.positions, {system.sublattices, lattice.sub_name_map});
+    auto const pairs = gen.make(system.positions, {system.sublattices, lattice.get_sites().id});
 
     system.hoppings.reserve([&]{
         auto reserve = ArrayXi(ArrayXi::Zero(system.num_sites()));
@@ -142,8 +142,9 @@ void add_extra_hoppings(System& system, HoppingGenerator const& gen) {
     }());
 
     auto const hopping_id = [&]{
-        auto const it = lattice.hop_name_map.find(gen.name);
-        assert(it != lattice.hop_name_map.end());
+        auto const& ids = lattice.get_hoppings().id;
+        auto const it = ids.find(gen.name);
+        assert(it != ids.end());
         return it->second;
     }();
 

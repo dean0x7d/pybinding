@@ -1,4 +1,4 @@
-#include "system/Lattice.hpp"
+#include "Lattice.hpp"
 #include "wrappers.hpp"
 using namespace cpb;
 
@@ -22,18 +22,43 @@ void wrap_lattice(py::module& m) {
         });
 
     py::class_<Sublattice>(m, "Sublattice")
-        .def_readonly("offset", &Sublattice::offset, "Relative to global lattice offset")
-        .def_readonly("onsite", &Sublattice::onsite, "Onsite energy")
+        .def_readonly("position", &Sublattice::position, "Relative to global lattice offset")
         .def_readonly("alias", &Sublattice::alias,
                       "For supercells only: allows two sublattices to have the same ID")
         .def_readonly("hoppings", &Sublattice::hoppings, "List of :class:`~_pybinding.Hopping`")
         .def("__getstate__", [](Sublattice const& s) {
-            return py::make_tuple(s.offset, s.onsite, s.alias, s.hoppings);
+            return py::make_tuple(s.position, s.alias, s.hoppings);
         })
         .def("__setstate__", [](Sublattice& s, py::tuple t) {
             new (&s) Sublattice();
-            s = {t[0].cast<decltype(s.offset)>(), t[1].cast<decltype(s.onsite)>(),
-                 t[2].cast<decltype(s.alias)>(), t[3].cast<decltype(s.hoppings)>()};
+            s = {t[0].cast<decltype(s.position)>(), t[1].cast<decltype(s.alias)>(),
+                 t[2].cast<decltype(s.hoppings)>()};
+        });
+
+    py::class_<Lattice::Sites>(m, "LatticeSites")
+        .def_readonly("structure", &Lattice::Sites::structure)
+        .def_readonly("energy", &Lattice::Sites::energy)
+        .def_readonly("id", &Lattice::Sites::id)
+        .def("__getstate__", [](Lattice::Sites const& s) {
+            return py::make_tuple(s.structure, s.energy, s.id);
+        })
+        .def("__setstate__", [](Lattice::Sites& s, py::tuple t) {
+            new (&s) Lattice::Sites();
+            s = {t[0].cast<decltype(s.structure)>(), t[1].cast<decltype(s.energy)>(),
+                 t[2].cast<decltype(s.id)>()};
+        });
+
+    py::class_<Lattice::Hoppings>(m, "LatticeHoppings")
+        .def_readonly("structure", &Lattice::Hoppings::structure)
+        .def_readonly("energy", &Lattice::Hoppings::energy)
+        .def_readonly("id", &Lattice::Hoppings::id)
+        .def("__getstate__", [](Lattice::Hoppings const& h) {
+            return py::make_tuple(h.structure, h.energy, h.id);
+        })
+        .def("__setstate__", [](Lattice::Hoppings& h, py::tuple t) {
+            new (&h) Lattice::Hoppings();
+            h = {t[0].cast<decltype(h.structure)>(), t[1].cast<decltype(h.energy)>(),
+                 t[2].cast<decltype(h.id)>()};
         });
 
     py::class_<Lattice>(m, "Lattice")
@@ -46,28 +71,26 @@ void wrap_lattice(py::module& m) {
         .def("register_hopping_energy", &Lattice::register_hopping_energy, "name"_a, "energy"_a)
         .def("add_registered_hopping", &Lattice::add_registered_hopping,
              "relative_index"_a, "from_sublattice"_a, "to_sublattice"_a, "id"_a)
-        .def_readonly("vectors", &Lattice::vectors)
-        .def_readonly("sublattices", &Lattice::sublattices)
-        .def_readonly("hopping_energies", &Lattice::hopping_energies)
-        .def_readonly("sub_name_map", &Lattice::sub_name_map)
-        .def_readonly("hop_name_map", &Lattice::hop_name_map)
-        .def_property("offset", [](Lattice const& l) { return l.offset; }, &Lattice::set_offset)
-        .def_readwrite("min_neighbors", &Lattice::min_neighbors)
+        .def_property_readonly("vectors", &Lattice::get_vectors)
+        .def_property_readonly("sublattices",
+                               [](Lattice const& l) { return l.get_sites().structure; })
+        .def_property_readonly("sub_name_map",
+                               [](Lattice const& l) { return l.get_sites().id; })
+        .def_property_readonly("hopping_energies",
+                               [](Lattice const& l) { return l.get_hoppings().energy; })
+        .def_property_readonly("hop_name_map",
+                               [](Lattice const& l) { return l.get_hoppings().id; })
+        .def_property("offset", &Lattice::get_offset, &Lattice::set_offset)
+        .def_property("min_neighbors", &Lattice::get_min_neighbors, &Lattice::set_min_neighbors)
         .def("__getstate__", [](Lattice const& l) {
-            return py::make_tuple(l.vectors, l.sublattices, l.hopping_energies, l.sub_name_map,
-                                  l.hop_name_map, l.offset, l.min_neighbors);
+            return py::make_tuple(l.get_vectors(), l.get_sites(), l.get_hoppings(),
+                                  l.get_offset(), l.get_min_neighbors());
         })
         .def("__setstate__", [](Lattice& l, py::tuple t) {
-            new (&l) Lattice(t[0].cast<decltype(l.vectors)>());
-            l.sublattices = t[1].cast<decltype(l.sublattices)>();
-            l.has_onsite_energy = std::any_of(l.sublattices.begin(), l.sublattices.end(),
-                                              [](Sublattice const& sub) { return sub.onsite != 0; });
-            l.hopping_energies = t[2].cast<decltype(l.hopping_energies)>();
-            l.has_complex_hopping = std::any_of(l.hopping_energies.begin(), l.hopping_energies.end(),
-                                                [](std::complex<double> e) { return e.imag() != .0; });
-            l.sub_name_map = t[3].cast<decltype(l.sub_name_map)>();
-            l.hop_name_map = t[4].cast<decltype(l.hop_name_map)>();
-            l.offset = t[5].cast<decltype(l.offset)>();
-            l.min_neighbors = t[6].cast<decltype(l.min_neighbors)>();
+            new (&l) Lattice(t[0].cast<Lattice::Vectors>(),
+                             t[1].cast<Lattice::Sites>(),
+                             t[2].cast<Lattice::Hoppings>());
+            l.set_offset(t[3].cast<Cartesian>());
+            l.set_min_neighbors(t[4].cast<int>());
         });
 }

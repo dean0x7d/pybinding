@@ -1,5 +1,4 @@
 #include "system/Symmetry.hpp"
-#include "system/Lattice.hpp"
 #include "system/Foundation.hpp"
 
 namespace cpb {
@@ -28,7 +27,7 @@ SymmetryArea TranslationalSymmetry::area(Foundation const& foundation) const {
 
         // number of lattice sites in one period length
         auto const num_sites = [&]{
-            auto const n = static_cast<int>(std::round(length[i] / lattice.vectors[i].norm()));
+            auto const n = static_cast<int>(std::round(length[i] / lattice.vector(i).norm()));
             return (n > 0) ? n : 1;
         }();
 
@@ -72,14 +71,14 @@ std::vector<Translation> TranslationalSymmetry::translations(Foundation const& f
         auto shift_lenght = Cartesian{0, 0, 0};
         for (auto n = 0, size = lattice.ndim(); n < size; ++n) {
             auto const shift = static_cast<float>(direction[n] * symmetry_area.middle[n]);
-            shift_lenght += shift * lattice.vectors[n];
+            shift_lenght += shift * lattice.vector(n);
         }
 
         translations.push_back({direction, boundary_slice, shift_index, shift_lenght});
     };
 
     auto const masks = detail::make_masks(enabled_directions, lattice.ndim());
-    for (auto const& sublattice : lattice.sublattices) {
+    for (auto const& sublattice : lattice.get_sites().structure) {
         for (auto const& hopping : sublattice.hoppings) {
             for (auto const& mask : masks) {
                 add_translation(hopping.relative_index.cwiseProduct(mask));

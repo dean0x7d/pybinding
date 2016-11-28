@@ -94,11 +94,11 @@ void HamiltonianModifiers::apply_to_onsite(System const& system, Fn lambda) cons
     auto const num_sites = system.num_sites();
     auto potential = ArrayX<scalar_t>{};
 
-    if (system.lattice.has_onsite_energy) {
+    if (system.lattice.has_onsite_energy()) {
         potential.resize(num_sites);
         transform(system.sublattices, potential, [&](sub_id id) {
             using real_t = num::get_real_t<scalar_t>;
-            return static_cast<real_t>(system.lattice[id].onsite);
+            return static_cast<real_t>(system.lattice.onsite_energy(id));
         });
     }
 
@@ -108,7 +108,7 @@ void HamiltonianModifiers::apply_to_onsite(System const& system, Fn lambda) cons
 
         for (auto const& modifier : onsite) {
             modifier.apply(arrayref(potential), system.positions,
-                           {system.sublattices, system.lattice.sub_name_map});
+                           {system.sublattices, system.lattice.get_sites().id});
         }
     }
 
@@ -124,13 +124,12 @@ template<class scalar_t, class SystemOrBoundary, class Fn>
 void HamiltonianModifiers::apply_to_hoppings_impl(SystemOrBoundary const& system,
                                                   CartesianArray const& positions,
                                                   Lattice const& lattice, Fn lambda) const {
-    auto const& base_hopping_energies = lattice.hopping_energies;
     auto hopping_csr_matrix = sparse::make_loop(system.hoppings);
 
     if (hopping.empty()) {
         // fast path: modifiers don't need to be applied
         hopping_csr_matrix.for_each([&](int row, int col, hop_id id) {
-            lambda(row, col, num::complex_cast<scalar_t>(base_hopping_energies[id]));
+            lambda(row, col, num::complex_cast<scalar_t>(lattice.hopping_energy(id)));
         });
     } else {
         /*
@@ -157,7 +156,7 @@ void HamiltonianModifiers::apply_to_hoppings_impl(SystemOrBoundary const& system
             buffer_size,
             // fill buffer
             [&](int row, int col, hop_id id, int n) {
-                hoppings[n] = num::complex_cast<scalar_t>(base_hopping_energies[id]);
+                hoppings[n] = num::complex_cast<scalar_t>(lattice.hopping_energy(id));
                 pos1[n] = positions[row];
                 pos2[n] = detail::shifted(positions[col], system);
                 hop_ids[n] = id;
@@ -173,7 +172,7 @@ void HamiltonianModifiers::apply_to_hoppings_impl(SystemOrBoundary const& system
 
                 for (auto const& modifier : hopping) {
                     modifier.apply(arrayref(hoppings), pos1, pos2,
-                                   {hop_ids, lattice.hop_name_map});
+                                   {hop_ids, lattice.get_hoppings().id});
                 }
 
                 hopping_csr_matrix.slice_for_each(

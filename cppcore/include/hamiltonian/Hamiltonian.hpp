@@ -48,7 +48,7 @@ void build_main(SparseMatrixX<scalar_t>& matrix, System const& system,
     auto const num_sites = system.num_sites();
     matrix.resize(num_sites, num_sites);
 
-    auto const has_onsite_energy = system.lattice.has_onsite_energy || !modifiers.onsite.empty();
+    auto const has_onsite_energy = system.lattice.has_onsite_energy() || !modifiers.onsite.empty();
     if (system.has_unbalanced_hoppings) {
         matrix.reserve(nonzeros_per_row(system.hoppings, has_onsite_energy));
     } else {

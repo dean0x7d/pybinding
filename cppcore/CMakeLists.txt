@@ -54,13 +54,13 @@ add_library(pybinding_cppcore
     include/support/thrust.hpp
     include/support/variant.hpp
     include/system/Foundation.hpp
-    include/system/Lattice.hpp
     include/system/Shape.hpp
     include/system/Symmetry.hpp
     include/system/System.hpp
     include/system/Generators.hpp
     include/system/SystemModifiers.hpp
     include/utils/Chrono.hpp
+    include/Lattice.hpp
     include/Model.hpp
     src/greens/kpm/Bounds.cpp
     src/greens/kpm/OptimizedHamiltonian.cpp
@@ -74,12 +74,12 @@ add_library(pybinding_cppcore
     src/solver/FEAST.cpp
     src/solver/Solver.cpp
     src/system/Foundation.cpp
-    src/system/Lattice.cpp
     src/system/Shape.cpp
     src/system/Symmetry.cpp
     src/system/System.cpp
     src/system/SystemModifiers.cpp
     src/utils/Chrono.cpp
+    src/Lattice.cpp
     src/Model.cpp
 )
 

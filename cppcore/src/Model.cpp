@@ -19,7 +19,7 @@ void Model::set_wave_vector(Cartesian const& new_wave_vector) {
 
 void Model::set_shape(Shape const& new_shape) {
     shape = new_shape;
-    lattice.set_offset(lattice.offset + shape.lattice_offset);
+    lattice.set_offset(lattice.get_offset() + shape.lattice_offset);
     clear_structure();
 }
 
@@ -73,7 +73,7 @@ bool Model::is_double() const {
 }
 
 bool Model::is_complex() const {
-    return lattice.has_complex_hopping || hamiltonian_modifiers.any_complex() || symmetry;
+    return lattice.has_complex_hoppings() || hamiltonian_modifiers.any_complex() || symmetry;
 }
 
 std::shared_ptr<System const> const& Model::system() const {
@@ -123,14 +123,14 @@ std::shared_ptr<System> Model::make_system() const {
 
         for (auto const& site_state_modifier : system_modifiers.state) {
             site_state_modifier.apply(foundation.get_states(), foundation.get_positions(),
-                                       {sublattices, lattice.sub_name_map});
+                                       {sublattices, lattice.get_sites().id});
             if (site_state_modifier.min_neighbors > 0) {
                 remove_dangling(foundation, site_state_modifier.min_neighbors);
             }
         }
         for (auto const& position_modifier : system_modifiers.position) {
             position_modifier.apply(foundation.get_positions(),
-                                     {sublattices, lattice.sub_name_map});
+                                     {sublattices, lattice.get_sites().id});
         }
     }
 

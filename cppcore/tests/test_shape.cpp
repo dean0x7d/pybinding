@@ -43,8 +43,8 @@ TEST_CASE("Shape-imposed lattice offset") {
     offset_model.set_shape(shape);
     auto const& offset_system = *offset_model.system();
     
-    REQUIRE(system.lattice.offset.isZero());
-    REQUIRE(offset_system.lattice.offset.isApprox(shape.lattice_offset));
+    REQUIRE(system.lattice.get_offset().isZero());
+    REQUIRE(offset_system.lattice.get_offset().isApprox(shape.lattice_offset));
     REQUIRE(system.positions.x.minCoeff() > offset_system.positions.x.minCoeff());
     REQUIRE(system.num_sites() > offset_system.num_sites());
 }

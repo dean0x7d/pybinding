@@ -1,5 +1,5 @@
 #pragma once
-#include "system/Lattice.hpp"
+#include "Lattice.hpp"
 
 #include "detail/slice.hpp"
 #include "numeric/dense.hpp"

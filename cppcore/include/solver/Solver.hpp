@@ -1,6 +1,5 @@
 #pragma once
 #include "Model.hpp"
-#include "system/Lattice.hpp"
 #include "hamiltonian/Hamiltonian.hpp"
 
 #include "utils/Chrono.hpp"

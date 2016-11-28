@@ -63,14 +63,14 @@ class Lattice:
     @property
     def offset(self):
         """Global lattice offset: sublattice offsets are defined relative to this
-            
+
         It must be within half the length of a primitive lattice vector."""
         return self.impl.offset
 
     @offset.setter
     def offset(self, value):
         self.impl.offset = value
-    
+
     @property
     def min_neighbors(self):
         """Minimum number of neighbours required at each lattice site
@@ -115,7 +115,7 @@ class Lattice:
         for name, energy in sorted(mapping.items(), key=lambda item: item[0]):
             self.impl.register_hopping_energy(name, energy)
 
-    def add_one_sublattice(self, name, offset, onsite_energy=0.0, alias=None):
+    def add_one_sublattice(self, name, position, onsite_energy=0.0, alias=None):
         """Add a new sublattice
 
         Parameters
@@ -123,7 +123,7 @@ class Lattice:
         name : str
             User-friendly identifier. The unique sublattice ID can later be accessed
             via this sublattice name as `lattice[sublattice_name]`.
-        offset : array_like
+        position : array_like
             Cartesian position with respect to the origin.
         onsite_energy : float, optional
             Onsite energy to be applied only to sites of this sublattice.
@@ -134,7 +134,7 @@ class Lattice:
             different positions.
         """
         alias = self.__getitem__(alias) if alias is not None else -1
-        self.impl.add_sublattice(name, offset, onsite_energy, alias)
+        self.impl.add_sublattice(name, position, onsite_energy, alias)
 
     def add_sublattices(self, *sublattices):
         """Add multiple new sublattices
@@ -385,7 +385,7 @@ class Lattice:
                 unit_cell_area = np.linalg.norm(np.cross(v1, v2))
 
                 num_sublattices = len(lattice.sublattices)
-                num_layers = len(np.unique([s.offset[2] for s in lattice.sublattices]))
+                num_layers = len(np.unique([s.position[2] for s in lattice.sublattices]))
                 site_area = unit_cell_area * num_layers / num_sublattices
 
                 magic = 0.33
@@ -396,7 +396,7 @@ class Lattice:
         def shortest_site_spacing(lattice):
             from scipy.spatial.distance import pdist
 
-            distances = pdist([s.offset for s in lattice.sublattices])
+            distances = pdist([s.position for s in lattice.sublattices])
             distances = distances[distances > 0]
 
             if np.any(distances):
@@ -426,14 +426,14 @@ class Lattice:
         model.system.plot(**with_defaults(kwargs, hopping=dict(color='#777777', width=1)))
 
         # by default, plot the lattice vectors from the center of the unit cell
-        sub_center = sum(s.offset for s in self.sublattices) / len(self.sublattices)
+        sub_center = sum(s.position for s in self.sublattices) / len(self.sublattices)
         if vector_position is not None:
             self.plot_vectors(sub_center if vector_position == 'center' else vector_position)
 
         # annotate sublattice names
         sub_names = {sub_id: name for name, sub_id in self.impl.sub_name_map.items()}
         for sub in self.sublattices:
-            pltutils.annotate_box(sub_names[sub.alias], xy=sub.offset[:2],
+            pltutils.annotate_box(sub_names[sub.alias], xy=sub.position[:2],
                                   bbox=dict(boxstyle="circle,pad=0.3", alpha=0.2, lw=0))
 
         # annotate neighboring cell indices
