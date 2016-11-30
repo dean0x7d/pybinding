@@ -451,7 +451,8 @@ class StructureMap(SpatialMap):
         pltutils.despine(trim=True)
         pltutils.add_margin()
 
-        plt.sci(collection)
+        if collection:
+            plt.sci(collection)
         return collection
 
 
