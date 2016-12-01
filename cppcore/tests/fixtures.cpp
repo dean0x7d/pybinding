@@ -1,15 +1,26 @@
 #include "fixtures.hpp"
-#include "numeric/constant.hpp"
 using namespace cpb;
 
 namespace lattice {
 
-cpb::Lattice square(float a, float t) {
+Lattice square(float a, float t) {
     auto lattice = Lattice({a, 0, 0}, {0, a, 0});
     auto const subid = lattice.add_sublattice("A", {0, 0, 0}, 4 * t);
     auto const hopid = lattice.register_hopping_energy("-t", -t);
     lattice.add_registered_hopping({0, 1, 0}, subid, subid, hopid);
     lattice.add_registered_hopping({1, 0, 0}, subid, subid, hopid);
+    return lattice;
+}
+
+Lattice square_2atom(float a, float t1, float t2) {
+    auto lattice = Lattice({a, 0, 0}, {0, a, 0});
+    auto const a_id = lattice.add_sublattice("A", {0, 0, 0});
+    auto const b_id = lattice.add_sublattice("B", {0.5f * a, 0.5f * a, 0});
+    auto const t1_id = lattice.register_hopping_energy("t1", t1);
+    auto const t2_id = lattice.register_hopping_energy("t2", t2);
+    lattice.add_registered_hopping({0, 0, 0}, a_id, b_id, t1_id);
+    lattice.add_registered_hopping({1, 1, 0}, a_id, b_id, t1_id);
+    lattice.add_registered_hopping({1, 0, 0}, a_id, a_id, t2_id);
     return lattice;
 }
 
