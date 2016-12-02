@@ -186,7 +186,7 @@ class System:
         """List of :class:`.Boundary`"""
         return self.impl.boundaries
 
-    def find_nearest(self, position, at_sublattice=None):
+    def find_nearest(self, position, at_sublattice=""):
         """Find the index of the atom closest to the given position
 
         Parameters
@@ -200,12 +200,12 @@ class System:
         -------
         int
         """
-        at_sublattice = self.lattice[at_sublattice] if at_sublattice is not None else -1
         if hasattr(self.impl, 'find_nearest'):
             # use cpp implementation
-            return self.impl.find_nearest(position, int(at_sublattice))
+            return self.impl.find_nearest(position, at_sublattice)
         else:
             # fallback numpy implementation
+            at_sublattice = self.lattice[at_sublattice] if at_sublattice else None
             sites = Sites(self.positions, self.sublattices)
             return sites.find_nearest(position, at_sublattice)
 

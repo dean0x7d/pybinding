@@ -16,6 +16,18 @@ void Sublattice::add_hopping(Index3D relative_index, sub_id to_sub, hop_id hop, 
     hoppings.push_back({relative_index, to_sub, hop, is_conj});
 }
 
+sub_id Lattice::Sites::id_lookup(std::string const& name) const {
+    auto const it = id.find(name);
+    if (it == id.end()) { throw std::out_of_range("There is no sublattice named '"+ name + "'"); }
+    return it->second;
+}
+
+hop_id Lattice::Hoppings::id_lookup(std::string const& name) const {
+    auto const it = id.find(name);
+    if (it == id.end()) { throw std::out_of_range("There is no hopping named '" + name + "'"); }
+    return it->second;
+}
+
 Lattice::Lattice(Cartesian a1, Cartesian a2, Cartesian a3) {
     vectors.push_back(a1);
     if (!a2.isZero()) { vectors.push_back(a2); }
@@ -23,8 +35,10 @@ Lattice::Lattice(Cartesian a1, Cartesian a2, Cartesian a3) {
     vectors.shrink_to_fit();
 }
 
-sub_id Lattice::add_sublattice(std::string const& name, Cartesian position,
-                               double onsite_energy, sub_id alias) {
+void Lattice::add_sublattice(std::string const& name, Cartesian position,
+                             double onsite_energy, std::string const& alias) {
+    if (name.empty()) { throw std::logic_error("Sublattice name can't be blank"); }
+
     constexpr auto max_size = static_cast<size_t>(std::numeric_limits<sub_id>::max());
     if (sites.structure.size() > max_size) {
         throw std::logic_error("Exceeded maximum number of unique sublattices: "
@@ -35,26 +49,13 @@ sub_id Lattice::add_sublattice(std::string const& name, Cartesian position,
     auto const is_unique_name = sites.id.emplace(name, id).second;
     if (!is_unique_name) { throw std::logic_error("Sublattice '" + name + "' already exists"); }
 
-    sites.structure.push_back({position, (alias < 0) ? id : alias, {}});
+    sites.structure.push_back({position, alias.empty() ? id : sites.id_lookup(alias), {}});
     sites.energy.push_back(onsite_energy);
-    return id;
 }
 
-hop_id Lattice::add_hopping(Index3D rel_index, sub_id from_sub, sub_id to_sub,
-                            std::complex<double> energy) {
-    auto const id = [&] {
-        auto const it = std::find(hoppings.energy.begin(), hoppings.energy.end(), energy);
-        if (it != hoppings.energy.end())
-            return static_cast<hop_id>(it - hoppings.energy.begin());
-        else
-            return register_hopping_energy({}, energy);
-    }();
+void Lattice::register_hopping_energy(std::string const& name, std::complex<double> energy) {
+    if (name.empty()) { throw std::logic_error("Hopping name can't be blank"); }
 
-    add_registered_hopping(rel_index, from_sub, to_sub, id);
-    return id;
-}
-
-hop_id Lattice::register_hopping_energy(std::string const& name, std::complex<double> energy) {
     constexpr auto max_size = static_cast<size_t>(std::numeric_limits<hop_id>::max());
     if (hoppings.energy.size() > max_size) {
         throw std::logic_error("Exceeded maximum number of unique hoppings energies: "
@@ -62,19 +63,14 @@ hop_id Lattice::register_hopping_energy(std::string const& name, std::complex<do
     }
 
     auto const id = static_cast<hop_id>(hoppings.energy.size());
-    if (!name.empty()) {
-        auto const is_unique_name = hoppings.id.emplace(name, id).second;
-        if (!is_unique_name) {
-            throw std::logic_error("Hopping '" + name + "' already exists");
-        }
-    }
+    auto const is_unique_name = hoppings.id.emplace(name, id).second;
+    if (!is_unique_name) { throw std::logic_error("Hopping '" + name + "' already exists"); }
 
     hoppings.energy.push_back(energy);
-    return id;
 }
 
-void Lattice::add_registered_hopping(Index3D relative_index, sub_id from_sub,
-                                     sub_id to_sub, hop_id hopping_id) {
+void Lattice::add_registered_hopping(Index3D relative_index, std::string const& from_sub,
+                                     std::string const& to_sub, std::string const& hopping) {
     if (from_sub == to_sub && relative_index == Index3D::Zero()) {
         throw std::logic_error(
             "Hoppings from/to the same sublattice must have a non-zero relative "
@@ -82,17 +78,34 @@ void Lattice::add_registered_hopping(Index3D relative_index, sub_id from_sub,
         );
     }
 
-    auto const max_sub = static_cast<sub_id>(nsub());
-    if (from_sub < 0 || from_sub >= max_sub || to_sub < 0 || to_sub >= max_sub) {
-        throw std::logic_error("The specified sublattice does not exist.");
-    }
-    if (hopping_id < 0 || static_cast<std::size_t>(hopping_id) > hoppings.energy.size()) {
-        throw std::logic_error("The specified hopping does not exist.");
-    }
+    auto const from_id = sites.id_lookup(from_sub);
+    auto const to_id = sites.id_lookup(to_sub);
+    auto const hopping_id = hoppings.id_lookup(hopping);
 
     // the other sublattice has an opposite relative index
-    sites.structure[from_sub].add_hopping(relative_index, to_sub, hopping_id, /*is_conjugate*/false);
-    sites.structure[to_sub].add_hopping(-relative_index, from_sub, hopping_id, /*is_conjugate*/true);
+    sites.structure[from_id].add_hopping(relative_index, to_id, hopping_id, /*is_conjugate*/false);
+    sites.structure[to_id].add_hopping(-relative_index, from_id, hopping_id, /*is_conjugate*/true);
+}
+
+void Lattice::add_hopping(Index3D rel_index, std::string const& from_sub,
+                          std::string const& to_sub, std::complex<double> energy) {
+    auto const hopping_name = [&] {
+        // Look for an existing hopping ID with the same energy
+        auto const it = std::find(hoppings.energy.begin(), hoppings.energy.end(), energy);
+        if (it != hoppings.energy.end()) {
+            auto const id = static_cast<hop_id>(it - hoppings.energy.begin());
+            for (auto const& p : hoppings.id) {
+                if (p.second == id) { return p.first; }
+            }
+            return std::string("This should never happen.");
+        } else {
+            auto const name = "__anonymous__" + std::to_string(hoppings.energy.size());
+            register_hopping_energy(name, energy);
+            return name;
+        }
+    }();
+
+    add_registered_hopping(rel_index, from_sub, to_sub, hopping_name);
 }
 
 void Lattice::set_offset(Cartesian position) {
@@ -113,14 +126,15 @@ int Lattice::max_hoppings() const {
     return max_size;
 }
 
-Cartesian Lattice::calc_position(Index3D index, sub_id sub) const {
+Cartesian Lattice::calc_position(Index3D index, std::string const& sub) const {
     auto position = offset;
     // Bravais lattice position
     for (auto i = size_t{0}, size = vectors.size(); i < size; ++i) {
         position += static_cast<float>(index[i]) * vectors[i];
     }
-    if (sub >= 0) {
-        position += sites.structure[sub].position;
+    if (!sub.empty()) {
+        auto const id = sites.id_lookup(sub);
+        position += sites.structure[id].position;
     }
     return position;
 }

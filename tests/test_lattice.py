@@ -53,6 +53,10 @@ def test_init():
 
 def test_add_sublattice(mock_lattice):
     with pytest.raises(RuntimeError) as excinfo:
+        mock_lattice.add_one_sublattice('', [0, 0])
+    assert "Sublattice name can't be blank" in str(excinfo.value)
+
+    with pytest.raises(RuntimeError) as excinfo:
         mock_lattice.add_one_sublattice('a', (0, 0))
     assert "Sublattice 'a' already exists" in str(excinfo.value)
 
@@ -79,7 +83,7 @@ def test_add_sublattice_alias(mock_lattice):
     assert mock_lattice['c'] != mock_lattice['a']
     assert model.system.sublattices[c_index] == mock_lattice['a']
 
-    with pytest.raises(KeyError) as excinfo:
+    with pytest.raises(IndexError) as excinfo:
         mock_lattice.add_one_sublattice('d', [0, 0], alias='bad_name')
     assert "There is no sublattice named 'bad_name'" in str(excinfo.value)
 
@@ -93,7 +97,7 @@ def test_add_hopping(mock_lattice):
         mock_lattice.add_one_hopping((0, 0), 'a', 'a', 1)
     assert "Don't define onsite energy here" in str(excinfo.value)
 
-    with pytest.raises(KeyError) as excinfo:
+    with pytest.raises(IndexError) as excinfo:
         mock_lattice.add_one_hopping((0, 0), 'c', 'a', 1)
     assert "There is no sublattice named 'c'" in str(excinfo.value)
 
@@ -111,10 +115,14 @@ def test_add_hopping(mock_lattice):
     mock_lattice.add_one_hopping((0, 1), 'a', 'a', 't_nn')
 
     with pytest.raises(RuntimeError) as excinfo:
+        mock_lattice.register_hopping_energies({'': 0.0})
+    assert "Hopping name can't be blank" in str(excinfo.value)
+
+    with pytest.raises(RuntimeError) as excinfo:
         mock_lattice.register_hopping_energies({'t_nn': 0.2})
     assert "Hopping 't_nn' already exists" in str(excinfo.value)
 
-    with pytest.raises(KeyError) as excinfo:
+    with pytest.raises(IndexError) as excinfo:
         mock_lattice.add_one_hopping((0, 1), 'a', 'a', 'tt')
     assert "There is no hopping named 'tt'" in str(excinfo.value)
 

@@ -31,15 +31,10 @@ def test_api():
 
     idx = system.num_sites // 2
     assert idx == system.find_nearest(system.xyz[idx])
-    assert idx == system.find_nearest(system.xyz[idx], system.sublattices[idx])
+    assert idx == system.find_nearest(system.xyz[idx], 'A')
     assert system.find_nearest([0, 0], 'A') != system.find_nearest([0, 0], 'B')
 
-    invalid_sublattice = 99
-    with pytest.raises(KeyError) as excinfo:
-        system.find_nearest([0, 0], invalid_sublattice)
-    assert "There is no sublattice" in str(excinfo.value)
-
-    with pytest.raises(KeyError) as excinfo:
+    with pytest.raises(IndexError) as excinfo:
         system.find_nearest([0, 0], 'invalid_sublattice')
     assert "There is no sublattice" in str(excinfo.value)
 

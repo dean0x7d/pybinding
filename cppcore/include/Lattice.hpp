@@ -58,12 +58,16 @@ public:
         std::vector<Sublattice> structure; ///< positional data and aliases
         std::vector<double> energy; ///< onsite energy indexed by sub_id
         std::unordered_map<std::string, sub_id> id; ///< map from friendly name to numeric ID
+
+        sub_id id_lookup(std::string const& name) const;
     };
 
     struct Hoppings {
         std::vector<Hopping> structure; ///< which sites are connected by hoppings
         std::vector<std::complex<double>> energy; ///< unique energies indexed by hop_id
         std::unordered_map<std::string, hop_id> id; ///< map from friendly name to numeric ID
+
+        hop_id id_lookup(std::string const& name) const;
     };
 
 public:
@@ -71,20 +75,20 @@ public:
     Lattice(Vectors v, Sites s, Hoppings h)
         : vectors(std::move(v)), sites(std::move(s)), hoppings(std::move(h)) {}
 
-    /// Create a new sublattice and return it's ID
-    sub_id add_sublattice(std::string const& name, Cartesian position = {0, 0, 0},
-                          double onsite_energy = .0, sub_id alias = -1);
+    /// Create a new sublattice
+    void add_sublattice(std::string const& name, Cartesian position = {0, 0, 0},
+                        double onsite_energy = .0, std::string const& alias = "");
 
-    /// Connect sites via relative index/sublattices and return an ID for the given hopping energy
-    hop_id add_hopping(Index3D relative_index, sub_id from_sublattice,
-                       sub_id to_sublattice, std::complex<double> energy);
+    /// Associate a name with a hopping energy, but don't connect any sites
+    void register_hopping_energy(std::string const& name, std::complex<double> energy);
 
-    /// Register just the energy and create an ID, but don't connect any sites
-    hop_id register_hopping_energy(std::string const& name, std::complex<double> energy);
+    /// Connect sites with an already registered hopping name/energy
+    void add_registered_hopping(Index3D relative_index, std::string const& from_sublattice,
+                                std::string const& to_sublattice, std::string const& hopping);
 
-    /// Connect sites with already registered hopping ID/energy
-    void add_registered_hopping(Index3D relative_index, sub_id from_sublattice,
-                                sub_id to_sublattice, hop_id id);
+    /// Connect sites with an annonymous hopping energy
+    void add_hopping(Index3D relative_index, std::string const& from_sublattice,
+                     std::string const& to_sublattice, std::complex<double> energy);
 
 public: // getters and setters
     /// The primitive vectors that define the lattice
@@ -133,7 +137,7 @@ public: // properties
 
 public: // utilities
     /// Calculate the spatial position of a unit cell or a sublattice site if specified
-    Cartesian calc_position(Index3D index, sub_id sublattice = -1) const;
+    Cartesian calc_position(Index3D index, std::string const& sublattice = "") const;
 
     /**
      Translate Cartesian `position` into lattice vector coordinates

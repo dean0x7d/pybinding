@@ -25,21 +25,29 @@ System::System(Foundation const& foundation, HamiltonianIndices const& hamiltoni
         throw std::runtime_error{"Impossible system: built 0 lattice sites"};
 }
 
-int System::find_nearest(Cartesian target_position, sub_id target_sublattice) const {
+int System::find_nearest(Cartesian target_position, std::string const& sublattice) const {
     auto nearest_index = 0;
     auto min_distance = (positions[0] - target_position).norm();
 
-    for (auto i = 1; i < num_sites(); ++i) {
-        if (target_sublattice >= 0 && sublattices[i] != target_sublattice)
-            continue; // only check the target sublattice (if any)
-
+    auto check_index = [&](int i) {
         auto const distance = (positions[i] - target_position).norm();
         if (distance < min_distance) {
             min_distance = distance;
             nearest_index = i;
         }
+    };
+
+    if (sublattice.empty()) { // check all sites
+        for (auto i = 1; i < num_sites(); ++i) {
+            check_index(i);
+        }
+    } else { // only sites belonging to the target sublattice
+        auto const target_sublattice = lattice.get_sites().id_lookup(sublattice);
+        for (auto i = 1; i < num_sites(); ++i) {
+            if (sublattices[i] == target_sublattice) { check_index(i); }
+        }
     }
-    
+
     return nearest_index;
 }
 

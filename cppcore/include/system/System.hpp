@@ -34,7 +34,7 @@ struct System {
     int num_sites() const { return positions.size(); }
 
     /// Find the index of the site nearest to the given position. Optional: filter by sublattice.
-    int find_nearest(Cartesian position, sub_id sublattice = -1) const;
+    int find_nearest(Cartesian position, std::string const& sublattice = "") const;
 };
 
 /**

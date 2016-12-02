@@ -26,7 +26,7 @@ void wrap_system(py::module& m) {
 
     py::class_<System, std::shared_ptr<System>>(m, "System")
         .def(py::init<Lattice const&>())
-        .def("find_nearest", &System::find_nearest, "position"_a, "sublattice"_a=-1)
+        .def("find_nearest", &System::find_nearest, "position"_a, "sublattice"_a="")
         .def_readonly("lattice", &System::lattice)
         .def_readonly("positions", &System::positions)
         .def_property_readonly("sublattices", [](System const& s) { return arrayref(s.sublattices); })

@@ -5,22 +5,29 @@ namespace lattice {
 
 Lattice square(float a, float t) {
     auto lattice = Lattice({a, 0, 0}, {0, a, 0});
-    auto const subid = lattice.add_sublattice("A", {0, 0, 0}, 4 * t);
-    auto const hopid = lattice.register_hopping_energy("-t", -t);
-    lattice.add_registered_hopping({0, 1, 0}, subid, subid, hopid);
-    lattice.add_registered_hopping({1, 0, 0}, subid, subid, hopid);
+
+    lattice.add_sublattice("A", {0, 0, 0}, 4 * t);
+
+    lattice.register_hopping_energy("-t", -t);
+    lattice.add_registered_hopping({0, 1, 0}, "A", "A", "-t");
+    lattice.add_registered_hopping({1, 0, 0}, "A", "A", "-t");
+
     return lattice;
 }
 
 Lattice square_2atom(float a, float t1, float t2) {
     auto lattice = Lattice({a, 0, 0}, {0, a, 0});
-    auto const a_id = lattice.add_sublattice("A", {0, 0, 0});
-    auto const b_id = lattice.add_sublattice("B", {0.5f * a, 0.5f * a, 0});
-    auto const t1_id = lattice.register_hopping_energy("t1", t1);
-    auto const t2_id = lattice.register_hopping_energy("t2", t2);
-    lattice.add_registered_hopping({0, 0, 0}, a_id, b_id, t1_id);
-    lattice.add_registered_hopping({1, 1, 0}, a_id, b_id, t1_id);
-    lattice.add_registered_hopping({1, 0, 0}, a_id, a_id, t2_id);
+
+    lattice.add_sublattice("A", {0, 0, 0});
+    lattice.add_sublattice("B", {0.5f * a, 0.5f * a, 0});
+
+    lattice.register_hopping_energy("t1", t1);
+    lattice.register_hopping_energy("t2", t2);
+
+    lattice.add_registered_hopping({0, 0, 0}, "A", "B", "t1");
+    lattice.add_registered_hopping({1, 1, 0}, "A", "B", "t1");
+    lattice.add_registered_hopping({1, 0, 0}, "A", "A", "t2");
+
     return lattice;
 }
 
@@ -31,13 +38,13 @@ namespace graphene {
 Lattice monolayer() {
     auto lattice = Lattice({a, 0, 0}, {a/2, a/2 * sqrt(3.0f), 0});
 
-    auto const A = lattice.add_sublattice("A", {0, -a_cc/2, 0});
-    auto const B = lattice.add_sublattice("B", {0,  a_cc/2, 0});
-    auto const t0 = lattice.register_hopping_energy("t", t);
+    lattice.add_sublattice("A", {0, -a_cc/2, 0});
+    lattice.add_sublattice("B", {0,  a_cc/2, 0});
 
-    lattice.add_registered_hopping({0,  0, 0}, A, B, t0);
-    lattice.add_registered_hopping({1, -1, 0}, A, B, t0);
-    lattice.add_registered_hopping({0, -1, 0}, A, B, t0);
+    lattice.register_hopping_energy("t", t);
+    lattice.add_registered_hopping({0,  0, 0}, "A", "B", "t");
+    lattice.add_registered_hopping({1, -1, 0}, "A", "B", "t");
+    lattice.add_registered_hopping({0, -1, 0}, "A", "B", "t");
 
     return lattice;
 }

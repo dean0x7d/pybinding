@@ -115,7 +115,7 @@ class Lattice:
         for name, energy in sorted(mapping.items(), key=lambda item: item[0]):
             self.impl.register_hopping_energy(name, energy)
 
-    def add_one_sublattice(self, name, position, onsite_energy=0.0, alias=None):
+    def add_one_sublattice(self, name, position, onsite_energy=0.0, alias=""):
         """Add a new sublattice
 
         Parameters
@@ -125,15 +125,14 @@ class Lattice:
             via this sublattice name as `lattice[sublattice_name]`.
         position : array_like
             Cartesian position with respect to the origin.
-        onsite_energy : float, optional
+        onsite_energy : float
             Onsite energy to be applied only to sites of this sublattice.
-        alias : str, optional
+        alias : str
             Given the name of a previously defined sublattice, the new sublattice
             is created as an alias for the old one. This is useful when defining
             a supercell which contains multiple sites of one sublattice family at
             different positions.
         """
-        alias = self.__getitem__(alias) if alias is not None else -1
         self.impl.add_sublattice(name, position, onsite_energy, alias)
 
     def add_sublattices(self, *sublattices):
@@ -164,7 +163,7 @@ class Lattice:
         for sub in sublattices:
             self.add_one_sublattice(*sub)
 
-    def add_one_hopping(self, relative_index, from_sublattice, to_sublattice, hop_name_or_energy):
+    def add_one_hopping(self, relative_index, from_sub, to_sub, hop_name_or_energy):
         """Add a new hopping
 
         For each new hopping, its Hermitian conjugate is added automatically. Doing so
@@ -175,20 +174,15 @@ class Lattice:
         ----------
         relative_index : array_like of int
             Difference of the indices of the source and destination unit cells.
-        from_sublattice : str
+        from_sub : str
             Name of the sublattice in the source unit cell.
-        to_sublattice : str
+        to_sub : str
             Name of the sublattice in the destination unit cell.
         hop_name_or_energy : float or str
             The numeric value of the hopping energy or the name of a previously
             registered hopping.
         """
-        from_sub, to_sub = map(self.__getitem__, (from_sublattice, to_sublattice))
-        if isinstance(hop_name_or_energy, str):
-            hop_id = self.__call__(hop_name_or_energy)
-            self.impl.add_registered_hopping(relative_index, from_sub, to_sub, hop_id)
-        else:
-            self.impl.add_hopping(relative_index, from_sub, to_sub, hop_name_or_energy)
+        self.impl.add_hopping(relative_index, from_sub, to_sub, hop_name_or_energy)
 
     def add_hoppings(self, *hoppings):
         """Add multiple new hoppings
@@ -217,25 +211,6 @@ class Lattice:
         """
         for hop in hoppings:
             self.add_one_hopping(*hop)
-
-    def add_hopping_matrices(self, *pairs):
-        """Add hoppings in the matrix format
-
-        Parameters
-        ----------
-        *pairs
-            Each element is a tuple of `relative_index` and `hopping_matrix`.
-        """
-        for relative_index, matrix in pairs:
-            for (from_sub, to_sub), hopping_energy in np.ndenumerate(matrix):
-                if hopping_energy == 0:
-                    continue
-                # only consider lower triangle values of the relative_index==(0, 0) matrix
-                # the upper triangle is implied via Hermitian conjugation
-                if all(v == 0 for v in relative_index) and from_sub >= to_sub:
-                    continue
-
-                self.add_one_hopping(relative_index, from_sub, to_sub, hopping_energy)
 
     def with_offset(self, position):
         """Return a copy of this lattice with a different offset

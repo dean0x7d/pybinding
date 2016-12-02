@@ -69,8 +69,6 @@ def monolayer(nearest_neighbors=1, onsite=(0, 0), **kwargs):
 def monolayer_alt(onsite=(0, 0)):
     """Nearest-neighbor lattice with alternative lattice vectors
 
-    This lattice is mainly here to demonstrate specifying hoppings in matrix form.
-
     Parameters
     ----------
     onsite : Tuple[float, float]
@@ -79,29 +77,16 @@ def monolayer_alt(onsite=(0, 0)):
     from math import sqrt
     from .constants import a_cc, a, t
 
-    lat = pb.Lattice(
-        a1=[ a/2, a/2 * sqrt(3)],
-        a2=[-a/2, a/2 * sqrt(3)],
-    )
+    lat = pb.Lattice(a1=[a/2,  a/2 * sqrt(3)],
+                     a2=[a/2, -a/2 * sqrt(3)])
 
-    lat.add_sublattices(
-        ('A', [0,    0], onsite[0]),
-        ('B', [0, a_cc], onsite[1])
-    )
+    lat.add_sublattices(('A', [0,    0], onsite[0]),
+                        ('B', [0, a_cc], onsite[1]))
 
-    # matrix hopping specification
-    r0 = [ 0,  0]
-    r1 = [ 0, -1]
-    r2 = [-1,  0]
+    lat.add_hoppings(([ 0,  0], 'A', 'B', t),
+                     ([ 0,  1], 'A', 'B', t),
+                     ([-1,  0], 'A', 'B', t))
 
-    tr0 = [[0, t],
-           [t, 0]]
-    tr1 = [[0, t],
-           [0, 0]]
-    tr2 = [[0, t],
-           [0, 0]]
-
-    lat.add_hopping_matrices([r0, tr0], [r1, tr1], [r2, tr2])
     lat.min_neighbors = 2
     return lat
 

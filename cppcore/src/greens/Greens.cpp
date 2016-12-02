@@ -52,7 +52,7 @@ std::vector<ArrayXcd> BaseGreens::calc_greens_vector(int row, std::vector<int> c
 }
 
 ArrayXd BaseGreens::calc_ldos(ArrayXd const& energy, double broadening,
-                              Cartesian position, sub_id sublattice) const {
+                              Cartesian position, std::string const& sublattice) const {
     auto i = model.system()->find_nearest(position, sublattice);
     auto greens_function = calc_greens(i, i, energy, broadening);
 
@@ -60,7 +60,7 @@ ArrayXd BaseGreens::calc_ldos(ArrayXd const& energy, double broadening,
 }
 
 Deferred<ArrayXd> BaseGreens::deferred_ldos(ArrayXd const& energy, double broadening,
-                                            Cartesian position, sub_id sublattice) const {
+                                            Cartesian position, std::string const& sublattice) const {
     auto shared_strategy = std::shared_ptr<GreensStrategy>(make_strategy(model.hamiltonian()));
     auto& model = this->model;
 

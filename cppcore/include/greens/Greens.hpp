@@ -43,9 +43,9 @@ public:
                                              ArrayXd const& energy, double broadening) const;
 
     ArrayXd calc_ldos(ArrayXd const& energy, double broadening,
-                      Cartesian position, sub_id sublattice = -1) const;
+                      Cartesian position, std::string const& sublattice = "") const;
     Deferred<ArrayXd> deferred_ldos(ArrayXd const& energy, double broadening,
-                                    Cartesian position, sub_id sublattice = -1) const;
+                                    Cartesian position, std::string const& sublattice = "") const;
 
     /// Get some information about what happened during the last calculation
     std::string report(bool shortform) const;
