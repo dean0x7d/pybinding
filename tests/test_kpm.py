@@ -29,14 +29,14 @@ def kpm(model):
 
 def test_ldos(kpm, baseline, plot_if_fails):
     energy = np.linspace(0, 2, 25)
-    results = [k.calc_ldos(energy, broadening=0.15, position=(0, 0)) for k in kpm]
+    results = [k.calc_ldos(energy, broadening=0.15, position=(0, 0), sublattice='B') for k in kpm]
 
     expected = pb.results.LDOS(energy, baseline(results[0].ldos.astype(np.float32)))
     for i in range(len(results)):
         plot_if_fails(results[i], expected, 'plot', label=i)
 
     for result in results:
-        assert pytest.fuzzy_equal(result, expected, rtol=1e-4, atol=1e-6)
+        assert pytest.fuzzy_equal(result, expected, rtol=1e-3, atol=1e-6)
 
 
 def test_kpm_multiple_indices(model):

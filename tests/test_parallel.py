@@ -21,7 +21,7 @@ def test_sweep(baseline, plot_if_fails):
         )
 
         kpm = pb.greens.kpm(model)
-        return kpm.deferred_ldos(energy, broadening=0.15, position=[0, 0])
+        return kpm.deferred_ldos(energy, broadening=0.15, position=[0, 0], sublattice="B")
 
     silence_parallel_output(factory)
     labels = dict(title="test sweep", x="V (eV)", y="E (eV)", data="LDOS")
@@ -29,7 +29,7 @@ def test_sweep(baseline, plot_if_fails):
 
     expected = baseline(result)
     plot_if_fails(result, expected, 'plot')
-    assert pytest.fuzzy_equal(result, expected, rtol=1e-4, atol=1e-6)
+    assert pytest.fuzzy_equal(result, expected, rtol=1e-3, atol=1e-6)
 
 
 def test_ndsweep(baseline):
@@ -49,4 +49,4 @@ def test_ndsweep(baseline):
     result = pb.parallel.ndsweep(factory)
 
     expected = baseline(result)
-    assert pytest.fuzzy_equal(result, expected, rtol=1e-4, atol=1e-6)
+    assert pytest.fuzzy_equal(result, expected, rtol=1e-3, atol=1e-6)

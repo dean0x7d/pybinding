@@ -37,7 +37,7 @@ TEST_CASE("OptimizedHamiltonian reordering", "[kpm]") {
                                                  kpm::MatrixConfig::Format::CSR};
     SECTION("Diagonal") {
         auto oh = kpm::OptimizedHamiltonian<scalat_t>(&matrix, matrix_config);
-        auto const i = num_sites / 2;
+        auto const i = model.system()->find_nearest({0, 0.07f, 0}, "B");
         oh.optimize_for({i, i}, bounds.scaling_factors());
 
         REQUIRE(oh.idx().row == 0);
@@ -56,9 +56,11 @@ TEST_CASE("OptimizedHamiltonian reordering", "[kpm]") {
 
     SECTION("Off-diagonal") {
         auto oh = kpm::OptimizedHamiltonian<scalat_t>(&matrix, matrix_config);
-        auto const i = num_sites / 4;
-        auto const j = num_sites / 2;
-        oh.optimize_for({i, std::vector<int>{j, j+1, j+2}}, bounds.scaling_factors());
+        auto const i = model.system()->find_nearest({0, 0.35f, 0}, "A");
+        auto const j1 = model.system()->find_nearest({0, 0.07f, 0}, "B");
+        auto const j2 = model.system()->find_nearest({0.12f, 0.14f, 0}, "A");
+        auto const j3 = model.system()->find_nearest({0.12f, 0.28f, 0}, "B");
+        oh.optimize_for({i, std::vector<int>{j1, j2, j3}}, bounds.scaling_factors());
 
         REQUIRE(oh.idx().row != oh.idx().cols[0]);
         REQUIRE(oh.sizes().get_data().front() == 1);

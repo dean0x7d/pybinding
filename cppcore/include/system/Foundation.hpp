@@ -40,7 +40,7 @@ class Foundation {
     Lattice const& lattice;
     std::pair<Index3D, Index3D> bounds; ///< in lattice vector coordinates
     Index3D size; ///< number of unit cells in each lattice vector direction
-    int size_n; ///< sublattice size (number of sites in each unit cell)
+    int nsub; ///< number of sites in a unit cell
     int num_sites; ///< total number of sites: product of all sizes (3D and sublattice)
 
     CartesianArray positions; ///< real space coordinates of lattice sites
@@ -72,7 +72,7 @@ public:
     Lattice const& get_lattice() const { return lattice; }
     std::pair<Index3D, Index3D> const& get_bounds() const { return bounds; }
     Index3D const& get_size() const { return size; }
-    int get_num_sublattices() const { return size_n; }
+    int get_num_sublattices() const { return nsub; }
     int get_num_sites() const { return num_sites; }
 
     CartesianArray const& get_positions() const { return positions; }
@@ -96,8 +96,7 @@ protected:
     /// Recalculate flat `idx` from spatial `index` and `sublattice`
     void reset_idx() {
         auto const& size = foundation->size;
-        auto const& size_n = foundation->size_n;
-        idx = ((index[0] * size[1] + index[1]) * size[2] + index[2]) * size_n + sublattice;
+        idx = ((sublattice * size[2] + index[2]) * size[1] + index[1]) * size[0] + index[0];
     }
 
 public:
@@ -166,18 +165,18 @@ public:
 
     Iterator& operator++() {
         ++idx;
-        ++sublattice;
-        if (sublattice == foundation->size_n) {
-            ++index[2];
-            if (index[2] == foundation->size[2]) {
-                ++index[1];
-                if (index[1] == foundation->size[1]) {
-                    ++index[0];
-                    index[1] = 0;
+        ++index[0];
+        if (index[0] == foundation->size[0]) {
+            index[0] = 0;
+            ++index[1];
+            if (index[1] == foundation->size[1]) {
+                index[1] = 0;
+                ++index[2];
+                if (index[2] == foundation->size[2]) {
+                    index[2] = 0;
+                    ++sublattice;
                 }
-                index[2] = 0;
             }
-            sublattice = 0;
         }
         return *this;
     }
@@ -209,18 +208,18 @@ private:
 
         Iterator& operator++() {
             ++slice_idx;
-            ++sublattice;
-            if (sublattice == foundation->size_n) {
-                ++index[2];
-                if (index[2] == slice_index[2].end) {
-                    ++index[1];
-                    if (index[1] == slice_index[1].end) {
-                        ++index[0];
-                        index[1] = slice_index[1].start;
+            ++index[0];
+            if (index[0] == slice_index[0].end) {
+                index[0] = slice_index[0].start;
+                ++index[1];
+                if (index[1] == slice_index[1].end) {
+                    index[1] = slice_index[1].start;
+                    ++index[2];
+                    if (index[2] == slice_index[2].end) {
+                        index[2] = slice_index[2].start;
+                        ++sublattice;
                     }
-                    index[2] = slice_index[2].start;
                 }
-                sublattice = 0;
             }
             reset_idx();
             return *this;
@@ -234,9 +233,7 @@ private:
 
 public:
     Slice(Foundation* foundation, SliceIndex3D const& index)
-        : foundation(foundation), index(index) {
-        normalize();
-    }
+        : foundation(foundation), index(index) { normalize(); }
 
     Iterator begin() const { return {foundation, index, 0}; }
     Iterator end() const { return {foundation, index, size()}; }

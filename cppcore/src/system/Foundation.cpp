@@ -29,18 +29,19 @@ CartesianArray generate_positions(Cartesian origin, Index3D size, Lattice const&
     CartesianArray positions(num_sites);
 
     auto idx = 0;
-    for (auto a = 0; a < size[0]; ++a) {
-        Cartesian pa = origin + static_cast<float>(a) * lattice.vector(0);
-        for (auto b = 0; b < size[1]; ++b) {
-            Cartesian pb = (b == 0) ? pa : pa + static_cast<float>(b) * lattice.vector(1);
-            for (auto c = 0; c < size[2]; ++c) {
-                Cartesian pc = (c == 0) ? pb : pb + static_cast<float>(c) * lattice.vector(2);
-                for (auto s = 0; s < nsub; ++s) {
-                    positions[idx++] = pc + lattice[s].position;
-                } // sub
-            } // c
-        } // b
-    } // a
+    for (auto s = 0; s < nsub; ++s) {
+        Cartesian ps = origin + lattice[s].position;
+        for (auto c = 0; c < size[2]; ++c) {
+            Cartesian pc = (c == 0) ? ps : ps + static_cast<float>(c) * lattice.vector(2);
+            for (auto b = 0; b < size[1]; ++b) {
+                Cartesian pb = (b == 0) ? pc : pc + static_cast<float>(b) * lattice.vector(1);
+                for (auto a = 0; a < size[0]; ++a) {
+                    Cartesian pa = pb + static_cast<float>(a) * lattice.vector(0);
+                    positions[idx++] = pa;
+                } // a
+            } // b
+        } // c
+    } // sub
 
     return positions;
 }
@@ -90,14 +91,9 @@ void clear_neighbors(Site& site, ArrayX<int16_t>& neighbor_count, int min_neighb
 
 ArrayX<sub_id> make_sublattice_ids(Foundation const& foundation) {
     ArrayX<sub_id> sublattice_ids(foundation.get_num_sites());
-
-    auto const max_id = static_cast<sub_id>(foundation.get_num_sublattices());
-    for (auto i = 0; i < foundation.get_num_sites();) {
-        for (auto id = sub_id{0}; id < max_id; ++id, ++i) {
-            sublattice_ids[i] = id;
-        }
+    for (auto const& site : foundation) {
+        sublattice_ids[site.get_idx()] = static_cast<sub_id>(site.get_sublattice());
     }
-
     return sublattice_ids;
 }
 
@@ -116,8 +112,8 @@ Foundation::Foundation(Lattice const& lattice, Primitive const& primitive)
     : lattice(lattice),
       bounds(-primitive.size.array() / 2, (primitive.size.array() - 1) / 2),
       size(primitive.size),
-      size_n(lattice.nsub()),
-      num_sites(size.prod() * size_n),
+      nsub(lattice.nsub()),
+      num_sites(size.prod() * nsub),
       positions(detail::generate_positions(lattice.calc_position(bounds.first), size, lattice)),
       is_valid(ArrayX<bool>::Constant(num_sites, true)) {}
 
@@ -125,8 +121,8 @@ Foundation::Foundation(Lattice const& lattice, Shape const& shape)
     : lattice(lattice),
       bounds(detail::find_bounds(shape, lattice)),
       size((bounds.second - bounds.first) + Index3D::Ones()),
-      size_n(lattice.nsub()),
-      num_sites(size.prod() * size_n),
+      nsub(lattice.nsub()),
+      num_sites(size.prod() * nsub),
       positions(detail::generate_positions(lattice.calc_position(bounds.first), size, lattice)),
       is_valid(shape.contains(positions)) {
     remove_dangling(*this, lattice.get_min_neighbors());

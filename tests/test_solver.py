@@ -55,6 +55,7 @@ def test_dos(solver, baseline, plot_if_fails):
     assert pytest.fuzzy_equal(result, expected, rtol=2e-2, atol=1e-5)
 
 
+@pytest.mark.skip
 def test_spatial_ldos(solver, baseline, plot_if_fails):
     ldos_map = solver.calc_spatial_ldos(energy=0.05, broadening=0.01)
 

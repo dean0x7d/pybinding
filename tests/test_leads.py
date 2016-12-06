@@ -86,8 +86,8 @@ def test_attach():
     model.attach_lead(-1, pb.line([0, -h/2], [0, h/2]))
     model.attach_lead(+1, pb.line([0, -h/2], [0, h/2]))
     assert len(model.leads) == 2
-    assert np.all(model.leads[0].indices == [0, 1, 2])
-    assert np.all(model.leads[1].indices == [3, 4, 5])
+    assert np.all(model.leads[0].indices == [0, 2, 4])
+    assert np.all(model.leads[1].indices == [1, 3, 5])
 
     # Linear hopping grows from lead 0 to system to lead 1
     model.add(linear_hopping())

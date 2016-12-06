@@ -31,7 +31,7 @@ def test_api():
 
     idx = system.num_sites // 2
     assert idx == system.find_nearest(system.xyz[idx])
-    assert idx == system.find_nearest(system.xyz[idx], 'A')
+    assert idx == system.find_nearest(system.xyz[idx], 'B')
     assert system.find_nearest([0, 0], 'A') != system.find_nearest([0, 0], 'B')
 
     with pytest.raises(IndexError) as excinfo:
