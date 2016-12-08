@@ -5,10 +5,8 @@
 using namespace cpb;
 
 TEST_CASE("Lanczos", "[lanczos]") {
-    auto const lattice = graphene::monolayer();
-    auto model = Model(lattice);
-    model.set_primitive({5, 5});
-    model.set_symmetry({1, 1});
+    auto const model = Model(graphene::monolayer(), Primitive(5, 5),
+                             TranslationalSymmetry(1, 1));
 
     auto const& matrix = ham::get_reference<std::complex<float>>(model.hamiltonian());
     auto loop_counters = std::vector<int>(3);

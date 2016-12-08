@@ -9,6 +9,7 @@
 #include "hamiltonian/HamiltonianModifiers.hpp"
 
 #include "utils/Chrono.hpp"
+#include "detail/sugar.hpp"
 
 #include <string>
 #include <vector>
@@ -19,19 +20,25 @@ class Model {
 public:
     Model(Lattice const& lattice) : lattice(lattice) {}
 
-public: // set parameters
-    void set_primitive(Primitive primitive);
-    void set_shape(Shape const& shape);
-    void set_symmetry(TranslationalSymmetry const& s);
+    /// The arguments can any type accepted by `Model::add()`
+    template<class... Args>
+    Model(Lattice const& lattice, Args&&... args) : lattice(lattice) {
+        detail::eval_ordered({(add(std::forward<Args>(args)), 0)...});
+    }
+
+public: // add parameters
+    void add(Primitive primitive);
+    void add(Shape const& shape);
+    void add(TranslationalSymmetry const& s);
 
     void attach_lead(int direction, Shape const& shape);
 
-    void add_site_state_modifier(SiteStateModifier const& m);
-    void add_position_modifier(PositionModifier const& m);
-    void add_onsite_modifier(OnsiteModifier const& m);
-    void add_hopping_modifier(HoppingModifier const& m);
+    void add(SiteStateModifier const& m);
+    void add(PositionModifier const& m);
+    void add(OnsiteModifier const& m);
+    void add(HoppingModifier const& m);
 
-    void add_hopping_family(HoppingGenerator const& g);
+    void add(HoppingGenerator const& g);
 
     void set_wave_vector(Cartesian const& k);
 

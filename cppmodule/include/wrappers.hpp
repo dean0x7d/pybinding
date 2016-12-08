@@ -5,6 +5,7 @@
 #include <pybind11/eigen.h>
 
 #include "cast.hpp"
+#include "resolve.hpp"
 
 namespace py = pybind11;
 using namespace py::literals;

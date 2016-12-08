@@ -5,14 +5,14 @@ using namespace cpb;
 void wrap_model(py::module& m) {
     py::class_<Model>(m, "Model")
         .def(py::init<Lattice const&>())
-        .def("add", &Model::set_primitive)
-        .def("add", &Model::set_shape)
-        .def("add", &Model::set_symmetry)
-        .def("add", &Model::add_site_state_modifier)
-        .def("add", &Model::add_position_modifier)
-        .def("add", &Model::add_onsite_modifier)
-        .def("add", &Model::add_hopping_modifier)
-        .def("add", &Model::add_hopping_family)
+        .def("add", &Model::add | resolve<Primitive>())
+        .def("add", &Model::add | resolve<Shape const&>())
+        .def("add", &Model::add | resolve<TranslationalSymmetry const&>())
+        .def("add", &Model::add | resolve<SiteStateModifier const&>())
+        .def("add", &Model::add | resolve<PositionModifier const&>())
+        .def("add", &Model::add | resolve<OnsiteModifier const&>())
+        .def("add", &Model::add | resolve<HoppingModifier const&>())
+        .def("add", &Model::add | resolve<HoppingGenerator const&>())
         .def("attach_lead", &Model::attach_lead)
         .def("set_wave_vector", &Model::set_wave_vector, "k"_a, R"(
             Set the wave vector for periodic models

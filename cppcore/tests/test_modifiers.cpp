@@ -4,18 +4,17 @@
 using namespace cpb;
 
 TEST_CASE("SiteStateModifier") {
-    auto model = Model(lattice::square_2atom());
-    model.set_primitive({2});
+    auto model = Model(lattice::square_2atom(), Primitive(2));
     REQUIRE(model.system()->num_sites() == 4);
 
     auto remove_site = [](ArrayX<bool>& state, CartesianArray const&, SubIdRef) {
         state[0] = false;
     };
-    model.add_site_state_modifier({remove_site});
+    model.add(SiteStateModifier(remove_site));
     REQUIRE(model.system()->num_sites() == 3);
-    model.add_site_state_modifier({remove_site, 1});
+    model.add(SiteStateModifier(remove_site, 1));
     REQUIRE(model.system()->num_sites() == 2);
-    model.add_site_state_modifier({remove_site, 2});
+    model.add(SiteStateModifier(remove_site, 2));
     REQUIRE_THROWS(model.system());
 }
 
@@ -23,9 +22,9 @@ TEST_CASE("SitePositionModifier") {
     auto model = Model(lattice::square_2atom());
     REQUIRE(model.system()->positions.y[1] == Approx(0.5));
 
-    model.add_position_modifier({[](CartesianArray& position, SubIdRef) {
+    model.add(PositionModifier([](CartesianArray& position, SubIdRef) {
         position.y[1] = 1;
-    }});
+    }));
     REQUIRE(model.system()->positions.y[1] == Approx(1));
 }
 
@@ -42,9 +41,9 @@ TEST_CASE("OnsiteEnergyModifier") {
     REQUIRE(h_init.rows() == 2);
     REQUIRE(h_init.non_zeros() == 2);
 
-    model.add_onsite_modifier({[](ComplexArrayRef energy, CartesianArray const&, SubIdRef) {
+    model.add(OnsiteModifier([](ComplexArrayRef energy, CartesianArray const&, SubIdRef) {
         num::match<ArrayX>(energy, OnsiteEnergyOp{});
-    }});
+    }));
     auto const& h = model.hamiltonian();
     REQUIRE(h.rows() == 2);
     REQUIRE(h.non_zeros() == 4);
@@ -63,10 +62,10 @@ TEST_CASE("HoppingEnergyModifier") {
     REQUIRE(h_init.rows() == 2);
     REQUIRE(h_init.non_zeros() == 2);
 
-    model.add_hopping_modifier({[](ComplexArrayRef energy, CartesianArray const&,
+    model.add(HoppingModifier([](ComplexArrayRef energy, CartesianArray const&,
                                    CartesianArray const&, HopIdRef) {
         num::match<ArrayX>(energy, HoppingEnergyOp{});
-    }});
+    }));
     auto const& h = model.hamiltonian();
     REQUIRE(h.rows() == 2);
     REQUIRE(h.non_zeros() == 0);
@@ -87,12 +86,12 @@ TEST_CASE("HoppingGenerator") {
     REQUIRE(model.system()->hoppings.nonZeros() == 0);
 
     SECTION("Add real generator") {
-        model.add_hopping_family({"t2", 2.0, [](CartesianArray const&, SubIdRef) {
+        model.add(HoppingGenerator("t2", 2.0, [](CartesianArray const&, SubIdRef) {
             auto r = HoppingGenerator::Result{ArrayXi(1), ArrayXi(1)};
             r.from << 0;
             r.to   << 1;
             return r;
-        }});
+        }));
 
         REQUIRE_FALSE(model.is_complex());
         REQUIRE(model.get_lattice().get_hoppings().energy.size() == 2);
@@ -107,9 +106,9 @@ TEST_CASE("HoppingGenerator") {
     }
 
     SECTION("Add complex generator") {
-        model.add_hopping_family({"t2", {0.0, 1.0}, [](CartesianArray const&, SubIdRef) {
+        model.add(HoppingGenerator("t2", {0.0, 1.0}, [](CartesianArray const&, SubIdRef) {
             return HoppingGenerator::Result{ArrayXi(), ArrayXi()};
-        }});
+        }));
 
         REQUIRE(model.is_complex());
         REQUIRE(model.system()->hoppings.isCompressed());
@@ -118,12 +117,12 @@ TEST_CASE("HoppingGenerator") {
     }
 
     SECTION("Upper triangular form should be preserved") {
-        model.add_hopping_family({"t2", 2.0, [](CartesianArray const&, SubIdRef) {
+        model.add(HoppingGenerator("t2", 2.0, [](CartesianArray const&, SubIdRef) {
             auto r = HoppingGenerator::Result{ArrayXi(2), ArrayXi(2)};
             r.from << 0, 1;
             r.to   << 1, 0;
             return r;
-        }});
+        }));
 
         REQUIRE(model.system()->hoppings.rows() == 2);
         REQUIRE(model.system()->hoppings.nonZeros() == 1);

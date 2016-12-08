@@ -14,8 +14,7 @@ TEST_CASE("Attach leads") {
     auto const width = 2.0f;
     auto const height = 3.0f;
 
-    auto model = Model(lattice::square());
-    model.set_shape(shape::rectangle(width, height));
+    auto model = Model(lattice::square(), shape::rectangle(width, height));
     REQUIRE(model.system()->num_sites() == 6);
 
     model.attach_lead(-1, Line({0, -height/2, 0}, {0, height/2, 0}));
@@ -28,14 +27,14 @@ TEST_CASE("Attach leads") {
     REQUIRE(model.lead(1).indices() == indices1);
 
     SECTION("Hoppings grow from lead 0 to system") {
-        model.add_hopping_modifier(field::linear_hopping());
+        model.add(field::linear_hopping());
         auto const h = matrix_data<>(model.hamiltonian());
         auto const h1 = matrix_data<>(model.lead(0).h1());
         REQUIRE(h1.minCoeff() < h.minCoeff());
     }
 
     SECTION("Onsite potential grows from system to lead 1") {
-        model.add_onsite_modifier(field::linear_onsite());
+        model.add(field::linear_onsite());
         auto const h = matrix_data<>(model.hamiltonian());
         auto const h0 = matrix_data<>(model.lead(1).h0());
         REQUIRE(h.maxCoeff() < h0.maxCoeff());

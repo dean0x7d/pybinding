@@ -5,14 +5,13 @@
 using namespace cpb;
 
 Model make_test_model(bool is_double = false, bool is_complex = false) {
-    auto model = Model(graphene::monolayer());
-    model.set_shape(shape::rectangle(0.6f, 0.8f));
-    model.add_onsite_modifier(field::constant_potential(1));
+    auto model = Model(graphene::monolayer(), shape::rectangle(0.6f, 0.8f),
+                       field::constant_potential(1));
     if (is_double) {
-        model.add_hopping_modifier(field::force_double_precision());
+        model.add(field::force_double_precision());
     }
     if (is_complex) {
-        model.add_hopping_modifier(field::constant_magnetic_field(1e4));
+        model.add(field::constant_magnetic_field(1e4));
     }
     return model;
 }

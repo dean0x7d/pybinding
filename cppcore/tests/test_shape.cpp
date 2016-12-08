@@ -34,13 +34,11 @@ TEST_CASE("FreeformShape", "[shape]") {
 TEST_CASE("Shape-imposed lattice offset") {
     auto shape = shape::rectangle(2.4f, 2.4f);
     
-    auto model = Model(lattice::square());
-    model.set_shape(shape);
+    auto const model = Model(lattice::square(), shape);
     auto const& system = *model.system();
-    
-    auto offset_model = Model(lattice::square());
+
     shape.lattice_offset = {-0.1f, 0.5f, .0f};
-    offset_model.set_shape(shape);
+    auto const offset_model = Model(lattice::square(), shape);
     auto const& offset_system = *offset_model.system();
     
     REQUIRE(system.lattice.get_offset().isZero());

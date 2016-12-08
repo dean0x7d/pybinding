@@ -5,7 +5,7 @@
 
 namespace cpb {
 
-void Model::set_primitive(Primitive new_primitive) {
+void Model::add(Primitive new_primitive) {
     primitive = new_primitive;
     clear_structure();
 }
@@ -17,13 +17,13 @@ void Model::set_wave_vector(Cartesian const& new_wave_vector) {
     }
 }
 
-void Model::set_shape(Shape const& new_shape) {
+void Model::add(Shape const& new_shape) {
     shape = new_shape;
     lattice.set_offset(lattice.get_offset() + shape.lattice_offset);
     clear_structure();
 }
 
-void Model::set_symmetry(TranslationalSymmetry const& translational_symmetry) {
+void Model::add(TranslationalSymmetry const& translational_symmetry) {
     symmetry = translational_symmetry;
     clear_structure();
 }
@@ -42,27 +42,27 @@ void Model::attach_lead(int direction, Shape const& shape) {
     clear_structure();
 }
 
-void Model::add_site_state_modifier(SiteStateModifier const& m) {
+void Model::add(SiteStateModifier const& m) {
     system_modifiers.state.push_back(m);
     clear_structure();
 }
 
-void Model::add_position_modifier(PositionModifier const& m) {
+void Model::add(PositionModifier const& m) {
     system_modifiers.position.push_back(m);
     clear_structure();
 }
 
-void Model::add_onsite_modifier(OnsiteModifier const& m) {
+void Model::add(OnsiteModifier const& m) {
     hamiltonian_modifiers.onsite.push_back(m);
     clear_hamiltonian();
 }
 
-void Model::add_hopping_modifier(HoppingModifier const& m) {
+void Model::add(HoppingModifier const& m) {
     hamiltonian_modifiers.hopping.push_back(m);
     clear_hamiltonian();
 }
 
-void Model::add_hopping_family(HoppingGenerator const& g) {
+void Model::add(HoppingGenerator const& g) {
     hopping_generators.push_back(g);
     lattice.register_hopping_energy(g.name, g.energy);
     clear_structure();

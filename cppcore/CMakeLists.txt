@@ -22,6 +22,7 @@ add_library(pybinding_cppcore
     include/detail/macros.hpp
     include/detail/slice.hpp
     include/detail/strategy.hpp
+    include/detail/sugar.hpp
     include/detail/thread.hpp
     include/detail/typelist.hpp
     include/greens/kpm/Bounds.hpp
