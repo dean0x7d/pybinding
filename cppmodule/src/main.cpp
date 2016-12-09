@@ -19,6 +19,8 @@ PYBIND11_PLUGIN(_pybinding) {
     wrap_solver(m);
     wrap_system(m);
 
+    wrapper_tests(m);
+
     m.def("simd_info", []() -> std::string {
 #if SIMDPP_USE_AVX
         auto const bits = std::to_string(simd::detail::basic_traits::size_bytes * 8);

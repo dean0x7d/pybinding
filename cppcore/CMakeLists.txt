@@ -93,9 +93,9 @@ download_dependency(eigen3 3.2.8
                     https://bitbucket.org/eigen/eigen/get
                     \${VERSION}.tar.gz */Eigen)
 target_include_directories(pybinding_cppcore SYSTEM PUBLIC ${EIGEN3_INCLUDE_DIR})
-download_dependency(variant 1.1.0
-                    https://raw.githubusercontent.com/mapbox/variant/v\${VERSION}
-                    variant.hpp recursive_wrapper.hpp)
+download_dependency(variant 1.1.4
+                    https://raw.githubusercontent.com/mapbox/variant/v\${VERSION}/include
+                    mapbox/variant.hpp mapbox/recursive_wrapper.hpp mapbox/variant_visitor.hpp)
 target_include_directories(pybinding_cppcore SYSTEM PUBLIC ${VARIANT_INCLUDE_DIR})
 download_dependency(simdpp 2.0-rc2
                     https://github.com/p12tic/libsimdpp/archive

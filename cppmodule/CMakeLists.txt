@@ -16,6 +16,7 @@ pybind11_add_module(_pybinding
     src/shape.cpp
     src/solver.cpp
     src/system.cpp
+    src/wrapper_tests.cpp
 )
 set_higher_warning_level(_pybinding)
 target_include_directories(_pybinding PRIVATE include)

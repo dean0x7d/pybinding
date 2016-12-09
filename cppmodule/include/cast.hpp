@@ -1,6 +1,7 @@
 #pragma once
 #include "numeric/arrayref.hpp"
 #include "numeric/sparseref.hpp"
+#include "support/variant.hpp"
 
 namespace pybind11 { namespace detail {
 
@@ -117,5 +118,46 @@ template<class T, class... Ts>
 struct type_caster<cpb::num::VariantCsrConstRef<T, Ts...>> : csrref_caster {};
 template<class T>
 struct type_caster<cpb::num::CsrConstRef<T>> : csrref_caster {};
+
+struct variant_visitor {
+    return_value_policy policy;
+    handle parent;
+
+    template<class T>
+    handle operator()(T const& src) const {
+        return make_caster<T>::cast(src, policy, parent);
+    }
+};
+
+template<class Variant> struct variant_caster;
+
+template<template<class...> class V, class... Ts>
+struct variant_caster<V<Ts...>> {
+    using Type = V<Ts...>;
+
+    template<class T>
+    bool load_one(handle src, bool convert) {
+        auto caster = make_caster<T>();
+        if (caster.load(src, convert)) {
+            value = cast_op<T>(caster);
+            return true;
+        }
+        return false;
+    }
+
+    bool load(handle src, bool convert) {
+        auto loaded = {false, load_one<Ts>(src, convert)...};
+        return std::any_of(loaded.begin(), loaded.end(), [](bool b) { return b; });
+    }
+
+    static handle cast(Type const& src, return_value_policy policy, handle parent) {
+        return cpb::var::apply_visitor(variant_visitor{policy, parent}, src);
+    }
+
+    PYBIND11_TYPE_CASTER(Type, _("Variant"));
+};
+
+template<class... Args> struct type_caster<cpb::var::variant<Args...>>
+    : variant_caster<cpb::var::variant<Args...>> {};
 
 }} // namespace pybind11::detail
