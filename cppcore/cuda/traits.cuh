@@ -1,6 +1,6 @@
 #pragma once
 #include "numeric/traits.hpp"
-#include "support/thrust.hpp"
+#include "cuda/thrust.hpp"
 #include <cuComplex.h>
 
 namespace cpb { namespace num {

@@ -1,7 +1,7 @@
-#include "greens/kpm/calc_moments_cuda.hpp"
+#include "cuda/kpm/calc_moments.hpp"
 
-#include "numeric/traits.cuh"
-#include "support/thrust.hpp"
+#include "cuda/traits.cuh"
+#include "cuda/thrust.hpp"
 #include <thrust/device_vector.h>
 #include <thrust/inner_product.h>
 

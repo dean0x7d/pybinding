@@ -52,7 +52,6 @@ add_library(pybinding_cppcore
     include/support/cppfuture.hpp
     include/support/format.hpp
     include/support/simd.hpp
-    include/support/thrust.hpp
     include/support/variant.hpp
     include/system/Foundation.hpp
     include/system/Shape.hpp
@@ -123,14 +122,8 @@ if(PB_MKL)
 endif()
 
 if(PB_CUDA)
-    find_package(CUDA REQUIRED)
-    set(CUDA_NVCC_FLAGS "--std c++11;${CUDA_NVCC_FLAGS}")
-    cuda_include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
-
-    cuda_add_library(pybinding_cuda src/greens/kpm/calc_moments.cu)
-    target_link_libraries(pybinding_cppcore PUBLIC pybinding_cuda ${CUDA_cublas_LIBRARY})
-    target_compile_definitions(pybinding_cppcore PUBLIC CPB_USE_CUDA)
-    target_include_directories(pybinding_cppcore SYSTEM PUBLIC ${CUDA_INCLUDE_DIRS})
+    add_subdirectory(cuda)
+    target_link_libraries(pybinding_cppcore PUBLIC pybinding_cuda)
 endif()
 
 if(PB_TESTS)

@@ -3,7 +3,7 @@
 
 #include "detail/macros.hpp"
 #include "numeric/sparseref.hpp"
-#include "support/thrust.hpp"
+#include "cuda/thrust.hpp"
 
 namespace cpb { namespace cuda {
 

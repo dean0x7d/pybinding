@@ -1,7 +1,7 @@
 #include "greens/KPM.hpp"
 #include "greens/kpm/calc_moments.hpp"
 #ifdef CPB_USE_CUDA
-# include "greens/kpm/calc_moments_cuda.hpp"
+# include "cuda/kpm/calc_moments.hpp"
 #endif
 
 namespace cpb { namespace kpm {
