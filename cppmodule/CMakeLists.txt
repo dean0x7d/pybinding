@@ -6,7 +6,7 @@ pybind11_add_module(_pybinding
     include/cast.hpp
     include/resolve.hpp
     include/wrappers.hpp
-    src/greens.cpp
+    src/kpm.cpp
     src/lattice.cpp
     src/leads.cpp
     src/main.cpp

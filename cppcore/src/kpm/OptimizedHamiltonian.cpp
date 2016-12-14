@@ -1,5 +1,5 @@
-#include "greens/kpm/OptimizedHamiltonian.hpp"
-#include "greens/kpm/Stats.hpp"
+#include "kpm/OptimizedHamiltonian.hpp"
+#include "kpm/Stats.hpp"
 
 namespace cpb { namespace kpm {
 

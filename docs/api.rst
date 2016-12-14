@@ -103,7 +103,7 @@ as some approximative compute methods. Follow the links below for details.
     :toctree: _api
 
     solver
-    greens
+    chebyshev
 
 .. rubric:: Experimental
 

@@ -25,16 +25,15 @@ add_library(pybinding_cppcore
     include/detail/sugar.hpp
     include/detail/thread.hpp
     include/detail/typelist.hpp
-    include/greens/kpm/Bounds.hpp
-    include/greens/kpm/calc_moments.hpp
-    include/greens/kpm/OptimizedHamiltonian.hpp
-    include/greens/kpm/OptimizedSizes.hpp
-    include/greens/kpm/Moments.hpp
-    include/greens/kpm/Stats.hpp
-    include/greens/Greens.hpp
-    include/greens/KPM.hpp
     include/hamiltonian/Hamiltonian.hpp
     include/hamiltonian/HamiltonianModifiers.hpp
+    include/kpm/Bounds.hpp
+    include/kpm/calc_moments.hpp
+    include/kpm/OptimizedHamiltonian.hpp
+    include/kpm/OptimizedSizes.hpp
+    include/kpm/Moments.hpp
+    include/kpm/Stats.hpp
+    include/kpm/Strategy.hpp
     include/leads/HamiltonianPair.hpp
     include/leads/Leads.hpp
     include/leads/Spec.hpp
@@ -60,14 +59,14 @@ add_library(pybinding_cppcore
     include/system/Generators.hpp
     include/system/SystemModifiers.hpp
     include/utils/Chrono.hpp
+    include/KPM.hpp
     include/Lattice.hpp
     include/Model.hpp
-    src/greens/kpm/Bounds.cpp
-    src/greens/kpm/OptimizedHamiltonian.cpp
-    src/greens/Greens.cpp
-    src/greens/KPM.cpp
     src/hamiltonian/Hamiltonian.cpp
     src/hamiltonian/HamiltonianModifiers.cpp
+    src/kpm/Bounds.cpp
+    src/kpm/OptimizedHamiltonian.cpp
+    src/kpm/Strategy.cpp
     src/leads/Leads.cpp
     src/leads/Spec.cpp
     src/leads/Structure.cpp
@@ -79,6 +78,7 @@ add_library(pybinding_cppcore
     src/system/System.cpp
     src/system/SystemModifiers.cpp
     src/utils/Chrono.cpp
+    src/KPM.cpp
     src/Lattice.cpp
     src/Model.cpp
 )

@@ -27,7 +27,7 @@ from .results import *
 from .support.pickle import save, load
 from .parallel import parallel_for, parallelize
 
-from . import (constants, greens, parallel, pltutils, results, solver, system, utils)
+from . import (chebyshev, constants, greens, parallel, pltutils, results, solver, system, utils)
 
 
 def tests(options=None, plugins=None):

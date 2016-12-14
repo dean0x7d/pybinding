@@ -1,5 +1,5 @@
-#include "greens/kpm/Bounds.hpp"
-#include "greens/kpm/Stats.hpp"
+#include "kpm/Bounds.hpp"
+#include "kpm/Stats.hpp"
 
 #include "compute/lanczos.hpp"
 

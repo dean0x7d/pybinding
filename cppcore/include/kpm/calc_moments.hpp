@@ -1,6 +1,6 @@
 #pragma once
-#include "greens/kpm/Bounds.hpp"
-#include "greens/kpm/Moments.hpp"
+#include "Bounds.hpp"
+#include "Moments.hpp"
 
 #include "compute/kernel_polynomial.hpp"
 

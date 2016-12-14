@@ -1,6 +1,6 @@
 #pragma once
-#include "greens/kpm/Bounds.hpp"
-#include "greens/kpm/OptimizedSizes.hpp"
+#include "Bounds.hpp"
+#include "OptimizedSizes.hpp"
 
 #include "numeric/sparse.hpp"
 #include "numeric/ellmatrix.hpp"

@@ -1,5 +1,6 @@
-#include "greens/KPM.hpp"
-#include "greens/kpm/calc_moments.hpp"
+#include "kpm/Strategy.hpp"
+
+#include "kpm/calc_moments.hpp"
 #ifdef CPB_USE_CUDA
 # include "cuda/kpm/calc_moments.hpp"
 #endif
@@ -9,17 +10,18 @@ namespace cpb { namespace kpm {
 namespace {
     template<class scalar_t>
     Bounds<scalar_t> reset_bounds(SparseMatrixX<scalar_t> const* hamiltonian,
-                                  KPMConfig const& config) {
+                                  Config const& config) {
         if (config.min_energy == config.max_energy) {
             return {hamiltonian, config.lanczos_precision}; // will be automatically computed
         } else {
             return {config.min_energy, config.max_energy}; // user-defined bounds
         }
     }
-}
+} // anonymous namespace
 
 template<class scalar_t, class Impl>
-Strategy<scalar_t, Impl>::Strategy(SparseMatrixRC<scalar_t> h, Config const& config)
+StrategyTemplate<scalar_t, Impl>::StrategyTemplate(SparseMatrixRC<scalar_t> h,
+                                                   Config const& config)
     : hamiltonian(std::move(h)), config(config), bounds(reset_bounds(hamiltonian.get(), config)),
       optimized_hamiltonian(hamiltonian.get(), Impl::matrix_config(config.opt_level)) {
     if (config.min_energy > config.max_energy) {
@@ -31,7 +33,7 @@ Strategy<scalar_t, Impl>::Strategy(SparseMatrixRC<scalar_t> h, Config const& con
 }
 
 template<class scalar_t, class Impl>
-bool Strategy<scalar_t, Impl>::change_hamiltonian(Hamiltonian const& h) {
+bool StrategyTemplate<scalar_t, Impl>::change_hamiltonian(Hamiltonian const& h) {
     if (!ham::is<scalar_t>(h)) {
         return false;
     }
@@ -44,15 +46,15 @@ bool Strategy<scalar_t, Impl>::change_hamiltonian(Hamiltonian const& h) {
 }
 
 template<class scalar_t, class Impl>
-ArrayXcd Strategy<scalar_t, Impl>::calc(int row, int col, ArrayXd const& energy,
-                                        double broadening) {
-    return std::move(calc_vector(row, {col}, energy, broadening).front());
+ArrayXcd StrategyTemplate<scalar_t, Impl>::greens(int row, int col, ArrayXd const& energy,
+                                                  double broadening) {
+    return std::move(greens_vector(row, {col}, energy, broadening).front());
 }
 
 template<class scalar_t, class Impl>
-std::vector<ArrayXcd> Strategy<scalar_t, Impl>::calc_vector(int row, std::vector<int> const& cols,
-                                                            ArrayXd const& energy,
-                                                            double broadening) {
+std::vector<ArrayXcd>
+StrategyTemplate<scalar_t, Impl>::greens_vector(int row, std::vector<int> const& cols,
+                                                ArrayXd const& energy, double broadening) {
     assert(!cols.empty());
     auto const scale = bounds.scaling_factors();
     auto const scaled_energy = bounds.scale_energy(energy.template cast<real_t>());
@@ -79,7 +81,7 @@ std::vector<ArrayXcd> Strategy<scalar_t, Impl>::calc_vector(int row, std::vector
 }
 
 template<class scalar_t, class Impl>
-std::string Strategy<scalar_t, Impl>::report(bool shortform) const {
+std::string StrategyTemplate<scalar_t, Impl>::report(bool shortform) const {
     return bounds.report(shortform)
            + optimized_hamiltonian.report(stats.last_num_moments, shortform)
            + stats.report(optimized_hamiltonian.operations(stats.last_num_moments), shortform)
@@ -121,7 +123,7 @@ struct DefaultCalcMoments {
     }
 };
 
-CPB_INSTANTIATE_TEMPLATE_CLASS_VARGS(Strategy, DefaultCalcMoments)
+CPB_INSTANTIATE_TEMPLATE_CLASS_VARGS(StrategyTemplate, DefaultCalcMoments)
 
 #ifdef CPB_USE_CUDA
 struct CudaCalcMoments {
@@ -158,7 +160,7 @@ struct CudaCalcMoments {
     }
 };
 
-CPB_INSTANTIATE_TEMPLATE_CLASS_VARGS(Strategy, CudaCalcMoments)
+CPB_INSTANTIATE_TEMPLATE_CLASS_VARGS(StrategyTemplate, CudaCalcMoments)
 #endif // CPB_USE_CUDA
 
 }} // namespace cpb::kpm

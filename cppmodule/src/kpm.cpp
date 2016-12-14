@@ -1,29 +1,30 @@
-#include "greens/KPM.hpp"
+#include "KPM.hpp"
 #include "wrappers.hpp"
 using namespace cpb;
 
 namespace {
 
 template<template<class> class Strategy>
-void wrap_greens_strategy(py::module& m, char const* name) {
-    auto const kpm_defaults = KPMConfig();
-    py::class_<Greens<Strategy>, BaseGreens>(m, name)
-        .def("__init__", [](Greens<Strategy>& self, Model const& model, float lambda,
-                            std::pair<float, float> energy, int opt, float lanczos) {
-                 KPMConfig config;
-                 config.lambda = lambda;
-                 config.min_energy = energy.first;
-                 config.max_energy = energy.second;
-                 config.opt_level = opt;
-                 config.lanczos_precision = lanczos;
+void wrap_kpm_strategy(py::module& m, char const* name) {
+    auto const kpm_defaults = kpm::Config();
+    m.def(
+        name,
+        [](Model const& model, float lambda, std::pair<float, float> energy,
+           int opt, float lanczos) {
+            kpm::Config config;
+            config.lambda = lambda;
+            config.min_energy = energy.first;
+            config.max_energy = energy.second;
+            config.opt_level = opt;
+            config.lanczos_precision = lanczos;
 
-                 new (&self) Greens<Strategy>(model, config);
-             },
-             "model"_a, "lambda_value"_a=kpm_defaults.lambda,
-             "energy_range"_a=py::make_tuple(kpm_defaults.min_energy, kpm_defaults.max_energy),
-             "optimization_level"_a=kpm_defaults.opt_level,
-             "lanczos_precision"_a=kpm_defaults.lanczos_precision
-        );
+            return make_kpm<Strategy>(model, config);
+        },
+        "model"_a, "lambda_value"_a=kpm_defaults.lambda,
+        "energy_range"_a=py::make_tuple(kpm_defaults.min_energy, kpm_defaults.max_energy),
+        "optimization_level"_a=kpm_defaults.opt_level,
+        "lanczos_precision"_a=kpm_defaults.lanczos_precision
+    );
 }
 
 // This will be a lot simpler with C++14 generic lambdas
@@ -45,7 +46,7 @@ struct PyOptHam {
             );
             auto indices = std::vector<int>(m->rows());
             std::iota(indices.begin(), indices.end(), 0);
-            auto bounds = kpm::Bounds<scalar_t>(m.get(), KPMConfig{}.lanczos_precision);
+            auto bounds = kpm::Bounds<scalar_t>(m.get(), kpm::Config{}.lanczos_precision);
             ret.optimize_for({i, indices}, bounds.scaling_factors());
             return ret;
         }
@@ -76,19 +77,19 @@ struct PyOptHam {
 } // anonymously namespace
 
 void wrap_greens(py::module& m) {
-    py::class_<BaseGreens>(m, "Greens")
-        .def("report", &BaseGreens::report, "shortform"_a=false)
-        .def("calc_greens", &BaseGreens::calc_greens)
-        .def("calc_greens", &BaseGreens::calc_greens_vector)
-        .def("calc_ldos", &BaseGreens::calc_ldos)
-        .def("deferred_ldos", &BaseGreens::deferred_ldos)
-        .def_property("model", &BaseGreens::get_model, &BaseGreens::set_model)
-        .def_property_readonly("system", &BaseGreens::system);
+    py::class_<KPM>(m, "Greens")
+        .def("report", &KPM::report, "shortform"_a=false)
+        .def("calc_greens", &KPM::calc_greens)
+        .def("calc_greens", &KPM::calc_greens_vector)
+        .def("calc_ldos", &KPM::calc_ldos)
+        .def("deferred_ldos", &KPM::deferred_ldos)
+        .def_property("model", &KPM::get_model, &KPM::set_model)
+        .def_property_readonly("system", &KPM::system);
 
-    wrap_greens_strategy<KPM>(m, "KPM");
+    wrap_kpm_strategy<kpm::DefaultStrategy>(m, "KPM");
 
 #ifdef CPB_USE_CUDA
-    wrap_greens_strategy<KPMcuda>(m, "KPMcuda");
+    wrap_kpm_strategy<kpm::CudaStrategy>(m, "KPMcuda");
 #endif
 
     py::class_<PyOptHam>(m, "OptimizedHamiltonian")

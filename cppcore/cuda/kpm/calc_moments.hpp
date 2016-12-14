@@ -1,5 +1,5 @@
 #pragma once
-#include "greens/kpm/OptimizedSizes.hpp"
+#include "kpm/OptimizedSizes.hpp"
 
 #include "detail/macros.hpp"
 #include "numeric/sparseref.hpp"

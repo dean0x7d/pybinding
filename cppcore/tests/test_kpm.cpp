@@ -1,7 +1,7 @@
 #include <catch.hpp>
 
 #include "fixtures.hpp"
-#include "greens/KPM.hpp"
+#include "KPM.hpp"
 using namespace cpb;
 
 Model make_test_model(bool is_double = false, bool is_complex = false) {
@@ -22,7 +22,7 @@ TEST_CASE("OptimizedHamiltonian reordering", "[kpm]") {
 
     using scalat_t = float;
     auto const matrix = ham::get_reference<scalat_t>(model.hamiltonian());
-    auto bounds = kpm::Bounds<scalat_t>(&matrix, KPMConfig{}.lanczos_precision);
+    auto bounds = kpm::Bounds<scalat_t>(&matrix, kpm::Config{}.lanczos_precision);
 
     auto size_indices = [](kpm::OptimizedHamiltonian<scalat_t> const& oh, int num_moments) {
         auto v = std::vector<int>(num_moments);
@@ -80,7 +80,7 @@ struct TestGreensResult {
 };
 
 template<template<class> class Strategy, int highest_opt_level>
-std::vector<TestGreensResult> test_greens_strategy() {
+std::vector<TestGreensResult> test_kpm_strategy() {
     auto results = std::vector<TestGreensResult>();
 
     for (auto is_double_precision : {false, true}) {
@@ -99,24 +99,24 @@ std::vector<TestGreensResult> test_greens_strategy() {
             auto unoptimized_result = TestGreensResult{};
             for (auto opt_level = 0; opt_level <= highest_opt_level; ++opt_level) {
                 INFO("opt_level: " << opt_level);
-                auto config = KPMConfig{};
+                auto config = kpm::Config{};
                 config.opt_level = opt_level;
-                auto kpm = make_greens_strategy<Strategy>(model.hamiltonian(), config);
+                auto kpm = make_kpm_strategy<Strategy>(model.hamiltonian(), config);
 
-                auto const gs = kpm->calc_vector(i, cols, energy_range, broadening);
+                auto const gs = kpm->greens_vector(i, cols, energy_range, broadening);
                 REQUIRE(gs.size() == cols.size());
                 REQUIRE_FALSE(gs[0].isApprox(gs[1], precision));
                 REQUIRE_FALSE(gs[1].isApprox(gs[2], precision));
 
                 kpm->change_hamiltonian(model.hamiltonian());
-                auto const g_ii = kpm->calc(i, i, energy_range, broadening);
+                auto const g_ii = kpm->greens(i, i, energy_range, broadening);
                 REQUIRE(g_ii.isApprox(gs[0], precision));
 
-                auto const g_ij = kpm->calc(i, j, energy_range, broadening);
+                auto const g_ij = kpm->greens(i, j, energy_range, broadening);
                 REQUIRE(g_ij.isApprox(gs[1], precision));
 
                 if (!is_complex) {
-                    auto const g_ji = kpm->calc(j, i, energy_range, broadening);
+                    auto const g_ji = kpm->greens(j, i, energy_range, broadening);
                     REQUIRE(g_ij.isApprox(g_ji, precision));
                 }
 
@@ -137,10 +137,10 @@ std::vector<TestGreensResult> test_greens_strategy() {
 
 TEST_CASE("KPM strategy", "[kpm]") {
 #ifndef CPB_USE_CUDA
-    test_greens_strategy<KPM, 3>();
+    test_kpm_strategy<kpm::DefaultStrategy, 3>();
 #else
-    auto const cpu_results = test_greens_strategy<KPM, 3>();
-    auto const cuda_results = test_greens_strategy<KPMcuda, 1>();
+    auto const cpu_results = test_kpm_strategy<kpm::DefaultStrategy, 3>();
+    auto const cuda_results = test_kpm_strategy<kpm::CudaStrategy, 1>();
     auto const precision = Eigen::NumTraits<float>::dummy_precision();
     for (auto i = 0u; i < cpu_results.size(); ++i) {
         REQUIRE(cpu_results[i].g_ii.isApprox(cuda_results[i].g_ii, precision));
