@@ -87,10 +87,12 @@ public:
     OptimizedSizes const& sizes() const { return optimized_sizes; }
 
     SparseMatrixX<scalar_t> const& csr() const {
+        assert(optimized_matrix.template is<SparseMatrixX<scalar_t>>());
         return optimized_matrix.template get<SparseMatrixX<scalar_t>>();
     }
 
     num::EllMatrix<scalar_t> const& ell() const {
+        assert(optimized_matrix.template is<num::EllMatrix<scalar_t>>());
         return optimized_matrix.template get<num::EllMatrix<scalar_t>>();
     }
 

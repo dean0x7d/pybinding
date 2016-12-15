@@ -35,6 +35,8 @@ public:
         }
     }
 
+    int max_index() const { return static_cast<int>(data.size()) - 1; }
+
     /// Return the optimal system size for KPM moment number `n` out of total `num_moments`
     int optimal(int n, int num_moments) const {
         return data[index(n, num_moments)];

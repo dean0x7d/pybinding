@@ -60,23 +60,37 @@ StrategyTemplate<scalar_t, Impl>::greens_vector(int row, std::vector<int> const&
     auto const scaled_energy = bounds.scale_energy(energy.template cast<real_t>());
     auto const num_moments = required_num_moments(scale, config.lambda, broadening);
     optimized_hamiltonian.optimize_for({row, cols}, scale);
+    auto const& idx = optimized_hamiltonian.idx();
     stats = {num_moments};
 
-    if (optimized_hamiltonian.idx().is_diagonal()) {
+    if (idx.is_diagonal()) {
+        auto moments = ExvalDiagonalMoments<scalar_t>(num_moments, idx.row);
+
         stats.moments_timer.tic();
-        auto moments = Impl::moments_diag(optimized_hamiltonian, num_moments, config.opt_level);
+        Impl::diagonal(moments, optimized_hamiltonian, config.opt_level);
         stats.moments_timer.toc();
 
-        detail::apply_lorentz_kernel(moments, config.lambda);
-        auto const greens = detail::calculate_greens(scaled_energy, moments);
+        detail::apply_lorentz_kernel(moments.get(), config.lambda);
+        auto const greens = detail::calculate_greens(scaled_energy, moments.get());
         return {greens.template cast<std::complex<double>>()};
     } else {
+        auto moments_vector = ExvalOffDiagonalMoments<scalar_t>(num_moments, idx);
+
         stats.moments_timer.tic();
-        auto mvector = Impl::moments_vector(optimized_hamiltonian, num_moments, config.opt_level);
+        Impl::off_diagonal(moments_vector, optimized_hamiltonian, config.opt_level);
         stats.moments_timer.toc();
 
-        mvector.apply_lorentz_kernel(config.lambda);
-        return mvector.calc_greens(scaled_energy);
+        for (auto& moments : moments_vector.get()) {
+            detail::apply_lorentz_kernel(moments, config.lambda);
+        }
+
+        auto greens = std::vector<ArrayXcd>();
+        greens.reserve(idx.cols.size());
+        for (auto const& moments : moments_vector.get()) {
+            auto const g = detail::calculate_greens(scaled_energy, moments);
+            greens.push_back(g.template cast<std::complex<double>>());
+        }
+        return greens;
     }
 }
 
@@ -98,27 +112,30 @@ struct DefaultCalcMoments {
         }
     };
 
-    template<class scalar_t>
-    static MomentsMatrix<scalar_t> moments_vector(OptimizedHamiltonian<scalar_t> const& oh,
-                                                  int num_moments, int opt_level) {
+    template<class Moments, class scalar_t>
+    static void diagonal(Moments& moments, OptimizedHamiltonian<scalar_t> const& oh,
+                         int opt_level) {
+        assert(oh.idx().is_diagonal());
+        using namespace calc_moments::diagonal;
+
         switch (opt_level) {
-            case 0: return calc_moments0(oh.csr(), oh.idx(), num_moments);
-            case 1: return calc_moments1(oh.csr(), oh.idx(), num_moments, oh.sizes());
-            case 2: return calc_moments2(oh.csr(), oh.idx(), num_moments, oh.sizes());
-            default: return calc_moments2(oh.ell(), oh.idx(), num_moments, oh.sizes());
+            case 0: basic(moments, oh.csr()); break;
+            case 1: opt_size(moments, oh.csr(), oh.sizes()); break;
+            case 2: opt_size_and_interleaved(moments, oh.csr(), oh.sizes()); break;
+            default: opt_size_and_interleaved(moments, oh.ell(), oh.sizes()); break;
         }
     }
 
-    template<class scalar_t>
-    static ArrayX<scalar_t> moments_diag(OptimizedHamiltonian<scalar_t> const& oh,
-                                         int num_moments, int opt_level) {
-        assert(oh.idx().is_diagonal());
-        auto const i = oh.idx().row;
+    template<class Moments, class scalar_t>
+    static void off_diagonal(Moments& moments, OptimizedHamiltonian<scalar_t> const& oh,
+                             int opt_level) {
+        using namespace calc_moments::off_diagonal;
+
         switch (opt_level) {
-            case 0: return calc_diag_moments0(oh.csr(), i, num_moments);
-            case 1: return calc_diag_moments1(oh.csr(), i, num_moments, oh.sizes());
-            case 2: return calc_diag_moments2(oh.csr(), i, num_moments, oh.sizes());
-            default: return calc_diag_moments2(oh.ell(), i, num_moments, oh.sizes());
+            case 0: basic(moments, oh.csr()); break;
+            case 1: opt_size(moments, oh.csr(), oh.sizes()); break;
+            case 2: opt_size_and_interleaved(moments, oh.csr(), oh.sizes()); break;
+            default: opt_size_and_interleaved(moments, oh.ell(), oh.sizes()); break;
         }
     }
 };
