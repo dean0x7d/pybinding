@@ -94,6 +94,24 @@ class KernelPolynomialMethod:
         ldos = self.impl.calc_ldos(energy, broadening, position, sublattice)
         return results.LDOS(energy, ldos)
 
+    def calc_dos(self, energy, broadening):
+        """Calculate the density of states as a function of energy
+
+        Parameters
+        ----------
+        energy : ndarray
+            Values for which the DOS is calculated.
+        broadening : float
+            Width, in energy, of the smallest detail which can be resolved.
+            Lower values result in longer calculation time.
+
+        Returns
+        -------
+        :class:`~pybinding.DOS`
+        """
+        dos = self.impl.calc_dos(energy, broadening)
+        return results.DOS(energy, dos)
+
     def deferred_ldos(self, energy, broadening, position, sublattice=""):
         """Same as :meth:`calc_ldos` but for parallel computation: see the :mod:`.parallel` module
 
@@ -119,7 +137,7 @@ class KernelPolynomialMethod:
         return self.impl.deferred_ldos(energy, broadening, position, sublattice)
 
 
-def kpm(model, energy_range=None, kernel="default", **kwargs):
+def kpm(model, energy_range=None, kernel="default", num_random=1, **kwargs):
     """The default CPU implementation of the Kernel Polynomial Method
 
     This implementation works on any system and is well optimized.
@@ -140,6 +158,8 @@ def kpm(model, energy_range=None, kernel="default", **kwargs):
         the function reconstructed from the Chebyshev series. Possible values are
         :func:`jackson_kernel` or :func:`lorentz_kernel`. The Lorentz kernel is used
         by default with `lambda = 4`.
+    num_random : int
+        The number of random vectors to use for stochastic KPM calculations (e.g. DOS).
 
     Returns
     -------
@@ -147,7 +167,8 @@ def kpm(model, energy_range=None, kernel="default", **kwargs):
     """
     if kernel == "default":
         kernel = lorentz_kernel()
-    return KernelPolynomialMethod(_cpp.kpm(model, energy_range or (0, 0), kernel, **kwargs))
+    return KernelPolynomialMethod(_cpp.kpm(model, energy_range or (0, 0), kernel,
+                                           num_random=num_random, **kwargs))
 
 
 def kpm_cuda(model, energy_range=None, kernel="default", **kwargs):

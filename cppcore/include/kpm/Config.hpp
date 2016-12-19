@@ -29,6 +29,7 @@ struct Config {
     AlgorithmConfig algorithm = {/*optimal_size*/true, /*interleaved*/true};
 
     float lanczos_precision = 0.002f; ///< how precise should the min/max energy estimation be
+    int num_random = 1; ///< number of random vectors to use for stochastic calculations
 };
 
 }} // namespace cpb::kpm

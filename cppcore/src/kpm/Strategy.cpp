@@ -55,7 +55,7 @@ ArrayXd StrategyTemplate<scalar_t, Compute>::ldos(int index, ArrayXd const& ener
     oh.optimize_for({index, index}, scale);
     oh.populate_stats(stats, num_moments, config.algorithm);
 
-    auto moments = DiagonalMoments<scalar_t>(num_moments, oh.idx().row);
+    auto moments = DiagonalMoments<scalar_t>(num_moments);
 
     stats.moments_timer.tic();
     Compute::diagonal(moments, exval_starter(oh), oh, config.algorithm);
@@ -84,7 +84,7 @@ StrategyTemplate<scalar_t, Compute>::greens_vector(int row, std::vector<int> con
     oh.populate_stats(stats, num_moments, config.algorithm);
 
     if (oh.idx().is_diagonal()) {
-        auto moments = DiagonalMoments<scalar_t>(num_moments, oh.idx().row);
+        auto moments = DiagonalMoments<scalar_t>(num_moments);
 
         stats.moments_timer.tic();
         Compute::diagonal(moments, exval_starter(oh), oh, config.algorithm);
@@ -107,6 +107,35 @@ StrategyTemplate<scalar_t, Compute>::greens_vector(int row, std::vector<int> con
             return reconstruct_greens(moments, energy, scale);
         });
     }
+}
+
+template<class scalar_t, class Compute>
+ArrayXd StrategyTemplate<scalar_t, Compute>::dos(ArrayXd const& energy, double broadening) {
+    auto const scale = bounds.scaling_factors();
+    auto const num_moments = config.kernel.required_num_moments(broadening / scale.a);
+
+    auto specialized_algorithm = config.algorithm;
+    specialized_algorithm.optimal_size = false; // not applicable for this calculation
+
+    auto& oh = optimized_hamiltonian;
+    oh.optimize_for({0, 0}, scale);
+    oh.populate_stats(stats, num_moments, specialized_algorithm);
+
+    auto moments = DiagonalMoments<scalar_t>(num_moments);
+    auto total = moments.get();
+
+    stats.multiplier = config.num_random;
+    stats.moments_timer.tic();
+    std::mt19937 generator;
+    for (auto j = 0; j < config.num_random; ++j) {
+        Compute::diagonal(moments, random_starter(oh, generator), oh, specialized_algorithm);
+        total += moments.get();
+    }
+    total /= static_cast<real_t>(config.num_random);
+    stats.moments_timer.toc();
+
+    config.kernel.apply(total);
+    return reconstruct<real_t>(total.real(), energy, scale);
 }
 
 template<class scalar_t, class Compute>

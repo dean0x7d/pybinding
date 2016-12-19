@@ -2,6 +2,8 @@
 #include "kpm/OptimizedHamiltonian.hpp"
 
 #include "numeric/dense.hpp"
+#include "numeric/constant.hpp"
+#include "numeric/random.hpp"
 #include "compute/detail.hpp"
 
 namespace cpb { namespace kpm {
@@ -19,6 +21,26 @@ Starter<scalar_t> exval_starter(OptimizedHamiltonian<scalar_t> const& oh) {
         auto r0 = VectorX<scalar_t>::Zero(size).eval();
         r0[index] = 1;
         return r0;
+    };
+}
+
+/// Return the starter vector r0 for the stochastic KPM procedure
+template<class real_t>
+Starter<real_t> random_starter(OptimizedHamiltonian<real_t> const& oh, std::mt19937& generator) {
+    return [&oh, &generator]() -> VectorX<real_t> {
+        auto r0 = num::make_random<VectorX<real_t>>(oh.size(), generator);
+        r0 = oh.reorder_vector(r0); // needed to maintain consistent results for all optimizations
+        return transform<VectorX>(r0, [](real_t x) -> real_t { return (x < 0.5f) ? -1.f : 1.f; });
+    };
+}
+
+template<class real_t, class complex_t = std::complex<real_t>>
+Starter<complex_t> random_starter(OptimizedHamiltonian<std::complex<real_t>> const& oh,
+                                  std::mt19937& generator) {
+    return [&oh, &generator]() -> VectorX<complex_t> {
+        auto phase = num::make_random<ArrayX<real_t>>(oh.size(), generator);
+        phase = oh.reorder_vector(phase);
+        return exp(complex_t{2 * constant::pi * constant::i1} * phase);
     };
 }
 

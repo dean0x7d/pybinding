@@ -26,6 +26,8 @@ public:
     ArrayXd calc_ldos(ArrayXd const& energy, double broadening,
                       Cartesian position, std::string const& sublattice = "") const;
 
+    ArrayXd calc_dos(ArrayXd const& energy, double broadening) const;
+
     /// Get some information about what happened during the last calculation
     std::string report(bool shortform) const;
     kpm::Stats const& get_stats() const;

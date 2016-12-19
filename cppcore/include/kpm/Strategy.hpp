@@ -36,6 +36,8 @@ public:
     /// Return multiple Green's matrix elements for a single `row` and multiple `cols`
     virtual std::vector<ArrayXcd> greens_vector(int row, std::vector<int> const& cols,
                                                 ArrayXd const& energy, double broadening) = 0;
+    /// Return the total DOS for the given energy range and broadening
+    virtual ArrayXd dos(ArrayXd const& energy, double broadening) = 0;
 
     /// Get some information about what happened during the last calculation
     virtual std::string report(bool shortform = false) const = 0;
@@ -63,6 +65,7 @@ public:
     ArrayXcd greens(int row, int col, ArrayXd const& energy, double broadening) final;
     std::vector<ArrayXcd> greens_vector(int row, std::vector<int> const& cols,
                                         ArrayXd const& energy, double broadening) final;
+    ArrayXd dos(ArrayXd const& energy, double broadening) final;
 
     std::string report(bool shortform) const final;
     Stats const& get_stats() const final { return stats; }

@@ -60,6 +60,13 @@ ArrayXd KPM::calc_ldos(ArrayXd const& energy, double broadening,
     return ldos;
 }
 
+ArrayXd KPM::calc_dos(ArrayXd const& energy, double broadening) const {
+    calculation_timer.tic();
+    auto dos = strategy->dos(energy, broadening);
+    calculation_timer.toc();
+    return dos;
+}
+
 std::string KPM::report(bool shortform) const {
     return strategy->report(shortform) + " " + calculation_timer.str();
 }

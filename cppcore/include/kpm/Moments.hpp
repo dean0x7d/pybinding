@@ -12,15 +12,15 @@ namespace cpb { namespace kpm {
 template<class scalar_t>
 class DiagonalMoments {
 public:
-    DiagonalMoments(int num_moments, int index) : moments(num_moments), index(index) {}
+    DiagonalMoments(int num_moments) : moments(ArrayX<scalar_t>::Zero(num_moments)) {}
 
     int size() const { return static_cast<int>(moments.size()); }
     ArrayX<scalar_t>& get() { return moments; }
 
     /// Collect the first 2 moments which are computer outside the main KPM loop
     void collect_initial(VectorX<scalar_t> const& r0, VectorX<scalar_t> const& r1) {
-        m0 = moments[0] = r0[index] * scalar_t{0.5};
-        m1 = moments[1] = r1[index];
+        m0 = moments[0] = r0.squaredNorm() * scalar_t{0.5};
+        m1 = moments[1] = r1.dot(r0);
     }
 
     /// Collect moments `n` and `n + 1` from the result vectors. Expects `n >= 2`.
@@ -40,7 +40,6 @@ public:
 
 private:
     ArrayX<scalar_t> moments;
-    int index;
     scalar_t m0;
     scalar_t m1;
 };

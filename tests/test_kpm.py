@@ -95,3 +95,31 @@ def test_optimized_hamiltonian():
     assert oh.matrix.shape == h.shape
     assert oh.sizes[-1] == h.shape[0]
     assert len(oh.indices) == h.shape[0]
+
+
+dos_models = {
+    'graphene-const_potential': [graphene.monolayer(), pb.rectangle(25),
+                                 pb.constant_potential(0.5)],
+    'graphene-magnetic_field': [graphene.monolayer(), pb.rectangle(25),
+                                graphene.constant_magnetic_field(1e3)],
+}
+
+
+@pytest.mark.parametrize("params", dos_models.values(), ids=list(dos_models.keys()))
+def test_dos(params, baseline, plot_if_fails):
+    configurations = [
+        {'matrix_format': "ELL", 'optimal_size': False, 'interleaved': False},
+        {'matrix_format': "ELL", 'optimal_size': True, 'interleaved': True},
+    ]
+    model = pb.Model(*params)
+    strategies = [pb.chebyshev.kpm(model, num_random=1, **c) for c in configurations]
+
+    energy = np.linspace(0, 2, 25)
+    results = [kpm.calc_dos(energy, broadening=0.15) for kpm in strategies]
+
+    expected = pb.results.DOS(energy, baseline(results[0].dos.astype(np.float32)))
+    for i in range(len(results)):
+        plot_if_fails(results[i], expected, 'plot', label=i)
+
+    for result in results:
+        assert pytest.fuzzy_equal(result, expected, rtol=1e-3, atol=1e-6)
