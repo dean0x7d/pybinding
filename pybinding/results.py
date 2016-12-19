@@ -38,6 +38,16 @@ class Path(np.ndarray):
         default_indices = [0, obj.shape[0] - 1] if len(obj.shape) >= 1 else []
         self.point_indices = getattr(obj, 'point_indices', default_indices)
 
+    def __reduce__(self):
+        r = super().__reduce__()
+        state = r[2] + (self.point_indices,)
+        return r[0], r[1], state
+
+    # noinspection PyMethodOverriding,PyArgumentList
+    def __setstate__(self, state):
+        self.point_indices = state[-1]
+        super().__setstate__(state[:-1])
+
     @property
     def points(self):
         """Significant points along the path, including start and end"""
