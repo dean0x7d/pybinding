@@ -1,5 +1,7 @@
 import pytest
 
+import pickle
+
 import numpy as np
 import pybinding as pb
 from pybinding.repository import graphene
@@ -101,3 +103,12 @@ def test_structure_map_plot(compare_figure):
     with compare_figure() as chk:
         structure_map.plot(site_radius=(0.03, 0.05))
     assert chk.passed
+
+
+def test_path_pickle():
+    k_path = pb.make_path(0, 1, 2)
+    s = pickle.dumps(k_path)
+    loaded = pickle.loads(s)
+
+    assert np.all(k_path == loaded)
+    assert k_path.point_indices == loaded.point_indices
