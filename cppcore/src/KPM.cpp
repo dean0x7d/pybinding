@@ -53,10 +53,12 @@ std::vector<ArrayXcd> KPM::calc_greens_vector(int row, std::vector<int> const& c
 
 ArrayXd KPM::calc_ldos(ArrayXd const& energy, double broadening,
                        Cartesian position, std::string const& sublattice) const {
-    auto i = model.system()->find_nearest(position, sublattice);
-    auto greens_function = calc_greens(i, i, energy, broadening);
+    auto const index = model.system()->find_nearest(position, sublattice);
 
-    return -1/pi * greens_function.imag();
+    calculation_timer.tic();
+    auto ldos = strategy->ldos(index, energy, broadening);
+    calculation_timer.toc();
+    return ldos;
 }
 
 Deferred<ArrayXd> KPM::deferred_ldos(ArrayXd const& energy, double broadening,

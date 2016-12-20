@@ -64,10 +64,10 @@ public:
         return factors;
     }
 
-    /// Return energy in range (-1, 1) scaled by the eigenvalue bounds
-    ArrayX<real_t> scale_energy(ArrayX<real_t> const& energy) {
+    /// Apply the scaling factors to a vector
+    ArrayX<real_t> scaled(ArrayX<real_t> const& v) {
         auto const scale = scaling_factors();
-        return (energy.template cast<real_t>() - scale.b) / scale.a;
+        return (v - scale.b) / scale.a;
     }
 
     std::string report(bool shortform = false) const;

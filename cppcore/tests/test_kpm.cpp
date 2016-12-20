@@ -81,6 +81,7 @@ struct TestGreensResult {
 
 template<template<class> class Strategy, int highest_opt_level>
 std::vector<TestGreensResult> test_kpm_strategy() {
+    constexpr auto pi = double{constant::pi};
     auto results = std::vector<TestGreensResult>();
 
     for (auto is_double_precision : {false, true}) {
@@ -101,24 +102,27 @@ std::vector<TestGreensResult> test_kpm_strategy() {
                 INFO("opt_level: " << opt_level);
                 auto config = kpm::Config{};
                 config.opt_level = opt_level;
-                auto kpm = make_kpm_strategy<Strategy>(model.hamiltonian(), config);
+                auto strategy = make_kpm_strategy<Strategy>(model.hamiltonian(), config);
 
-                auto const gs = kpm->greens_vector(i, cols, energy_range, broadening);
+                auto const gs = strategy->greens_vector(i, cols, energy_range, broadening);
                 REQUIRE(gs.size() == cols.size());
                 REQUIRE_FALSE(gs[0].isApprox(gs[1], precision));
                 REQUIRE_FALSE(gs[1].isApprox(gs[2], precision));
 
-                kpm->change_hamiltonian(model.hamiltonian());
-                auto const g_ii = kpm->greens(i, i, energy_range, broadening);
+                strategy->change_hamiltonian(model.hamiltonian());
+                auto const g_ii = strategy->greens(i, i, energy_range, broadening);
                 REQUIRE(g_ii.isApprox(gs[0], precision));
 
-                auto const g_ij = kpm->greens(i, j, energy_range, broadening);
+                auto const g_ij = strategy->greens(i, j, energy_range, broadening);
                 REQUIRE(g_ij.isApprox(gs[1], precision));
 
                 if (!is_complex) {
-                    auto const g_ji = kpm->greens(j, i, energy_range, broadening);
+                    auto const g_ji = strategy->greens(j, i, energy_range, broadening);
                     REQUIRE(g_ij.isApprox(g_ji, precision));
                 }
+
+                auto const ldos = strategy->ldos(i, energy_range, broadening);
+                REQUIRE(ldos.isApprox(-1/pi * g_ii.imag(), precision));
 
                 if (opt_level == 0) {
                     unoptimized_result = {g_ii, g_ij};

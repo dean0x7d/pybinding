@@ -15,6 +15,11 @@ using std::abs;
 using std::exp;
 using std::pow;
 using std::sqrt;
+using std::sin;
+using std::cos;
+using std::tan;
+using std::asin;
+using std::acos;
 
 // add common Eigen types to the global namespace
 using Eigen::Ref;

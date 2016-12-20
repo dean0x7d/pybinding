@@ -39,11 +39,15 @@ public:
 
     /// Returns false if the given Hamiltonian is the wrong type for this GreensStrategy
     virtual bool change_hamiltonian(Hamiltonian const& h) = 0;
+
+    /// Return the LDOS at the given Hamiltonian index for the energy range and broadening
+    virtual ArrayXd ldos(int index, ArrayXd const& energy, double broadening) = 0;
     /// Return the Green's function matrix element (row, col) for the given energy range
     virtual ArrayXcd greens(int row, int col, ArrayXd const& energy, double broadening) = 0;
     /// Return multiple Green's matrix elements for a single `row` and multiple `cols`
     virtual std::vector<ArrayXcd> greens_vector(int row, std::vector<int> const& cols,
                                                 ArrayXd const& energy, double broadening) = 0;
+
     /// Get some information about what happened during the last calculation
     virtual std::string report(bool shortform = false) const = 0;
 };
@@ -78,9 +82,12 @@ public:
     explicit StrategyTemplate(SparseMatrixRC<scalar_t> hamiltonian, Config const& config = {});
 
     bool change_hamiltonian(Hamiltonian const& h) final;
+
+    ArrayXd ldos(int index, ArrayXd const& energy, double broadening) final;
     ArrayXcd greens(int row, int col, ArrayXd const& energy, double broadening) final;
     std::vector<ArrayXcd> greens_vector(int row, std::vector<int> const& cols,
                                         ArrayXd const& energy, double broadening) final;
+
     std::string report(bool shortform) const final;
 
 private:

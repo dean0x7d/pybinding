@@ -24,26 +24,45 @@ namespace detail {
         }
     }
 
-    /// Calculate the final Green's function for `scaled_energy` using the KPM `moments`
-    template<class scalar_t, class real_t, class complex_t = num::get_complex_t<scalar_t>>
-    ArrayX<complex_t> calculate_greens(ArrayX<real_t> const& scaled_energy,
-                                       ArrayX<scalar_t> const& moments) {
-        // Note that this integer array has real type values
-        auto ns = ArrayX<real_t>(moments.size());
-        for (auto n = 0; n < ns.size(); ++n) {
-            ns[n] = static_cast<real_t>(n);
+    /// Range from 0 to `size` of scalar type `T` which does not have to be an integral type
+    template<class T>
+    ArrayX<T> make_integer_range(Eigen::DenseIndex size) {
+        auto result = ArrayX<T>(size);
+        for (auto n = 0; n < size; ++n) {
+            result[n] = static_cast<T>(n);
         }
+        return result;
+    }
 
-        // G = -2*i / sqrt(1 - E^2) * sum( moments * exp(-i*ns*acos(E)) )
-        auto greens = ArrayX<complex_t>(scaled_energy.size());
-        transform(scaled_energy, greens, [&](real_t E) {
-            using std::acos;
+    /// Reconstruct a real function for `scaled_energy` based on the KPM `moments`
+    ///    f(E) = 2/pi * 1/sqrt(1 - E^2) * sum( moments * cos(ns * acos(E)) )
+    template<class real_t>
+    ArrayX<real_t> reconstruct_function(ArrayX<real_t> const& scaled_energy,
+                                        ArrayX<real_t> const& moments) {
+        static_assert(!num::is_complex<real_t>(), "");
+        auto const ns = make_integer_range<real_t>(moments.size());
+        auto f = ArrayX<real_t>(scaled_energy.size());
+        transform(scaled_energy, f, [&](real_t E) {
+            using constant::pi;
+            auto const norm = real_t{2/pi} / sqrt(1 - E*E);
+            return norm * sum(moments * cos(ns * acos(E)));
+        });
+        return f;
+    }
+
+    /// Reconstruct Green's function for `scaled_energy` based on the KPM `moments`
+    ///     g(E) = -2*i / sqrt(1 - E^2) * sum( moments * exp(-i*ns*acos(E)) )
+    template<class scalar_t, class real_t, class complex_t = num::get_complex_t<scalar_t>>
+    ArrayX<complex_t> reconstruct_greens(ArrayX<real_t> const& scaled_energy,
+                                       ArrayX<scalar_t> const& moments) {
+        auto const ns = make_integer_range<real_t>(moments.size());
+        auto g = ArrayX<complex_t>(scaled_energy.size());
+        transform(scaled_energy, g, [&](real_t E) {
             using constant::i1;
             auto const norm = -real_t{2} * complex_t{i1} / sqrt(1 - E*E);
             return norm * sum(moments * exp(-complex_t{i1} * ns * acos(E)));
         });
-
-        return greens;
+        return g;
     }
 } // namespace detail
 

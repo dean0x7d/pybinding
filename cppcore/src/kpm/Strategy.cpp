@@ -46,6 +46,26 @@ bool StrategyTemplate<scalar_t, Impl>::change_hamiltonian(Hamiltonian const& h) 
 }
 
 template<class scalar_t, class Impl>
+ArrayXd StrategyTemplate<scalar_t, Impl>::ldos(int index, ArrayXd const& energy,
+                                               double broadening) {
+    auto const scale = bounds.scaling_factors();
+    auto const scaled_energy = bounds.scaled(energy.template cast<real_t>());
+    auto const num_moments = required_num_moments(scale, config.lambda, broadening);
+    optimized_hamiltonian.optimize_for({index, index}, scale);
+    stats = {num_moments};
+
+    auto moments = ExvalDiagonalMoments<scalar_t>(num_moments, optimized_hamiltonian.idx().row);
+
+    stats.moments_timer.tic();
+    Impl::diagonal(moments, optimized_hamiltonian, config.opt_level);
+    stats.moments_timer.toc();
+
+    detail::apply_lorentz_kernel(moments.get(), config.lambda);
+    auto ldos = detail::reconstruct_function<real_t>(scaled_energy, moments.get().real());
+    return ldos.template cast<double>();
+}
+
+template<class scalar_t, class Impl>
 ArrayXcd StrategyTemplate<scalar_t, Impl>::greens(int row, int col, ArrayXd const& energy,
                                                   double broadening) {
     return std::move(greens_vector(row, {col}, energy, broadening).front());
@@ -57,7 +77,7 @@ StrategyTemplate<scalar_t, Impl>::greens_vector(int row, std::vector<int> const&
                                                 ArrayXd const& energy, double broadening) {
     assert(!cols.empty());
     auto const scale = bounds.scaling_factors();
-    auto const scaled_energy = bounds.scale_energy(energy.template cast<real_t>());
+    auto const scaled_energy = bounds.scaled(energy.template cast<real_t>());
     auto const num_moments = required_num_moments(scale, config.lambda, broadening);
     optimized_hamiltonian.optimize_for({row, cols}, scale);
     auto const& idx = optimized_hamiltonian.idx();
@@ -71,7 +91,7 @@ StrategyTemplate<scalar_t, Impl>::greens_vector(int row, std::vector<int> const&
         stats.moments_timer.toc();
 
         detail::apply_lorentz_kernel(moments.get(), config.lambda);
-        auto const greens = detail::calculate_greens(scaled_energy, moments.get());
+        auto const greens = detail::reconstruct_greens(scaled_energy, moments.get());
         return {greens.template cast<std::complex<double>>()};
     } else {
         auto moments_vector = ExvalOffDiagonalMoments<scalar_t>(num_moments, idx);
@@ -87,7 +107,7 @@ StrategyTemplate<scalar_t, Impl>::greens_vector(int row, std::vector<int> const&
         auto greens = std::vector<ArrayXcd>();
         greens.reserve(idx.cols.size());
         for (auto const& moments : moments_vector.get()) {
-            auto const g = detail::calculate_greens(scaled_energy, moments);
+            auto const g = detail::reconstruct_greens(scaled_energy, moments);
             greens.push_back(g.template cast<std::complex<double>>());
         }
         return greens;
