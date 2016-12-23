@@ -55,6 +55,20 @@ def test_dos(solver, baseline, plot_if_fails):
     assert pytest.fuzzy_equal(result, expected, rtol=2e-2, atol=1e-5)
 
 
+def test_ldos(solver, plot_if_fails):
+    """Compare an LDOS sum at every position with directly calculated DOS"""
+    energy = np.linspace(0, 0.075, 15)
+    broadening = 0.01
+    expected = solver.calc_dos(energy, broadening)
+
+    ldos = np.stack([solver.calc_ldos(energy, broadening, position).ldos
+                     for position in zip(*solver.system.positions)])
+    result = pb.results.DOS(energy, np.sum(ldos, axis=0))
+
+    plot_if_fails(result, expected, 'plot')
+    assert pytest.fuzzy_equal(result, expected)
+
+
 @pytest.mark.skip
 def test_spatial_ldos(solver, baseline, plot_if_fails):
     ldos_map = solver.calc_spatial_ldos(energy=0.05, broadening=0.01)

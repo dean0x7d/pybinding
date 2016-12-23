@@ -191,6 +191,49 @@ class Solver:
             dos = scale * np.sum(np.exp(-0.5 * delta**2 / broadening**2), axis=0)
             return results.DOS(energies, dos)
 
+    def calc_ldos(self, energies, broadening, position, sublattice=""):
+        r"""Calculate the local density of states as a function of energy at the given position
+
+        .. math::
+            \text{LDOS}(E) = \frac{1}{c \sqrt{2\pi}}
+                             \sum_n{|\Psi_n(r)|^2 e^{-\frac{(E_n - E)^2}{2 c^2}}}
+
+        for each :math:`E` in `energies`, where :math:`c` is `broadening`,
+        :math:`E_n` is `eigenvalues[n]` and :math:`r` is a single site position
+        determined by the arguments `position` and `sublattice`.
+
+        Parameters
+        ----------
+        energies : array_like
+            Values for which the DOS is calculated.
+        broadening : float
+            Controls the width of the Gaussian broadening applied to the DOS.
+        position : array_like
+            Cartesian position of the lattice site for which the LDOS is calculated.
+            Doesn't need to be exact: the method will find the actual site which is
+            closest to the given position.
+        sublattice : str
+            Only look for sites of a specific sublattice, closest to `position`.
+            The default value considers any sublattice.
+
+        Returns
+        -------
+        :class:`~pybinding.LDOS`
+        """
+        if hasattr(self.impl, 'calc_ldos'):
+            return results.LDOS(energies, self.impl.calc_ldos(energies, broadening,
+                                                              position, sublattice))
+        else:
+            delta = self.eigenvalues[:, np.newaxis] - energies
+            gaussian = np.exp(-0.5 * delta**2 / broadening**2)
+
+            index = self.system.find_nearest(position, sublattice)
+            psi2 = np.abs(self.eigenvectors[index])**2
+
+            scale = 1 / (broadening * math.sqrt(2 * math.pi))
+            ldos = scale * np.sum(psi2[:, np.newaxis] * gaussian, axis=0)
+            return results.LDOS(energies, ldos)
+
     def calc_spatial_ldos(self, energy, broadening):
         r"""Calculate the spatial local density of states at the given energy
 
