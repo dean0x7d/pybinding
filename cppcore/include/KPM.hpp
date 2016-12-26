@@ -32,6 +32,7 @@ public:
 
     /// Get some information about what happened during the last calculation
     std::string report(bool shortform) const;
+    kpm::Stats const& get_stats() const;
 
 private:
     Model model;

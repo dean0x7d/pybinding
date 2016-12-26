@@ -79,7 +79,11 @@ Deferred<ArrayXd> KPM::deferred_ldos(ArrayXd const& energy, double broadening,
 }
 
 std::string KPM::report(bool shortform) const {
-    return strategy ? strategy->report(shortform) + " " + calculation_timer.str() : "";
+    return strategy->report(shortform) + " " + calculation_timer.str();
+}
+
+kpm::Stats const& KPM::get_stats() const {
+    return strategy->get_stats();
 }
 
 } // namespace cpb

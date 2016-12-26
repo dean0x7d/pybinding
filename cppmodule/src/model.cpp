@@ -28,7 +28,9 @@ void wrap_model(py::module& m) {
             return self.hamiltonian().csrref();
         })
         .def_property_readonly("leads", &Model::leads)
-        .def("report", &Model::report, "Return a string with information about the last build");
+        .def("report", &Model::report, "Return a string with information about the last build")
+        .def_property_readonly("system_build_seconds", &Model::system_build_seconds)
+        .def_property_readonly("hamiltonian_build_seconds", &Model::hamiltonian_build_seconds);
 
     py::class_<Hamiltonian>(m, "Hamiltonian")
         .def_property_readonly("csrref", &Hamiltonian::csrref);

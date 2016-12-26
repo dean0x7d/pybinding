@@ -12,18 +12,26 @@ inline std::string format_report(std::string msg, Chrono const& time, bool short
  Stats of the KPM calculation
  */
 struct Stats {
-    int last_num_moments = 0;
+    int num_moments = 0;
+    size_t num_operations = 0; ///< approximate number of executed mul + add operations
+    size_t matrix_memory = 0; ///< memory used by the Hamiltonian matrix
+    size_t vector_memory = 0; ///< memory used by a single KPM vector
     Chrono moments_timer;
 
     Stats() = default;
-    Stats(int num_moments) : last_num_moments(num_moments) {}
+    Stats(int num_moments, size_t num_operations, size_t matrix_memory, size_t vector_memory)
+        : num_moments(num_moments), num_operations(num_operations),
+          matrix_memory(matrix_memory), vector_memory(vector_memory) {}
 
-    std::string report(std::uint64_t operations, bool shortform) const {
-        auto const moments_with_suffix = fmt::with_suffix(last_num_moments);
-        auto const ops_with_suffix = fmt::with_suffix(operations / moments_timer.elapsed_seconds());
+    /// Operations per second
+    double ops() const { return num_operations / moments_timer.elapsed_seconds(); }
+
+    std::string report(bool shortform) const {
         auto const fmt_str = shortform ? "{} @ {}ops"
                                        : "KPM calculated {} moments at {} operations per second";
-        auto const msg = fmt::format(fmt_str, moments_with_suffix, ops_with_suffix);
+        auto const msg = fmt::format(fmt_str,
+                                     fmt::with_suffix(num_moments),
+                                     fmt::with_suffix(ops()));
         return format_report(msg, moments_timer, shortform);
     }
 };

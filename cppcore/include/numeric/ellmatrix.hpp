@@ -33,6 +33,7 @@ public:
 
     Index rows() const { return _rows; }
     Index cols() const { return _cols; }
+    Index nonZeros() const { return _rows * nnz_per_row; }
 
     template<class F>
     void for_each(F lambda) const {

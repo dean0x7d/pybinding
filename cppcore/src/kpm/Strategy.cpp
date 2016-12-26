@@ -52,7 +52,8 @@ ArrayXd StrategyTemplate<scalar_t, Impl>::ldos(int index, ArrayXd const& energy,
     auto const scaled_energy = bounds.scaled(energy.template cast<real_t>());
     auto const num_moments = required_num_moments(scale, config.lambda, broadening);
     optimized_hamiltonian.optimize_for({index, index}, scale);
-    stats = {num_moments};
+    stats = {num_moments, optimized_hamiltonian.operations(num_moments),
+             optimized_hamiltonian.memory_usage(), hamiltonian->rows() * sizeof(scalar_t)};
 
     auto moments = ExvalDiagonalMoments<scalar_t>(num_moments, optimized_hamiltonian.idx().row);
 
@@ -81,7 +82,8 @@ StrategyTemplate<scalar_t, Impl>::greens_vector(int row, std::vector<int> const&
     auto const num_moments = required_num_moments(scale, config.lambda, broadening);
     optimized_hamiltonian.optimize_for({row, cols}, scale);
     auto const& idx = optimized_hamiltonian.idx();
-    stats = {num_moments};
+    stats = {num_moments, optimized_hamiltonian.operations(num_moments),
+             optimized_hamiltonian.memory_usage(), hamiltonian->rows() * sizeof(scalar_t)};
 
     if (idx.is_diagonal()) {
         auto moments = ExvalDiagonalMoments<scalar_t>(num_moments, idx.row);
@@ -117,8 +119,8 @@ StrategyTemplate<scalar_t, Impl>::greens_vector(int row, std::vector<int> const&
 template<class scalar_t, class Impl>
 std::string StrategyTemplate<scalar_t, Impl>::report(bool shortform) const {
     return bounds.report(shortform)
-           + optimized_hamiltonian.report(stats.last_num_moments, shortform)
-           + stats.report(optimized_hamiltonian.operations(stats.last_num_moments), shortform)
+           + optimized_hamiltonian.report(stats.num_moments, shortform)
+           + stats.report(shortform)
            + (shortform ? "|" : "Total time:");
 }
 

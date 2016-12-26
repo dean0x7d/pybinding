@@ -70,6 +70,8 @@ public: // get results
 public: // get information
     /// Report of the last build operation: system and Hamiltonian
     std::string report();
+    double system_build_seconds() const { return system_build_time.elapsed_seconds(); }
+    double hamiltonian_build_seconds() const { return hamiltonian_build_time.elapsed_seconds(); }
 
 public:
     void clear_system_modifiers() { system_modifiers.clear(); }

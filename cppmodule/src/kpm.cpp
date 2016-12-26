@@ -77,14 +77,25 @@ struct PyOptHam {
 } // anonymously namespace
 
 void wrap_greens(py::module& m) {
+    py::class_<kpm::Stats>(m, "KPMStats")
+        .def_readonly("num_moments", &kpm::Stats::num_moments)
+        .def_readonly("num_operations", &kpm::Stats::num_operations)
+        .def_readonly("matrix_memory", &kpm::Stats::matrix_memory)
+        .def_readonly("vector_memory", &kpm::Stats::vector_memory)
+        .def_property_readonly("ops", &kpm::Stats::ops)
+        .def_property_readonly("elapsed_seconds", [](kpm::Stats const& s) {
+            return s.moments_timer.elapsed_seconds();
+        });
+
     py::class_<KPM>(m, "Greens")
-        .def("report", &KPM::report, "shortform"_a=false)
         .def("calc_greens", &KPM::calc_greens)
         .def("calc_greens", &KPM::calc_greens_vector)
         .def("calc_ldos", &KPM::calc_ldos)
         .def("deferred_ldos", &KPM::deferred_ldos)
+        .def("report", &KPM::report, "shortform"_a=false)
         .def_property("model", &KPM::get_model, &KPM::set_model)
-        .def_property_readonly("system", &KPM::system);
+        .def_property_readonly("system", &KPM::system)
+        .def_property_readonly("stats", &KPM::get_stats);
 
     wrap_kpm_strategy<kpm::DefaultStrategy>(m, "KPM");
 

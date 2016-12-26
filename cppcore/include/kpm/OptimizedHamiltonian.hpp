@@ -97,9 +97,11 @@ public:
     }
 
     /// The unoptimized compute area is matrix.nonZeros() * num_moments
-    std::uint64_t optimized_area(int num_moments) const;
+    size_t optimized_area(int num_moments) const;
     /// The number of mul + add operations needed to compute `num_moments` of this Hamiltonian
-    std::uint64_t operations(int num_moments) const;
+    size_t operations(int num_moments) const;
+    /// Memory used by the Hamiltonian matrix (in bytes)
+    size_t memory_usage() const;
 
     std::string report(int num_moments, bool shortform = false) const;
 

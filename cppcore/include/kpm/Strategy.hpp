@@ -50,6 +50,7 @@ public:
 
     /// Get some information about what happened during the last calculation
     virtual std::string report(bool shortform = false) const = 0;
+    virtual Stats const& get_stats() const = 0;
 };
 
 /**
@@ -89,6 +90,7 @@ public:
                                         ArrayXd const& energy, double broadening) final;
 
     std::string report(bool shortform) const final;
+    Stats const& get_stats() const final { return stats; }
 
 private:
     SparseMatrixRC<scalar_t> hamiltonian;
