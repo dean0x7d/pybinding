@@ -1,5 +1,6 @@
 #include "KPM.hpp"
 #include "wrappers.hpp"
+#include "thread.hpp"
 using namespace cpb;
 
 namespace {
@@ -91,7 +92,13 @@ void wrap_greens(py::module& m) {
         .def("calc_greens", &KPM::calc_greens)
         .def("calc_greens", &KPM::calc_greens_vector)
         .def("calc_ldos", &KPM::calc_ldos)
-        .def("deferred_ldos", &KPM::deferred_ldos)
+        .def("deferred_ldos", [](py::object self, ArrayXd energy, double broadening,
+                                 Cartesian position, std::string sublattice) {
+            auto& kpm = self.cast<KPM&>();
+            return Deferred<ArrayXd>{
+                self, [=, &kpm] { return kpm.calc_ldos(energy, broadening, position, sublattice); }
+            };
+        })
         .def("report", &KPM::report, "shortform"_a=false)
         .def_property("model", &KPM::get_model, &KPM::set_model)
         .def_property_readonly("system", &KPM::system)

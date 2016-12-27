@@ -5,6 +5,7 @@ add_subdirectory(deps/pybind11 EXCLUDE_FROM_ALL)
 pybind11_add_module(_pybinding
     include/cast.hpp
     include/resolve.hpp
+    include/thread.hpp
     include/wrappers.hpp
     src/kpm.cpp
     src/lattice.cpp

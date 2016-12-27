@@ -1,11 +1,11 @@
 #pragma once
-#include "utils/Chrono.hpp"
-#include "numeric/dense.hpp"
+#include <pybind11/pybind11.h>
 
 #include <thread>
 #include <queue>
 #include <condition_variable>
 
+namespace py = pybind11;
 
 namespace cpb { namespace detail {
 
@@ -118,52 +118,34 @@ private:
 
 class DeferredBase {
 public:
+    virtual py::object solver() const = 0;
     virtual void compute() = 0;
-    virtual std::string report() = 0;
-    virtual ArrayConstRef result_uref() = 0;
+    virtual py::object result() = 0;
 };
 
 template<class Result>
 class Deferred : public DeferredBase {
-    using Compute = std::function<void(Result&)>;
-    using Report = std::function<std::string()>;
-
 public:
-    Deferred(Compute compute, Report report)
-        : _compute(compute), _report(report)
-    {}
+    Deferred(py::object solver, std::function<Result()> compute)
+        : _solver(solver), _compute(std::move(compute)) {}
+
+    py::object solver() const final { return _solver; }
 
     void compute() final {
-        if (is_computed)
-            return;
+        if (is_computed) { return; }
 
-        timer.tic();
-        _compute(_result);
-        timer.toc();
+        _result = _compute();
         is_computed = true;
     }
 
-    std::string report() final {
-        return _report() + " " + timer.str();
-    }
-
-    Result result() {
-        compute();
-        return _result;
-    }
-
-    ArrayConstRef result_uref() final {
-        compute();
-        return arrayref(std17::as_const(_result));
-    }
+    py::object result() final { compute(); return py::cast(_result); }
 
 private:
-    Compute _compute;
-    Report _report;
+    py::object _solver;
+    std::function<Result()> _compute;
     Result _result;
 
     bool is_computed = false;
-    Chrono timer;
 };
 
 

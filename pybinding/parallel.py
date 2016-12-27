@@ -148,7 +148,8 @@ class DefaultStatus:
         return ", ".join("{} = {:.2g}".format(k, v)
                          for k, v in zip(self.params, self.sequence[idx]))
 
-    def __call__(self, report, idx, count):
+    def __call__(self, deferred, idx, count):
+        report = deferred.solver.report(shortform=True)
         print(self.template.format(vars=self._vars(idx), **locals()))
 
 
@@ -238,7 +239,7 @@ class ParallelFor:
         self.data[idx] = copy(deferred.result)
 
         count = self.pbar.value + 1
-        self._status(deferred.report, idx, count)
+        self._status(deferred, idx, count)
         self.pbar += 1  # also refreshes output stream
 
         if count in self.save_at:
@@ -247,9 +248,9 @@ class ParallelFor:
             self._save(result)
             self._plot(result)
 
-    def _status(self, report, idx, count):
+    def _status(self, deferred, idx, count):
         for f in self.hooks.status:
-            f(report, idx, count)
+            f(deferred, idx, count)
 
     def _save(self, result):
         if not self.config.filename:

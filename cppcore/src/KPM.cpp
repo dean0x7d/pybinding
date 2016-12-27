@@ -1,7 +1,6 @@
 #include "KPM.hpp"
 
 namespace cpb {
-static constexpr auto pi = double{constant::pi};
 
 KPM::KPM(Model const& model, MakeStrategy const& make_strategy)
     : model(model), make_strategy(make_strategy), strategy(make_strategy(model.hamiltonian())) {}
@@ -59,23 +58,6 @@ ArrayXd KPM::calc_ldos(ArrayXd const& energy, double broadening,
     auto ldos = strategy->ldos(index, energy, broadening);
     calculation_timer.toc();
     return ldos;
-}
-
-Deferred<ArrayXd> KPM::deferred_ldos(ArrayXd const& energy, double broadening,
-                                     Cartesian position, std::string const& sublattice) const {
-    auto shared_strategy = std::shared_ptr<kpm::Strategy>(make_strategy(model.hamiltonian()));
-    auto& model = this->model;
-
-    return {
-        [shared_strategy, model, position, sublattice, energy, broadening](ArrayXd& ldos) {
-            auto i = model.system()->find_nearest(position, sublattice);
-            auto greens_function = shared_strategy->greens(i, i, energy, broadening);
-            ldos = -1/pi * greens_function.imag();
-        },
-        [shared_strategy] {
-            return shared_strategy->report(true);
-        }
-    };
 }
 
 std::string KPM::report(bool shortform) const {

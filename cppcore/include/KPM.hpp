@@ -1,8 +1,6 @@
 #pragma once
 #include "kpm/Strategy.hpp"
 
-#include "detail/thread.hpp"
-
 namespace cpb {
 
 /**
@@ -27,8 +25,6 @@ public:
 
     ArrayXd calc_ldos(ArrayXd const& energy, double broadening,
                       Cartesian position, std::string const& sublattice = "") const;
-    Deferred<ArrayXd> deferred_ldos(ArrayXd const& energy, double broadening,
-                                    Cartesian position, std::string const& sublattice = "") const;
 
     /// Get some information about what happened during the last calculation
     std::string report(bool shortform) const;

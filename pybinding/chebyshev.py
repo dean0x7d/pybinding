@@ -116,9 +116,7 @@ class KernelPolynomialMethod:
         -------
         Deferred
         """
-        deferred = self.impl.deferred_ldos(energy, broadening, position, sublattice)
-        deferred.model = self.model
-        return deferred
+        return self.impl.deferred_ldos(energy, broadening, position, sublattice)
 
 
 def kpm(model, lambda_value=4.0, energy_range=None, optimization_level=3, lanczos_precision=0.002):

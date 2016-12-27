@@ -23,7 +23,6 @@ add_library(pybinding_cppcore
     include/detail/slice.hpp
     include/detail/strategy.hpp
     include/detail/sugar.hpp
-    include/detail/thread.hpp
     include/detail/typelist.hpp
     include/hamiltonian/Hamiltonian.hpp
     include/hamiltonian/HamiltonianModifiers.hpp
