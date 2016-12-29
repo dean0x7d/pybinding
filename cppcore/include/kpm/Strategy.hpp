@@ -2,6 +2,7 @@
 #include "Model.hpp"
 #include "hamiltonian/Hamiltonian.hpp"
 
+#include "kpm/Kernel.hpp"
 #include "kpm/Bounds.hpp"
 #include "kpm/Moments.hpp"
 #include "kpm/OptimizedHamiltonian.hpp"
@@ -16,9 +17,9 @@ namespace cpb { namespace kpm {
  KPM configuration struct with defaults
  */
 struct Config {
-    float lambda = 4.0f; ///< controls the accuracy of the kernel polynomial method
     float min_energy = 0.0f; ///< lowest eigenvalue of the Hamiltonian
     float max_energy = 0.0f; ///< highest eigenvalue of the Hamiltonian
+    Kernel kernel = lorentz_kernel(4.0f); ///< produces the damping coefficients
 
     int opt_level = 3; ///< 0 to 3, higher levels apply more complex optimizations
     float lanczos_precision = 0.002f; ///< how precise should the min/max energy estimation be

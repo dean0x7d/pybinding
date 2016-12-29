@@ -10,19 +10,20 @@ void wrap_kpm_strategy(py::module& m, char const* name) {
     auto const kpm_defaults = kpm::Config();
     m.def(
         name,
-        [](Model const& model, float lambda, std::pair<float, float> energy,
-           int opt, float lanczos) {
+        [](Model const& model, std::pair<float, float> energy,
+           kpm::Kernel const& kernel, int opt, float lanczos) {
             kpm::Config config;
-            config.lambda = lambda;
             config.min_energy = energy.first;
             config.max_energy = energy.second;
+            config.kernel = kernel;
             config.opt_level = opt;
             config.lanczos_precision = lanczos;
 
             return make_kpm<Strategy>(model, config);
         },
-        "model"_a, "lambda_value"_a=kpm_defaults.lambda,
+        "model"_a,
         "energy_range"_a=py::make_tuple(kpm_defaults.min_energy, kpm_defaults.max_energy),
+        "kernel"_a=kpm_defaults.kernel,
         "optimization_level"_a=kpm_defaults.opt_level,
         "lanczos_precision"_a=kpm_defaults.lanczos_precision
     );
@@ -87,6 +88,10 @@ void wrap_greens(py::module& m) {
         .def_property_readonly("elapsed_seconds", [](kpm::Stats const& s) {
             return s.moments_timer.elapsed_seconds();
         });
+
+    py::class_<kpm::Kernel>(m, "KPMKernel");
+    m.def("lorentz_kernel", &kpm::lorentz_kernel);
+    m.def("jackson_kernel", &kpm::jackson_kernel);
 
     py::class_<KPM>(m, "Greens")
         .def("calc_greens", &KPM::calc_greens)

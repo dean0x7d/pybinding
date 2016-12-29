@@ -3,25 +3,8 @@
 
 #include "compute/kernel_polynomial.hpp"
 
-namespace cpb { namespace kpm {
+namespace cpb { namespace kpm { namespace calc_moments {
 
-/**
- Return the number of moments needed to compute Green's at the specified broadening
- */
-template<class real_t>
-int required_num_moments(Scale<real_t> scale, double lambda, double broadening) {
-    auto const scaled_broadening = broadening / scale.a;
-    auto num_moments = static_cast<int>(lambda / scaled_broadening) + 1;
-    // Moment calculations at higher optimization levels require specific rounding.
-    // `num_moments - 2` considers only moments in the main KPM loop. Divisible by 4
-    // because that is the strictest requirement imposed by `calc_diag_moments2()`.
-    while ((num_moments - 2) % 4 != 0) {
-        ++num_moments;
-    }
-    return num_moments;
-}
-
-namespace calc_moments {
 /**
  Diagonal KPM implementation: the left and right vectors are identical
  */
@@ -282,6 +265,5 @@ void opt_size_and_interleaved(Moments& moments, Matrix const& h2, OptimizedSizes
 }
 
 } // namespace off_diagonal
-} // namespace calc_moments
 
-}} // namespace cpb::kpm
+}}} // namespace cpb::kpm::calc_moments

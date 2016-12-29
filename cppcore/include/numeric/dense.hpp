@@ -224,4 +224,14 @@ inline ArrayRef arrayref(std::vector<scalar_t>& v) {
     return {num::detail::get_tag<scalar_t>(), true, v.data(), 1, static_cast<int>(v.size())};
 }
 
+/// Range from 0 to `size` of scalar type `T` which does not have to be an integral type
+template<class T>
+ArrayX<T> make_integer_range(Eigen::DenseIndex size) {
+    auto result = ArrayX<T>(size);
+    for (auto n = 0; n < size; ++n) {
+        result[n] = static_cast<T>(n);
+    }
+    return result;
+}
+
 } // namespace cpb

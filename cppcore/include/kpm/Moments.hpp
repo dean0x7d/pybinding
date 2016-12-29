@@ -9,31 +9,6 @@
 namespace cpb { namespace kpm {
 
 namespace detail {
-    /// Put the kernel in *Kernel* polynomial method
-    template<class scalar_t, class real_t>
-    void apply_lorentz_kernel(ArrayX<scalar_t>& moments, real_t lambda) {
-        auto const N = moments.size();
-
-        auto lorentz_kernel = [=](real_t n) { // n is real_t to get proper fp division
-            using std::sinh;
-            return sinh(lambda * (1 - n / N)) / sinh(lambda);
-        };
-
-        for (auto n = 0; n < N; ++n) {
-            moments[n] *= lorentz_kernel(static_cast<real_t>(n));
-        }
-    }
-
-    /// Range from 0 to `size` of scalar type `T` which does not have to be an integral type
-    template<class T>
-    ArrayX<T> make_integer_range(Eigen::DenseIndex size) {
-        auto result = ArrayX<T>(size);
-        for (auto n = 0; n < size; ++n) {
-            result[n] = static_cast<T>(n);
-        }
-        return result;
-    }
-
     /// Reconstruct a real function for `scaled_energy` based on the KPM `moments`
     ///    f(E) = 2/pi * 1/sqrt(1 - E^2) * sum( moments * cos(ns * acos(E)) )
     template<class real_t>

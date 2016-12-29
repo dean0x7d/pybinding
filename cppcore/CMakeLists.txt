@@ -28,6 +28,7 @@ add_library(pybinding_cppcore
     include/hamiltonian/HamiltonianModifiers.hpp
     include/kpm/Bounds.hpp
     include/kpm/calc_moments.hpp
+    include/kpm/Kernel.hpp
     include/kpm/OptimizedHamiltonian.hpp
     include/kpm/OptimizedSizes.hpp
     include/kpm/Moments.hpp
@@ -64,6 +65,7 @@ add_library(pybinding_cppcore
     src/hamiltonian/Hamiltonian.cpp
     src/hamiltonian/HamiltonianModifiers.cpp
     src/kpm/Bounds.cpp
+    src/kpm/Kernel.cpp
     src/kpm/OptimizedHamiltonian.cpp
     src/kpm/Strategy.cpp
     src/leads/Leads.cpp

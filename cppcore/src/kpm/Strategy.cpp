@@ -27,9 +27,6 @@ StrategyTemplate<scalar_t, Impl>::StrategyTemplate(SparseMatrixRC<scalar_t> h,
     if (config.min_energy > config.max_energy) {
         throw std::invalid_argument("KPM: Invalid energy range specified (min > max).");
     }
-    if (config.lambda <= 0) {
-        throw std::invalid_argument("KPM: Lambda must be positive.");
-    }
 }
 
 template<class scalar_t, class Impl>
@@ -50,7 +47,8 @@ ArrayXd StrategyTemplate<scalar_t, Impl>::ldos(int index, ArrayXd const& energy,
                                                double broadening) {
     auto const scale = bounds.scaling_factors();
     auto const scaled_energy = bounds.scaled(energy.template cast<real_t>());
-    auto const num_moments = required_num_moments(scale, config.lambda, broadening);
+    auto const num_moments = config.kernel.required_num_moments(broadening / scale.a);
+
     optimized_hamiltonian.optimize_for({index, index}, scale);
     stats = {num_moments, optimized_hamiltonian.operations(num_moments),
              optimized_hamiltonian.memory_usage(), hamiltonian->rows() * sizeof(scalar_t)};
@@ -61,7 +59,8 @@ ArrayXd StrategyTemplate<scalar_t, Impl>::ldos(int index, ArrayXd const& energy,
     Impl::diagonal(moments, optimized_hamiltonian, config.opt_level);
     stats.moments_timer.toc();
 
-    detail::apply_lorentz_kernel(moments.get(), config.lambda);
+    config.kernel.apply(moments.get());
+
     auto ldos = detail::reconstruct_function<real_t>(scaled_energy, moments.get().real());
     return ldos.template cast<double>();
 }
@@ -79,7 +78,8 @@ StrategyTemplate<scalar_t, Impl>::greens_vector(int row, std::vector<int> const&
     assert(!cols.empty());
     auto const scale = bounds.scaling_factors();
     auto const scaled_energy = bounds.scaled(energy.template cast<real_t>());
-    auto const num_moments = required_num_moments(scale, config.lambda, broadening);
+    auto const num_moments = config.kernel.required_num_moments(broadening / scale.a);
+
     optimized_hamiltonian.optimize_for({row, cols}, scale);
     auto const& idx = optimized_hamiltonian.idx();
     stats = {num_moments, optimized_hamiltonian.operations(num_moments),
@@ -92,7 +92,8 @@ StrategyTemplate<scalar_t, Impl>::greens_vector(int row, std::vector<int> const&
         Impl::diagonal(moments, optimized_hamiltonian, config.opt_level);
         stats.moments_timer.toc();
 
-        detail::apply_lorentz_kernel(moments.get(), config.lambda);
+        config.kernel.apply(moments.get());
+
         auto const greens = detail::reconstruct_greens(scaled_energy, moments.get());
         return {greens.template cast<std::complex<double>>()};
     } else {
@@ -103,7 +104,7 @@ StrategyTemplate<scalar_t, Impl>::greens_vector(int row, std::vector<int> const&
         stats.moments_timer.toc();
 
         for (auto& moments : moments_vector.get()) {
-            detail::apply_lorentz_kernel(moments, config.lambda);
+            config.kernel.apply(moments);
         }
 
         auto greens = std::vector<ArrayXcd>();
