@@ -33,8 +33,8 @@ void basic(Moments& moments, Matrix const& h2) {
         // Any kind of pre- and post-processing, e.g. complex absorbing potential
         moments.pre_process(r0, r1);
 
-        // Compute kernel: `r0 = h2 * r1 - r0` <- the most expensive part of the algorithm
-        compute::kpm_kernel(0, h2.rows(), h2, r1, r0);
+        // Generalized SpMV: `r0 = h2 * r1 - r0` <- the most expensive part of the algorithm
+        compute::kpm_spmv(0, h2.rows(), h2, r1, r0);
 
         // The pre- and post-processing are usually empty functions
         moments.post_process(r0, r1);
@@ -69,7 +69,7 @@ void opt_size(Moments& moments, Matrix const& h2, OptimizedSizes const& sizes) {
         auto const opt_size = sizes.optimal(n, num_moments);
 
         moments.pre_process(r0.head(opt_size), r1.head(opt_size));
-        compute::kpm_kernel(0, opt_size, h2, r1, r0);
+        compute::kpm_spmv(0, opt_size, h2, r1, r0);
         moments.post_process(r0.head(opt_size), r1.head(opt_size));
 
         r1.swap(r0);
@@ -100,13 +100,13 @@ void interleaved(Moments& moments, Matrix const& h2, OptimizedSizes const& sizes
         auto const max = sizes.max_index();
         for (auto k = 0, p0 = 0, p1 = 0; k <= max; ++k) {
             auto const p2 = sizes[k];
-            compute::kpm_diag_kernel(p1, p2, h2, r1, r0, m2, m3);
-            compute::kpm_diag_kernel(p0, p1, h2, r0, r1, m4, m5);
+            compute::kpm_spmv_diagonal(p1, p2, h2, r1, r0, m2, m3);
+            compute::kpm_spmv_diagonal(p0, p1, h2, r0, r1, m4, m5);
 
             p0 = p1;
             p1 = p2;
         }
-        compute::kpm_diag_kernel(sizes[max - 1], sizes[max], h2, r0, r1, m4, m5);
+        compute::kpm_spmv_diagonal(sizes[max - 1], sizes[max], h2, r0, r1, m4, m5);
 
         moments.collect(n, m2, m3);
         moments.collect(n + 1, m4, m5);
@@ -131,14 +131,14 @@ void opt_size_and_interleaved(Moments& moments, Matrix const& h2, OptimizedSizes
         auto const max1 = sizes.index(n, num_moments);
         for (auto k = 0, p0 = 0, p1 = 0; k <= max1; ++k) {
             auto const p2 = sizes[k];
-            compute::kpm_diag_kernel(p1, p2, h2, r1, r0, m2, m3);
-            compute::kpm_diag_kernel(p0, p1, h2, r0, r1, m4, m5);
+            compute::kpm_spmv_diagonal(p1, p2, h2, r1, r0, m2, m3);
+            compute::kpm_spmv_diagonal(p0, p1, h2, r0, r1, m4, m5);
 
             p0 = p1;
             p1 = p2;
         }
         auto const max2 = sizes.index(n + 1, num_moments);
-        compute::kpm_diag_kernel(sizes[max1 - 1], sizes[max2], h2, r0, r1, m4, m5);
+        compute::kpm_spmv_diagonal(sizes[max1 - 1], sizes[max2], h2, r0, r1, m4, m5);
 
         moments.collect(n, m2, m3);
         moments.collect(n + 1, m4, m5);
@@ -169,7 +169,7 @@ void basic(Moments& moments, Matrix const& h2) {
     auto const num_moments = moments.size();
     for (auto n = 2; n < num_moments; ++n) {
         moments.pre_process(r0, r1);
-        compute::kpm_kernel(0, h2.rows(), h2, r1, r0);
+        compute::kpm_spmv(0, h2.rows(), h2, r1, r0);
         moments.post_process(r0, r1);
 
         r1.swap(r0);
@@ -193,7 +193,7 @@ void opt_size(Moments& moments, Matrix const& h2, OptimizedSizes const& sizes) {
         auto const optimized_size = sizes.optimal(n, num_moments);
 
         moments.pre_process(r0, r1);
-        compute::kpm_kernel(0, optimized_size, h2, r1, r0); // r0 = matrix * r1 - r0
+        compute::kpm_spmv(0, optimized_size, h2, r1, r0); // r0 = matrix * r1 - r0
         moments.post_process(r0, r1);
 
         r1.swap(r0);
@@ -220,13 +220,13 @@ void interleaved(Moments& moments, Matrix const& h2, OptimizedSizes const& sizes
         auto const max = sizes.max_index();
         for (auto m = 0, p0 = 0, p1 = 0; m <= max; ++m) {
             auto const p2 = sizes[m];
-            compute::kpm_kernel(p1, p2, h2, r1, r0);
-            compute::kpm_kernel(p0, p1, h2, r0, r1);
+            compute::kpm_spmv(p1, p2, h2, r1, r0);
+            compute::kpm_spmv(p0, p1, h2, r0, r1);
 
             p0 = p1;
             p1 = p2;
         }
-        compute::kpm_kernel(sizes[max - 1], sizes[max], h2, r0, r1);
+        compute::kpm_spmv(sizes[max - 1], sizes[max], h2, r0, r1);
 
         moments.collect(n, r0);
         moments.collect(n + 1, r1);
@@ -250,14 +250,14 @@ void opt_size_and_interleaved(Moments& moments, Matrix const& h2, OptimizedSizes
         auto const max1 = sizes.index(n, num_moments);
         for (auto m = 0, p0 = 0, p1 = 0; m <= max1; ++m) {
             auto const p2 = sizes[m];
-            compute::kpm_kernel(p1, p2, h2, r1, r0);
-            compute::kpm_kernel(p0, p1, h2, r0, r1);
+            compute::kpm_spmv(p1, p2, h2, r1, r0);
+            compute::kpm_spmv(p0, p1, h2, r0, r1);
 
             p0 = p1;
             p1 = p2;
         }
         auto const max2 = sizes.index(n + 1, num_moments);
-        compute::kpm_kernel(sizes[max1 - 1], sizes[max2], h2, r0, r1);
+        compute::kpm_spmv(sizes[max1 - 1], sizes[max2], h2, r0, r1);
 
         moments.collect(n, r0);
         moments.collect(n + 1, r1);

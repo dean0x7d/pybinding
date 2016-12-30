@@ -15,15 +15,15 @@
 namespace cpb { namespace compute {
 
 /**
- Off-diagonal KPM compute kernel for CSR matrix
+ KPM-specialized sparse matrix-vector multiplication (CSR, off-diagonal)
 
  Equivalent to: y = matrix * x - y
  */
 #ifndef CPB_USE_MKL
 
 template<class scalar_t> CPB_ALWAYS_INLINE
-void kpm_kernel(int start, int end, SparseMatrixX<scalar_t> const& matrix,
-                VectorX<scalar_t> const& x, VectorX<scalar_t>& y) {
+void kpm_spmv(int start, int end, SparseMatrixX<scalar_t> const& matrix,
+              VectorX<scalar_t> const& x, VectorX<scalar_t>& y) {
     auto const data = matrix.valuePtr();
     auto const indices = matrix.innerIndexPtr();
     auto const indptr = matrix.outerIndexPtr();
@@ -40,8 +40,8 @@ void kpm_kernel(int start, int end, SparseMatrixX<scalar_t> const& matrix,
 #else // CPB_USE_MKL
 
 template<class scalar_t> CPB_ALWAYS_INLINE
-void kpm_kernel(int start, int end, SparseMatrixX<scalar_t> const& matrix,
-                VectorX<scalar_t> const& x, VectorX<scalar_t>& y) {
+void kpm_spmv(int start, int end, SparseMatrixX<scalar_t> const& matrix,
+              VectorX<scalar_t> const& x, VectorX<scalar_t>& y) {
     if (end <= start) {
         return;
     }
@@ -75,7 +75,7 @@ void kpm_kernel(int start, int end, SparseMatrixX<scalar_t> const& matrix,
 #endif // CPB_USE_MKL
 
 /**
- Diagonal KPM compute kernel for CSR matrix
+ KPM-specialized sparse matrix-vector multiplication (CSR, diagonal)
 
  Equivalent to:
    y = matrix * x - y
@@ -83,25 +83,25 @@ void kpm_kernel(int start, int end, SparseMatrixX<scalar_t> const& matrix,
    m3 = dot(x, y)
  */
 template<class scalar_t> CPB_ALWAYS_INLINE
-void kpm_diag_kernel(int start, int end, SparseMatrixX<scalar_t> const& matrix,
-                     VectorX<scalar_t> const& x, VectorX<scalar_t>& y,
-                     scalar_t& m2, scalar_t& m3) {
-    kpm_kernel(start, end, matrix, x, y);
+void kpm_spmv_diagonal(int start, int end, SparseMatrixX<scalar_t> const& matrix,
+                       VectorX<scalar_t> const& x, VectorX<scalar_t>& y,
+                       scalar_t& m2, scalar_t& m3) {
+    kpm_spmv(start, end, matrix, x, y);
     auto const size = end - start;
     m2 += x.segment(start, size).squaredNorm();
     m3 += y.segment(start, size).dot(x.segment(start, size));
 }
 
 /**
- Off-diagonal KPM compute kernel for ELLPACK matrix
+ KPM-specialized sparse matrix-vector multiplication (ELLPACK, off-diagonal)
 
  Equivalent to: y = matrix * x - y
  */
 #if SIMDPP_USE_NULL // generic version
 
 template<class scalar_t> CPB_ALWAYS_INLINE
-void kpm_kernel(int start, int end, num::EllMatrix<scalar_t> const& matrix,
-                VectorX<scalar_t> const& x, VectorX<scalar_t>& y) {
+void kpm_spmv(int start, int end, num::EllMatrix<scalar_t> const& matrix,
+              VectorX<scalar_t> const& x, VectorX<scalar_t>& y) {
     for (auto row = start; row < end; ++row) {
         y[row] = -y[row];
     }
@@ -119,8 +119,8 @@ void kpm_kernel(int start, int end, num::EllMatrix<scalar_t> const& matrix,
 
 template<class scalar_t, int skip_last_n = 0,
          int step = simd::detail::traits<scalar_t>::size> CPB_ALWAYS_INLINE
-simd::split_loop_t<step> kpm_kernel(int start, int end, num::EllMatrix<scalar_t> const& matrix,
-                                    VectorX<scalar_t> const& x, VectorX<scalar_t>& y) {
+simd::split_loop_t<step> kpm_spmv(int start, int end, num::EllMatrix<scalar_t> const& matrix,
+                                  VectorX<scalar_t> const& x, VectorX<scalar_t>& y) {
     using simd_register_t = simd::select_vector_t<scalar_t>;
     auto const loop = simd::split_loop(y.data(), start, end);
 
@@ -159,7 +159,7 @@ simd::split_loop_t<step> kpm_kernel(int start, int end, num::EllMatrix<scalar_t>
 #endif // SIMDPP_USE_NULL
 
 /**
- Diagonal KPM compute kernel for ELLPACK matrix
+ KPM-specialized sparse matrix-vector multiplication (ELLPACK, diagonal)
 
  Equivalent to:
    y = matrix * x - y
@@ -169,10 +169,10 @@ simd::split_loop_t<step> kpm_kernel(int start, int end, num::EllMatrix<scalar_t>
 #if SIMDPP_USE_NULL // generic version
 
 template<class scalar_t> CPB_ALWAYS_INLINE
-void kpm_diag_kernel(int start, int end, num::EllMatrix<scalar_t> const& matrix,
-                     VectorX<scalar_t> const& x, VectorX<scalar_t>& y,
-                     scalar_t& m2, scalar_t& m3) {
-    kpm_kernel(start, end, matrix, x, y);
+void kpm_spmv_diagonal(int start, int end, num::EllMatrix<scalar_t> const& matrix,
+                       VectorX<scalar_t> const& x, VectorX<scalar_t>& y,
+                       scalar_t& m2, scalar_t& m3) {
+    kpm_spmv(start, end, matrix, x, y);
     auto const size = end - start;
     m2 += x.segment(start, size).squaredNorm();
     m3 += y.segment(start, size).dot(x.segment(start, size));
@@ -181,11 +181,11 @@ void kpm_diag_kernel(int start, int end, num::EllMatrix<scalar_t> const& matrix,
 #else // vectorized using SIMD intrinsics
 
 template<class scalar_t> CPB_ALWAYS_INLINE
-void kpm_diag_kernel(int start, int end, num::EllMatrix<scalar_t> const& matrix,
-                     VectorX<scalar_t> const& x, VectorX<scalar_t>& y,
-                     scalar_t& m2, scalar_t& m3) {
+void kpm_spmv_diagonal(int start, int end, num::EllMatrix<scalar_t> const& matrix,
+                       VectorX<scalar_t> const& x, VectorX<scalar_t>& y,
+                       scalar_t& m2, scalar_t& m3) {
     // Call the regular compute function, but skip the last loop iteration.
-    auto const loop = kpm_kernel<scalar_t, 1>(start, end, matrix, x, y);
+    auto const loop = kpm_spmv<scalar_t, 1>(start, end, matrix, x, y);
 
     // The last iteration will be done here together with the m2 and m3 sums.
     // This saves memory bandwidth by reusing `y` data (`r2`) which is already
