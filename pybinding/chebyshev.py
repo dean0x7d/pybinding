@@ -119,7 +119,7 @@ class KernelPolynomialMethod:
         return self.impl.deferred_ldos(energy, broadening, position, sublattice)
 
 
-def kpm(model, energy_range=None, kernel="default", optimization_level=3, lanczos_precision=0.002):
+def kpm(model, energy_range=None, kernel="default", **kwargs):
     """The default CPU implementation of the Kernel Polynomial Method
 
     This implementation works on any system and is well optimized.
@@ -140,16 +140,6 @@ def kpm(model, energy_range=None, kernel="default", optimization_level=3, lanczo
         the function reconstructed from the Chebyshev series. Possible values are
         :func:`jackson_kernel` or :func:`lorentz_kernel`. The Lorentz kernel is used
         by default with `lambda = 4`.
-    optimization_level : int
-        Level 0 disables all optimizations. Level 1 turns on matrix reordering which
-        allows some parts of the sparse matrix-vector multiplication to be discarded.
-        Level 2 enables moment interleaving: two KPM moments will be calculated per
-        iteration which significantly lowers the required memory bandwidth. Level 3
-        converts the Hamiltonian matrix format from CSR to ELLPACK format which
-        allows for better vectorization of sparse matrix-vector multiplication.
-    lanczos_precision : float
-        How precise should the automatic Hamiltonian bounds determination be.
-        TODO: implementation detail. Remove from public interface.
 
     Returns
     -------
@@ -157,11 +147,10 @@ def kpm(model, energy_range=None, kernel="default", optimization_level=3, lanczo
     """
     if kernel == "default":
         kernel = lorentz_kernel()
-    return KernelPolynomialMethod(_cpp.KPM(model, energy_range or (0, 0), kernel,
-                                           optimization_level, lanczos_precision))
+    return KernelPolynomialMethod(_cpp.kpm(model, energy_range or (0, 0), kernel, **kwargs))
 
 
-def kpm_cuda(model, energy_range=None, kernel="default", optimization_level=1):
+def kpm_cuda(model, energy_range=None, kernel="default", **kwargs):
     """Same as :func:`kpm` except that it's executed on the GPU using CUDA (if supported)
 
     See :func:`kpm` for detailed parameter documentation.
@@ -172,7 +161,6 @@ def kpm_cuda(model, energy_range=None, kernel="default", optimization_level=1):
     model : Model
     energy_range : Optional[Tuple[float, float]]
     kernel : Kernel
-    optimization_level : int
 
     Returns
     -------
@@ -182,8 +170,8 @@ def kpm_cuda(model, energy_range=None, kernel="default", optimization_level=1):
         if kernel == "default":
             kernel = lorentz_kernel()
         # noinspection PyUnresolvedReferences
-        return KernelPolynomialMethod(_cpp.KPMcuda(model, energy_range or (0, 0), kernel,
-                                                   optimization_level))
+        return KernelPolynomialMethod(_cpp.kpm_cuda(model, energy_range or (0, 0),
+                                                    kernel, **kwargs))
     except AttributeError:
         raise Exception("The module was compiled without CUDA support.\n"
                         "Use a different KPM implementation or recompile the module with CUDA.")

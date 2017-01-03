@@ -11,6 +11,9 @@
 
 namespace cpb { namespace kpm {
 
+/// Sparse matrix format for the optimized Hamiltonian
+enum class MatrixFormat { CSR, ELL };
+
 /**
  Indices of the Green's function matrix that will be computed
 
@@ -32,17 +35,6 @@ struct Indices {
     friend bool operator==(Indices const& l, Indices const& r) {
         return l.row == r.row && all_of(l.cols == r.cols);
     }
-};
-
-/**
- Matrix configuration for `OptimizedHamiltonian`
- */
-struct MatrixConfig {
-    enum class Reorder { ON, OFF };
-    enum class Format { CSR, ELL };
-
-    Reorder reorder;
-    Format format;
 };
 
 /**
@@ -73,28 +65,20 @@ class OptimizedHamiltonian {
     SparseMatrixX<scalar_t> const* original_matrix;
     Indices original_idx; ///< original target indices for which the optimization was done
 
-    MatrixConfig config;
+    MatrixFormat matrix_format;
+    bool reorder;
     Chrono timer;
 
 public:
-    OptimizedHamiltonian(SparseMatrixX<scalar_t> const* m, MatrixConfig const& config)
-        : optimized_sizes(m->rows()), original_matrix(m), config(config) {}
+    OptimizedHamiltonian(SparseMatrixX<scalar_t> const* m, MatrixFormat const& mf, bool reorder)
+        : optimized_sizes(m->rows()), original_matrix(m), matrix_format(mf), reorder(reorder) {}
 
     /// Create the optimized Hamiltonian targeting specific indices and scale factors
     void optimize_for(Indices const& idx, Scale<real_t> scale);
 
     Indices const& idx() const { return optimized_idx; }
     OptimizedSizes const& sizes() const { return optimized_sizes; }
-
-    SparseMatrixX<scalar_t> const& csr() const {
-        assert(optimized_matrix.template is<SparseMatrixX<scalar_t>>());
-        return optimized_matrix.template get<SparseMatrixX<scalar_t>>();
-    }
-
-    num::EllMatrix<scalar_t> const& ell() const {
-        assert(optimized_matrix.template is<num::EllMatrix<scalar_t>>());
-        return optimized_matrix.template get<num::EllMatrix<scalar_t>>();
-    }
+    OptMatrix const& matrix() const { return optimized_matrix; }
 
     /// The unoptimized compute area is matrix.nonZeros() * num_moments
     size_t optimized_area(int num_moments) const;

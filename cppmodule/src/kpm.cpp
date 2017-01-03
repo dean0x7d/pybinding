@@ -10,13 +10,16 @@ void wrap_kpm_strategy(py::module& m, char const* name) {
     auto const kpm_defaults = kpm::Config();
     m.def(
         name,
-        [](Model const& model, std::pair<float, float> energy,
-           kpm::Kernel const& kernel, int opt, float lanczos) {
+        [](Model const& model, std::pair<float, float> energy, kpm::Kernel const& kernel,
+           std::string matrix_format, bool optimal_size, bool interleaved, float lanczos) {
             kpm::Config config;
             config.min_energy = energy.first;
             config.max_energy = energy.second;
             config.kernel = kernel;
-            config.opt_level = opt;
+            config.matrix_format = matrix_format == "ELL" ? kpm::MatrixFormat::ELL
+                                                          : kpm::MatrixFormat::CSR;
+            config.algorithm.optimal_size = optimal_size;
+            config.algorithm.interleaved = interleaved;
             config.lanczos_precision = lanczos;
 
             return make_kpm<Strategy>(model, config);
@@ -24,7 +27,9 @@ void wrap_kpm_strategy(py::module& m, char const* name) {
         "model"_a,
         "energy_range"_a=py::make_tuple(kpm_defaults.min_energy, kpm_defaults.max_energy),
         "kernel"_a=kpm_defaults.kernel,
-        "optimization_level"_a=kpm_defaults.opt_level,
+        "matrix_format"_a="ELL",
+        "optimal_size"_a=true,
+        "interleaved"_a=true,
         "lanczos_precision"_a=kpm_defaults.lanczos_precision
     );
 }
@@ -43,9 +48,7 @@ struct PyOptHam {
 
         template<class scalar_t>
         OptHamVariant operator()(SparseMatrixRC<scalar_t> const& m) const {
-            auto ret = kpm::OptimizedHamiltonian<scalar_t>(
-                m.get(), {kpm::MatrixConfig::Reorder::ON, kpm::MatrixConfig::Format::CSR}
-            );
+            auto ret = kpm::OptimizedHamiltonian<scalar_t>(m.get(), kpm::MatrixFormat::CSR, true);
             auto indices = std::vector<int>(m->rows());
             std::iota(indices.begin(), indices.end(), 0);
             auto bounds = kpm::Bounds<scalar_t>(m.get(), kpm::Config{}.lanczos_precision);
@@ -57,7 +60,8 @@ struct PyOptHam {
     struct ReturnMatrix {
         template<class scalar_t>
         ComplexCsrConstRef operator()(kpm::OptimizedHamiltonian<scalar_t> const& oh) const {
-            return csrref(oh.csr());
+            assert(oh.matrix().template is<SparseMatrixX<scalar_t>>());
+            return csrref(oh.matrix().template get<SparseMatrixX<scalar_t>>());
         }
     };
 
@@ -93,7 +97,7 @@ void wrap_greens(py::module& m) {
     m.def("lorentz_kernel", &kpm::lorentz_kernel);
     m.def("jackson_kernel", &kpm::jackson_kernel);
 
-    py::class_<KPM>(m, "Greens")
+    py::class_<KPM>(m, "KPM")
         .def("calc_greens", &KPM::calc_greens)
         .def("calc_greens", &KPM::calc_greens_vector)
         .def("calc_ldos", &KPM::calc_ldos)
@@ -109,10 +113,10 @@ void wrap_greens(py::module& m) {
         .def_property_readonly("system", &KPM::system)
         .def_property_readonly("stats", &KPM::get_stats);
 
-    wrap_kpm_strategy<kpm::DefaultStrategy>(m, "KPM");
+    wrap_kpm_strategy<kpm::DefaultStrategy>(m, "kpm");
 
 #ifdef CPB_USE_CUDA
-    wrap_kpm_strategy<kpm::CudaStrategy>(m, "KPMcuda");
+    wrap_kpm_strategy<kpm::CudaStrategy>(m, "kpm_cuda");
 #endif
 
     py::class_<PyOptHam>(m, "OptimizedHamiltonian")

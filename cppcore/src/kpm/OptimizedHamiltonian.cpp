@@ -19,14 +19,15 @@ void OptimizedHamiltonian<scalar_t>::optimize_for(Indices const& idx, Scale<real
     }
 
     timer.tic();
-    if (config.reorder == MatrixConfig::Reorder::ON) {
+    if (reorder) {
         create_reordered(idx, scale);
     } else {
         create_scaled(idx, scale);
     }
 
-    if (config.format == MatrixConfig::Format::ELL) {
-        optimized_matrix = convert_to_ellpack(csr());
+    if (matrix_format == MatrixFormat::ELL) {
+        auto const& csr = optimized_matrix.template get<SparseMatrixX<scalar_t>>();
+        optimized_matrix = convert_to_ellpack(csr);
     }
     timer.toc();
 

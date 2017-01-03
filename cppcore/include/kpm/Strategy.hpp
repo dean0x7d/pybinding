@@ -14,6 +14,17 @@
 namespace cpb { namespace kpm {
 
 /**
+ Algorithm selection, see the corresponding functions in `calc_moments.hpp`
+ */
+struct AlgorithmConfig {
+    bool optimal_size;
+    bool interleaved;
+
+    /// Does the Hamiltonian matrix need to be reordered?
+    bool reorder() const { return optimal_size || interleaved; }
+};
+
+/**
  KPM configuration struct with defaults
  */
 struct Config {
@@ -21,7 +32,9 @@ struct Config {
     float max_energy = 0.0f; ///< highest eigenvalue of the Hamiltonian
     Kernel kernel = lorentz_kernel(4.0f); ///< produces the damping coefficients
 
-    int opt_level = 3; ///< 0 to 3, higher levels apply more complex optimizations
+    MatrixFormat matrix_format = MatrixFormat::ELL;
+    AlgorithmConfig algorithm = {/*optimal_size*/true, /*interleaved*/true};
+
     float lanczos_precision = 0.002f; ///< how precise should the min/max energy estimation be
 };
 
@@ -31,7 +44,7 @@ struct Config {
  A strategy does the actual work of computing KPM moments and other processing
  operation to produce final results like LDOS, DOS, Green's function, etc.
 
- Different derived classes all implement the same inferface but are optimized
+ Different derived classes all implement the same interface but are optimized
  for specific scalar types and hardware (CPU, GPU).
  */
 class Strategy {
@@ -55,26 +68,12 @@ public:
 };
 
 /**
- Concrete KPM strategy templated on scalar type and implementation (CPU or GPU)
+ Concrete KPM strategy templated on scalar type and compute implementation (CPU or GPU)
 
- The `Impl` template parameter provides functions which compute raw KPM moments.
- See `DefaultCalcMoments` for example. An implementation should be declared as follows:
-
- struct Impl {
-     /// Return the `OptimizedHamiltonian` matrix configuration for the given optimization level
-     static MatrixConfig matrix_config(int opt_level);
-
-     /// Return KPM moments for several indices (the ones the Hamiltonian is optimized for)
-     template<class scalar_t>
-     static MomentsMatrix<scalar_t> moments_vector(OptimizedHamiltonian<scalar_t> const& oh,
-                                                   int num_moments, int opt_level);
-     /// Return KPM moments for a diagonal element (faster algorithm than off-diagonal)
-     template<class scalar_t>
-     static ArrayX<scalar_t> moments_diag(OptimizedHamiltonian<scalar_t> const& oh,
-                                          int num_moments, int opt_level);
- };
+ The `Compute` template parameter provides functions which compute raw KPM moments.
+ See `DefaultCompute` for the reference implementation.
  */
-template<class scalar_t, class Impl>
+template<class scalar_t, class Compute>
 class StrategyTemplate final : public Strategy {
     using real_t = num::get_real_t<scalar_t>;
     using complex_t = num::get_complex_t<scalar_t>;
@@ -105,11 +104,11 @@ private:
 /**
  Default CPU implementation for computing KPM moments, see `Strategy`
  */
-struct DefaultCalcMoments;
-CPB_EXTERN_TEMPLATE_CLASS_VARGS(StrategyTemplate, DefaultCalcMoments)
+struct DefaultCompute;
+CPB_EXTERN_TEMPLATE_CLASS_VARGS(StrategyTemplate, DefaultCompute)
 
 template<class scalar_t>
-using DefaultStrategy = StrategyTemplate<scalar_t, DefaultCalcMoments>;
+using DefaultStrategy = StrategyTemplate<scalar_t, DefaultCompute>;
 
 #ifdef CPB_USE_CUDA
 /**

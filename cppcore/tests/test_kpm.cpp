@@ -32,10 +32,8 @@ TEST_CASE("OptimizedHamiltonian reordering", "[kpm]") {
         return v;
     };
 
-    auto const matrix_config = kpm::MatrixConfig{kpm::MatrixConfig::Reorder::ON,
-                                                 kpm::MatrixConfig::Format::CSR};
     SECTION("Diagonal") {
-        auto oh = kpm::OptimizedHamiltonian<scalat_t>(&matrix, matrix_config);
+        auto oh = kpm::OptimizedHamiltonian<scalat_t>(&matrix, kpm::MatrixFormat::CSR, true);
         auto const i = model.system()->find_nearest({0, 0.07f, 0}, "B");
         oh.optimize_for({i, i}, bounds.scaling_factors());
 
@@ -54,7 +52,7 @@ TEST_CASE("OptimizedHamiltonian reordering", "[kpm]") {
     }
 
     SECTION("Off-diagonal") {
-        auto oh = kpm::OptimizedHamiltonian<scalat_t>(&matrix, matrix_config);
+        auto oh = kpm::OptimizedHamiltonian<scalat_t>(&matrix, kpm::MatrixFormat::CSR, true);
         auto const i = model.system()->find_nearest({0, 0.35f, 0}, "A");
         auto const j1 = model.system()->find_nearest({0, 0.07f, 0}, "B");
         auto const j2 = model.system()->find_nearest({0.12f, 0.14f, 0}, "A");
@@ -79,8 +77,8 @@ struct TestGreensResult {
     ArrayXcd g_ii, g_ij;
 };
 
-template<template<class> class Strategy, int highest_opt_level>
-std::vector<TestGreensResult> test_kpm_strategy() {
+template<template<class> class Strategy>
+std::vector<TestGreensResult> test_kpm_strategy(std::vector<kpm::Config> const& configs) {
     constexpr auto pi = double{constant::pi};
     auto results = std::vector<TestGreensResult>();
 
@@ -98,11 +96,10 @@ std::vector<TestGreensResult> test_kpm_strategy() {
             auto const precision = Eigen::NumTraits<float>::dummy_precision();
 
             auto unoptimized_result = TestGreensResult{};
-            for (auto opt_level = 0; opt_level <= highest_opt_level; ++opt_level) {
+            for (auto opt_level = 0; opt_level < configs.size(); ++opt_level) {
                 INFO("opt_level: " << opt_level);
-                auto config = kpm::Config{};
-                config.opt_level = opt_level;
-                auto strategy = make_kpm_strategy<Strategy>(model.hamiltonian(), config);
+                auto strategy = make_kpm_strategy<Strategy>(model.hamiltonian(),
+                                                            configs[opt_level]);
 
                 auto const gs = strategy->greens_vector(i, cols, energy_range, broadening);
                 REQUIRE(gs.size() == cols.size());
@@ -140,16 +137,37 @@ std::vector<TestGreensResult> test_kpm_strategy() {
 }
 
 TEST_CASE("KPM strategy", "[kpm]") {
+    auto make_config = [](kpm::MatrixFormat matrix_format, bool optimal_size, bool interleaved) {
+        auto config = kpm::Config{};
+        config.matrix_format = matrix_format;
+        config.algorithm.optimal_size = optimal_size;
+        config.algorithm.interleaved = interleaved;
+        return config;
+    };
+
 #ifndef CPB_USE_CUDA
-    test_kpm_strategy<kpm::DefaultStrategy, 3>();
+    test_kpm_strategy<kpm::DefaultStrategy>({
+        make_config(kpm::MatrixFormat::CSR, false, false),
+        make_config(kpm::MatrixFormat::CSR, true,  false),
+        make_config(kpm::MatrixFormat::CSR, false,  true),
+        make_config(kpm::MatrixFormat::CSR, true,  true),
+        make_config(kpm::MatrixFormat::ELL, false, false),
+        make_config(kpm::MatrixFormat::ELL, true,  false),
+        make_config(kpm::MatrixFormat::ELL, false,  true),
+        make_config(kpm::MatrixFormat::ELL, true,  true),
+    });
 #else
-    auto const cpu_results = test_kpm_strategy<kpm::DefaultStrategy, 3>();
-    auto const cuda_results = test_kpm_strategy<kpm::CudaStrategy, 1>();
+    auto const cpu_results = test_kpm_strategy<kpm::DefaultStrategy>({
+        make_config(kpm::MatrixFormat::ELL, true,  true)
+    });
+    auto const cuda_results = test_kpm_strategy<kpm::CudaStrategy>({
+        make_config(kpm::MatrixFormat::ELL, false, false),
+        make_config(kpm::MatrixFormat::ELL, true,  false)
+    });
     auto const precision = Eigen::NumTraits<float>::dummy_precision();
-    for (auto i = 0u; i < cpu_results.size(); ++i) {
-        REQUIRE(cpu_results[i].g_ii.isApprox(cuda_results[i].g_ii, precision));
-        REQUIRE(cpu_results[i].g_ij.isApprox(cuda_results[i].g_ij, precision));
+    for (auto i = 0u; i < cuda_results.size(); ++i) {
+        REQUIRE(cuda_results[i].g_ii.isApprox(cpu_results[0].g_ii, precision));
+        REQUIRE(cuda_results[i].g_ij.isApprox(cpu_results[0].g_ij, precision));
     }
 #endif // CPB_USE_CUDA
 }
-

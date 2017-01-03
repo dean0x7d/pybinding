@@ -13,6 +13,13 @@ models = {
                                 graphene.constant_magnetic_field(1e3)],
 }
 
+configurations = [
+    {'matrix_format': "CSR", 'optimal_size': False, 'interleaved': False},
+    {'matrix_format': "CSR", 'optimal_size': True,  'interleaved': False},
+    {'matrix_format': "CSR", 'optimal_size': False, 'interleaved': True},
+    {'matrix_format': "ELL", 'optimal_size': True,  'interleaved': True},
+]
+
 
 @pytest.fixture(scope='module', ids=list(models.keys()), params=models.values())
 def model(request):
@@ -21,9 +28,9 @@ def model(request):
 
 @pytest.fixture(scope='module')
 def kpm(model):
-    strategies = [pb.chebyshev.kpm(model, optimization_level=i) for i in range(4)]
-    if hasattr(pb._cpp, 'KPMcuda'):
-        strategies += [pb.chebyshev.kpm_cuda(model, optimization_level=i) for i in range(2)]
+    strategies = [pb.chebyshev.kpm(model, **c) for c in configurations]
+    if hasattr(pb._cpp, 'kpm_cuda'):
+        strategies += [pb.chebyshev.kpm_cuda(model)]
     return strategies
 
 
