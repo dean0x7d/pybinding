@@ -1,5 +1,4 @@
 #include "kpm/OptimizedHamiltonian.hpp"
-#include "kpm/Stats.hpp"
 
 namespace cpb { namespace kpm {
 
@@ -175,32 +174,43 @@ namespace {
 
         template<class scalar_t>
         size_t operator()(num::EllMatrix<scalar_t> const& ell) {
-            return static_cast<size_t>((rows - 1) * ell.nnz_per_row);
+            return static_cast<size_t>(rows * ell.nnz_per_row);
         }
     };
 }
 
 template<class scalar_t>
-size_t OptimizedHamiltonian<scalar_t>::optimized_area(int num_moments) const {
-    auto area = size_t{0};
-    for (auto n = 0; n < num_moments; ++n) {
-        auto const rows = optimized_sizes.optimal(n, num_moments);
-        auto const num_nonzeros = var::apply_visitor(NonZeros{rows}, optimized_matrix);
-        area += num_nonzeros;
+size_t OptimizedHamiltonian<scalar_t>::num_nonzeros(int num_moments, bool optimal_size) const {
+    auto result = size_t{0};
+    if (!optimal_size) {
+        result = num_moments * var::apply_visitor(NonZeros{size()}, optimized_matrix);
+    } else {
+        for (auto n = 0; n < num_moments; ++n) {
+            auto const opt_size = slice_map.optimal_size(n, num_moments);
+            auto const num_nonzeros = var::apply_visitor(NonZeros{opt_size}, optimized_matrix);
+            result += num_nonzeros;
+        }
     }
-    return area;
+    if (optimized_idx.is_diagonal()) {
+        result /= 2;
+    }
+    return result;
 }
 
 template<class scalar_t>
-size_t OptimizedHamiltonian<scalar_t>::operations(int num_moments) const {
-    auto ops = optimized_area(num_moments);
-    if (optimized_idx.is_diagonal()) {
-        ops /= 2;
-        for (auto n = 0; n <= num_moments / 2; ++n) {
-            ops += 2 * static_cast<size_t>(optimized_sizes.optimal(n, num_moments));
+size_t OptimizedHamiltonian<scalar_t>::num_vec_elements(int num_moments, bool optimal_size) const {
+    auto result = size_t{0};
+    if (!optimal_size) {
+        result = num_moments * size();
+    } else {
+        for (auto n = 0; n < num_moments; ++n) {
+            result += static_cast<size_t>(slice_map.optimal_size(n, num_moments));
         }
     }
-    return ops;
+    if (optimized_idx.is_diagonal()) {
+        result /= 2;
+    }
+    return result;
 }
 
 namespace {
@@ -224,23 +234,17 @@ namespace {
 }
 
 template<class scalar_t>
-size_t OptimizedHamiltonian<scalar_t>::memory_usage() const {
-    return var::apply_visitor(matrix_memory{}, optimized_matrix);
-}
-
-template<class scalar_t>
-std::string OptimizedHamiltonian<scalar_t>::report(int num_moments, bool shortform) const {
-    auto const removed_percent = [&]{
-        auto const nnz = var::apply_visitor(NonZeros{original_matrix->rows()}, optimized_matrix);
-        auto const full_area = static_cast<double>(nnz) * num_moments;
-        return 100 * (full_area - optimized_area(num_moments)) / full_area;
-    }();
-    auto const not_efficient = optimized_sizes.uses_full_system(num_moments) ? "" : "*";
-    auto const fmt_str = shortform ? "{:.0f}%{}"
-                                   : "The reordering optimization was able to "
-                                     "remove {:.0f}%{} of the workload";
-    auto const msg = fmt::format(fmt_str, removed_percent, not_efficient);
-    return format_report(msg, timer, shortform);
+void OptimizedHamiltonian<scalar_t>::populate_stats(Stats& s, int num_moments,
+                                                    AlgorithmConfig const& ac) const {
+    s.num_moments = num_moments;
+    s.uses_full_system = slice_map.uses_full_system(num_moments);
+    s.nnz = num_nonzeros(num_moments, /*optimal_size*/false);
+    s.opt_nnz = num_nonzeros(num_moments, ac.optimal_size);
+    s.vec = num_vec_elements(num_moments, /*optimal_size*/false);
+    s.opt_vec = num_vec_elements(num_moments, ac.optimal_size);
+    s.matrix_memory = var::apply_visitor(matrix_memory{}, optimized_matrix);
+    s.vector_memory = size() * sizeof(scalar_t);
+    s.hamiltonian_timer = timer;
 }
 
 CPB_INSTANTIATE_TEMPLATE_CLASS(OptimizedHamiltonian)

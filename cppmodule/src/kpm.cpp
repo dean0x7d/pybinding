@@ -85,11 +85,19 @@ struct PyOptHam {
 void wrap_greens(py::module& m) {
     py::class_<kpm::Stats>(m, "KPMStats")
         .def_readonly("num_moments", &kpm::Stats::num_moments)
-        .def_readonly("num_operations", &kpm::Stats::num_operations)
+        .def_readonly("uses_full_system", &kpm::Stats::uses_full_system)
+        .def_readonly("nnz", &kpm::Stats::nnz)
+        .def_readonly("opt_nnz", &kpm::Stats::opt_nnz)
+        .def_readonly("vec", &kpm::Stats::vec)
+        .def_readonly("opt_vec", &kpm::Stats::opt_vec)
         .def_readonly("matrix_memory", &kpm::Stats::matrix_memory)
         .def_readonly("vector_memory", &kpm::Stats::vector_memory)
+        .def_property_readonly("eps", &kpm::Stats::eps)
         .def_property_readonly("ops", &kpm::Stats::ops)
-        .def_property_readonly("elapsed_seconds", [](kpm::Stats const& s) {
+        .def_property_readonly("hamiltonian_time", [](kpm::Stats const& s) {
+            return s.hamiltonian_timer.elapsed_seconds();
+        })
+        .def_property_readonly("moments_time", [](kpm::Stats const& s) {
             return s.moments_timer.elapsed_seconds();
         });
 

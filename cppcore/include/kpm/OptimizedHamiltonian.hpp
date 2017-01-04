@@ -1,6 +1,7 @@
 #pragma once
-#include "Bounds.hpp"
-#include "OptimizedSizes.hpp"
+#include "kpm/Bounds.hpp"
+#include "kpm/Config.hpp"
+#include "kpm/Stats.hpp"
 
 #include "numeric/sparse.hpp"
 #include "numeric/ellmatrix.hpp"
@@ -10,9 +11,6 @@
 #include "detail/macros.hpp"
 
 namespace cpb { namespace kpm {
-
-/// Sparse matrix format for the optimized Hamiltonian
-enum class MatrixFormat { CSR, ELL };
 
 /**
  Indices of the Green's function matrix that will be computed
@@ -121,18 +119,12 @@ public:
     /// Create the optimized Hamiltonian targeting specific indices and scale factors
     void optimize_for(Indices const& idx, Scale<real_t> scale);
 
+    int size() const { return original_matrix->rows(); }
     Indices const& idx() const { return optimized_idx; }
     SliceMap const& map() const { return slice_map; }
     OptMatrix const& matrix() const { return optimized_matrix; }
 
-    /// The unoptimized compute area is matrix.nonZeros() * num_moments
-    size_t optimized_area(int num_moments) const;
-    /// The number of mul + add operations needed to compute `num_moments` of this Hamiltonian
-    size_t operations(int num_moments) const;
-    /// Memory used by the Hamiltonian matrix (in bytes)
-    size_t memory_usage() const;
-
-    std::string report(int num_moments, bool shortform = false) const;
+    void populate_stats(Stats& s, int num_moments, AlgorithmConfig const& c) const;
 
 private:
     /// Just scale the Hamiltonian: H2 = (H - I*b) * (2/a)
@@ -143,6 +135,11 @@ private:
     static num::EllMatrix<scalar_t> convert_to_ellpack(SparseMatrixX<scalar_t> const& csr);
     /// Get optimized indices which map to the given originals
     static Indices reorder_indices(Indices const& original_idx, ArrayXi const& reorder_map);
+
+    /// Total non-zeros processed when computing `num_moments` with or without size optimizations
+    size_t num_nonzeros(int num_moments, bool optimal_size) const;
+    /// Same as above but with vector elements instead of sparse matrix non-zeros
+    size_t num_vec_elements(int num_moments, bool optimal_size) const;
 };
 
 CPB_EXTERN_TEMPLATE_CLASS(OptimizedHamiltonian)

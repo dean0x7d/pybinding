@@ -50,8 +50,7 @@ ArrayXd StrategyTemplate<scalar_t, Compute>::ldos(int index, ArrayXd const& ener
     auto const num_moments = config.kernel.required_num_moments(broadening / scale.a);
 
     optimized_hamiltonian.optimize_for({index, index}, scale);
-    stats = {num_moments, optimized_hamiltonian.operations(num_moments),
-             optimized_hamiltonian.memory_usage(), hamiltonian->rows() * sizeof(scalar_t)};
+    optimized_hamiltonian.populate_stats(stats, num_moments, config.algorithm);
 
     auto moments = ExvalDiagonalMoments<scalar_t>(num_moments, optimized_hamiltonian.idx().row);
 
@@ -81,10 +80,9 @@ StrategyTemplate<scalar_t, Compute>::greens_vector(int row, std::vector<int> con
     auto const num_moments = config.kernel.required_num_moments(broadening / scale.a);
 
     optimized_hamiltonian.optimize_for({row, cols}, scale);
-    auto const& idx = optimized_hamiltonian.idx();
-    stats = {num_moments, optimized_hamiltonian.operations(num_moments),
-             optimized_hamiltonian.memory_usage(), hamiltonian->rows() * sizeof(scalar_t)};
+    optimized_hamiltonian.populate_stats(stats, num_moments, config.algorithm);
 
+    auto const& idx = optimized_hamiltonian.idx();
     if (idx.is_diagonal()) {
         auto moments = ExvalDiagonalMoments<scalar_t>(num_moments, idx.row);
 
@@ -120,7 +118,6 @@ StrategyTemplate<scalar_t, Compute>::greens_vector(int row, std::vector<int> con
 template<class scalar_t, class Compute>
 std::string StrategyTemplate<scalar_t, Compute>::report(bool shortform) const {
     return bounds.report(shortform)
-           + optimized_hamiltonian.report(stats.num_moments, shortform)
            + stats.report(shortform)
            + (shortform ? "|" : "Total time:");
 }
