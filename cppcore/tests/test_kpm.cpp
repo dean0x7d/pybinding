@@ -27,7 +27,7 @@ TEST_CASE("OptimizedHamiltonian reordering", "[kpm]") {
     auto size_indices = [](kpm::OptimizedHamiltonian<scalat_t> const& oh, int num_moments) {
         auto v = std::vector<int>(num_moments);
         for (auto n = 0; n < num_moments; ++n) {
-            v[n] = oh.sizes().index(n, num_moments);
+            v[n] = oh.map().index(n, num_moments);
         }
         return v;
     };
@@ -39,9 +39,9 @@ TEST_CASE("OptimizedHamiltonian reordering", "[kpm]") {
 
         REQUIRE(oh.idx().row == 0);
         REQUIRE(oh.idx().cols[0] == 0);
-        REQUIRE(oh.sizes().get_data().front() == 1);
-        REQUIRE(oh.sizes().get_data().back() == num_sites);
-        REQUIRE(oh.sizes().get_offset() == 0);
+        REQUIRE(oh.map().get_data().front() == 1);
+        REQUIRE(oh.map().get_data().back() == num_sites);
+        REQUIRE(oh.map().get_offset() == 0);
 
         auto const expected6 = std::vector<int>{0, 1, 2, 2, 1, 0};
         REQUIRE(size_indices(oh, 6) == expected6);
@@ -60,9 +60,9 @@ TEST_CASE("OptimizedHamiltonian reordering", "[kpm]") {
         oh.optimize_for({i, std::vector<int>{j1, j2, j3}}, bounds.scaling_factors());
 
         REQUIRE(oh.idx().row != oh.idx().cols[0]);
-        REQUIRE(oh.sizes().get_data().front() == 1);
-        REQUIRE(oh.sizes().get_data().back() == num_sites);
-        REQUIRE(oh.sizes().get_offset() > 0);
+        REQUIRE(oh.map().get_data().front() == 1);
+        REQUIRE(oh.map().get_data().back() == num_sites);
+        REQUIRE(oh.map().get_offset() > 0);
 
         auto const expected6 = std::vector<int>{0, 1, 2, 3, 3, 3};
         REQUIRE(size_indices(oh, 6) == expected6);

@@ -30,7 +30,6 @@ add_library(pybinding_cppcore
     include/kpm/calc_moments.hpp
     include/kpm/Kernel.hpp
     include/kpm/OptimizedHamiltonian.hpp
-    include/kpm/OptimizedSizes.hpp
     include/kpm/Moments.hpp
     include/kpm/Stats.hpp
     include/kpm/Strategy.hpp

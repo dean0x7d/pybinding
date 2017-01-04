@@ -68,7 +68,7 @@ struct PyOptHam {
     struct ReturnSizes {
         template<class scalar_t>
         std::vector<int> const& operator()(kpm::OptimizedHamiltonian<scalar_t> const& oh) const {
-            return oh.sizes().get_data();
+            return oh.map().get_data();
         }
     };
 

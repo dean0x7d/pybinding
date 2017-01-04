@@ -3,9 +3,10 @@
 
 namespace cpb { namespace kpm {
 
-OptimizedSizes::OptimizedSizes(std::vector<int> sizes, Indices const& idx) : data(sizes) {
-    assert(idx.cols.size() != 0);
-    auto const max_index = *std::max_element(begin(idx.cols), end(idx.cols));
+SliceMap::SliceMap(std::vector<int> indices, Indices const& optimized_idx)
+    : data(std::move(indices)) {
+    assert(optimized_idx.cols.size() != 0);
+    auto const max_index = *std::max_element(begin(optimized_idx.cols), end(optimized_idx.cols));
     auto const it = std::find_if(data.begin(), data.end(),
                                  [&](int size) { return size > max_index; });
     assert(it != data.end());
@@ -75,9 +76,9 @@ void OptimizedHamiltonian<scalar_t>::create_reordered(Indices const& idx, Scale<
     // The point of the reordering is to have the target become index number 0
     reorder_map[idx.row] = 0;
 
-    // As the reordered matrix is filled, the optimal size for the first few KPM steps is recorded
-    auto sizes = std::vector<int>();
-    sizes.push_back(1);
+    // As the reordered matrix is filled, the slice border indices are recorded
+    auto slice_border_indices = std::vector<int>();
+    slice_border_indices.push_back(1);
 
     // Fill the reordered matrix row by row
     auto const h_view = sparse::make_loop(h);
@@ -114,19 +115,19 @@ void OptimizedHamiltonian<scalar_t>::create_reordered(Indices const& idx, Scale<
             h2.insert(h2_row, h2_col) = h2_value;
         });
 
-        // Store the system size for the next KPM iteration
-        if (h2_row == sizes.back() - 1) {
-            sizes.push_back(static_cast<int>(index_queue.size()));
+        // Reached the end of a slice
+        if (h2_row == slice_border_indices.back() - 1) {
+            slice_border_indices.push_back(static_cast<int>(index_queue.size()));
         }
     }
     h2.makeCompressed();
     optimized_matrix = h2.markAsRValue();
 
-    sizes.pop_back(); // the last element is a duplicate of the second to last
-    sizes.shrink_to_fit();
+    slice_border_indices.pop_back(); // the last element is a duplicate of the second to last
+    slice_border_indices.shrink_to_fit();
 
     optimized_idx = reorder_indices(idx, reorder_map);
-    optimized_sizes = {std::move(sizes), optimized_idx};
+    slice_map = {std::move(slice_border_indices), optimized_idx};
 }
 
 template<class scalar_t>

@@ -38,6 +38,50 @@ struct Indices {
 };
 
 /**
+ Optimized slice mapping for `optimal_size` and `interleaved` KPM algorithms.
+ */
+class SliceMap {
+    std::vector<int> data; ///< optimized Hamiltonian indices marking slice borders
+    int offset = 0; ///< needed to correctly compute off-diagonal elements (i != j)
+
+public:
+    /// Simple constructor for non-optimized case -> single slice equal to full system size
+    explicit SliceMap(int system_size) { data = {system_size}; }
+    /// Map for optimized matrix. The `optimized_idx` is needed to compute the `offset`
+    SliceMap(std::vector<int> border_indices, Indices const& optimized_idx);
+
+    /// Return an index into `data`, indicating the optimal system size for
+    /// the calculation of KPM moment number `n` out of total `num_moments`
+    int index(int n, int num_moments) const {
+        assert(n < num_moments);
+
+        auto const max = std::min(last_index(), num_moments / 2);
+        if (n < max) {
+            return n; // size grows in the beginning
+        } else { // constant in the middle and shrinking near the end as reverse `n`
+            return std::min(max, num_moments - 1 - n + offset);
+        }
+    }
+
+    /// Last index into `data`
+    int last_index() const { return static_cast<int>(data.size()) - 1; }
+
+    /// Return the optimal system size for KPM moment number `n` out of total `num_moments`
+    int optimal_size(int n, int num_moments) const {
+        return data[index(n, num_moments)];
+    }
+
+    /// Would calculating this number of moments ever do a full matrix-vector multiplication?
+    bool uses_full_system(int num_moments) const {
+        return static_cast<int>(data.size()) < num_moments / 2;
+    }
+
+    int operator[](int i) const { return data[i]; }
+    std::vector<int> const& get_data() const { return data; }
+    int get_offset() const { return offset; }
+};
+
+/**
  Stores a scaled Hamiltonian `(H - b)/a` which limits it to (-1, 1) boundaries required for KPM.
  In addition, three optimisations are applied (last two are optional, see `MatrixConfig`):
 
@@ -46,8 +90,9 @@ struct Indices {
     when the original element values are needed (very rarely).
 
  2) Reorder the elements so that target indices are placed at the start of the matrix.
-    This produces the `optimized_sizes` vector which may be used to reduce calculation
-    time by skipping sparse matrix-vector multiplication of zero values.
+    This produces a `SliceMap` which may be used to reduce calculation time by skipping
+    sparse matrix-vector multiplication of zero values or by interleaving calculations
+    of neighboring slices.
 
  3) Convert the sparse matrix into the ELLPACK format. The sparse matrix-vector
     multiplication algorithm for this format is much easier to vectorize compared
@@ -60,7 +105,7 @@ class OptimizedHamiltonian {
 
     OptMatrix optimized_matrix; ///< reordered for faster compute
     Indices optimized_idx; ///< reordered target indices in the optimized matrix
-    OptimizedSizes optimized_sizes; ///< optimal matrix sizes for each KPM iteration
+    SliceMap slice_map; ///< slice border indices
 
     SparseMatrixX<scalar_t> const* original_matrix;
     Indices original_idx; ///< original target indices for which the optimization was done
@@ -71,13 +116,13 @@ class OptimizedHamiltonian {
 
 public:
     OptimizedHamiltonian(SparseMatrixX<scalar_t> const* m, MatrixFormat const& mf, bool reorder)
-        : optimized_sizes(m->rows()), original_matrix(m), matrix_format(mf), reorder(reorder) {}
+        : slice_map(m->rows()), original_matrix(m), matrix_format(mf), reorder(reorder) {}
 
     /// Create the optimized Hamiltonian targeting specific indices and scale factors
     void optimize_for(Indices const& idx, Scale<real_t> scale);
 
     Indices const& idx() const { return optimized_idx; }
-    OptimizedSizes const& sizes() const { return optimized_sizes; }
+    SliceMap const& map() const { return slice_map; }
     OptMatrix const& matrix() const { return optimized_matrix; }
 
     /// The unoptimized compute area is matrix.nonZeros() * num_moments

@@ -129,18 +129,18 @@ struct DefaultCompute {
     template<class Moments>
     struct Diagonal {
         Moments& moments;
-        OptimizedSizes const& sizes;
+        SliceMap const& map;
         AlgorithmConfig const& config;
 
         template<class Matrix>
         void operator()(Matrix const& h2) {
             using namespace calc_moments::diagonal;
             if (config.optimal_size && config.interleaved) {
-                opt_size_and_interleaved(moments, h2, sizes);
+                opt_size_and_interleaved(moments, h2, map);
             } else if (config.interleaved) {
-                interleaved(moments, h2, sizes);
+                interleaved(moments, h2, map);
             } else if (config.optimal_size) {
-                opt_size(moments, h2, sizes);
+                opt_size(moments, h2, map);
             } else {
                 basic(moments, h2);
             }
@@ -149,24 +149,24 @@ struct DefaultCompute {
 
     template<class Moments, class OptimizedHamiltonian>
     static void diagonal(Moments& m, OptimizedHamiltonian const& oh, AlgorithmConfig const& c) {
-        oh.matrix().match(Diagonal<Moments>{m, oh.sizes(), c});
+        oh.matrix().match(Diagonal<Moments>{m, oh.map(), c});
     }
 
     template<class Moments>
     struct OffDiagonal {
         Moments& moments;
-        OptimizedSizes const& sizes;
+        SliceMap const& map;
         AlgorithmConfig const& config;
 
         template<class Matrix>
         void operator()(Matrix const& h2) {
             using namespace calc_moments::off_diagonal;
             if (config.optimal_size && config.interleaved) {
-                opt_size_and_interleaved(moments, h2, sizes);
+                opt_size_and_interleaved(moments, h2, map);
             } else if (config.interleaved) {
-                interleaved(moments, h2, sizes);
+                interleaved(moments, h2, map);
             } else if (config.optimal_size) {
-                opt_size(moments, h2, sizes);
+                opt_size(moments, h2, map);
             } else {
                 basic(moments, h2);
             }
@@ -175,7 +175,7 @@ struct DefaultCompute {
 
     template<class Moments, class OptimizedHamiltonian>
     static void off_diagonal(Moments& m, OptimizedHamiltonian const& oh, AlgorithmConfig const& c) {
-        oh.matrix().match(OffDiagonal<Moments>{m, oh.sizes(), c});
+        oh.matrix().match(OffDiagonal<Moments>{m, oh.map(), c});
     }
 };
 
