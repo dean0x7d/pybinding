@@ -1,6 +1,8 @@
 cmake_minimum_required(VERSION 3.0)
 project(pybinding_cppcore)
 
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/cmake")
+
 option(PB_WERROR "Make all warnings into errors" OFF)
 option(PB_TESTS "Enable testing" ON)
 option(PB_NATIVE_SIMD "Enable all instruction sets supported by the local machine" ON)
@@ -8,7 +10,7 @@ option(PB_MKL "Use Intel's Math Kernel Library" OFF)
 option(PB_CUDA "Enable compilation of components written in CUDA" OFF)
 set(PB_CPP_STANDARD "-std=c++11" CACHE STRING "Required C++ standard flag")
 
-add_library(pybinding_cppcore
+add_library(cppcore
     include/compute/eigen3/lanczos.hpp
     include/compute/eigen3/linear_algebra.hpp
     include/compute/mkl/lanczos.hpp
@@ -84,48 +86,46 @@ add_library(pybinding_cppcore
     src/Lattice.cpp
     src/Model.cpp
 )
+add_library(pybinding::cppcore ALIAS cppcore)
 
-target_include_directories(pybinding_cppcore PUBLIC include)
-set_target_properties(pybinding_cppcore PROPERTIES POSITION_INDEPENDENT_CODE TRUE)
+target_include_directories(cppcore PUBLIC include)
+if(NOT WIN32)
+    target_compile_options(cppcore PUBLIC ${PB_CPP_STANDARD})
+endif()
 
-list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/cmake")
+include(warnings)
+enable_warnings(cppcore)
+
 include(download)
 download_dependency(eigen3 3.2.8
                     https://bitbucket.org/eigen/eigen/get
                     \${VERSION}.tar.gz */Eigen)
-target_include_directories(pybinding_cppcore SYSTEM PUBLIC ${EIGEN3_INCLUDE_DIR})
+target_include_directories(cppcore SYSTEM PUBLIC ${EIGEN3_INCLUDE_DIR})
 download_dependency(variant 1.1.4
                     https://raw.githubusercontent.com/mapbox/variant/v\${VERSION}/include
                     mapbox/variant.hpp mapbox/recursive_wrapper.hpp mapbox/variant_visitor.hpp)
-target_include_directories(pybinding_cppcore SYSTEM PUBLIC ${VARIANT_INCLUDE_DIR})
+target_include_directories(cppcore SYSTEM PUBLIC ${VARIANT_INCLUDE_DIR})
 download_dependency(simdpp 2.0-rc2
                     https://github.com/p12tic/libsimdpp/archive
                     /v\${VERSION}.tar.gz */simdpp)
-target_include_directories(pybinding_cppcore SYSTEM PUBLIC ${SIMDPP_INCLUDE_DIR})
+target_include_directories(cppcore SYSTEM PUBLIC ${SIMDPP_INCLUDE_DIR})
 
 include(cppformat)
-target_link_libraries(pybinding_cppcore PUBLIC cppformat)
-
-if(NOT WIN32)
-    target_compile_options(pybinding_cppcore PUBLIC ${PB_CPP_STANDARD})
-endif()
-
-include(warnings)
-set_higher_warning_level(pybinding_cppcore)
+target_link_libraries(cppcore PUBLIC cppformat)
 
 if(PB_NATIVE_SIMD AND NOT MSVC) # MSVC does not have anything like a /arch:native flag
-    target_compile_options(pybinding_cppcore PUBLIC -march=native)
+    target_compile_options(cppcore PUBLIC -march=native)
 endif()
 
 if(PB_MKL)
     include(mkl)
-    target_link_mkl(pybinding_cppcore PUBLIC)
-    target_compile_definitions(pybinding_cppcore PUBLIC CPB_USE_MKL)
+    target_link_mkl(cppcore PUBLIC)
+    target_compile_definitions(cppcore PUBLIC CPB_USE_MKL)
 endif()
 
 if(PB_CUDA)
     add_subdirectory(cuda)
-    target_link_libraries(pybinding_cppcore PUBLIC pybinding_cuda)
+    target_link_libraries(cppcore PUBLIC pybinding_cuda)
 endif()
 
 if(PB_TESTS)

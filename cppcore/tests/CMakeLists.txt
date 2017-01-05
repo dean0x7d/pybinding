@@ -12,6 +12,6 @@ add_executable(catch
     test_shape.cpp
 )
 target_include_directories(catch PRIVATE ${CATCH_INCLUDE_DIR})
-target_link_libraries(catch PRIVATE pybinding_cppcore)
+target_link_libraries(catch PRIVATE cppcore)
 
 add_custom_target(cpptest COMMAND $<TARGET_FILE:catch>)

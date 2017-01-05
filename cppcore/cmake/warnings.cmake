@@ -1,4 +1,4 @@
-function(set_higher_warning_level TARGET)
+function(enable_warnings TARGET)
     if(MSVC)
         target_compile_options(${TARGET} PRIVATE /W3)
     else()
