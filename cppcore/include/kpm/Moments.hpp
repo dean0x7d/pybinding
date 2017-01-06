@@ -8,39 +8,6 @@
 
 namespace cpb { namespace kpm {
 
-namespace detail {
-    /// Reconstruct a real function for `scaled_energy` based on the KPM `moments`
-    ///    f(E) = 2/pi * 1/sqrt(1 - E^2) * sum( moments * cos(ns * acos(E)) )
-    template<class real_t>
-    ArrayX<real_t> reconstruct_function(ArrayX<real_t> const& scaled_energy,
-                                        ArrayX<real_t> const& moments) {
-        static_assert(!num::is_complex<real_t>(), "");
-        auto const ns = make_integer_range<real_t>(moments.size());
-        auto f = ArrayX<real_t>(scaled_energy.size());
-        transform(scaled_energy, f, [&](real_t E) {
-            using constant::pi;
-            auto const norm = real_t{2/pi} / sqrt(1 - E*E);
-            return norm * sum(moments * cos(ns * acos(E)));
-        });
-        return f;
-    }
-
-    /// Reconstruct Green's function for `scaled_energy` based on the KPM `moments`
-    ///     g(E) = -2*i / sqrt(1 - E^2) * sum( moments * exp(-i*ns*acos(E)) )
-    template<class scalar_t, class real_t, class complex_t = num::get_complex_t<scalar_t>>
-    ArrayX<complex_t> reconstruct_greens(ArrayX<real_t> const& scaled_energy,
-                                       ArrayX<scalar_t> const& moments) {
-        auto const ns = make_integer_range<real_t>(moments.size());
-        auto g = ArrayX<complex_t>(scaled_energy.size());
-        transform(scaled_energy, g, [&](real_t E) {
-            using constant::i1;
-            auto const norm = -real_t{2} * complex_t{i1} / sqrt(1 - E*E);
-            return norm * sum(moments * exp(-complex_t{i1} * ns * acos(E)));
-        });
-        return g;
-    }
-} // namespace detail
-
 /**
  Utility functions for expectation value moments
  */

@@ -32,8 +32,9 @@ add_library(cppcore
     include/kpm/calc_moments.hpp
     include/kpm/Config.hpp
     include/kpm/Kernel.hpp
-    include/kpm/OptimizedHamiltonian.hpp
     include/kpm/Moments.hpp
+    include/kpm/OptimizedHamiltonian.hpp
+    include/kpm/reconstruct.hpp
     include/kpm/Stats.hpp
     include/kpm/Strategy.hpp
     include/leads/HamiltonianPair.hpp

@@ -116,6 +116,16 @@ inline void transform(const DenseBase<DerivedIn1>& in1, const DenseBase<DerivedI
     std::transform(begin(in1), end(in1), begin(in2), begin(out), func);
 }
 
+/// Apply the function to the elements of the input container
+/// and return the results in a new container of the given type
+template<template<class...> class Container, class In, class Fn>
+auto transform(In const& in, Fn func) -> Container<decltype(func(in[0]))> {
+    using Out = decltype(func(in[0]));
+    auto out = Container<Out>(in.size());
+    std::transform(begin(in), end(in), begin(out), func);
+    return out;
+}
+
 template<class Derived> inline bool any_of(const DenseBase<Derived>& v) { return v.any(); }
 template<class Derived> inline bool all_of(const DenseBase<Derived>& v) { return v.all(); }
 template<class Derived> inline bool none_of(const DenseBase<Derived>& v) { return !v.any(); }

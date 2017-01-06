@@ -27,6 +27,9 @@ struct Scale {
     }
 
     explicit operator bool() { return a != 0; }
+
+    /// Apply the scaling factors to a vector
+    ArrayX<real_t> operator()(ArrayX<real_t> const& v) const { return (v - b) / a; }
 };
 
 /**
@@ -62,12 +65,6 @@ public:
             compute_factors();
         }
         return factors;
-    }
-
-    /// Apply the scaling factors to a vector
-    ArrayX<real_t> scaled(ArrayX<real_t> const& v) {
-        auto const scale = scaling_factors();
-        return (v - scale.b) / scale.a;
     }
 
     std::string report(bool shortform = false) const;

@@ -5,7 +5,6 @@
 #include "kpm/Bounds.hpp"
 #include "kpm/Config.hpp"
 #include "kpm/Kernel.hpp"
-#include "kpm/Moments.hpp"
 #include "kpm/OptimizedHamiltonian.hpp"
 #include "kpm/Stats.hpp"
 

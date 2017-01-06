@@ -4,6 +4,8 @@
 #ifdef CPB_USE_CUDA
 # include "cuda/kpm/calc_moments.hpp"
 #endif
+#include "kpm/Moments.hpp"
+#include "kpm/reconstruct.hpp"
 
 namespace cpb { namespace kpm {
 
@@ -46,7 +48,6 @@ template<class scalar_t, class Compute>
 ArrayXd StrategyTemplate<scalar_t, Compute>::ldos(int index, ArrayXd const& energy,
                                                   double broadening) {
     auto const scale = bounds.scaling_factors();
-    auto const scaled_energy = bounds.scaled(energy.template cast<real_t>());
     auto const num_moments = config.kernel.required_num_moments(broadening / scale.a);
 
     optimized_hamiltonian.optimize_for({index, index}, scale);
@@ -59,9 +60,7 @@ ArrayXd StrategyTemplate<scalar_t, Compute>::ldos(int index, ArrayXd const& ener
     stats.moments_timer.toc();
 
     config.kernel.apply(moments.get());
-
-    auto ldos = detail::reconstruct_function<real_t>(scaled_energy, moments.get().real());
-    return ldos.template cast<double>();
+    return reconstruct<real_t>(moments.get().real(), energy, scale);
 }
 
 template<class scalar_t, class Compute>
@@ -76,7 +75,6 @@ StrategyTemplate<scalar_t, Compute>::greens_vector(int row, std::vector<int> con
                                                    ArrayXd const& energy, double broadening) {
     assert(!cols.empty());
     auto const scale = bounds.scaling_factors();
-    auto const scaled_energy = bounds.scaled(energy.template cast<real_t>());
     auto const num_moments = config.kernel.required_num_moments(broadening / scale.a);
 
     optimized_hamiltonian.optimize_for({row, cols}, scale);
@@ -92,8 +90,7 @@ StrategyTemplate<scalar_t, Compute>::greens_vector(int row, std::vector<int> con
 
         config.kernel.apply(moments.get());
 
-        auto const greens = detail::reconstruct_greens(scaled_energy, moments.get());
-        return {greens.template cast<std::complex<double>>()};
+        return {reconstruct_greens(moments.get(), energy, scale)};
     } else {
         auto moments_vector = ExvalOffDiagonalMoments<scalar_t>(num_moments, idx);
 
@@ -105,13 +102,9 @@ StrategyTemplate<scalar_t, Compute>::greens_vector(int row, std::vector<int> con
             config.kernel.apply(moments);
         }
 
-        auto greens = std::vector<ArrayXcd>();
-        greens.reserve(idx.cols.size());
-        for (auto const& moments : moments_vector.get()) {
-            auto const g = detail::reconstruct_greens(scaled_energy, moments);
-            greens.push_back(g.template cast<std::complex<double>>());
-        }
-        return greens;
+        return transform<std::vector>(moments_vector.get(), [&](ArrayX<scalar_t> const& moments) {
+            return reconstruct_greens(moments, energy, scale);
+        });
     }
 }
 
