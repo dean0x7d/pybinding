@@ -71,7 +71,7 @@ void OptimizedHamiltonian<scalar_t>::create_reordered(Indices const& idx, Scale<
     index_queue.push_back(idx.row); // starting from the given index
 
     // Map from original matrix indices to reordered matrix indices
-    auto reorder_map = ArrayXi{ArrayXi::Constant(system_size, -1)};
+    reorder_map = std::vector<int>(system_size, -1); // reset all to invalid state
     // The point of the reordering is to have the target become index number 0
     reorder_map[idx.row] = 0;
 
@@ -152,7 +152,7 @@ OptimizedHamiltonian<scalar_t>::convert_to_ellpack(SparseMatrixX<scalar_t> const
 
 template<class scalar_t>
 Indices OptimizedHamiltonian<scalar_t>::reorder_indices(Indices const& original_idx,
-                                                        ArrayXi const& reorder_map) {
+                                                        std::vector<int> const& reorder_map) {
     auto const size = original_idx.cols.size();
     ArrayXi cols(size);
     for (auto i = 0; i < size; ++i) {

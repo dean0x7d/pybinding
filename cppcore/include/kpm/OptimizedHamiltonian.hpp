@@ -104,6 +104,7 @@ class OptimizedHamiltonian {
     OptMatrix optimized_matrix; ///< reordered for faster compute
     Indices optimized_idx; ///< reordered target indices in the optimized matrix
     SliceMap slice_map; ///< slice border indices
+    std::vector<int> reorder_map; ///< mapping from original matrix indices to reordered indices
 
     SparseMatrixX<scalar_t> const* original_matrix;
     Indices original_idx; ///< original target indices for which the optimization was done
@@ -118,6 +119,19 @@ public:
 
     /// Create the optimized Hamiltonian targeting specific indices and scale factors
     void optimize_for(Indices const& idx, Scale<real_t> scale);
+
+    /// Apply new Hamiltonian index ordering to a vector
+    template<class Vector>
+    Vector reorder_vector(Vector const& v) const {
+        if (reorder_map.empty()) { return v; }
+        assert(reorder_map.size() == v.size());
+
+        auto result = Vector(v.size());
+        for (auto i = 0; i < result.size(); ++i) {
+            result[reorder_map[i]] = v[i];
+        }
+        return result;
+    }
 
     int size() const { return original_matrix->rows(); }
     Indices const& idx() const { return optimized_idx; }
@@ -134,7 +148,8 @@ private:
     /// Convert CSR matrix into ELLPACK format
     static num::EllMatrix<scalar_t> convert_to_ellpack(SparseMatrixX<scalar_t> const& csr);
     /// Get optimized indices which map to the given originals
-    static Indices reorder_indices(Indices const& original_idx, ArrayXi const& reorder_map);
+    static Indices reorder_indices(Indices const& original_idx,
+                                   std::vector<int> const& reorder_map);
 
     /// Total non-zeros processed when computing `num_moments` with or without size optimizations
     size_t num_nonzeros(int num_moments, bool optimal_size) const;
