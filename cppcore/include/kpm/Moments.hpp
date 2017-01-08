@@ -1,71 +1,21 @@
 #pragma once
-#include "kpm/OptimizedHamiltonian.hpp"
-
 #include "numeric/dense.hpp"
-#include "numeric/constant.hpp"
-
 #include "detail/macros.hpp"
+
+#include <vector>
 
 namespace cpb { namespace kpm {
 
 /**
- Utility functions for expectation value moments
- */
-namespace exval {
-
-/// Return the KPM r0 vector with all zeros except for the source index
-template<class Matrix, class scalar_t = typename Matrix::Scalar>
-VectorX<scalar_t> make_r0(Matrix const& h2, int i) {
-    auto r0 = VectorX<scalar_t>::Zero(h2.rows()).eval();
-    r0[i] = 1;
-    return r0;
-}
-
-/// Return the KPM r1 vector which is equal to the Hamiltonian matrix column at the source index
-template<class scalar_t>
-VectorX<scalar_t> make_r1(SparseMatrixX<scalar_t> const& h2, int i) {
-    // -> r1 = h * r0; <- optimized thanks to `r0[i] = 1`
-    // Note: h2.col(i) == h2.row(i).conjugate(), but the second is row-major friendly
-    // multiply by 0.5 because H2 was pre-multiplied by 2
-    return h2.row(i).conjugate() * scalar_t{0.5};
-}
-
-template<class scalar_t>
-VectorX<scalar_t> make_r1(num::EllMatrix<scalar_t> const& h2, int i) {
-    auto r1 = VectorX<scalar_t>::Zero(h2.rows()).eval();
-    for (auto n = 0; n < h2.nnz_per_row; ++n) {
-        auto const col = h2.indices(i, n);
-        auto const value = h2.data(i, n);
-        r1[col] = num::conjugate(value) * scalar_t{0.5};
-    }
-    return r1;
-}
-
-} // namespace exval
-
-/**
- Sets the initial conditions for the diagonal expectation
- value routine and collects the computed KPM moments.
+ Collects the computed KPM moments for a single index on the diagonal
  */
 template<class scalar_t>
-class ExvalDiagonalMoments {
+class DiagonalMoments {
 public:
-    ExvalDiagonalMoments(int num_moments, int index) : moments(num_moments), index(index) {}
+    DiagonalMoments(int num_moments, int index) : moments(num_moments), index(index) {}
 
     int size() const { return static_cast<int>(moments.size()); }
     ArrayX<scalar_t>& get() { return moments; }
-
-    /// Initial vector
-    template<class Matrix>
-    VectorX<scalar_t> r0(Matrix const& h2) const {
-        return exval::make_r0(h2, index);
-    }
-
-    /// Next vector
-    template<class Matrix, class Vector>
-    VectorX<scalar_t> r1(Matrix const& h2, Vector const& /*r0*/) const {
-        return exval::make_r1(h2, index);
-    }
 
     /// Collect the first 2 moments which are computer outside the main KPM loop
     void collect_initial(VectorX<scalar_t> const& r0, VectorX<scalar_t> const& r1) {
@@ -96,12 +46,15 @@ private:
 };
 
 /**
-  Like `ExvalDiagonalMoments` but collects the computed moments for several indices.
+  Like `DiagonalMoments` but collects the computed moments for several indices
 */
 template<class scalar_t>
-class ExvalOffDiagonalMoments {
+class OffDiagonalMoments {
+    using MomentsVector = ArrayX<scalar_t>;
+    using Data = std::vector<MomentsVector>;
+
 public:
-    ExvalOffDiagonalMoments(int num_moments, Indices const& idx)
+    OffDiagonalMoments(int num_moments, Indices const& idx)
         : idx(idx), data(idx.cols.size()) {
         for (auto& moments : data) {
             moments.resize(num_moments);
@@ -109,19 +62,7 @@ public:
     }
 
     int size() const { return static_cast<int>(data[0].size()); }
-    std::vector<ArrayX<scalar_t>>& get() { return data; }
-
-    /// Initial vector
-    template<class Matrix>
-    VectorX<scalar_t> r0(Matrix const& h2) const {
-        return exval::make_r0(h2, idx.row);
-    }
-
-    /// Next vector
-    template<class Matrix, class Vector>
-    VectorX<scalar_t> r1(Matrix const& h2, Vector const&) const {
-        return exval::make_r1(h2, idx.row);
-    }
+    Data& get() { return data; }
 
     /// Collect the first 2 moments which are computer outside the main KPM loop
     void collect_initial(VectorX<scalar_t> const& r0, VectorX<scalar_t> const& r1) {
@@ -148,7 +89,7 @@ public:
 
 private:
     Indices idx;
-    std::vector<ArrayX<scalar_t>> data;
+    Data data;
 };
 
 }} // namespace cpb::kpm

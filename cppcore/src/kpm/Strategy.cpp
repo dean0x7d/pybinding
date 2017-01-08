@@ -1,5 +1,6 @@
 #include "kpm/Strategy.hpp"
 
+#include "kpm/Starter.hpp"
 #include "kpm/calc_moments.hpp"
 #ifdef CPB_USE_CUDA
 # include "cuda/kpm/calc_moments.hpp"
@@ -50,13 +51,14 @@ ArrayXd StrategyTemplate<scalar_t, Compute>::ldos(int index, ArrayXd const& ener
     auto const scale = bounds.scaling_factors();
     auto const num_moments = config.kernel.required_num_moments(broadening / scale.a);
 
-    optimized_hamiltonian.optimize_for({index, index}, scale);
-    optimized_hamiltonian.populate_stats(stats, num_moments, config.algorithm);
+    auto& oh = optimized_hamiltonian;
+    oh.optimize_for({index, index}, scale);
+    oh.populate_stats(stats, num_moments, config.algorithm);
 
-    auto moments = ExvalDiagonalMoments<scalar_t>(num_moments, optimized_hamiltonian.idx().row);
+    auto moments = DiagonalMoments<scalar_t>(num_moments, oh.idx().row);
 
     stats.moments_timer.tic();
-    Compute::diagonal(moments, optimized_hamiltonian, config.algorithm);
+    Compute::diagonal(moments, exval_starter(oh), oh, config.algorithm);
     stats.moments_timer.toc();
 
     config.kernel.apply(moments.get());
@@ -77,25 +79,24 @@ StrategyTemplate<scalar_t, Compute>::greens_vector(int row, std::vector<int> con
     auto const scale = bounds.scaling_factors();
     auto const num_moments = config.kernel.required_num_moments(broadening / scale.a);
 
-    optimized_hamiltonian.optimize_for({row, cols}, scale);
-    optimized_hamiltonian.populate_stats(stats, num_moments, config.algorithm);
+    auto& oh = optimized_hamiltonian;
+    oh.optimize_for({row, cols}, scale);
+    oh.populate_stats(stats, num_moments, config.algorithm);
 
-    auto const& idx = optimized_hamiltonian.idx();
-    if (idx.is_diagonal()) {
-        auto moments = ExvalDiagonalMoments<scalar_t>(num_moments, idx.row);
+    if (oh.idx().is_diagonal()) {
+        auto moments = DiagonalMoments<scalar_t>(num_moments, oh.idx().row);
 
         stats.moments_timer.tic();
-        Compute::diagonal(moments, optimized_hamiltonian, config.algorithm);
+        Compute::diagonal(moments, exval_starter(oh), oh, config.algorithm);
         stats.moments_timer.toc();
 
         config.kernel.apply(moments.get());
-
         return {reconstruct_greens(moments.get(), energy, scale)};
     } else {
-        auto moments_vector = ExvalOffDiagonalMoments<scalar_t>(num_moments, idx);
+        auto moments_vector = OffDiagonalMoments<scalar_t>(num_moments, oh.idx());
 
         stats.moments_timer.tic();
-        Compute::off_diagonal(moments_vector, optimized_hamiltonian, config.algorithm);
+        Compute::off_diagonal(moments_vector, exval_starter(oh), oh, config.algorithm);
         stats.moments_timer.toc();
 
         for (auto& moments : moments_vector.get()) {
@@ -116,9 +117,10 @@ std::string StrategyTemplate<scalar_t, Compute>::report(bool shortform) const {
 }
 
 struct DefaultCompute {
-    template<class Moments>
+    template<class Moments, class Starter>
     struct Diagonal {
         Moments& moments;
+        Starter const& starter;
         SliceMap const& map;
         AlgorithmConfig const& config;
 
@@ -126,25 +128,27 @@ struct DefaultCompute {
         void operator()(Matrix const& h2) {
             using namespace calc_moments::diagonal;
             if (config.optimal_size && config.interleaved) {
-                opt_size_and_interleaved(moments, h2, map);
+                opt_size_and_interleaved(moments, starter, h2, map);
             } else if (config.interleaved) {
-                interleaved(moments, h2, map);
+                interleaved(moments, starter, h2, map);
             } else if (config.optimal_size) {
-                opt_size(moments, h2, map);
+                opt_size(moments, starter, h2, map);
             } else {
-                basic(moments, h2);
+                basic(moments, starter, h2);
             }
         }
     };
 
-    template<class Moments, class OptimizedHamiltonian>
-    static void diagonal(Moments& m, OptimizedHamiltonian const& oh, AlgorithmConfig const& c) {
-        oh.matrix().match(Diagonal<Moments>{m, oh.map(), c});
+    template<class Moments, class Starter, class OptimizedHamiltonian>
+    static void diagonal(Moments& m, Starter const& s, OptimizedHamiltonian const& oh,
+                         AlgorithmConfig const& ac) {
+        oh.matrix().match(Diagonal<Moments, Starter>{m, s, oh.map(), ac});
     }
 
-    template<class Moments>
+    template<class Moments, class Starter>
     struct OffDiagonal {
         Moments& moments;
+        Starter const& starter;
         SliceMap const& map;
         AlgorithmConfig const& config;
 
@@ -152,20 +156,21 @@ struct DefaultCompute {
         void operator()(Matrix const& h2) {
             using namespace calc_moments::off_diagonal;
             if (config.optimal_size && config.interleaved) {
-                opt_size_and_interleaved(moments, h2, map);
+                opt_size_and_interleaved(moments, starter, h2, map);
             } else if (config.interleaved) {
-                interleaved(moments, h2, map);
+                interleaved(moments, starter, h2, map);
             } else if (config.optimal_size) {
-                opt_size(moments, h2, map);
+                opt_size(moments, starter, h2, map);
             } else {
-                basic(moments, h2);
+                basic(moments, starter, h2);
             }
         }
     };
 
-    template<class Moments, class OptimizedHamiltonian>
-    static void off_diagonal(Moments& m, OptimizedHamiltonian const& oh, AlgorithmConfig const& c) {
-        oh.matrix().match(OffDiagonal<Moments>{m, oh.map(), c});
+    template<class Moments, class OptimizedHamiltonian, class Starter>
+    static void off_diagonal(Moments& m, Starter const& s, OptimizedHamiltonian const& oh,
+                             AlgorithmConfig const& ac) {
+        oh.matrix().match(OffDiagonal<Moments, Starter>{m, s, oh.map(), ac});
     }
 };
 
