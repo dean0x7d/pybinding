@@ -29,6 +29,7 @@ def model(request):
 @pytest.fixture(scope='module')
 def kpm(model):
     strategies = [pb.chebyshev.kpm(model, **c) for c in configurations]
+    strategies += [pb.chebyshev.kpm_python(model)]
     if hasattr(pb._cpp, 'kpm_cuda'):
         strategies += [pb.chebyshev.kpm_cuda(model)]
     return strategies

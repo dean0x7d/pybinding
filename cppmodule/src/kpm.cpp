@@ -104,7 +104,10 @@ void wrap_greens(py::module& m) {
             return s.moments_timer.elapsed_seconds();
         });
 
-    py::class_<kpm::Kernel>(m, "KPMKernel");
+    py::class_<kpm::Kernel>(m, "KPMKernel")
+        .def_readonly("damping_coefficients", &kpm::Kernel::damping_coefficients)
+        .def_readonly("required_num_moments", &kpm::Kernel::required_num_moments);
+
     m.def("lorentz_kernel", &kpm::lorentz_kernel);
     m.def("jackson_kernel", &kpm::jackson_kernel);
 

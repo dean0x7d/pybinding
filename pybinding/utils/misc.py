@@ -120,3 +120,12 @@ def cd(directory):
         yield
     finally:
         os.chdir(previous_dir)
+
+
+def with_suffix(number, base=1000):
+    """Convert number to string with SI suffix, e.g.: 14226 -> 14.2k, 5395984 -> 5.39M"""
+    mapping = {base**3: "G", base**2: "M", base: "k"}
+    for bucket, suffix in mapping.items():
+        if number > 0.999 * bucket:
+            return "{:.3g}{}".format(number / bucket, suffix)
+    return "{:.3g}".format(number)
