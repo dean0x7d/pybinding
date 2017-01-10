@@ -14,10 +14,9 @@ struct ExtractArray {
     void operator()(Eigen::Map<EigenType> v) const {
         static_assert(EigenType::IsVectorAtCompileTime, "");
         using scalar_t = typename EigenType::Scalar;
-        using index_t = typename EigenType::Index;
 
         auto const a = py::array_t<scalar_t>(o);
-        auto const size = static_cast<index_t>(a.size());
+        auto const size = static_cast<Eigen::Index>(a.size());
         if (v.size() != size) {
             throw std::runtime_error("Unexpected modifier result size");
         }

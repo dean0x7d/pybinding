@@ -139,7 +139,7 @@ void HamiltonianModifiers::apply_to_hoppings_impl(SystemOrBoundary const& system
         */
         // TODO: experiment with buffer_size -> currently: hoppings + pos1 + pos2 is about 3MB
         auto const buffer_size = [&]{
-            constexpr auto max_buffer_size = 100000;
+            constexpr auto max_buffer_size = Eigen::Index{100000};
             auto const max_hoppings = system.hoppings.nonZeros();
             return std::min(max_hoppings, max_buffer_size);
         }();

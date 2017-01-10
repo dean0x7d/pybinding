@@ -85,7 +85,7 @@ namespace sparse {
 /// SparseMatrix wrapper with several functions for efficient CSR matrix element access
 template<class scalar_t>
 class Loop {
-    using index_t = typename SparseMatrixX<scalar_t>::Index;
+    using index_t = typename SparseMatrixX<scalar_t>::StorageIndex;
 
 public:
     Loop(SparseMatrixX<scalar_t> const& matrix)

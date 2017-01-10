@@ -305,8 +305,7 @@ def test_wrapper_return():
     assert pytest.fuzzy_equal(model.hamiltonian.data, [3, 3, 3, 3])
 
 
-# Disabled for now. It doesn't work when the 'fast math' compiler flag is set.
-def dont_test_invalid_return():
+def test_invalid_return():
     @pb.onsite_energy_modifier
     def mod_inf(energy):
         return np.ones_like(energy) * np.inf

@@ -21,7 +21,7 @@ public:
 
 public:
     using Scalar = scalar_t;
-    using Index = index_t;
+    using StorageIndex = index_t;
 
     EllMatrix() = default;
     EllMatrix(index_t rows, index_t cols, index_t nnz_per_row)
@@ -31,9 +31,9 @@ public:
         indices.resize(aligned_rows, nnz_per_row);
     }
 
-    Index rows() const { return _rows; }
-    Index cols() const { return _cols; }
-    Index nonZeros() const { return _rows * nnz_per_row; }
+    index_t rows() const { return _rows; }
+    index_t cols() const { return _cols; }
+    index_t nonZeros() const { return _rows * nnz_per_row; }
 
     template<class F>
     void for_each(F lambda) const {

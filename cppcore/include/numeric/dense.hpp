@@ -95,8 +95,7 @@ namespace cpb {
 template<template<class> class EigenType, class Vector,
          class scalar_t = typename Vector::value_type>
 inline Eigen::Map<EigenType<scalar_t> const> eigen_cast(Vector const& v) {
-    using Index = typename EigenType<scalar_t>::Index;
-    return {v.data(), static_cast<Index>(v.size())};
+    return {v.data(), static_cast<Eigen::Index>(v.size())};
 }
 
 // utility functions
@@ -141,7 +140,7 @@ private:
 
 public:
     CartesianArray() = default;
-    CartesianArray(int size) : x(size), y(size), z(size) {}
+    CartesianArray(Eigen::Index size) : x(size), y(size), z(size) {}
     CartesianArray(ArrayXf const& x, ArrayXf const& y, ArrayXf const& z) : x(x), y(y), z(z) {}
 
     CartesianRef operator[](int i) { return {x[i], y[i], z[i]}; }
@@ -236,7 +235,7 @@ inline ArrayRef arrayref(std::vector<scalar_t>& v) {
 
 /// Range from 0 to `size` of scalar type `T` which does not have to be an integral type
 template<class T>
-ArrayX<T> make_integer_range(Eigen::DenseIndex size) {
+ArrayX<T> make_integer_range(Eigen::Index size) {
     auto result = ArrayX<T>(size);
     for (auto n = 0; n < size; ++n) {
         result[n] = static_cast<T>(n);

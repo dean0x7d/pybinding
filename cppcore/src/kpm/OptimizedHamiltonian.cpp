@@ -218,7 +218,7 @@ namespace {
     struct matrix_memory {
         template<class scalar_t>
         size_t operator()(SparseMatrixX<scalar_t> const& csr) const {
-            using index_t = typename SparseMatrixX<scalar_t>::Index;
+            using index_t = typename SparseMatrixX<scalar_t>::StorageIndex;
             auto const nnz = static_cast<size_t>(csr.nonZeros());
             auto const row_starts = static_cast<size_t>(csr.rows() + 1);
             return nnz * sizeof(scalar_t) + nnz * sizeof(index_t) + row_starts * sizeof(index_t);
@@ -226,7 +226,7 @@ namespace {
 
         template<class scalar_t>
         size_t operator()(num::EllMatrix<scalar_t> const& ell) const {
-            using index_t = typename num::EllMatrix<scalar_t>::Index;
+            using index_t = typename num::EllMatrix<scalar_t>::StorageIndex;
             auto const nnz = static_cast<size_t>(ell.nonZeros());
             return nnz * sizeof(scalar_t) + nnz * sizeof(index_t);
         }
