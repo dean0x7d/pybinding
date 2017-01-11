@@ -1,6 +1,8 @@
 #pragma once
 
-#if defined(__AVX__)
+#if defined(__AVX2__)
+# define SIMDPP_ARCH_X86_AVX2
+#elif defined(__AVX__)
 # define SIMDPP_ARCH_X86_AVX
 #elif defined(__SSE3__)
 # define SIMDPP_ARCH_X86_SSE3
@@ -29,15 +31,13 @@ namespace detail {
      All SIMD vectors have the following traits
      */
     struct basic_traits {
-        // Keep all vectors 128-bit for now, even with AVX.
-        // Wait for Eigen 3.3 to get AVX support and 32-byte alignment.
-        static constexpr auto align_bytes = 16;
-        static constexpr auto size_bytes = 16;
+        static constexpr auto align_bytes = 32;
+        static constexpr auto register_size_bytes = 32;
     };
 
     template<class T>
     struct traits : basic_traits {
-        static constexpr auto size = size_bytes / sizeof(T);
+        static constexpr auto size = register_size_bytes / sizeof(T);
     };
 
     template<class T> struct select_vector;
@@ -124,40 +124,109 @@ namespace detail {
 
 #if SIMDPP_USE_SSE2
     template<>
-    struct Gather<float32x4> {
-        template<class Index>
-        static float32x4 call(float const* data, Index const* indices) {
-            auto const a = _mm_load_ss(data + indices[0]);
-            auto const b = _mm_load_ss(data + indices[1]);
-            auto const c = _mm_load_ss(data + indices[2]);
-            auto const d = _mm_load_ss(data + indices[3]);
-            auto const ac = _mm_unpacklo_ps(a, c);
-            auto const bd = _mm_unpacklo_ps(b, d);
-            return _mm_unpacklo_ps(ac, bd);
-        }
-
-        template<class Index>
-        static float32x4 call(std::complex<float> const* data, Index const* indices) {
-            auto const low = _mm_load_sd(reinterpret_cast<double const*>(data + indices[0]));
-            auto const vec = _mm_loadh_pd(low, reinterpret_cast<double const*>(data + indices[1]));
-            return _mm_castpd_ps(vec);
-        }
-    };
-
-    template<>
     struct Gather<float64x2> {
-        template<class Index>
-        static float64x2 call(double const* data, Index const* indices) {
+        CPB_ALWAYS_INLINE
+        static __m128d call(double const* data, std::int32_t const* indices) {
             auto const low = _mm_load_sd(data + indices[0]);
             return _mm_loadh_pd(low, data + indices[1]);
         }
 
-        template<class Index>
-        static float64x2 call(std::complex<double> const* data, Index const* indices) {
+        CPB_ALWAYS_INLINE
+        static __m128d call(std::complex<double> const* data, std::int32_t const* indices) {
             return _mm_load_pd(reinterpret_cast<double const*>(data + indices[0]));
         }
     };
+
+    template<>
+    struct Gather<float32x4> {
+        CPB_ALWAYS_INLINE
+        static __m128 call(float const* data, std::int32_t const* indices) {
+            auto const idx = load<int32x4>(indices);
+            return _mm_set_ps(data[extract<3>(idx)], data[extract<2>(idx)],
+                              data[extract<1>(idx)], data[extract<0>(idx)]);
+        }
+
+        CPB_ALWAYS_INLINE
+        static __m128 call(std::complex<float> const* data, std::int32_t const* indices) {
+            auto const r = Gather<float64x2>::call(reinterpret_cast<double const*>(data), indices);
+            return _mm_castpd_ps(r);
+        }
+    };
 #endif // SIMDPP_USE_SSE2
+
+#if SIMDPP_USE_AVX && !SIMDPP_USE_AVX2
+    template<>
+    struct Gather<float64x4> {
+        CPB_ALWAYS_INLINE
+        static __m256d call(double const* data, std::int32_t const* indices) {
+            auto const idx = load<int32x4>(indices);
+            return _mm256_set_pd(data[extract<3>(idx)], data[extract<2>(idx)],
+                                 data[extract<1>(idx)], data[extract<0>(idx)]);
+        }
+
+        CPB_ALWAYS_INLINE
+        static __m256d call(std::complex<double> const* data, std::int32_t const* indices) {
+            auto const a = _mm256_castpd128_pd256(Gather<float64x2>::call(data, indices));
+            auto const b = Gather<float64x2>::call(data, indices + 1);
+            return _mm256_insertf128_pd(a, b, 1);
+        }
+    };
+
+    template<>
+    struct Gather<float32x8> {
+        CPB_ALWAYS_INLINE
+        static __m256 call(float const* data, std::int32_t const* indices) {
+            auto const idx = _mm256_load_si256(reinterpret_cast<__m256i const*>(indices));
+            return _mm256_set_ps(
+                data[_mm256_extract_epi32(idx, 7)],
+                data[_mm256_extract_epi32(idx, 6)],
+                data[_mm256_extract_epi32(idx, 5)],
+                data[_mm256_extract_epi32(idx, 4)],
+                data[_mm256_extract_epi32(idx, 3)],
+                data[_mm256_extract_epi32(idx, 2)],
+                data[_mm256_extract_epi32(idx, 1)],
+                data[_mm256_extract_epi32(idx, 0)]
+            );
+        }
+
+        CPB_ALWAYS_INLINE
+        static __m256 call(std::complex<float> const* data, std::int32_t const* indices) {
+            auto const r = Gather<float64x4>::call(reinterpret_cast<double const*>(data), indices);
+            return _mm256_castpd_ps(r);
+        }
+    };
+#elif SIMDPP_USE_AVX2
+    template<>
+    struct Gather<float64x4> {
+        CPB_ALWAYS_INLINE
+        static __m256d call(double const* data, std::int32_t const* indices) {
+            auto const idx = _mm_load_si128(reinterpret_cast<__m128i const*>(indices));
+            return _mm256_i32gather_pd(data, idx, sizeof(data[0]));
+        }
+
+        CPB_ALWAYS_INLINE
+        static __m256d call(std::complex<double> const* data, std::int32_t const* indices) {
+            auto const a = _mm256_castpd128_pd256(Gather<float64x2>::call(data, indices));
+            auto const b = Gather<float64x2>::call(data, indices + 1);
+            return _mm256_insertf128_pd(a, b, 1);
+        }
+    };
+
+    template<>
+    struct Gather<float32x8> {
+        CPB_ALWAYS_INLINE
+        static __m256 call(float const* data, std::int32_t const* indices) {
+            auto const idx = _mm256_load_si256(reinterpret_cast<__m256i const*>(indices));
+            return _mm256_i32gather_ps(data, idx, sizeof(data[0]));
+        }
+
+        CPB_ALWAYS_INLINE
+        static __m256 call(std::complex<float> const* data, std::int32_t const* indices) {
+            auto const r = Gather<float64x4>::call(reinterpret_cast<double const*>(data), indices);
+            return _mm256_castpd_ps(r);
+        }
+    };
+#endif
 
     template<template<unsigned, class> class V, unsigned N>
     struct Gather<V<N, void>> {
@@ -165,7 +234,7 @@ namespace detail {
         using BaseVec = typename Vec::base_vector_type;
         static constexpr auto element_size = sizeof(typename Vec::element_type);
 
-        template<class Scalar, class Index>
+        template<class Scalar, class Index> CPB_ALWAYS_INLINE
         static Vec call(Scalar const* data, Index const* indices) {
             static constexpr auto index_step = Vec::base_length * element_size / sizeof(Scalar);
             Vec r;
@@ -250,12 +319,12 @@ Vec<N, void> complex_mul(Vec<N, E1> const& ab, Vec<N, E2> const& xy) {
 /**
  Complex conjugate
  */
-template<unsigned N, class E>
+template<unsigned N, class E> CPB_ALWAYS_INLINE
 float32<N> conjugate(float32<N, E> const& a) {
     return bit_xor(a, make_uint<uint32<N>>(0, 0x80000000));
 }
 
-template<unsigned N, class E>
+template<unsigned N, class E> CPB_ALWAYS_INLINE
 float64<N> conjugate(float64<N, E> const& a) {
     return bit_xor(a, make_uint<uint64<N>>(0, 0x8000000000000000));
 }

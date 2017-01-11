@@ -124,7 +124,7 @@ public:
     template<class Vector>
     Vector reorder_vector(Vector const& v) const {
         if (reorder_map.empty()) { return v; }
-        assert(reorder_map.size() == v.size());
+        assert(reorder_map.size() == static_cast<size_t>(v.size()));
 
         auto result = Vector(v.size());
         for (auto i = 0; i < result.size(); ++i) {
