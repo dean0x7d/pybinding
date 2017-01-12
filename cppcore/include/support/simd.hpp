@@ -10,6 +10,10 @@
 # define SIMDPP_ARCH_X86_SSE2
 #endif
 
+#if defined(__FMA__) || (defined(_MSC_VER) && defined(__AVX2__))
+# define SIMDPP_ARCH_X86_FMA3
+#endif
+
 #ifdef _MSC_VER
 # pragma warning(push)
 # pragma warning(disable:4244)
@@ -330,6 +334,16 @@ float64<N> conjugate(float64<N, E> const& a) {
 }
 
 namespace detail {
+#if SIMDPP_USE_FMA3
+    template<class scalar_t, bool /*conjugate*/ = false>
+    struct FMADD {
+        template<template<unsigned, class> class Vec, unsigned N,
+                 class E1, class E2, class E3> CPB_ALWAYS_INLINE
+        static Vec<N, void> call(Vec<N, E1> const& a, Vec<N, E2> const& b, Vec<N, E3> const& c) {
+            return fmadd(a, b, c);
+        }
+    };
+#else
     template<class scalar_t, bool /*conjugate*/ = false>
     struct FMADD {
         template<template<unsigned, class> class Vec, unsigned N,
@@ -338,6 +352,7 @@ namespace detail {
             return a * b + c;
         }
     };
+#endif
 
     template<class real_t>
     struct FMADD<std::complex<real_t>, /*conjugate*/false> {
