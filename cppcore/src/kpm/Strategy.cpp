@@ -156,6 +156,8 @@ struct DefaultCompute {
         template<class Matrix>
         void operator()(Matrix const& h2) {
             using namespace calc_moments::diagonal;
+            simd::scope_disable_denormals guard;
+
             if (config.optimal_size && config.interleaved) {
                 opt_size_and_interleaved(moments, starter, h2, map);
             } else if (config.interleaved) {
@@ -184,6 +186,8 @@ struct DefaultCompute {
         template<class Matrix>
         void operator()(Matrix const& h2) {
             using namespace calc_moments::off_diagonal;
+            simd::scope_disable_denormals guard;
+
             if (config.optimal_size && config.interleaved) {
                 opt_size_and_interleaved(moments, starter, h2, map);
             } else if (config.interleaved) {

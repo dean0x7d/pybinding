@@ -123,6 +123,14 @@ split_loop_t<step> split_loop(scalar_t const* p, int start, int end) {
     return {start, peel_end, vec_end, end};
 }
 
+/**
+ RAII class which disables floating-point denormals (flush-to-zero mode)
+ */
+struct scope_disable_denormals {
+    CPB_ALWAYS_INLINE scope_disable_denormals() { _MM_SET_FLUSH_ZERO_MODE(_MM_FLUSH_ZERO_ON); }
+    CPB_ALWAYS_INLINE ~scope_disable_denormals() { _MM_SET_FLUSH_ZERO_MODE(_MM_FLUSH_ZERO_OFF); }
+};
+
 namespace detail {
     template<class Vector> struct Gather;
 
