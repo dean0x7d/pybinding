@@ -12,14 +12,11 @@ set(PB_CPP_STANDARD "-std=c++11" CACHE STRING "Required C++ standard flag")
 
 add_library(cppcore
     include/compute/eigen3/lanczos.hpp
-    include/compute/eigen3/linear_algebra.hpp
     include/compute/mkl/lanczos.hpp
-    include/compute/mkl/linear_algebra.hpp
     include/compute/mkl/wrapper.hpp
     include/compute/detail.hpp
     include/compute/kernel_polynomial.hpp
     include/compute/lanczos.hpp
-    include/compute/linear_algebra.hpp
     include/detail/config.hpp
     include/detail/macros.hpp
     include/detail/slice.hpp

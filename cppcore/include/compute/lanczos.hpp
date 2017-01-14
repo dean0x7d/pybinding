@@ -8,9 +8,87 @@
 
 #include "numeric/sparse.hpp"
 #include "numeric/random.hpp"
-#include "compute/linear_algebra.hpp"
+#include "compute/detail.hpp"
+#include "support/simd.hpp"
 
 namespace cpb { namespace compute {
+
+/**
+ Lanczos-specialized sparse matrix-vector multiplication + dot product
+
+ Equivalent to:
+   tmp = matrix * v1
+   a = real(dot_product(tmp, v1))
+   v0 = tmp - b_prev * v0
+   return a
+ */
+template<class scalar_t, class real_t = num::get_real_t<scalar_t>> CPB_ALWAYS_INLINE
+real_t lanczos_spmv(real_t b_prev, SparseMatrixX<scalar_t> const& matrix,
+                    VectorX<scalar_t> const& v1, VectorX<scalar_t>& v0) {
+    auto const size = matrix.rows();
+    auto const data = matrix.valuePtr();
+    auto const indices = matrix.innerIndexPtr();
+    auto const indptr = matrix.outerIndexPtr();
+
+    auto a = real_t{0};
+    for (auto row = 0; row < size; ++row) {
+        auto tmp = scalar_t{0};
+        for (auto n = indptr[row]; n < indptr[row + 1]; ++n) {
+            tmp += detail::mul(data[n], v1[indices[n]]);
+        }
+        v0[row] = tmp - b_prev * v0[row];
+        a += detail::real_dot(tmp, v1[row]);
+    }
+
+    return a;
+}
+
+/**
+  Lanczos-specialized a * x + y
+
+  Equivalent to:
+    v0 -= a * v1
+    b = norm(v0)
+    return b
+ */
+#if SIMDPP_USE_NULL // generic version
+template<class scalar_t, class real_t = num::get_real_t<scalar_t>> CPB_ALWAYS_INLINE
+real_t lanczos_axpy(real_t a, VectorX<scalar_t> const& v1, VectorX<scalar_t>& v0) {
+    auto const size = v0.size();
+    auto norm2 = real_t{0};
+    for (auto i = 0; i < size; ++i) {
+        auto const l = v0[i] - a * v1[i];
+        norm2 += detail::square(l);
+        v0[i] = l;
+    }
+    return std::sqrt(norm2);
+}
+#else // vectorized using SIMD intrinsics
+template<class scalar_t, class real_t = num::get_real_t<scalar_t>> CPB_ALWAYS_INLINE
+real_t lanczos_axpy(real_t a, VectorX<scalar_t> const& v1, VectorX<scalar_t>& v0) {
+    using simd_register_t = simd::select_vector_t<scalar_t>;
+    auto const loop = simd::split_loop(v0.data(), 0, v0.size());
+    assert(loop.peel_end == 0); // all eigen vectors are properly aligned when starting from 0
+
+    auto norm2_vec = simd::make_float<simd_register_t>(0);
+    for (auto i = 0; i < loop.vec_end; i += loop.step) {
+        auto const r0 = simd::load<simd_register_t>(v0.data() + i);
+        auto const r1 = simd::load<simd_register_t>(v1.data() + i);
+        auto const tmp = r0 - a * r1;
+        norm2_vec = norm2_vec + tmp * tmp;
+        simd::store(v0.data() + i, tmp);
+    }
+
+    auto norm2_remainder = real_t{0};
+    for (auto i = loop.vec_end; i < loop.end; ++i) {
+        auto const tmp = v0[i] - a * v1[i];
+        norm2_remainder += detail::square(tmp);
+        v0[i] = tmp;
+    }
+
+    return std::sqrt(simd::reduce_add(norm2_vec) + norm2_remainder);
+}
+#endif // SIMDPP_USE_NULL
 
 template<class real_t>
 struct LanczosBounds {
@@ -23,21 +101,19 @@ struct LanczosBounds {
 template<class scalar_t, class real_t = num::get_real_t<scalar_t>>
 LanczosBounds<real_t> minmax_eigenvalues(SparseMatrixX<scalar_t> const& matrix,
                                          double precision_percent) {
+    simd::scope_disable_denormals guard;
+
     auto const precision = static_cast<real_t>(precision_percent / 100);
     auto const matrix_size = static_cast<int>(matrix.rows());
 
-    auto left = VectorX<scalar_t>{VectorX<scalar_t>::Zero(matrix_size)};
-    auto right_previous = VectorX<scalar_t>{VectorX<scalar_t>::Zero(matrix_size)};
-
-    auto right = num::make_random<VectorX<scalar_t>>(matrix_size);
-    right.normalize();
+    auto v0 = VectorX<scalar_t>::Zero(matrix_size).eval();
+    auto v1 = num::make_random<VectorX<scalar_t>>(matrix_size);
+    v1.normalize();
 
     // Alpha and beta are the diagonals of the tridiagonal matrix.
     // The final size is not known ahead of time, but it will be small.
-    auto alpha = std::vector<real_t>();
-    alpha.reserve(100);
-    auto beta = std::vector<real_t>();
-    beta.reserve(100);
+    auto alpha = std::vector<real_t>(); alpha.reserve(100);
+    auto beta = std::vector<real_t>(); beta.reserve(100);
 
     // Energy values from the previous iteration. Used to test convergence.
     // Initial values as far away from expected as possible.
@@ -50,20 +126,12 @@ LanczosBounds<real_t> minmax_eigenvalues(SparseMatrixX<scalar_t> const& matrix,
     for (int i = 0; i < loop_limit; ++i) {
         // PART 1: Calculate tridiagonal matrix elements a and b
         // =====================================================
-        // left = h_matrix * right
-        // matrix-vector multiplication (the most compute intensive part of each iteration)
-        compute::matrix_vector_mul(matrix, right, left);
-
-        auto const a = std::real(compute::dot_product(left, right));
         auto const b_prev = !beta.empty() ? beta.back() : real_t{0};
+        auto const a = lanczos_spmv(b_prev, matrix, v1, v0);
+        auto const b = lanczos_axpy(a, v1, v0);
 
-        // left -= a*right + b_prev*right_previous;
-        compute::axpy(scalar_t{-a}, right, left);
-        compute::axpy(scalar_t{-b_prev}, right_previous, left);
-        auto const b = left.norm();
-
-        right_previous.swap(right);
-        right = (1/b) * left;
+        v0 *= 1 / b;
+        v0.swap(v1);
 
         alpha.push_back(a);
         beta.push_back(b);

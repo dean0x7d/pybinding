@@ -20,6 +20,18 @@ std::complex<real_t> mul(std::complex<real_t> a, std::complex<real_t> b) {
             a.real() * b.imag() + a.imag() * b.real()};
 }
 
+/**
+ Return only the real part of a dot product multiplication. Compared to
+ `mul(conj(a), b)`, this saves a few operations for complex scalars.
+ */
+template<class real_t> CPB_ALWAYS_INLINE
+real_t real_dot(real_t a, real_t b) { return a * b; }
+
+template<class real_t> CPB_ALWAYS_INLINE
+real_t real_dot(std::complex<real_t> a, std::complex<real_t> b) {
+    return a.real() * b.real() + a.imag() * b.imag();
+}
+
 template<class real_t> CPB_ALWAYS_INLINE
 real_t square(real_t a) { return a * a; }
 
