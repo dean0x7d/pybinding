@@ -22,7 +22,7 @@ namespace detail {
         matrix.resize(num_sites, num_sites);
         matrix.reserve(ArrayXi::Constant(num_sites, system.lattice.max_hoppings()));
 
-        modifiers.apply_to_hoppings<scalar_t>(system, 0, [&](int i, int j, scalar_t hopping) {
+        modifiers.apply_to_hoppings<scalar_t>(system, 0, [&](idx_t i, idx_t j, scalar_t hopping) {
             matrix.insert(i, j) = hopping;
         });
 

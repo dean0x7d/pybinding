@@ -46,7 +46,7 @@ bool StrategyTemplate<scalar_t, Compute>::change_hamiltonian(Hamiltonian const& 
 }
 
 template<class scalar_t, class Compute>
-ArrayXd StrategyTemplate<scalar_t, Compute>::ldos(int index, ArrayXd const& energy,
+ArrayXd StrategyTemplate<scalar_t, Compute>::ldos(idx_t index, ArrayXd const& energy,
                                                   double broadening) {
     auto const scale = bounds.scaling_factors();
     auto const num_moments = config.kernel.required_num_moments(broadening / scale.a);
@@ -66,14 +66,14 @@ ArrayXd StrategyTemplate<scalar_t, Compute>::ldos(int index, ArrayXd const& ener
 }
 
 template<class scalar_t, class Compute>
-ArrayXcd StrategyTemplate<scalar_t, Compute>::greens(int row, int col, ArrayXd const& energy,
+ArrayXcd StrategyTemplate<scalar_t, Compute>::greens(idx_t row, idx_t col, ArrayXd const& energy,
                                                      double broadening) {
     return std::move(greens_vector(row, {col}, energy, broadening).front());
 }
 
 template<class scalar_t, class Compute>
 std::vector<ArrayXcd>
-StrategyTemplate<scalar_t, Compute>::greens_vector(int row, std::vector<int> const& cols,
+StrategyTemplate<scalar_t, Compute>::greens_vector(idx_t row, std::vector<idx_t> const& cols,
                                                    ArrayXd const& energy, double broadening) {
     assert(!cols.empty());
     auto const scale = bounds.scaling_factors();

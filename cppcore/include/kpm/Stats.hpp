@@ -29,7 +29,9 @@ struct Stats {
     Chrono moments_timer;
 
     /// Non-zero elements per second
-    double eps() const { return multiplier * opt_nnz / moments_timer.elapsed_seconds(); }
+    double eps() const {
+        return multiplier * static_cast<double>(opt_nnz) / moments_timer.elapsed_seconds();
+    }
 
     /// Approximate number of executed mul + add operations per second
     double ops(bool is_diagonal, bool non_unit_vector) const;

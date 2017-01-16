@@ -19,13 +19,17 @@ namespace cpb { namespace kpm {
  however only some column indices are required to be saved, as indicated by `cols`.
  */
 struct Indices {
-    int row = -1;
-    ArrayXi cols;
+    storage_idx_t row = -1;
+    ArrayX<storage_idx_t> cols;
 
     Indices() = default;
-    Indices(int row, int col) : row(row), cols(1) { cols[0] = col; }
-    Indices(int row, ArrayXi const& cols) : row(row), cols(cols) {}
-    Indices(int row, std::vector<int> const& cols) : row(row), cols(eigen_cast<ArrayX>(cols)) {}
+    Indices(idx_t row, idx_t col) : row(static_cast<storage_idx_t>(row)), cols(1) {
+        cols[0] = static_cast<storage_idx_t>(col);
+    }
+    Indices(idx_t row, std::vector<idx_t> const& cols)
+        : row(static_cast<storage_idx_t>(row)),
+          cols(eigen_cast<ArrayX>(cols).cast<storage_idx_t>()) {}
+    Indices(storage_idx_t row, ArrayX<storage_idx_t> cols) : row(row), cols(std::move(cols)) {}
 
     /// Indicates a single element on the main diagonal
     bool is_diagonal() const { return cols.size() == 1 && row == cols[0]; }
@@ -39,18 +43,18 @@ struct Indices {
  Optimized slice mapping for `optimal_size` and `interleaved` KPM algorithms.
  */
 class SliceMap {
-    std::vector<int> data; ///< optimized Hamiltonian indices marking slice borders
-    int offset = 0; ///< needed to correctly compute off-diagonal elements (i != j)
+    std::vector<storage_idx_t> data; ///< optimized Hamiltonian indices marking slice borders
+    idx_t offset = 0; ///< needed to correctly compute off-diagonal elements (i != j)
 
 public:
     /// Simple constructor for non-optimized case -> single slice equal to full system size
-    explicit SliceMap(int system_size) { data = {system_size}; }
+    explicit SliceMap(idx_t system_size) { data = {static_cast<storage_idx_t>(system_size)}; }
     /// Map for optimized matrix. The `optimized_idx` is needed to compute the `offset`
-    SliceMap(std::vector<int> border_indices, Indices const& optimized_idx);
+    SliceMap(std::vector<storage_idx_t> border_indices, Indices const& optimized_idx);
 
     /// Return an index into `data`, indicating the optimal system size for
     /// the calculation of KPM moment number `n` out of total `num_moments`
-    int index(int n, int num_moments) const {
+    idx_t index(idx_t n, idx_t num_moments) const {
         assert(n < num_moments);
 
         auto const max = std::min(last_index(), num_moments / 2);
@@ -62,21 +66,21 @@ public:
     }
 
     /// Last index into `data`
-    int last_index() const { return static_cast<int>(data.size()) - 1; }
+    idx_t last_index() const { return static_cast<idx_t>(data.size()) - 1; }
 
     /// Return the optimal system size for KPM moment number `n` out of total `num_moments`
-    int optimal_size(int n, int num_moments) const {
+    idx_t optimal_size(idx_t n, idx_t num_moments) const {
         return data[index(n, num_moments)];
     }
 
     /// Would calculating this number of moments ever do a full matrix-vector multiplication?
-    bool uses_full_system(int num_moments) const {
+    bool uses_full_system(idx_t num_moments) const {
         return static_cast<int>(data.size()) < num_moments / 2;
     }
 
-    int operator[](int i) const { return data[i]; }
-    std::vector<int> const& get_data() const { return data; }
-    int get_offset() const { return offset; }
+    idx_t operator[](idx_t i) const { return data[i]; }
+    std::vector<storage_idx_t> const& get_data() const { return data; }
+    idx_t get_offset() const { return offset; }
 };
 
 /**
@@ -104,7 +108,7 @@ class OptimizedHamiltonian {
     OptMatrix optimized_matrix; ///< reordered for faster compute
     Indices optimized_idx; ///< reordered target indices in the optimized matrix
     SliceMap slice_map; ///< slice border indices
-    std::vector<int> reorder_map; ///< mapping from original matrix indices to reordered indices
+    std::vector<storage_idx_t> reorder_map; ///< mapping from original matrix indices to reordered indices
 
     SparseMatrixX<scalar_t> const* original_matrix;
     Indices original_idx; ///< original target indices for which the optimization was done
@@ -133,7 +137,7 @@ public:
         return result;
     }
 
-    int size() const { return original_matrix->rows(); }
+    idx_t size() const { return original_matrix->rows(); }
     Indices const& idx() const { return optimized_idx; }
     SliceMap const& map() const { return slice_map; }
     OptMatrix const& matrix() const { return optimized_matrix; }
@@ -149,7 +153,7 @@ private:
     static num::EllMatrix<scalar_t> convert_to_ellpack(SparseMatrixX<scalar_t> const& csr);
     /// Get optimized indices which map to the given originals
     static Indices reorder_indices(Indices const& original_idx,
-                                   std::vector<int> const& reorder_map);
+                                   std::vector<storage_idx_t> const& reorder_map);
 
     /// Total non-zeros processed when computing `num_moments` with or without size optimizations
     size_t num_nonzeros(int num_moments, bool optimal_size) const;

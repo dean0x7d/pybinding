@@ -16,7 +16,7 @@ struct ExtractArray {
         using scalar_t = typename EigenType::Scalar;
 
         auto const a = py::array_t<scalar_t>(o);
-        auto const size = static_cast<Eigen::Index>(a.size());
+        auto const size = static_cast<idx_t>(a.size());
         if (v.size() != size) {
             throw std::runtime_error("Unexpected modifier result size");
         }

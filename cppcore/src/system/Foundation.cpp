@@ -46,15 +46,15 @@ CartesianArray generate_positions(Cartesian origin, Index3D size, Lattice const&
     return positions;
 }
 
-ArrayX<int16_t> count_neighbors(Foundation const& foundation) {
-    ArrayX<int16_t> neighbor_count(foundation.get_num_sites());
+ArrayXi count_neighbors(Foundation const& foundation) {
+    ArrayXi neighbor_count(foundation.get_num_sites());
 
     auto const& lattice = foundation.get_lattice();
     auto const size = foundation.get_size().array();
 
     for (auto const& site : foundation) {
         auto const& sublattice = lattice[site.get_sublattice()];
-        auto num_neighbors = static_cast<int16_t>(sublattice.hoppings.size());
+        auto num_neighbors = static_cast<int>(sublattice.hoppings.size());
 
         // Reduce the neighbor count for sites on the edges
         for (auto const& hopping : sublattice.hoppings) {
@@ -69,7 +69,7 @@ ArrayX<int16_t> count_neighbors(Foundation const& foundation) {
     return neighbor_count;
 }
 
-void clear_neighbors(Site& site, ArrayX<int16_t>& neighbor_count, int min_neighbors) {
+void clear_neighbors(Site& site, ArrayXi& neighbor_count, int min_neighbors) {
     if (neighbor_count[site.get_idx()] == 0)
         return;
 

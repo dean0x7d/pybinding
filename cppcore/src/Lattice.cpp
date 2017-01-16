@@ -129,7 +129,7 @@ int Lattice::max_hoppings() const {
 Cartesian Lattice::calc_position(Index3D index, std::string const& sub) const {
     auto position = offset;
     // Bravais lattice position
-    for (auto i = size_t{0}, size = vectors.size(); i < size; ++i) {
+    for (auto i = 0, size = ndim(); i < size; ++i) {
         position += static_cast<float>(index[i]) * vectors[i];
     }
     if (!sub.empty()) {

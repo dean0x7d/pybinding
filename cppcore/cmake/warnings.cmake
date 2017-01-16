@@ -2,7 +2,8 @@ function(enable_warnings TARGET)
     if(MSVC)
         target_compile_options(${TARGET} PRIVATE /W3)
     else()
-        target_compile_options(${TARGET} PRIVATE -Wall -Wextra -Wsign-compare)
+        target_compile_options(${TARGET} PRIVATE -Wall -Wextra -Wsign-compare
+                               -Wconversion -Wno-sign-conversion)
     endif()
 
     if(PB_WERROR)

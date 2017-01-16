@@ -30,11 +30,11 @@ public:
     virtual bool change_hamiltonian(Hamiltonian const& h) = 0;
 
     /// Return the LDOS at the given Hamiltonian index for the energy range and broadening
-    virtual ArrayXd ldos(int index, ArrayXd const& energy, double broadening) = 0;
+    virtual ArrayXd ldos(idx_t index, ArrayXd const& energy, double broadening) = 0;
     /// Return the Green's function matrix element (row, col) for the given energy range
-    virtual ArrayXcd greens(int row, int col, ArrayXd const& energy, double broadening) = 0;
+    virtual ArrayXcd greens(idx_t row, idx_t col, ArrayXd const& energy, double broadening) = 0;
     /// Return multiple Green's matrix elements for a single `row` and multiple `cols`
-    virtual std::vector<ArrayXcd> greens_vector(int row, std::vector<int> const& cols,
+    virtual std::vector<ArrayXcd> greens_vector(idx_t row, std::vector<idx_t> const& cols,
                                                 ArrayXd const& energy, double broadening) = 0;
     /// Return the total DOS for the given energy range and broadening
     virtual ArrayXd dos(ArrayXd const& energy, double broadening) = 0;
@@ -61,9 +61,9 @@ public:
 
     bool change_hamiltonian(Hamiltonian const& h) final;
 
-    ArrayXd ldos(int index, ArrayXd const& energy, double broadening) final;
-    ArrayXcd greens(int row, int col, ArrayXd const& energy, double broadening) final;
-    std::vector<ArrayXcd> greens_vector(int row, std::vector<int> const& cols,
+    ArrayXd ldos(idx_t index, ArrayXd const& energy, double broadening) final;
+    ArrayXcd greens(idx_t row, idx_t col, ArrayXd const& energy, double broadening) final;
+    std::vector<ArrayXcd> greens_vector(idx_t row, std::vector<idx_t> const& cols,
                                         ArrayXd const& energy, double broadening) final;
     ArrayXd dos(ArrayXd const& energy, double broadening) final;
 

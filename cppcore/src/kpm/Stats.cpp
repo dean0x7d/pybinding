@@ -4,7 +4,8 @@ namespace cpb { namespace kpm {
 
 namespace {
     std::string hamiltonian_report(Stats const& s, bool shortform) {
-        auto const percent_removed = 100.0 * (s.nnz - s.opt_nnz) / static_cast<double>(s.nnz);
+        auto const nnz_diff = static_cast<double>(s.nnz - s.opt_nnz);
+        auto const percent_removed = 100.0 * nnz_diff / static_cast<double>(s.nnz);
         auto const not_efficient = s.uses_full_system ? "" : "*";
         auto const fmt_str = shortform ? "{:.0f}%{}"
                                        : "The reordering optimization was able to "
@@ -35,7 +36,7 @@ double Stats::ops(bool is_diagonal, bool non_unit_vector) const {
         operations += vec *2; // 1 mul + 1 add for the single dot product
     }
 
-    return multiplier * operations / moments_timer.elapsed_seconds();
+    return multiplier * static_cast<double>(operations) / moments_timer.elapsed_seconds();
 }
 
 std::string Stats::report(bool shortform) const {

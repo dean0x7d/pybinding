@@ -35,9 +35,9 @@ public:
     void reset();
 
     ComplexCsrConstRef csrref() const;
-    int non_zeros() const;
-    int rows() const;
-    int cols() const;
+    idx_t non_zeros() const;
+    idx_t rows() const;
+    idx_t cols() const;
 };
 
 namespace detail {
@@ -56,11 +56,11 @@ void build_main(SparseMatrixX<scalar_t>& matrix, System const& system,
         matrix.reserve(ArrayXi::Constant(num_sites, num_per_row));
     }
 
-    modifiers.apply_to_onsite<scalar_t>(system, [&](int i, scalar_t onsite) {
+    modifiers.apply_to_onsite<scalar_t>(system, [&](idx_t i, scalar_t onsite) {
         matrix.insert(i, i) = onsite;
     });
 
-    modifiers.apply_to_hoppings<scalar_t>(system, [&](int i, int j, scalar_t hopping) {
+    modifiers.apply_to_hoppings<scalar_t>(system, [&](idx_t i, idx_t j, scalar_t hopping) {
         matrix.insert(i, j) = hopping;
         matrix.insert(j, i) = num::conjugate(hopping);
     });
@@ -74,7 +74,7 @@ void build_periodic(SparseMatrixX<scalar_t>& matrix, System const& system,
         auto const& d = system.boundaries[n].shift;
         auto const phase = num::complex_cast<scalar_t>(exp(i1 * k_vector.dot(d)));
 
-        modifiers.apply_to_hoppings<scalar_t>(system, n, [&](int i, int j, scalar_t hopping) {
+        modifiers.apply_to_hoppings<scalar_t>(system, n, [&](idx_t i, idx_t j, scalar_t hopping) {
             matrix.coeffRef(i, j) += hopping * phase;
             matrix.coeffRef(j, i) += num::conjugate(hopping * phase);
         });

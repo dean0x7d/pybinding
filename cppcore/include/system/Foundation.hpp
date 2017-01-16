@@ -22,9 +22,9 @@ namespace detail {
     /// Generate real space coordinates for a block of lattice sites
     CartesianArray generate_positions(Cartesian origin, Index3D size, Lattice const& lattice);
     /// Initialize the neighbor count for each site
-    ArrayX<int16_t> count_neighbors(Foundation const& foundation);
+    ArrayXi count_neighbors(Foundation const& foundation);
     /// Reduce this site's neighbor count to zero and inform its neighbors of the change
-    void clear_neighbors(Site& site, ArrayX<int16_t>& neighbor_count, int min_neighbors);
+    void clear_neighbors(Site& site, ArrayXi& neighbor_count, int min_neighbors);
     /// Make an array of sublattice ids for the entire foundation
     ArrayX<sub_id> make_sublattice_ids(Foundation const& foundation);
 } // namespace detail

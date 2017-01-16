@@ -20,17 +20,17 @@ struct GetSparseRef {
 
 struct NonZeros {
     template<class scalar_t>
-    int operator()(SparseMatrixRC<scalar_t> const& m) const { return m->nonZeros(); }
+    idx_t operator()(SparseMatrixRC<scalar_t> const& m) const { return m->nonZeros(); }
 };
 
 struct Rows {
     template<class scalar_t>
-    int operator()(SparseMatrixRC<scalar_t> const& m) const { return m->rows(); }
+    idx_t operator()(SparseMatrixRC<scalar_t> const& m) const { return m->rows(); }
 };
 
 struct Cols {
     template<class scalar_t>
-    int operator()(SparseMatrixRC<scalar_t> const& m) const { return m->cols(); }
+    idx_t operator()(SparseMatrixRC<scalar_t> const& m) const { return m->cols(); }
 };
 
 } // namespace
@@ -47,15 +47,15 @@ ComplexCsrConstRef Hamiltonian::csrref() const {
     return var::apply_visitor(GetSparseRef(), variant_matrix);
 }
 
-int Hamiltonian::non_zeros() const {
+idx_t Hamiltonian::non_zeros() const {
     return var::apply_visitor(NonZeros(), variant_matrix);
 }
 
-int Hamiltonian::rows() const {
+idx_t Hamiltonian::rows() const {
     return var::apply_visitor(Rows(), variant_matrix);
 }
 
-int Hamiltonian::cols() const {
+idx_t Hamiltonian::cols() const {
     return var::apply_visitor(Cols(), variant_matrix);
 }
 

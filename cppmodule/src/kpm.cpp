@@ -47,12 +47,12 @@ struct PyOptHam {
     OptHamVariant oh;
 
     struct MakeOH {
-        int i;
+        idx_t i;
 
         template<class scalar_t>
         OptHamVariant operator()(SparseMatrixRC<scalar_t> const& m) const {
             auto ret = kpm::OptimizedHamiltonian<scalar_t>(m.get(), kpm::MatrixFormat::CSR, true);
-            auto indices = std::vector<int>(m->rows());
+            auto indices = std::vector<idx_t>(m->rows());
             std::iota(indices.begin(), indices.end(), 0);
             auto bounds = kpm::Bounds<scalar_t>(m.get(), kpm::Config{}.lanczos_precision);
             ret.optimize_for({i, indices}, bounds.scaling_factors());
@@ -77,7 +77,7 @@ struct PyOptHam {
 
     struct ReturnIndices {
         template<class scalar_t>
-        ArrayXi const& operator()(kpm::OptimizedHamiltonian<scalar_t> const& oh) const {
+        ArrayX<storage_idx_t> const& operator()(kpm::OptimizedHamiltonian<scalar_t> const& oh) const {
             return oh.idx().cols;
         }
     };

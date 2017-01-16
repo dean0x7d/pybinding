@@ -101,15 +101,12 @@ Leads const& Model::leads() const {
 }
 
 std::string Model::report() {
-    auto const& built_system = *system();
-    auto report = fmt::format("Built system with {} lattice sites, {}\n",
-                              fmt::with_suffix(built_system.num_sites()), system_build_time);
+    auto const num_sites = fmt::with_suffix(static_cast<double>(system()->num_sites()));
+    auto const nnz = fmt::with_suffix(static_cast<double>(hamiltonian().non_zeros()));
 
-    auto const& built_hamiltonian = hamiltonian();
-    report += fmt::format("The Hamiltonian has {} non-zero values, {}",
-                          fmt::with_suffix(built_hamiltonian.non_zeros()), hamiltonian_build_time);
-
-    return report;
+    return fmt::format("Built system with {} lattice sites, {}\n"
+                       "The Hamiltonian has {} non-zero values, {}",
+                       num_sites, system_build_time, nnz, hamiltonian_build_time);
 }
 
 std::shared_ptr<System> Model::make_system() const {

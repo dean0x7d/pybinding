@@ -7,7 +7,7 @@
 namespace cpb {
 
 template <class scalar_t>
-using SparseMatrixX = Eigen::SparseMatrix<scalar_t, Eigen::RowMajor, int>;
+using SparseMatrixX = Eigen::SparseMatrix<scalar_t, Eigen::RowMajor, storage_idx_t>;
 
 using SparseMatrixXf = SparseMatrixX<float>;
 using SparseMatrixXcf = SparseMatrixX<std::complex<float>>;
@@ -31,19 +31,19 @@ inline num::CsrConstRef<scalar_t> csrref(SparseMatrixX<scalar_t> const& m) {
 template<class scalar_t>
 class CompressedInserter {
 public:
-    CompressedInserter(SparseMatrixX<scalar_t>& mat, int size)
+    CompressedInserter(SparseMatrixX<scalar_t>& mat, idx_t size)
         : matrix(mat) { matrix.reserve(size); }
 
     void start_row() {
-        matrix.outerIndexPtr()[row++] = idx;
+        matrix.outerIndexPtr()[row++] = static_cast<storage_idx_t>(idx);
     }
 
-    void start_row(int row_index) {
+    void start_row(idx_t row_index) {
         while (row <= row_index)
-            matrix.outerIndexPtr()[row++] = idx;
+            matrix.outerIndexPtr()[row++] = static_cast<storage_idx_t>(idx);
     }
 
-    void insert(int column, scalar_t value) {
+    void insert(idx_t column, scalar_t value) {
         auto start_idx = matrix.outerIndexPtr()[row-1];
         auto n = idx++;
         while (n > start_idx && matrix.innerIndexPtr()[n - 1] > column) {
@@ -51,7 +51,7 @@ public:
             matrix.valuePtr()[n] = matrix.valuePtr()[n - 1];
             --n;
         }
-        matrix.innerIndexPtr()[n] = column;
+        matrix.innerIndexPtr()[n] = static_cast<storage_idx_t>(column);
         matrix.valuePtr()[n] = value;
     }
 
@@ -63,13 +63,13 @@ public:
     }
 
 private:
-    int idx = 0;
-    int row = 0;
+    idx_t idx = 0;
+    idx_t row = 0;
     SparseMatrixX<scalar_t>& matrix;
 };
 
 template<class scalar_t>
-inline CompressedInserter<scalar_t> compressed_inserter(SparseMatrixX<scalar_t>& mat, int size) {
+inline CompressedInserter<scalar_t> compressed_inserter(SparseMatrixX<scalar_t>& mat, idx_t size) {
     return {mat, size};
 }
 
@@ -85,36 +85,34 @@ namespace sparse {
 /// SparseMatrix wrapper with several functions for efficient CSR matrix element access
 template<class scalar_t>
 class Loop {
-    using index_t = typename SparseMatrixX<scalar_t>::StorageIndex;
-
 public:
     Loop(SparseMatrixX<scalar_t> const& matrix)
         : outer_size(matrix.outerSize()), data(matrix.valuePtr()),
           indices(matrix.innerIndexPtr()), indptr(matrix.outerIndexPtr()) {}
 
     /// Visit each index and value of the sparse matrix:
-    ///     lambda(index_t outer, index_t inner, scalar_t value)
+    ///     lambda(idx_t outer, idx_t inner, scalar_t value)
     template<class F>
     void for_each(F lambda) const {
-        for (index_t outer = 0; outer < outer_size; ++outer) {
-            for (index_t idx = indptr[outer]; idx < indptr[outer + 1]; ++idx) {
+        for (auto outer = idx_t{0}; outer < outer_size; ++outer) {
+            for (auto idx = indptr[outer]; idx < indptr[outer + 1]; ++idx) {
                 lambda(outer, indices[idx], data[idx]);
             }
         }
     }
 
     /// Visit each index and value of the sparse matrix:
-    ///     lambda(index_t outer, index_t inner, scalar_t value, int buffer_position)
+    ///     lambda(idx_t outer, idx_t inner, scalar_t value, idx_t buffer_position)
     /// After every 'buffer_size' iterations, the 'process_buffer' function is called:
-    ///     process_buffer(index_t start_outer, index_t start_data, int last_buffer_size)
+    ///     process_buffer(idx_t start_outer, idx_t start_data, idx_t last_buffer_size)
     template<class F1, class F2>
-    void buffered_for_each(int buffer_size, F1 lambda, F2 process_buffer) const {
-        int n = 0;
-        index_t previous_outer = 0;
-        index_t previous_idx = indptr[0];
+    void buffered_for_each(idx_t buffer_size, F1 lambda, F2 process_buffer) const {
+        auto n = idx_t{0};
+        auto previous_outer = idx_t{0};
+        auto previous_idx = static_cast<idx_t>(indptr[0]);
 
-        for (index_t outer = 0; outer < outer_size; ++outer) {
-            for (index_t idx = indptr[outer]; idx < indptr[outer + 1]; ++idx, ++n) {
+        for (auto outer = idx_t{0}; outer < outer_size; ++outer) {
+            for (auto idx = indptr[outer]; idx < indptr[outer + 1]; ++idx, ++n) {
                 if (n == buffer_size) {
                     process_buffer(previous_outer, previous_idx, buffer_size);
                     previous_outer = outer;
@@ -130,9 +128,9 @@ public:
     }
 
     /// Iterate over all elements in a single row (or column) at the 'outer' index:
-    ///     lambda(index_t inner, scalar_t value)
+    ///     lambda(idx_t inner, scalar_t value)
     template<class F>
-    void for_each_in_row(index_t outer, F lambda) const {
+    void for_each_in_row(idx_t outer, F lambda) const {
         for (auto idx = indptr[outer]; idx < indptr[outer + 1]; ++idx) {
             lambda(indices[idx], data[idx]);
         }
@@ -140,10 +138,10 @@ public:
 
     /// Start iteration from some position given by 'outer' and 'data' indices
     /// and loop for 'slice_size' iterations:
-    ///     lambda(index_t outer, index_t inner, scalar_t value, int current_iteration)
+    ///     lambda(idx_t outer, idx_t inner, scalar_t value, idx_t current_iteration)
     template<class F>
-    void slice_for_each(index_t outer, index_t idx, int slice_size, F lambda) const {
-        auto n = 0;
+    void slice_for_each(idx_t outer, idx_t idx, idx_t slice_size, F lambda) const {
+        auto n = idx_t{0};
         for (; outer < outer_size; ++outer) {
             for (; idx < indptr[outer + 1]; ++idx, ++n) {
                 if (n == slice_size)
@@ -155,10 +153,10 @@ public:
     }
 
 private:
-    index_t const outer_size;
+    idx_t const outer_size;
     scalar_t const* const data;
-    index_t const* const indices;
-    index_t const* const indptr;
+    storage_idx_t const* const indices;
+    storage_idx_t const* const indptr;
 };
 
 template<class scalar_t>
@@ -168,7 +166,7 @@ inline Loop<scalar_t> make_loop(SparseMatrixX<scalar_t> const& m) { return {m}; 
  Return the maximum number of non-zeros per row
  */
 template<class scalar_t>
-int max_nnz_per_row(SparseMatrixX<scalar_t> const& m) {
+idx_t max_nnz_per_row(SparseMatrixX<scalar_t> const& m) {
     auto max = 0;
     for (auto i = 0; i < m.outerSize(); ++i) {
         auto const nnz = m.outerIndexPtr()[i + 1] - m.outerIndexPtr()[i];

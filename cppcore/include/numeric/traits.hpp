@@ -93,7 +93,7 @@ template<class T, class = typename std::enable_if<std::is_floating_point<T>::val
 bool approx_equal(T x, T y, int ulp = 1) {
     auto const diff = std::abs(x - y);
     auto const scale = std::abs(x + y);
-    return diff <= std::numeric_limits<T>::epsilon() * scale * ulp
+    return diff <= std::numeric_limits<T>::epsilon() * scale * static_cast<T>(ulp)
            || diff <= std::numeric_limits<T>::min(); // subnormal case
 }
 

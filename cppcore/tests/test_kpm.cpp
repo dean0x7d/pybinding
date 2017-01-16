@@ -25,7 +25,7 @@ TEST_CASE("OptimizedHamiltonian reordering", "[kpm]") {
     auto bounds = kpm::Bounds<scalat_t>(&matrix, kpm::Config{}.lanczos_precision);
 
     auto size_indices = [](kpm::OptimizedHamiltonian<scalat_t> const& oh, int num_moments) {
-        auto v = std::vector<int>(num_moments);
+        auto v = std::vector<idx_t>(num_moments);
         for (auto n = 0; n < num_moments; ++n) {
             v[n] = oh.map().index(n, num_moments);
         }
@@ -43,11 +43,11 @@ TEST_CASE("OptimizedHamiltonian reordering", "[kpm]") {
         REQUIRE(oh.map().get_data().back() == num_sites);
         REQUIRE(oh.map().get_offset() == 0);
 
-        auto const expected6 = std::vector<int>{0, 1, 2, 2, 1, 0};
+        auto const expected6 = std::vector<idx_t>{0, 1, 2, 2, 1, 0};
         REQUIRE(size_indices(oh, 6) == expected6);
-        auto const expected9 = std::vector<int>{0, 1, 2, 3, 4, 3, 2, 1, 0};
+        auto const expected9 = std::vector<idx_t>{0, 1, 2, 3, 4, 3, 2, 1, 0};
         REQUIRE(size_indices(oh, 9) == expected9);
-        auto const expected12 = std::vector<int>{0, 1, 2, 3, 4, 4, 4, 4, 3, 2, 1, 0};
+        auto const expected12 = std::vector<idx_t>{0, 1, 2, 3, 4, 4, 4, 4, 3, 2, 1, 0};
         REQUIRE(size_indices(oh, 12) == expected12);
     }
 
@@ -57,18 +57,18 @@ TEST_CASE("OptimizedHamiltonian reordering", "[kpm]") {
         auto const j1 = model.system()->find_nearest({0, 0.07f, 0}, "B");
         auto const j2 = model.system()->find_nearest({0.12f, 0.14f, 0}, "A");
         auto const j3 = model.system()->find_nearest({0.12f, 0.28f, 0}, "B");
-        oh.optimize_for({i, std::vector<int>{j1, j2, j3}}, bounds.scaling_factors());
+        oh.optimize_for({i, std::vector<idx_t>{j1, j2, j3}}, bounds.scaling_factors());
 
         REQUIRE(oh.idx().row != oh.idx().cols[0]);
         REQUIRE(oh.map().get_data().front() == 1);
         REQUIRE(oh.map().get_data().back() == num_sites);
         REQUIRE(oh.map().get_offset() > 0);
 
-        auto const expected6 = std::vector<int>{0, 1, 2, 3, 3, 3};
+        auto const expected6 = std::vector<idx_t>{0, 1, 2, 3, 3, 3};
         REQUIRE(size_indices(oh, 6) == expected6);
-        auto const expected9 = std::vector<int>{0, 1, 2, 3, 4, 4, 4, 4, 3};
+        auto const expected9 = std::vector<idx_t>{0, 1, 2, 3, 4, 4, 4, 4, 3};
         REQUIRE(size_indices(oh, 9) == expected9);
-        auto const expected12 = std::vector<int>{0, 1, 2, 3, 4, 5, 6, 6, 6, 5, 4, 3};
+        auto const expected12 = std::vector<idx_t>{0, 1, 2, 3, 4, 5, 6, 6, 6, 5, 4, 3};
         REQUIRE(size_indices(oh, 12) == expected12);
     }
 }
@@ -92,7 +92,7 @@ std::vector<TestGreensResult> test_kpm_strategy(std::vector<kpm::Config> const& 
             auto const j = num_sites / 4;
             auto const energy_range = ArrayXd::LinSpaced(10, -0.3, 0.3);
             auto const broadening = 0.8;
-            auto const cols = std::vector<int>{i, j, j+1, j+2};
+            auto const cols = std::vector<idx_t>{i, j, j+1, j+2};
             auto const precision = Eigen::NumTraits<float>::dummy_precision();
 
             auto unoptimized_result = TestGreensResult{};

@@ -26,6 +26,17 @@ namespace detail {
     template<> constexpr Tag get_tag<std::uint16_t>()        { return Tag::u16;  }
     template<> constexpr Tag get_tag<std::uint32_t>()        { return Tag::u32;  }
     template<> constexpr Tag get_tag<std::uint64_t>()        { return Tag::u64;  }
+
+    template<class T>
+    constexpr Tag get_tag() {
+        static_assert(std::is_integral<T>::value && (sizeof(T) == 8 || sizeof(T) == 4), "");
+        using type = std14::conditional_t<
+            std::is_signed<T>::value,
+            std14::conditional_t<sizeof(T) == 8, std::int64_t, std::int32_t>,
+            std14::conditional_t<sizeof(T) == 8, std::uint64_t, std::uint32_t>
+        >;
+        return get_tag<type>();
+    }
 } // namespace detail
 
 /// Reference to any 1D or 2D array with any scalar type supported by Tag

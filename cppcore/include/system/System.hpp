@@ -31,10 +31,10 @@ struct System {
     System(Foundation const& foundation, HamiltonianIndices const& hamiltonian_indices,
            TranslationalSymmetry const& symmetry, HoppingGenerators const& hopping_generators);
 
-    int num_sites() const { return positions.size(); }
+    idx_t num_sites() const { return positions.size(); }
 
     /// Find the index of the site nearest to the given position. Optional: filter by sublattice.
-    int find_nearest(Cartesian position, std::string const& sublattice = "") const;
+    idx_t find_nearest(Cartesian position, std::string const& sublattice = "") const;
 };
 
 /**

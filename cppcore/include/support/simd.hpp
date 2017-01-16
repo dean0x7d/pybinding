@@ -24,6 +24,7 @@
 # pragma warning(pop) 
 #endif
 
+#include "detail/config.hpp"
 #include "detail/macros.hpp"
 #include <complex>
 
@@ -68,10 +69,10 @@ inline bool is_aligned(void const* p) {
 /**
  Split loop data, see `split_loop()` function
  */
-template<int N>
+template<idx_t N>
 struct split_loop_t {
     static constexpr auto step = N;
-    int start, peel_end, vec_end, end;
+    idx_t start, peel_end, vec_end, end;
 
     /**
      Failed experiment
@@ -109,8 +110,8 @@ struct split_loop_t {
    2. Vector: [peel_end, vec_end) SIMD loop for aligned elements
    3. Remainder: [vec_end, end) scalar loop for the leftover (end - vec_end < step) elements
  */
-template<class scalar_t, int step = detail::traits<scalar_t>::size>
-split_loop_t<step> split_loop(scalar_t const* p, int start, int end) {
+template<class scalar_t, idx_t step = detail::traits<scalar_t>::size>
+split_loop_t<step> split_loop(scalar_t const* p, idx_t start, idx_t end) {
     auto peel_end = start;
     static constexpr auto bytes = detail::traits<scalar_t>::align_bytes;
     while (!is_aligned<bytes>(p + peel_end) && peel_end < end) {
@@ -250,7 +251,7 @@ namespace detail {
         static Vec call(Scalar const* data, Index const* indices) {
             static constexpr auto index_step = Vec::base_length * element_size / sizeof(Scalar);
             Vec r;
-            for (auto i = size_t{0}; i < Vec::vec_length; ++i) {
+            for (auto i = unsigned{0}; i < Vec::vec_length; ++i) {
                 r.vec(i) = Gather<BaseVec>::call(data, indices + i * index_step);
             }
             return r;

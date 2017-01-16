@@ -33,7 +33,7 @@ ArrayXcd KPM::calc_greens(int row, int col, ArrayXd const& energy,
     return greens_function;
 }
 
-std::vector<ArrayXcd> KPM::calc_greens_vector(int row, std::vector<int> const& cols,
+std::vector<ArrayXcd> KPM::calc_greens_vector(idx_t row, std::vector<idx_t> const& cols,
                                               ArrayXd const& energy,
                                               double broadening) const {
     auto const size = model.hamiltonian().rows();

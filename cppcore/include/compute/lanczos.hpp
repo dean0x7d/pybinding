@@ -71,7 +71,7 @@ real_t lanczos_axpy(real_t a, VectorX<scalar_t> const& v1, VectorX<scalar_t>& v0
     assert(loop.peel_end == 0); // all eigen vectors are properly aligned when starting from 0
 
     auto norm2_vec = simd::make_float<simd_register_t>(0);
-    for (auto i = 0; i < loop.vec_end; i += loop.step) {
+    for (auto i = idx_t{0}; i < loop.vec_end; i += loop.step) {
         auto const r0 = simd::load<simd_register_t>(v0.data() + i);
         auto const r1 = simd::load<simd_register_t>(v1.data() + i);
         auto const tmp = r0 - a * r1;

@@ -26,8 +26,8 @@ struct static_vec_caster {
             auto const size = static_cast<int>(a.size());
             if (size > Vector::SizeAtCompileTime) { return false; }
 
-            auto const strides = Strides(a.strides()[0] / sizeof(Scalar));
-            value.head(size) = Map(a.data(), size, strides);
+            auto const stride = static_cast<Eigen::Index>(a.strides()[0] / sizeof(Scalar));
+            value.head(size) = Map(a.data(), size, Strides(stride));
         }
         return true;
     }
@@ -61,10 +61,12 @@ struct arrayref_caster {
                 case Tag::i8:   return dtype::of<int8_t>();
                 case Tag::i16:  return dtype::of<int16_t>();
                 case Tag::i32:  return dtype::of<int32_t>();
+                case Tag::i64:  return dtype::of<int64_t>();
                 case Tag::u8:   return dtype::of<uint8_t>();
                 case Tag::u16:  return dtype::of<uint16_t>();
                 case Tag::u32:  return dtype::of<uint32_t>();
-                default: return dtype();
+                case Tag::u64:  return dtype::of<uint64_t>();
+                default: throw std::runtime_error("ArrayRef: unknown scalar type");
             }
         }();
 

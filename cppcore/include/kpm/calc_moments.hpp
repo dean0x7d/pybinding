@@ -97,7 +97,7 @@ void interleaved(Moments& moments, Starter const& starter, Matrix const& h2, Sli
         auto m2 = scalar_t{0}, m3 = scalar_t{0}, m4 = scalar_t{0}, m5 = scalar_t{0};
 
         auto const max = map.last_index();
-        for (auto k = 0, p0 = 0, p1 = 0; k <= max; ++k) {
+        for (auto k = idx_t{0}, p0 = idx_t{0}, p1 = idx_t{0}; k <= max; ++k) {
             auto const p2 = map[k];
             compute::kpm_spmv_diagonal(p1, p2, h2, r1, r0, m2, m3);
             compute::kpm_spmv_diagonal(p0, p1, h2, r0, r1, m4, m5);
@@ -129,7 +129,7 @@ void opt_size_and_interleaved(Moments& moments, Starter const& starter, Matrix c
         auto m2 = scalar_t{0}, m3 = scalar_t{0}, m4 = scalar_t{0}, m5 = scalar_t{0};
 
         auto const max1 = map.index(n, num_moments);
-        for (auto k = 0, p0 = 0, p1 = 0; k <= max1; ++k) {
+        for (auto k = idx_t{0}, p0 = idx_t{0}, p1 = idx_t{0}; k <= max1; ++k) {
             auto const p2 = map[k];
             compute::kpm_spmv_diagonal(p1, p2, h2, r1, r0, m2, m3);
             compute::kpm_spmv_diagonal(p0, p1, h2, r0, r1, m4, m5);
@@ -218,8 +218,8 @@ void interleaved(Moments& moments, Starter const& starter, Matrix const& h2, Sli
     // Interleave moments `n` and `n + 1` for better data locality
     for (auto n = 2; n < num_moments; n += 2) {
         auto const max = map.last_index();
-        for (auto m = 0, p0 = 0, p1 = 0; m <= max; ++m) {
-            auto const p2 = map[m];
+        for (auto k = idx_t{0}, p0 = idx_t{0}, p1 = idx_t{0}; k <= max; ++k) {
+            auto const p2 = map[k];
             compute::kpm_spmv(p1, p2, h2, r1, r0);
             compute::kpm_spmv(p0, p1, h2, r0, r1);
 
@@ -249,8 +249,8 @@ void opt_size_and_interleaved(Moments& moments, Starter const& starter, Matrix c
     // Interleave moments `n` and `n + 1` for better data locality
     for (auto n = 2; n < num_moments; n += 2) {
         auto const max1 = map.index(n, num_moments);
-        for (auto m = 0, p0 = 0, p1 = 0; m <= max1; ++m) {
-            auto const p2 = map[m];
+        for (auto k = idx_t{0}, p0 = idx_t{0}, p1 = idx_t{0}; k <= max1; ++k) {
+            auto const p2 = map[k];
             compute::kpm_spmv(p1, p2, h2, r1, r0);
             compute::kpm_spmv(p0, p1, h2, r0, r1);
 

@@ -59,14 +59,14 @@ void OptimizedHamiltonian<scalar_t>::create_reordered(Indices const& idx, Scale<
 
     auto h2 = SparseMatrixX<scalar_t>(system_size, system_size);
     // Reserve the same nnz per row as the original + 1 in case the scaling adds diagonal elements
-    h2.reserve(VectorXi::Constant(system_size, sparse::max_nnz_per_row(h) + 1));
+    h2.reserve(VectorX<idx_t>::Constant(system_size, sparse::max_nnz_per_row(h) + 1));
 
     // Note: The following "queue" and "map" use vectors instead of other container types because
     //       they serve a very simple purpose. Using preallocated vectors results in better
     //       performance (this is not an assumption, it has been tested).
 
     // The index queue will contain the indices that need to be checked next
-    auto index_queue = std::vector<int>();
+    auto index_queue = std::vector<storage_idx_t>();
     index_queue.reserve(system_size);
     index_queue.push_back(idx.row); // starting from the given index
 
@@ -87,7 +87,7 @@ void OptimizedHamiltonian<scalar_t>::create_reordered(Indices const& idx, Scale<
         // Loop over elements in the row of the original matrix
         // corresponding to the h2_row of the reordered matrix
         auto const row = index_queue[h2_row];
-        h_view.for_each_in_row(row, [&](int col, scalar_t value) {
+        h_view.for_each_in_row(row, [&](storage_idx_t col, scalar_t value) {
             // A diagonal element may need to be inserted into the reordered matrix
             // even if the original matrix doesn't have an element on the main diagonal
             if (scale.b != 0 && !diagonal_inserted && col > row) {
@@ -152,20 +152,20 @@ OptimizedHamiltonian<scalar_t>::convert_to_ellpack(SparseMatrixX<scalar_t> const
 
 template<class scalar_t>
 Indices OptimizedHamiltonian<scalar_t>::reorder_indices(Indices const& original_idx,
-                                                        std::vector<int> const& reorder_map) {
+                                                        std::vector<storage_idx_t> const& map) {
     auto const size = original_idx.cols.size();
-    ArrayXi cols(size);
+    ArrayX<storage_idx_t> cols(size);
     for (auto i = 0; i < size; ++i) {
-        cols[i] = reorder_map[original_idx.cols[i]];
+        cols[i] = map[original_idx.cols[i]];
     }
     // original_idx.row is always reordered to 0, that's the whole purpose of the optimization
-    return {0, cols};
+    return {0, std::move(cols)};
 }
 
 namespace {
     /// Return the number of non-zeros present up to `rows`
     struct NonZeros {
-        int rows;
+        idx_t rows;
 
         template<class scalar_t>
         size_t operator()(SparseMatrixX<scalar_t> const& csr) {

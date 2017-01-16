@@ -86,7 +86,7 @@ public:
     void add_registered_hopping(Index3D relative_index, std::string const& from_sublattice,
                                 std::string const& to_sublattice, std::string const& hopping);
 
-    /// Connect sites with an annonymous hopping energy
+    /// Connect sites with an anonymous hopping energy
     void add_hopping(Index3D relative_index, std::string const& from_sublattice,
                      std::string const& to_sublattice, std::complex<double> energy);
 

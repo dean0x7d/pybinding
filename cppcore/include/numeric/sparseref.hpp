@@ -1,4 +1,5 @@
 #pragma once
+#include "detail/config.hpp"
 #include "numeric/arrayref.hpp"
 
 namespace cpb { namespace num {
@@ -12,8 +13,8 @@ namespace detail {
         int const cols;
         int const nnz;
         void const* const void_data;
-        int const* const indices;
-        int const* const indptr;
+        storage_idx_t const* const indices;
+        storage_idx_t const* const indptr;
     };
 } // namespace detail
 
@@ -25,7 +26,7 @@ struct CsrConstRef : detail::BasicCsrConstRef {
     using type = scalar_t;
 
     CsrConstRef(int rows, int cols, int nnz, scalar_t const* data,
-                int const* indices, int const* indptr)
+                storage_idx_t const* indices, storage_idx_t const* indptr)
         : detail::BasicCsrConstRef{rows, cols, nnz, data, indices, indptr} {}
 
     scalar_t const* data() const { return static_cast<scalar_t const*>(void_data); }
@@ -75,7 +76,7 @@ namespace detail {
         int const nnz_per_row;
         int const pitch;
         void const* const void_data;
-        int const* const indices;
+        storage_idx_t const* const indices;
 
         int size() const { return nnz_per_row * pitch; }
     };
@@ -89,7 +90,7 @@ struct EllConstRef : detail::BasicEllConstRef {
     using type = scalar_t;
 
     EllConstRef(int rows, int cols, int nnz_per_row, int pitch,
-                scalar_t const* data, int const* indices)
+                scalar_t const* data, storage_idx_t const* indices)
         : detail::BasicEllConstRef{rows, cols, nnz_per_row, pitch, data, indices} {}
 
     scalar_t const* data() const { return static_cast<scalar_t const*>(void_data); }

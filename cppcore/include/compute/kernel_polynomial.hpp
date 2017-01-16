@@ -22,7 +22,7 @@ namespace cpb { namespace compute {
 #ifndef CPB_USE_MKL
 
 template<class scalar_t> CPB_ALWAYS_INLINE
-void kpm_spmv(int start, int end, SparseMatrixX<scalar_t> const& matrix,
+void kpm_spmv(idx_t start, idx_t end, SparseMatrixX<scalar_t> const& matrix,
               VectorX<scalar_t> const& x, VectorX<scalar_t>& y) {
     auto const data = matrix.valuePtr();
     auto const indices = matrix.innerIndexPtr();
@@ -40,7 +40,7 @@ void kpm_spmv(int start, int end, SparseMatrixX<scalar_t> const& matrix,
 #else // CPB_USE_MKL
 
 template<class scalar_t> CPB_ALWAYS_INLINE
-void kpm_spmv(int start, int end, SparseMatrixX<scalar_t> const& matrix,
+void kpm_spmv(idx_t start, idx_t end, SparseMatrixX<scalar_t> const& matrix,
               VectorX<scalar_t> const& x, VectorX<scalar_t>& y) {
     if (end <= start) {
         return;
@@ -50,7 +50,7 @@ void kpm_spmv(int start, int end, SparseMatrixX<scalar_t> const& matrix,
     char const metdescra[8] = "GLNC"; // G - general matrix, C - zero-based indexing, LN - ignored
     auto const alpha = scalar_t{1};
     auto const beta = scalar_t{-1};
-    auto const size = end - start;
+    auto const size = static_cast<std::int32_t>(end - start);
     auto const start_idx = matrix.outerIndexPtr()[start];
 
     using mkl_scalar_t = mkl::type<scalar_t>;
@@ -83,7 +83,7 @@ void kpm_spmv(int start, int end, SparseMatrixX<scalar_t> const& matrix,
    m3 = dot(x, y)
  */
 template<class scalar_t> CPB_ALWAYS_INLINE
-void kpm_spmv_diagonal(int start, int end, SparseMatrixX<scalar_t> const& matrix,
+void kpm_spmv_diagonal(idx_t start, idx_t end, SparseMatrixX<scalar_t> const& matrix,
                        VectorX<scalar_t> const& x, VectorX<scalar_t>& y,
                        scalar_t& m2, scalar_t& m3) {
     kpm_spmv(start, end, matrix, x, y);
@@ -100,7 +100,7 @@ void kpm_spmv_diagonal(int start, int end, SparseMatrixX<scalar_t> const& matrix
 #if SIMDPP_USE_NULL // generic version
 
 template<class scalar_t> CPB_ALWAYS_INLINE
-void kpm_spmv(int start, int end, num::EllMatrix<scalar_t> const& matrix,
+void kpm_spmv(idx_t start, idx_t end, num::EllMatrix<scalar_t> const& matrix,
               VectorX<scalar_t> const& x, VectorX<scalar_t>& y) {
     for (auto row = start; row < end; ++row) {
         y[row] = -y[row];
@@ -117,9 +117,9 @@ void kpm_spmv(int start, int end, num::EllMatrix<scalar_t> const& matrix,
 
 #else // vectorized using SIMD intrinsics
 
-template<class scalar_t, int skip_last_n = 0,
-         int step = simd::detail::traits<scalar_t>::size> CPB_ALWAYS_INLINE
-simd::split_loop_t<step> kpm_spmv(int start, int end, num::EllMatrix<scalar_t> const& matrix,
+template<class scalar_t, idx_t skip_last_n = 0,
+         idx_t step = simd::detail::traits<scalar_t>::size> CPB_ALWAYS_INLINE
+simd::split_loop_t<step> kpm_spmv(idx_t start, idx_t end, num::EllMatrix<scalar_t> const& matrix,
                                   VectorX<scalar_t> const& x, VectorX<scalar_t>& y) {
     using simd_register_t = simd::select_vector_t<scalar_t>;
     auto const loop = simd::split_loop(y.data(), start, end);
@@ -169,7 +169,7 @@ simd::split_loop_t<step> kpm_spmv(int start, int end, num::EllMatrix<scalar_t> c
 #if SIMDPP_USE_NULL // generic version
 
 template<class scalar_t> CPB_ALWAYS_INLINE
-void kpm_spmv_diagonal(int start, int end, num::EllMatrix<scalar_t> const& matrix,
+void kpm_spmv_diagonal(idx_t start, idx_t end, num::EllMatrix<scalar_t> const& matrix,
                        VectorX<scalar_t> const& x, VectorX<scalar_t>& y,
                        scalar_t& m2, scalar_t& m3) {
     kpm_spmv(start, end, matrix, x, y);
@@ -181,7 +181,7 @@ void kpm_spmv_diagonal(int start, int end, num::EllMatrix<scalar_t> const& matri
 #else // vectorized using SIMD intrinsics
 
 template<class scalar_t> CPB_ALWAYS_INLINE
-void kpm_spmv_diagonal(int start, int end, num::EllMatrix<scalar_t> const& matrix,
+void kpm_spmv_diagonal(idx_t start, idx_t end, num::EllMatrix<scalar_t> const& matrix,
                        VectorX<scalar_t> const& x, VectorX<scalar_t>& y,
                        scalar_t& m2, scalar_t& m3) {
     // Call the regular compute function, but skip the last loop iteration.

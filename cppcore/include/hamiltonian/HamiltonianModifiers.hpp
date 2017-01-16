@@ -128,7 +128,7 @@ void HamiltonianModifiers::apply_to_hoppings_impl(SystemOrBoundary const& system
 
     if (hopping.empty()) {
         // fast path: modifiers don't need to be applied
-        hopping_csr_matrix.for_each([&](int row, int col, hop_id id) {
+        hopping_csr_matrix.for_each([&](idx_t row, idx_t col, hop_id id) {
             lambda(row, col, num::complex_cast<scalar_t>(lattice.hopping_energy(id)));
         });
     } else {
@@ -139,7 +139,7 @@ void HamiltonianModifiers::apply_to_hoppings_impl(SystemOrBoundary const& system
         */
         // TODO: experiment with buffer_size -> currently: hoppings + pos1 + pos2 is about 3MB
         auto const buffer_size = [&]{
-            constexpr auto max_buffer_size = Eigen::Index{100000};
+            constexpr auto max_buffer_size = idx_t{100000};
             auto const max_hoppings = system.hoppings.nonZeros();
             return std::min(max_hoppings, max_buffer_size);
         }();
@@ -155,14 +155,14 @@ void HamiltonianModifiers::apply_to_hoppings_impl(SystemOrBoundary const& system
         hopping_csr_matrix.buffered_for_each(
             buffer_size,
             // fill buffer
-            [&](int row, int col, hop_id id, int n) {
+            [&](idx_t row, idx_t col, hop_id id, idx_t n) {
                 hoppings[n] = num::complex_cast<scalar_t>(lattice.hopping_energy(id));
                 pos1[n] = positions[row];
                 pos2[n] = detail::shifted(positions[col], system);
                 hop_ids[n] = id;
             },
             // process buffer
-            [&](int start_row, int start_idx, int size) {
+            [&](idx_t start_row, idx_t start_idx, idx_t size) {
                 if (size < buffer_size) {
                     hoppings.conservativeResize(size);
                     pos1.conservativeResize(size);
@@ -177,7 +177,7 @@ void HamiltonianModifiers::apply_to_hoppings_impl(SystemOrBoundary const& system
 
                 hopping_csr_matrix.slice_for_each(
                     start_row, start_idx, size,
-                    [&](int row, int col, hop_id, int n) {
+                    [&](idx_t row, idx_t col, hop_id, idx_t n) {
                         if (hoppings[n] != scalar_t{0})
                             lambda(row, col, hoppings[n]);
                     }

@@ -20,7 +20,7 @@ public:
     std::shared_ptr<System const> system() const { return model.system(); }
 
     ArrayXcd calc_greens(int row, int col, ArrayXd const& energy, double broadening) const;
-    std::vector<ArrayXcd> calc_greens_vector(int row, std::vector<int> const& cols,
+    std::vector<ArrayXcd> calc_greens_vector(idx_t row, std::vector<idx_t> const& cols,
                                              ArrayXd const& energy, double broadening) const;
 
     ArrayXd calc_ldos(ArrayXd const& energy, double broadening,

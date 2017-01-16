@@ -95,7 +95,7 @@ namespace cpb {
 template<template<class> class EigenType, class Vector,
          class scalar_t = typename Vector::value_type>
 inline Eigen::Map<EigenType<scalar_t> const> eigen_cast(Vector const& v) {
-    return {v.data(), static_cast<Eigen::Index>(v.size())};
+    return {v.data(), static_cast<idx_t>(v.size())};
 }
 
 // utility functions
@@ -140,24 +140,24 @@ private:
 
 public:
     CartesianArray() = default;
-    CartesianArray(Eigen::Index size) : x(size), y(size), z(size) {}
+    CartesianArray(idx_t size) : x(size), y(size), z(size) {}
     CartesianArray(ArrayXf const& x, ArrayXf const& y, ArrayXf const& z) : x(x), y(y), z(z) {}
 
-    CartesianRef operator[](int i) { return {x[i], y[i], z[i]}; }
-    Cartesian operator[](int i) const { return {x[i], y[i], z[i]}; }
+    CartesianRef operator[](idx_t i) { return {x[i], y[i], z[i]}; }
+    Cartesian operator[](idx_t i) const { return {x[i], y[i], z[i]}; }
 
-    int size() const { return static_cast<int>(x.size()); }
+    idx_t size() const { return x.size(); }
 
     template<class Fn>
     void for_each(Fn lambda) {
         lambda(x); lambda(y); lambda(z);
     }
 
-    void resize(int size) {
+    void resize(idx_t size) {
         for_each([size](ArrayX<float>& a) { a.resize(size); });
     }
 
-    void conservativeResize(int size) {
+    void conservativeResize(idx_t size) {
         for_each([size](ArrayX<float>& a) { a.conservativeResize(size); });
     }
 
@@ -235,7 +235,7 @@ inline ArrayRef arrayref(std::vector<scalar_t>& v) {
 
 /// Range from 0 to `size` of scalar type `T` which does not have to be an integral type
 template<class T>
-ArrayX<T> make_integer_range(Eigen::Index size) {
+ArrayX<T> make_integer_range(idx_t size) {
     auto result = ArrayX<T>(size);
     for (auto n = 0; n < size; ++n) {
         result[n] = static_cast<T>(n);

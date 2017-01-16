@@ -13,7 +13,7 @@ Structure::Structure(Foundation const& foundation, HamiltonianIndices const& ham
 
     indices = [&]{
         auto indices = std::vector<int>();
-        indices.reserve(junction.is_valid.count());
+        indices.reserve(static_cast<size_t>(junction.is_valid.count()));
 
         for (auto const& site : slice) {
             if (junction.is_valid[site.get_slice_idx()]) {

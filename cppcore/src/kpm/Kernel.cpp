@@ -14,17 +14,17 @@ namespace {
 } // anonymous namespace
 
 Kernel jackson_kernel() {
-    using constant::pi;
     return {
-        [=](int N) -> ArrayXd {
+        [](int N) -> ArrayXd {
             auto const Np = N + 1;
             auto const ns = make_integer_range<double>(N);
+            constexpr auto pi = double{constant::pi};
             return ns.unaryExpr([&](double n) { // n is not an integer to get proper fp division
                 return ((Np - n) * cos(pi * n / Np) + sin(pi * n / Np) / tan(pi / Np)) / Np;
             });
         },
-        [=](double scaled_broadening) {
-            auto const n = static_cast<int>(pi / scaled_broadening) + 1;
+        [](double scaled_broadening) {
+            auto const n = static_cast<int>(constant::pi / scaled_broadening) + 1;
             return round_num_moments(n);
         }
     };
