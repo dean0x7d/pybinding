@@ -24,7 +24,7 @@ PYBIND11_PLUGIN(_pybinding) {
     m.def("simd_info", []() -> std::string {
 #if SIMDPP_USE_AVX
         auto const bits = std::to_string(simd::detail::basic_traits::register_size_bytes * 8);
-        return "AVX-" + bits;
+        return (SIMDPP_USE_AVX2 ? "AVX2-" : "AVX-") + bits;
 #elif SIMDPP_USE_SSE3
         return "SSE3";
 #elif SIMDPP_USE_SSE2
