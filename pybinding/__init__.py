@@ -55,8 +55,10 @@ def tests(options=None, plugins=None):
         args.append('--failpath=' + os.getcwd() + '/failed')
         with cd(module_path), pltutils.backend('Agg'):
             args += ['-c', str(module_path / 'tests/local.cfg'), str(module_path)]
-            return pytest.main(args, plugins)
+            error_code = pytest.main(args, plugins)
     else:
         # tests are in dev environment -> use development mode
         with cd(module_path.parent), pltutils.backend('Agg'):
-            return pytest.main(args, plugins)
+            error_code = pytest.main(args, plugins)
+
+    return error_code or None
