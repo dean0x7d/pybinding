@@ -4,6 +4,7 @@ The kernel polynomial method (KPM) can be used to approximate various functions 
 in a series of Chebyshev polynomials.
 """
 import numpy as np
+import scipy
 
 from . import _cpp
 from . import results
@@ -236,7 +237,21 @@ class _PythonImpl:
         self.model = model
         self.energy_range = energy_range
         self.kernel = kernel
-        self.stats = {}
+
+        self._stats = {}
+
+    @property
+    def stats(self):
+        class AttrDict(dict):
+            """Allows dict items to be retrieved as attributes: d["item"] == d.item"""
+            def __init__(self, *args, **kwargs):
+                super().__init__(*args, **kwargs)
+                self.__dict__ = self
+
+        s = AttrDict(self._stats)
+        s.update({k: v.elapsed for k, v in s.items() if "_time" in k})
+        s["eps"] = s["nnz"] / s["moments_time"]
+        return s
 
     def _scaling_factors(self):
         """Compute the energy bounds of the model and return the appropriate KPM scaling factors"""
@@ -250,10 +265,10 @@ class _PythonImpl:
                                  for x in ("SA", "LA")]
             return self.energy_range
 
-        with timed() as self.stats["bounds_time"]:
+        with timed() as self._stats["bounds_time"]:
             emin, emax = find_bounds()
-        self.stats["energy_min"] = emin
-        self.stats["energy_max"] = emax
+        self._stats["energy_min"] = emin
+        self._stats["energy_max"] = emax
 
         tolerance = 0.01
         a = 0.5 * (emax - emin) * (1 + tolerance)
@@ -261,14 +276,11 @@ class _PythonImpl:
         return a, b
 
     def _rescale_hamiltonian(self, h, a, b):
-        from scipy.sparse import eye
-
         size = h.shape[0]
-        with timed() as self.stats["rescale_time"]:
-            return (h - b * eye(size)) * (2 / a)
+        with timed() as self._stats["rescale_time"]:
+            return (h - b * scipy.sparse.eye(size)) * (2 / a)
 
-    @staticmethod
-    def _compute_diagonal_moments(num_moments, starter, h2):
+    def _compute_diagonal_moments(self, num_moments, starter, h2):
         """Procedure for computing KPM moments when the two vectors are identical"""
         r0 = starter.copy()
         r1 = h2.dot(r0) * 0.5
@@ -283,6 +295,11 @@ class _PythonImpl:
             moments[2 * n] = 2 * (np.vdot(r0, r0) - moments[0])
             moments[2 * n + 1] = 2 * np.vdot(r1, r0) - moments[1]
 
+        self._stats["num_moments"] = num_moments
+        self._stats["nnz"] = h2.nnz * num_moments / 2
+        self._stats["vector_memory"] = r0.nbytes + r1.nbytes
+        self._stats["matrix_memory"] = (h2.data.nbytes + h2.indices.nbytes + h2.indptr.nbytes
+                                        if isinstance(h2, scipy.sparse.csr_matrix) else 0)
         return moments
 
     @staticmethod
@@ -307,36 +324,35 @@ class _PythonImpl:
         num_moments = self.kernel.required_num_moments(broadening / a)
         h2 = self._rescale_hamiltonian(self.model.hamiltonian, a, b)
 
-        self.stats["num_moments"] = num_moments
-        self.stats["nnz"] = h2.nnz * num_moments
-
         starter = self._exval_starter(h2, index)
-        with timed() as self.stats["moments_time"]:
+        with timed() as self._stats["moments_time"]:
             moments = self._compute_diagonal_moments(num_moments, starter, h2)
 
-        with timed() as self.stats["reconstruct_time"]:
+        with timed() as self._stats["reconstruct_time"]:
             moments *= self.kernel.damping_coefficients(num_moments)
             return self._reconstruct_real(moments, energy, a, b)
 
     def calc_ldos(self, energy, broadening, position, sublattice=""):
         """Calculate the LDOS at the given position/sublattice"""
-        with timed() as self.stats["total_time"]:
+        with timed() as self._stats["total_time"]:
             index = self.model.system.find_nearest(position, sublattice)
             return self._ldos(index, energy, broadening)
 
     def report(self, *_):
-        from .utils import with_suffix
-        lanczos = "{energy_min:.2f}, {energy_max:.2f} [{bounds_time}]".format_map(self.stats)
-        rescale = "[{}]".format(self.stats["rescale_time"])
+        from .utils import with_suffix, pretty_duration
 
-        num_moments = with_suffix(self.stats["num_moments"])
-        eps = with_suffix(self.stats["nnz"] / self.stats["moments_time"].elapsed)
-        moments = "{} @ {}eps [{}]".format(num_moments, eps, self.stats["moments_time"])
+        stats = self.stats.copy()
+        stats.update({k: with_suffix(stats[k]) for k in ("num_moments", "eps")})
+        stats.update({k: pretty_duration(v) for k, v in stats.items() if "_time" in k})
 
-        reconstruct = "[{reconstruct_time}]".format_map(self.stats)
-
-        report = " ".join([lanczos, rescale, moments, reconstruct])
-        return report + " | {}".format(self.stats["total_time"])
+        fmt = " ".join([
+            "{energy_min:.2f}, {energy_max:.2f} [{bounds_time}]",
+            "[{rescale_time}]",
+            "{num_moments} @ {eps}eps [{moments_time}]",
+            "[{reconstruct_time}]",
+            "| {total_time}"
+        ])
+        return fmt.format_map(stats)
 
 
 def kpm_python(model, energy_range=None, kernel="default", **kwargs):
