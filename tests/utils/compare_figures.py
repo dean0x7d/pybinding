@@ -52,16 +52,6 @@ class CompareFigure:
 
         matplotlib.style.use(style)
         mpl.use('Agg', warn=False)
-        mpl.rcParams['font.family'] = "Bitstream Vera Sans"
-        mpl.rcParams['text.hinting'] = False
-        mpl.rcParams['text.hinting_factor'] = 8
-
-        # Clear the font caches so the text hinting changes take effect.
-        from matplotlib.backends import backend_agg, backend_pdf, backend_svg
-        # noinspection PyProtectedMember
-        backend_agg.RendererAgg._fontd.clear()
-        backend_pdf.RendererPdf.truetype_font_cache.clear()
-        backend_svg.RendererSVG.fontd.clear()
 
     def _exit_style(self):
         mpl.rcParams.clear()
