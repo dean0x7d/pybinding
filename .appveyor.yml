@@ -9,19 +9,24 @@ environment:
   PYPI_PASS:
     secure: gqNQRQIXkXmSul5JkOKj4owHUprr3Q4gJ6U6Mtlgm4M=
   matrix:
-  - CONDA: 35
+  - PYTHON: 3.5
+  - PYTHON: 3.6
 install:
 - git submodule update -q --init --recursive
 - ps: |
+    $env:CONDA = "35"
     if ($env:PLATFORM -eq "x64") {
       $env:CMAKE_ARCH = "x64"
       $env:CONDA = "$env:CONDA-x64"
     }
     $env:AppVeyorLogger = "C:\Program Files\AppVeyor\BuildAgent\Appveyor.MSBuildLogger.dll"
     $env:PATH = "C:\Miniconda$env:CONDA\;C:\Miniconda$env:CONDA\Scripts\;$env:PATH"
-    conda update -y -q conda
-    conda install -y -q numpy scipy matplotlib
-    pip install --disable-pip-version-check pytest py-cpuinfo
+    conda config --set always_yes yes --set changeps1 no
+    conda update -q conda
+    conda create -q -n test-env python=$env:PYTHON numpy scipy matplotlib
+- activate test-env
+- pip install --disable-pip-version-check pytest py-cpuinfo
+- conda info -a
 build_script:
 - mkdir build && cd build && cmake -A "%CMAKE_ARCH%" -DPB_WERROR=ON -DPB_NATIVE_SIMD=OFF ..
 - cmake --build . --config Release -- /m /v:m /logger:"%AppVeyorLogger%"
