@@ -12,9 +12,9 @@ namespace cpb { namespace kpm {
 template<class scalar_t>
 class DiagonalMoments {
 public:
-    DiagonalMoments(int num_moments) : moments(ArrayX<scalar_t>::Zero(num_moments)) {}
+    DiagonalMoments(idx_t num_moments) : moments(ArrayX<scalar_t>::Zero(num_moments)) {}
 
-    int size() const { return static_cast<int>(moments.size()); }
+    idx_t size() const { return moments.size(); }
     ArrayX<scalar_t>& get() { return moments; }
 
     /// Collect the first 2 moments which are computer outside the main KPM loop
@@ -25,11 +25,11 @@ public:
 
     /// Collect moments `n` and `n + 1` from the result vectors. Expects `n >= 2`.
     template<class Vector>
-    CPB_ALWAYS_INLINE void collect(int n, Vector const& r0, Vector const& r1) {
+    CPB_ALWAYS_INLINE void collect(idx_t n, Vector const& r0, Vector const& r1) {
         collect(n, r0.squaredNorm(), r1.dot(r0));
     }
 
-    CPB_ALWAYS_INLINE void collect(int n, scalar_t a, scalar_t b) {
+    CPB_ALWAYS_INLINE void collect(idx_t n, scalar_t a, scalar_t b) {
         assert(n >= 2 && n <= size() / 2);
         moments[2 * (n - 1)] = scalar_t{2} * (a - m0);
         moments[2 * (n - 1) + 1] = scalar_t{2} * b - m1;
@@ -53,14 +53,14 @@ class OffDiagonalMoments {
     using Data = std::vector<MomentsVector>;
 
 public:
-    OffDiagonalMoments(int num_moments, Indices const& idx)
+    OffDiagonalMoments(idx_t num_moments, Indices const& idx)
         : idx(idx), data(idx.cols.size()) {
         for (auto& moments : data) {
             moments.resize(num_moments);
         }
     }
 
-    int size() const { return static_cast<int>(data[0].size()); }
+    idx_t size() const { return data[0].size(); }
     Data& get() { return data; }
 
     /// Collect the first 2 moments which are computer outside the main KPM loop
@@ -75,7 +75,7 @@ public:
     }
 
     /// Collect moment `n` from the result vector `r1`. Expects `n >= 2`.
-    void collect(int n, VectorX<scalar_t> const& r1) {
+    void collect(idx_t n, VectorX<scalar_t> const& r1) {
         assert(n >= 2 && n < data[0].size());
         for (auto i = 0; i < idx.cols.size(); ++i) {
             auto const col = idx.cols[i];

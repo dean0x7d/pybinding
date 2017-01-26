@@ -75,7 +75,7 @@ public:
 
     /// Would calculating this number of moments ever do a full matrix-vector multiplication?
     bool uses_full_system(idx_t num_moments) const {
-        return static_cast<int>(data.size()) < num_moments / 2;
+        return static_cast<idx_t>(data.size()) < num_moments / 2;
     }
 
     idx_t operator[](idx_t i) const { return data[i]; }

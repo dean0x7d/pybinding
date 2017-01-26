@@ -103,11 +103,8 @@ LanczosBounds<real_t> minmax_eigenvalues(SparseMatrixX<scalar_t> const& matrix,
                                          double precision_percent) {
     simd::scope_disable_denormals guard;
 
-    auto const precision = static_cast<real_t>(precision_percent / 100);
-    auto const matrix_size = static_cast<int>(matrix.rows());
-
-    auto v0 = VectorX<scalar_t>::Zero(matrix_size).eval();
-    auto v1 = num::make_random<VectorX<scalar_t>>(matrix_size);
+    auto v0 = VectorX<scalar_t>::Zero(matrix.rows()).eval();
+    auto v1 = num::make_random<VectorX<scalar_t>>(matrix.rows());
     v1.normalize();
 
     // Alpha and beta are the diagonals of the tridiagonal matrix.
@@ -119,6 +116,7 @@ LanczosBounds<real_t> minmax_eigenvalues(SparseMatrixX<scalar_t> const& matrix,
     // Initial values as far away from expected as possible.
     auto previous_min = std::numeric_limits<real_t>::max();
     auto previous_max = std::numeric_limits<real_t>::lowest();
+    auto const precision = static_cast<real_t>(precision_percent / 100);
 
     constexpr auto loop_limit = 1000;
     // This may iterate up to matrix_size, but since only the extreme eigenvalues are required it

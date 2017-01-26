@@ -39,10 +39,11 @@ void wrap_kpm_strategy(py::module& m, char const* name) {
 
 // This will be a lot simpler with C++14 generic lambdas
 struct PyOptHam {
-    using OptHamVariant = var::variant<kpm::OptimizedHamiltonian<float>,
-                                       kpm::OptimizedHamiltonian<double>,
-                                       kpm::OptimizedHamiltonian<std::complex<float>>,
-                                       kpm::OptimizedHamiltonian<std::complex<double>>>;
+    template<class T> using OH = kpm::OptimizedHamiltonian<T>;
+    using OptHamVariant = var::variant<
+        OH<float>, OH<double>, OH<std::complex<float>>, OH<std::complex<double>>
+    >;
+
     Hamiltonian h;
     OptHamVariant oh;
 
@@ -51,7 +52,7 @@ struct PyOptHam {
 
         template<class scalar_t>
         OptHamVariant operator()(SparseMatrixRC<scalar_t> const& m) const {
-            auto ret = kpm::OptimizedHamiltonian<scalar_t>(m.get(), kpm::MatrixFormat::CSR, true);
+            auto ret = OH<scalar_t>(m.get(), kpm::MatrixFormat::CSR, true);
             auto indices = std::vector<idx_t>(m->rows());
             std::iota(indices.begin(), indices.end(), 0);
             auto bounds = kpm::Bounds<scalar_t>(m.get(), kpm::Config{}.lanczos_precision);
@@ -62,7 +63,7 @@ struct PyOptHam {
 
     struct ReturnMatrix {
         template<class scalar_t>
-        ComplexCsrConstRef operator()(kpm::OptimizedHamiltonian<scalar_t> const& oh) const {
+        ComplexCsrConstRef operator()(OH<scalar_t> const& oh) const {
             assert(oh.matrix().template is<SparseMatrixX<scalar_t>>());
             return csrref(oh.matrix().template get<SparseMatrixX<scalar_t>>());
         }
@@ -70,14 +71,14 @@ struct PyOptHam {
 
     struct ReturnSizes {
         template<class scalar_t>
-        std::vector<int> const& operator()(kpm::OptimizedHamiltonian<scalar_t> const& oh) const {
+        std::vector<storage_idx_t> const& operator()(OH<scalar_t> const& oh) const {
             return oh.map().get_data();
         }
     };
 
     struct ReturnIndices {
         template<class scalar_t>
-        ArrayX<storage_idx_t> const& operator()(kpm::OptimizedHamiltonian<scalar_t> const& oh) const {
+        ArrayX<storage_idx_t> const& operator()(OH<scalar_t> const& oh) const {
             return oh.idx().cols;
         }
     };

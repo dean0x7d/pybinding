@@ -93,7 +93,7 @@ void interleaved(Moments& moments, Starter const& starter, Matrix const& h2, Sli
 
     // Interleave moments `n` and `n + 1` for better data locality
     // Diagonal + interleaved computes 4 moments per iteration
-    for (auto n = 2; n <= num_moments / 2; n += 2) {
+    for (auto n = idx_t{2}; n <= num_moments / 2; n += 2) {
         auto m2 = scalar_t{0}, m3 = scalar_t{0}, m4 = scalar_t{0}, m5 = scalar_t{0};
 
         auto const max = map.last_index();
@@ -125,7 +125,7 @@ void opt_size_and_interleaved(Moments& moments, Starter const& starter, Matrix c
     auto const num_moments = moments.size();
     assert((num_moments - 2) % 4 == 0);
 
-    for (auto n = 2; n <= num_moments / 2; n += 2) {
+    for (auto n = idx_t{2}; n <= num_moments / 2; n += 2) {
         auto m2 = scalar_t{0}, m3 = scalar_t{0}, m4 = scalar_t{0}, m5 = scalar_t{0};
 
         auto const max1 = map.index(n, num_moments);
@@ -167,7 +167,7 @@ void basic(Moments& moments, Starter const& starter, Matrix const& h2) {
     moments.collect_initial(r0, r1);
 
     auto const num_moments = moments.size();
-    for (auto n = 2; n < num_moments; ++n) {
+    for (auto n = idx_t{2}; n < num_moments; ++n) {
         moments.pre_process(r0, r1);
         compute::kpm_spmv(0, h2.rows(), h2, r1, r0);
         moments.post_process(r0, r1);
@@ -189,7 +189,7 @@ void opt_size(Moments& moments, Starter const& starter, Matrix const& h2, SliceM
     moments.collect_initial(r0, r1);
 
     auto const num_moments = moments.size();
-    for (auto n = 2; n < num_moments; ++n) {
+    for (auto n = idx_t{2}; n < num_moments; ++n) {
         auto const opt_size = map.optimal_size(n, num_moments);
 
         moments.pre_process(r0, r1);
@@ -216,7 +216,7 @@ void interleaved(Moments& moments, Starter const& starter, Matrix const& h2, Sli
     assert(num_moments % 2 == 0);
 
     // Interleave moments `n` and `n + 1` for better data locality
-    for (auto n = 2; n < num_moments; n += 2) {
+    for (auto n = idx_t{2}; n < num_moments; n += 2) {
         auto const max = map.last_index();
         for (auto k = idx_t{0}, p0 = idx_t{0}, p1 = idx_t{0}; k <= max; ++k) {
             auto const p2 = map[k];
@@ -247,7 +247,7 @@ void opt_size_and_interleaved(Moments& moments, Starter const& starter, Matrix c
     assert(num_moments % 2 == 0);
 
     // Interleave moments `n` and `n + 1` for better data locality
-    for (auto n = 2; n < num_moments; n += 2) {
+    for (auto n = idx_t{2}; n < num_moments; n += 2) {
         auto const max1 = map.index(n, num_moments);
         for (auto k = idx_t{0}, p0 = idx_t{0}, p1 = idx_t{0}; k <= max1; ++k) {
             auto const p2 = map[k];

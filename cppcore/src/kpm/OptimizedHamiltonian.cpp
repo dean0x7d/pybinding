@@ -2,14 +2,14 @@
 
 namespace cpb { namespace kpm {
 
-SliceMap::SliceMap(std::vector<int> indices, Indices const& optimized_idx)
+SliceMap::SliceMap(std::vector<storage_idx_t> indices, Indices const& optimized_idx)
     : data(std::move(indices)) {
     assert(optimized_idx.cols.size() != 0);
     auto const max_index = *std::max_element(begin(optimized_idx.cols), end(optimized_idx.cols));
     auto const it = std::find_if(data.begin(), data.end(),
-                                 [&](int size) { return size > max_index; });
+                                 [&](storage_idx_t index) { return index > max_index; });
     assert(it != data.end());
-    offset = static_cast<int>(it - data.begin());
+    offset = static_cast<idx_t>(it - data.begin());
 }
 
 template<class scalar_t>
@@ -71,12 +71,12 @@ void OptimizedHamiltonian<scalar_t>::create_reordered(Indices const& idx, Scale<
     index_queue.push_back(idx.row); // starting from the given index
 
     // Map from original matrix indices to reordered matrix indices
-    reorder_map = std::vector<int>(system_size, -1); // reset all to invalid state
+    reorder_map = std::vector<storage_idx_t>(system_size, -1); // reset all to invalid state
     // The point of the reordering is to have the target become index number 0
     reorder_map[idx.row] = 0;
 
     // As the reordered matrix is filled, the slice border indices are recorded
-    auto slice_border_indices = std::vector<int>();
+    auto slice_border_indices = std::vector<storage_idx_t>();
     slice_border_indices.push_back(1);
 
     // Fill the reordered matrix row by row
@@ -97,7 +97,7 @@ void OptimizedHamiltonian<scalar_t>::create_reordered(Indices const& idx, Scale<
 
             // This may be a new index, map it
             if (reorder_map[col] < 0) {
-                reorder_map[col] = static_cast<int>(index_queue.size());
+                reorder_map[col] = static_cast<storage_idx_t>(index_queue.size());
                 index_queue.push_back(col);
             }
 
@@ -116,7 +116,7 @@ void OptimizedHamiltonian<scalar_t>::create_reordered(Indices const& idx, Scale<
 
         // Reached the end of a slice
         if (h2_row == slice_border_indices.back() - 1) {
-            slice_border_indices.push_back(static_cast<int>(index_queue.size()));
+            slice_border_indices.push_back(static_cast<storage_idx_t>(index_queue.size()));
         }
     }
     h2.makeCompressed();
@@ -137,7 +137,7 @@ OptimizedHamiltonian<scalar_t>::convert_to_ellpack(SparseMatrixX<scalar_t> const
     auto const h2_csr_loop = sparse::make_loop(h2_csr);
     for (auto row = 0; row < h2_csr.rows(); ++row) {
         auto n = 0;
-        h2_csr_loop.for_each_in_row(row, [&](int col, scalar_t value) {
+        h2_csr_loop.for_each_in_row(row, [&](storage_idx_t col, scalar_t value) {
             h2_ell.data(row, n) = value;
             h2_ell.indices(row, n) = col;
             ++n;
