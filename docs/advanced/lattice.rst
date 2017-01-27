@@ -31,10 +31,10 @@ Intrinsic onsite energy
 -----------------------
 
 During the construction of a :class:`.Lattice` object, the full signature of a sublattice is
-(`name`, `offset`, `onsite_energy=0.0`, `alias=None`), where the last two arguments are optional.
-The `name` and `offset` arguments were already explained in the basic tutorial. The `onsite_energy`
-is applied as an intrinsic part of the sublattice site. As an example, we'll add this term to
-monolayer graphene:
+(`name`, `offset`, `onsite_energy=0.0`), where the last argument is optional. The `name` and
+`offset` arguments were already explained in the basic tutorial. The `onsite_energy` is applied
+as an intrinsic part of the sublattice site. As an example, we'll add this term to monolayer
+graphene:
 
 .. plot::
     :context: close-figs
@@ -96,10 +96,10 @@ We can create a 4-atom cell by adding two more sublattice to the :class:`.Lattic
 
     def monolayer_graphene_4atom():
         lat = pb.Lattice(a1=[a, 0], a2=[0, 3*a_cc])
-        lat.add_sublattices(('A',  [  0, -a_cc/2], 0),
-                            ('B',  [  0,  a_cc/2], 0),
-                            ('A2', [a/2,    a_cc], 0),
-                            ('B2', [a/2,  2*a_cc], 0))
+        lat.add_sublattices(('A',  [  0, -a_cc/2]),
+                            ('B',  [  0,  a_cc/2]),
+                            ('A2', [a/2,    a_cc]),
+                            ('B2', [a/2,  2*a_cc]))
         lat.add_hoppings(
             # inside the unit sell
             ([0, 0], 'A',  'B',  t),
@@ -118,19 +118,17 @@ We can create a 4-atom cell by adding two more sublattice to the :class:`.Lattic
 
 Note the additional sublattices A2 and B2, shown in green and red in the figure. As defined above,
 these are interpreted as new and distinct lattice sites. However, we would like to have sublattices
-A2 and B2 be equivalent to A and B. This is where the fourth argument of the sublattice signature
-comes in: (`name`, `offset`, `onsite_energy=0.0`, `alias=None`). Setting the `alias` parameter will
-make the new entry equivalent to an existing sublattice:
+A2 and B2 be equivalent to A and B. :meth:`.Lattice.add_aliases` does exactly that:
 
 .. plot::
     :context: close-figs
 
     def monolayer_graphene_4atom():
         lat = pb.Lattice(a1=[a, 0], a2=[0, 3*a_cc])
-        lat.add_sublattices(('A',  [  0, -a_cc/2], 0),
-                            ('B',  [  0,  a_cc/2], 0),
-                            ('A2', [a/2,    a_cc], 0, 'A'),
-                            ('B2', [a/2,  2*a_cc], 0, 'B'))
+        lat.add_sublattices(('A',  [  0, -a_cc/2]),
+                            ('B',  [  0,  a_cc/2]))
+        lat.add_aliases(('A2', 'A', [a/2, a_cc]),
+                        ('B2', 'B', [a/2, 2*a_cc]))
         lat.add_hoppings(
             # inside the unit sell
             ([0, 0], 'A',  'B',  t),

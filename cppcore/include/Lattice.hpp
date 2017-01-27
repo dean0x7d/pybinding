@@ -6,6 +6,9 @@
 
 namespace cpb {
 
+// TODO: replace with proper string_view
+using string_view = std::string const&;
+
 /// Sublattice and hopping ID data types
 using sub_id = std::int8_t;
 using hop_id = std::int8_t;
@@ -76,8 +79,10 @@ public:
         : vectors(std::move(v)), sites(std::move(s)), hoppings(std::move(h)) {}
 
     /// Create a new sublattice
-    void add_sublattice(std::string const& name, Cartesian position = {0, 0, 0},
-                        double onsite_energy = .0, std::string const& alias = "");
+    void add_sublattice(string_view name, Cartesian position, double onsite_energy = .0);
+
+    /// Create a sublattice which an alias for an existing lattice at a different position
+    void add_alias(string_view name, string_view original, Cartesian position);
 
     /// Associate a name with a hopping energy, but don't connect any sites
     void register_hopping_energy(std::string const& name, std::complex<double> energy);
@@ -146,6 +151,9 @@ public: // utilities
      where a1, a2 and a3 are lattice vectors. Note that the return vector is `float`.
      */
     Vector3f translate_coordinates(Cartesian position) const;
+
+private:
+    sub_id register_sublattice(string_view name);
 
 private:
     Vectors vectors; ///< primitive vectors that define the lattice

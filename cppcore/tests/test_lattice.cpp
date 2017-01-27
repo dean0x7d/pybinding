@@ -16,22 +16,23 @@ TEST_CASE("Lattice") {
     REQUIRE(lattice.max_hoppings() == 0);
 
     SECTION("Add sublattices") {
-        REQUIRE_THROWS(lattice.add_sublattice(""));
+        REQUIRE_THROWS(lattice.add_sublattice("", {0, 0, 0}));
 
-        lattice.add_sublattice("A");
+        lattice.add_sublattice("A", {0, 0, 0});
         REQUIRE_FALSE(lattice.has_onsite_energy());
-        REQUIRE_THROWS(lattice.add_sublattice("A"));
+        REQUIRE_THROWS(lattice.add_sublattice("A", {0, 0, 0}));
 
         lattice.add_sublattice("B", {0, 0, 0}, 1.0);
         REQUIRE(lattice.has_onsite_energy());
 
-        lattice.add_sublattice("B2", {1, 0, 0}, 1.0, "B");
-        REQUIRE_THROWS(lattice.add_sublattice("B3", {2, 0, 0}, 1.0, "bad_name"));
+        lattice.add_alias("B2", "B", {1, 0, 0});
+        REQUIRE_THROWS(lattice.add_alias("B3", "bad_name", {2, 0, 0}));
+        REQUIRE_THROWS(lattice.add_alias("B4", "B4", {2, 0, 0}));
 
         while (lattice.nsub() != std::numeric_limits<sub_id>::max() + 1) {
-            lattice.add_sublattice(std::to_string(lattice.nsub()));
+            lattice.add_sublattice(std::to_string(lattice.nsub()), {0, 0, 0});
         }
-        REQUIRE_THROWS(lattice.add_sublattice("overflow"));
+        REQUIRE_THROWS(lattice.add_sublattice("overflow", {0, 0, 0}));
     }
 
     SECTION("Register hoppings") {
@@ -52,8 +53,8 @@ TEST_CASE("Lattice") {
     }
 
     SECTION("Add hoppings") {
-        lattice.add_sublattice("A");
-        lattice.add_sublattice("B");
+        lattice.add_sublattice("A", {0, 0, 0});
+        lattice.add_sublattice("B", {0, 0, 0});
         lattice.register_hopping_energy("t1", 1.0);
 
         REQUIRE_THROWS(lattice.add_registered_hopping({0, 0, 0}, "A", "A", "t1"));

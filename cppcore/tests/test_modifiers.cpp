@@ -74,8 +74,8 @@ TEST_CASE("HoppingEnergyModifier") {
 TEST_CASE("HoppingGenerator") {
     auto model = Model([]{
         auto lattice = Lattice({1, 0, 0}, {0, 1, 0});
-        lattice.add_sublattice("A");
-        lattice.add_sublattice("B");
+        lattice.add_sublattice("A", {0, 0, 0});
+        lattice.add_sublattice("B", {0, 0, 0});
         lattice.register_hopping_energy("t1", 1.0);
         return lattice;
     }());

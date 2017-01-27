@@ -1,5 +1,11 @@
 # Changelog
 
+### v0.9.0 | in development
+
+* Added `Lattice.add_aliases()` method. The old `Lattice.add_sublattice(..., alias=name)` way of
+  creating aliases is deprecated.
+
+
 ### v0.8.2 | 2017-01-26
 
 * Added support for Python 3.6 (pybinding is available as a binary wheel for Windows and macOS).

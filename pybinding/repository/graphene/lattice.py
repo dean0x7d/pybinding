@@ -103,12 +103,11 @@ def monolayer_4atom(onsite=(0, 0)):
 
     lat = pb.Lattice(a1=[a, 0], a2=[0, 3*a_cc])
 
-    lat.add_sublattices(
-        ('A',  [  0, -a_cc/2], onsite[0]),
-        ('B',  [  0,  a_cc/2], onsite[1]),
-        ('A2', [a/2,    a_cc], onsite[0], 'A'),
-        ('B2', [a/2,  2*a_cc], onsite[1], 'B')
-    )
+    lat.add_sublattices(('A',  [  0, -a_cc/2], onsite[0]),
+                        ('B',  [  0,  a_cc/2], onsite[1]))
+
+    lat.add_aliases(('A2', 'A', [a / 2, a_cc]),
+                    ('B2', 'B', [a / 2, 2 * a_cc]))
 
     lat.add_hoppings(
         # inside the unit sell

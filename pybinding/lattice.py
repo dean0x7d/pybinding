@@ -1,5 +1,6 @@
 """Crystal lattice specification"""
 import itertools
+import warnings
 from copy import deepcopy
 from math import pi, atan2, sqrt
 
@@ -128,12 +129,13 @@ class Lattice:
         onsite_energy : float
             Onsite energy to be applied only to sites of this sublattice.
         alias : str
-            Given the name of a previously defined sublattice, the new sublattice
-            is created as an alias for the old one. This is useful when defining
-            a supercell which contains multiple sites of one sublattice family at
-            different positions.
+            Deprecated: Use :meth:`add_one_alias` instead.
         """
-        self.impl.add_sublattice(name, position, onsite_energy, alias)
+        if alias:
+            warnings.warn("Use Lattice.add_aliases() instead", DeprecationWarning, stacklevel=2)
+            self.add_one_alias(name, alias, position)
+        else:
+            self.impl.add_sublattice(name, position, onsite_energy)
 
     def add_sublattices(self, *sublattices):
         """Add multiple new sublattices
@@ -162,6 +164,38 @@ class Lattice:
         """
         for sub in sublattices:
             self.add_one_sublattice(*sub)
+
+    def add_one_alias(self, name, original, position):
+        """Add a sublattice alias - useful for creating supercells
+
+        Create a new sublattice called `name` with the same properties as `original`
+        (same onsite energy) but with at a different `position`. The new `name` is
+        only used during lattice construction and the `original` will be used for the
+        final system and Hamiltonian. This is useful when defining a supercell which
+        contains multiple sites of one sublattice family at different positions.
+
+        Parameters
+        ----------
+        name : str
+           User-friendly identifier of the alias.
+        original : str
+           Name of the original sublattice. It must already exist.
+        position : array_like
+           Cartesian position with respect to the origin. Usually different than the original.
+        """
+        self.impl.add_alias(name, original, position)
+
+    def add_aliases(self, *aliases):
+        """Add multiple new aliases
+
+        Parameters
+        ----------
+        *aliases
+            Each element should be a tuple containing the arguments for
+            :meth:`add_one_alias`. Works just like :meth:`add_sublattices`.
+        """
+        for alias in aliases:
+            self.add_one_alias(*alias)
 
     def add_one_hopping(self, relative_index, from_sub, to_sub, hop_name_or_energy):
         """Add a new hopping

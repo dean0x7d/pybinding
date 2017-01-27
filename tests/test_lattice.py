@@ -76,7 +76,7 @@ def test_add_sublattice(mock_lattice):
 
 def test_add_sublattice_alias(mock_lattice):
     c_position = [0, 9]
-    mock_lattice.add_one_sublattice('c', c_position, alias='a')
+    mock_lattice.add_one_alias("c", "a", c_position)
     model = pb.Model(mock_lattice)
     c_index = model.system.find_nearest(c_position)
 
@@ -84,8 +84,10 @@ def test_add_sublattice_alias(mock_lattice):
     assert model.system.sublattices[c_index] == mock_lattice['a']
 
     with pytest.raises(IndexError) as excinfo:
-        mock_lattice.add_one_sublattice('d', [0, 0], alias='bad_name')
+        mock_lattice.add_one_alias('d', 'bad_name', [0, 0])
     assert "There is no sublattice named 'bad_name'" in str(excinfo.value)
+
+    pytest.deprecated_call(mock_lattice.add_one_sublattice, "z", c_position, alias="a")
 
 
 def test_add_hopping(mock_lattice):

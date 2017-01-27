@@ -35,22 +35,16 @@ Lattice::Lattice(Cartesian a1, Cartesian a2, Cartesian a3) {
     vectors.shrink_to_fit();
 }
 
-void Lattice::add_sublattice(std::string const& name, Cartesian position,
-                             double onsite_energy, std::string const& alias) {
-    if (name.empty()) { throw std::logic_error("Sublattice name can't be blank"); }
-
-    constexpr auto max_size = static_cast<size_t>(std::numeric_limits<sub_id>::max());
-    if (sites.structure.size() > max_size) {
-        throw std::logic_error("Exceeded maximum number of unique sublattices: "
-                               + std::to_string(max_size));
-    }
-
-    auto const id = static_cast<sub_id>(sites.structure.size());
-    auto const is_unique_name = sites.id.emplace(name, id).second;
-    if (!is_unique_name) { throw std::logic_error("Sublattice '" + name + "' already exists"); }
-
-    sites.structure.push_back({position, alias.empty() ? id : sites.id_lookup(alias), {}});
+void Lattice::add_sublattice(string_view name, Cartesian position, double onsite_energy) {
+    auto const id = register_sublattice(name);
+    sites.structure.push_back({position, id, {}});
     sites.energy.push_back(onsite_energy);
+}
+
+void Lattice::add_alias(string_view name, string_view original, Cartesian position) {
+    auto const id = sites.id_lookup(original);
+    register_sublattice(name);
+    sites.structure.push_back({position, id, {}});
 }
 
 void Lattice::register_hopping_energy(std::string const& name, std::complex<double> energy) {
@@ -176,6 +170,22 @@ bool Lattice::has_onsite_energy() const {
 bool Lattice::has_complex_hoppings() const {
     return std::any_of(hoppings.energy.begin(), hoppings.energy.end(),
                        [](std::complex<double> e) { return e.imag() != .0; });
+}
+
+sub_id Lattice::register_sublattice(std::string const& name) {
+    if (name.empty()) { throw std::logic_error("Sublattice name can't be blank"); }
+
+    constexpr auto max_size = static_cast<size_t>(std::numeric_limits<sub_id>::max());
+    if (sites.structure.size() > max_size) {
+        throw std::logic_error("Exceeded maximum number of unique sublattices: "
+                               + std::to_string(max_size));
+    }
+
+    auto const id = static_cast<sub_id>(sites.structure.size());
+    auto const is_unique_name = sites.id.emplace(name, id).second;
+    if (!is_unique_name) { throw std::logic_error("Sublattice '" + name + "' already exists"); }
+
+    return id;
 }
 
 } // namespace cpb

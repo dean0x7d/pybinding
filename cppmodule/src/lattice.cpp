@@ -64,8 +64,8 @@ void wrap_lattice(py::module& m) {
     py::class_<Lattice>(m, "Lattice")
         .def(py::init<Cartesian, Cartesian, Cartesian>(),
              "a1"_a, "a2"_a=Cartesian{0, 0, 0}, "a3"_a=Cartesian{0, 0, 0})
-        .def("add_sublattice", &Lattice::add_sublattice,
-             "name"_a, "offset"_a, "onsite_potential"_a, "alias"_a)
+        .def("add_sublattice", &Lattice::add_sublattice)
+        .def("add_alias", &Lattice::add_alias)
         .def("register_hopping_energy", &Lattice::register_hopping_energy, "name"_a, "energy"_a)
         .def("add_hopping", &Lattice::add_hopping,
              "relative_index"_a, "from_sublattice"_a, "to_sublattice"_a, "energy"_a)
