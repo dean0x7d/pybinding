@@ -2,6 +2,9 @@
 
 #include <Eigen/Dense>  // for `colPivHouseholderQr()`
 
+#include <support/format.hpp>
+using namespace fmt::literals;
+
 namespace cpb {
 
 void Sublattice::add_hopping(Index3D relative_index, sub_id to_sub, hop_id hop, bool is_conj) {
@@ -36,6 +39,28 @@ Lattice::Lattice(Cartesian a1, Cartesian a2, Cartesian a3) {
 }
 
 void Lattice::add_sublattice(string_view name, Cartesian position, double onsite_energy) {
+    add_sublattice(name, position, MatrixXcd::Constant(1, 1, onsite_energy).eval());
+}
+
+void Lattice::add_sublattice(string_view name, Cartesian position, VectorXd const& onsite_energy) {
+    auto const size = onsite_energy.size();
+    auto mat = MatrixXcd::Zero(size, size).eval();
+    mat.diagonal() = onsite_energy.cast<std::complex<double>>();
+    add_sublattice(name, position, mat);
+}
+
+void Lattice::add_sublattice(string_view name, Cartesian position,
+                             MatrixXcd const& onsite_energy) {
+    if (onsite_energy.rows() != onsite_energy.cols()) {
+        throw std::logic_error("The onsite hopping term must be a real vector or a square matrix");
+    }
+    if (!onsite_energy.diagonal().imag().isZero()) {
+        throw std::logic_error("The main diagonal of the onsite hopping term must be real");
+    }
+    if (!onsite_energy.isUpperTriangular() && onsite_energy != onsite_energy.adjoint()) {
+        throw std::logic_error("The onsite hopping matrix must be upper triangular or Hermitian");
+    }
+
     auto const id = register_sublattice(name);
     sites.structure.push_back({position, id, {}});
     sites.energy.push_back(onsite_energy);
@@ -48,6 +73,10 @@ void Lattice::add_alias(string_view name, string_view original, Cartesian positi
 }
 
 void Lattice::register_hopping_energy(std::string const& name, std::complex<double> energy) {
+    register_hopping_energy(name, MatrixXcd::Constant(1, 1, energy));
+}
+
+void Lattice::register_hopping_energy(std::string const& name, MatrixXcd const& energy) {
     if (name.empty()) { throw std::logic_error("Hopping name can't be blank"); }
 
     constexpr auto max_size = static_cast<size_t>(std::numeric_limits<hop_id>::max());
@@ -63,8 +92,8 @@ void Lattice::register_hopping_energy(std::string const& name, std::complex<doub
     hoppings.energy.push_back(energy);
 }
 
-void Lattice::add_registered_hopping(Index3D relative_index, std::string const& from_sub,
-                                     std::string const& to_sub, std::string const& hopping) {
+void Lattice::add_hopping(Index3D relative_index, string_view from_sub, string_view to_sub,
+                          string_view hopping) {
     if (from_sub == to_sub && relative_index == Index3D::Zero()) {
         throw std::logic_error(
             "Hoppings from/to the same sublattice must have a non-zero relative "
@@ -76,13 +105,30 @@ void Lattice::add_registered_hopping(Index3D relative_index, std::string const& 
     auto const to_id = sites.id_lookup(to_sub);
     auto const hopping_id = hoppings.id_lookup(hopping);
 
+    auto const from_size = sites.energy[sites.structure[from_id].alias].rows();
+    auto const to_size = sites.energy[sites.structure[to_id].alias].rows();
+    auto const hop_matrix = hoppings.energy[hopping_id];
+
+    if (from_size != hop_matrix.rows() || to_size != hop_matrix.cols()) {
+        throw std::logic_error(
+            "Hopping size mismatch: from '{}' ({}) to '{}' ({}) with matrix '{}' ({}, {})"_format(
+                from_sub, from_size, to_sub, to_size, hopping, hop_matrix.rows(), hop_matrix.cols()
+            )
+        );
+    }
+
     // the other sublattice has an opposite relative index
     sites.structure[from_id].add_hopping(relative_index, to_id, hopping_id, /*is_conjugate*/false);
     sites.structure[to_id].add_hopping(-relative_index, from_id, hopping_id, /*is_conjugate*/true);
 }
 
-void Lattice::add_hopping(Index3D rel_index, std::string const& from_sub,
-                          std::string const& to_sub, std::complex<double> energy) {
+void Lattice::add_hopping(Index3D relative_index, string_view from_sub, string_view to_sub,
+                          std::complex<double> energy) {
+    add_hopping(relative_index, from_sub, to_sub, MatrixXcd::Constant(1, 1, energy));
+}
+
+void Lattice::add_hopping(Index3D relative_index, string_view from_sub, string_view to_sub,
+                          MatrixXcd const& energy) {
     auto const hopping_name = [&] {
         // Look for an existing hopping ID with the same energy
         auto const it = std::find(hoppings.energy.begin(), hoppings.energy.end(), energy);
@@ -93,13 +139,13 @@ void Lattice::add_hopping(Index3D rel_index, std::string const& from_sub,
             }
             return std::string("This should never happen.");
         } else {
-            auto const name = "__anonymous__" + std::to_string(hoppings.energy.size());
+            auto const name = "__anonymous__{}"_format(hoppings.energy.size());
             register_hopping_energy(name, energy);
             return name;
         }
     }();
 
-    add_registered_hopping(rel_index, from_sub, to_sub, hopping_name);
+    add_hopping(relative_index, from_sub, to_sub, hopping_name);
 }
 
 void Lattice::set_offset(Cartesian position) {
@@ -111,13 +157,17 @@ void Lattice::set_offset(Cartesian position) {
 }
 
 int Lattice::max_hoppings() const {
-    auto max_size = 0;
-    for (auto& sub : sites.structure) {
-        auto const size = static_cast<int>(sub.hoppings.size());
-        if (size > max_size)
-            max_size = size;
+    auto result = idx_t{0};
+    for (auto const& sub : sites.structure) {
+        auto const num_scalar_hoppings = std::accumulate(
+            sub.hoppings.begin(), sub.hoppings.end(),
+            sites.energy[sub.alias].cols() - 1, // scalar hops in onsite matrix (-1 for diagonal)
+            [&](idx_t n, Hopping const& hop) { return n + hoppings.energy[hop.id].cols(); }
+        );
+
+        result = std::max(result, num_scalar_hoppings);
     }
-    return max_size;
+    return static_cast<int>(result);
 }
 
 Cartesian Lattice::calc_position(Index3D index, std::string const& sub) const {
@@ -164,15 +214,20 @@ Lattice Lattice::with_min_neighbors(int number) const {
 
 bool Lattice::has_onsite_energy() const {
     return std::any_of(sites.energy.begin(), sites.energy.end(),
-                       [](double e) { return e != .0; });
+                       [](MatrixXcd const& e) { return !e.diagonal().isZero(); });
+}
+
+bool Lattice::has_multiple_orbitals() const {
+    return std::any_of(sites.energy.begin(), sites.energy.end(),
+                       [](MatrixXcd const& e) { return e.cols() != 1; });
 }
 
 bool Lattice::has_complex_hoppings() const {
     return std::any_of(hoppings.energy.begin(), hoppings.energy.end(),
-                       [](std::complex<double> e) { return e.imag() != .0; });
+                       [](MatrixXcd const& e) { return !e.imag().isZero(); });
 }
 
-sub_id Lattice::register_sublattice(std::string const& name) {
+sub_id Lattice::register_sublattice(string_view name) {
     if (name.empty()) { throw std::logic_error("Sublattice name can't be blank"); }
 
     constexpr auto max_size = static_cast<size_t>(std::numeric_limits<sub_id>::max());

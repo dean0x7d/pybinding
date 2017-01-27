@@ -9,8 +9,8 @@ Lattice square(float a, float t) {
     lattice.add_sublattice("A", {0, 0, 0}, 4 * t);
 
     lattice.register_hopping_energy("-t", -t);
-    lattice.add_registered_hopping({0, 1, 0}, "A", "A", "-t");
-    lattice.add_registered_hopping({1, 0, 0}, "A", "A", "-t");
+    lattice.add_hopping({0, 1, 0}, "A", "A", "-t");
+    lattice.add_hopping({1, 0, 0}, "A", "A", "-t");
 
     return lattice;
 }
@@ -24,9 +24,9 @@ Lattice square_2atom(float a, float t1, float t2) {
     lattice.register_hopping_energy("t1", t1);
     lattice.register_hopping_energy("t2", t2);
 
-    lattice.add_registered_hopping({0, 0, 0}, "A", "B", "t1");
-    lattice.add_registered_hopping({1, 1, 0}, "A", "B", "t1");
-    lattice.add_registered_hopping({1, 0, 0}, "A", "A", "t2");
+    lattice.add_hopping({0, 0, 0}, "A", "B", "t1");
+    lattice.add_hopping({1, 1, 0}, "A", "B", "t1");
+    lattice.add_hopping({1, 0, 0}, "A", "A", "t2");
 
     return lattice;
 }
@@ -42,9 +42,9 @@ Lattice monolayer() {
     lattice.add_sublattice("B", {0,  a_cc/2, 0});
 
     lattice.register_hopping_energy("t", t);
-    lattice.add_registered_hopping({0,  0, 0}, "A", "B", "t");
-    lattice.add_registered_hopping({1, -1, 0}, "A", "B", "t");
-    lattice.add_registered_hopping({0, -1, 0}, "A", "B", "t");
+    lattice.add_hopping({0,  0, 0}, "A", "B", "t");
+    lattice.add_hopping({1, -1, 0}, "A", "B", "t");
+    lattice.add_hopping({0, -1, 0}, "A", "B", "t");
 
     return lattice;
 }

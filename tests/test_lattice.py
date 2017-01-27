@@ -74,6 +74,37 @@ def test_add_sublattice(mock_lattice):
     assert "Exceeded maximum number of unique sublattices" in str(excinfo.value)
 
 
+def test_add_multiorbital_sublattice(mock_lattice):
+    mock_lattice.add_one_sublattice("C", [0, 0], [1, 2, 3])
+    mock_lattice.add_one_sublattice("D", [0, 0], [[1, 2, 3],
+                                                  [0, 4, 5],
+                                                  [0, 0, 6]])
+    mock_lattice.add_one_sublattice("E", [0, 0], [[1, 2, 3],
+                                                  [2, 4, 5],
+                                                  [3, 5, 6]])
+
+    with pytest.raises(RuntimeError) as excinfo:
+        mock_lattice.add_one_sublattice("complex onsite energy", [0, 0], [1j, 2j, 3j])
+    assert "must be a real vector or a square matrix" in str(excinfo.value)
+
+    with pytest.raises(RuntimeError) as excinfo:
+        mock_lattice.add_one_sublattice("not square", [0, 0], [[1, 2, 3],
+                                                               [4, 5, 6]])
+    assert "must be a real vector or a square matrix" in str(excinfo.value)
+
+    with pytest.raises(RuntimeError) as excinfo:
+        mock_lattice.add_one_sublattice("not square", [0, 0], [[1j, 2,  3],
+                                                               [2,  4j, 5],
+                                                               [3,  5,  6j]])
+    assert "The main diagonal of the onsite hopping term must be real" in str(excinfo.value)
+
+    with pytest.raises(RuntimeError) as excinfo:
+        mock_lattice.add_one_sublattice("not Hermitian", [0, 0], [[1, 2, 3],
+                                                                  [4, 5, 6],
+                                                                  [7, 8, 9]])
+    assert "The onsite hopping matrix must be upper triangular or Hermitian" in str(excinfo.value)
+
+
 def test_add_sublattice_alias(mock_lattice):
     c_position = [0, 9]
     mock_lattice.add_one_alias("c", "a", c_position)
@@ -132,6 +163,40 @@ def test_add_hopping(mock_lattice):
         for i in range(1, 128):
             mock_lattice.add_one_hopping((0, i), 'a', 'b', i)
     assert "Exceeded maximum number of unique hoppings energies" in str(excinfo.value)
+
+
+def test_add_matrix_hopping(mock_lattice):
+    mock_lattice.add_sublattices(
+        ("A2", [0, 0], [1, 2]),
+        ("B2", [0, 0], [1, 2]),
+        ("C3", [0, 0], [1, 2, 3]),
+    )
+
+    mock_lattice.register_hopping_energies({
+        "t22": [[1, 2],
+                [3, 4]],
+        "t23": [[1, 2, 3],
+                [4, 5, 6]],
+    })
+
+    mock_lattice.add_hoppings(
+        ([0, 0], "A2", "B2", "t22"),
+        ([1, 0], "A2", "A2", "t22"),
+        ([0, 0], "A2", "C3", "t23"),
+        ([1, 0], "A2", "C3", "t23"),
+    )
+
+    with pytest.raises(RuntimeError) as excinfo:
+        mock_lattice.add_one_hopping([0, 0], 'A2', 'A2', "t22")
+    assert "Don't define onsite energy here" in str(excinfo.value)
+
+    with pytest.raises(RuntimeError) as excinfo:
+        mock_lattice.add_one_hopping([0, 0], 'B2', 'C3', "t22")
+    assert "size mismatch: from 'B2' (2) to 'C3' (3) with matrix 't22' (2, 2)" in str(excinfo.value)
+
+    with pytest.raises(RuntimeError) as excinfo:
+        mock_lattice.add_one_hopping([0, 0], 'C3', 'B2', "t23")
+    assert "size mismatch: from 'C3' (3) to 'B2' (2) with matrix 't23' (2, 3)" in str(excinfo.value)
 
 
 def test_builder():

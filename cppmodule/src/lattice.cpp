@@ -64,13 +64,23 @@ void wrap_lattice(py::module& m) {
     py::class_<Lattice>(m, "Lattice")
         .def(py::init<Cartesian, Cartesian, Cartesian>(),
              "a1"_a, "a2"_a=Cartesian{0, 0, 0}, "a3"_a=Cartesian{0, 0, 0})
-        .def("add_sublattice", &Lattice::add_sublattice)
+        .def("add_sublattice",
+             &Lattice::add_sublattice | resolve<string_view, Cartesian, double>())
+        .def("add_sublattice",
+             &Lattice::add_sublattice | resolve<string_view, Cartesian, VectorXd const&>())
+        .def("add_sublattice",
+             &Lattice::add_sublattice | resolve<string_view, Cartesian, MatrixXcd const&>())
         .def("add_alias", &Lattice::add_alias)
-        .def("register_hopping_energy", &Lattice::register_hopping_energy, "name"_a, "energy"_a)
-        .def("add_hopping", &Lattice::add_hopping,
-             "relative_index"_a, "from_sublattice"_a, "to_sublattice"_a, "energy"_a)
-        .def("add_hopping", &Lattice::add_registered_hopping,
-             "relative_index"_a, "from_sublattice"_a, "to_sublattice"_a, "name"_a)
+        .def("register_hopping_energy",
+             &Lattice::register_hopping_energy | resolve<string_view, std::complex<double>>())
+        .def("register_hopping_energy",
+             &Lattice::register_hopping_energy | resolve<string_view, MatrixXcd const&>())
+        .def("add_hopping",
+             &Lattice::add_hopping | resolve<Index3D, string_view, string_view, string_view>())
+        .def("add_hopping",
+             &Lattice::add_hopping | resolve<Index3D, string_view, string_view, std::complex<double>>())
+        .def("add_hopping",
+             &Lattice::add_hopping | resolve<Index3D, string_view, string_view, MatrixXcd const&>())
         .def_property_readonly("vectors", &Lattice::get_vectors)
         .def_property_readonly("sublattices",
                                [](Lattice const& l) { return l.get_sites().structure; })

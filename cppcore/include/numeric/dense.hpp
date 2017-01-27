@@ -6,6 +6,7 @@
 #include <Eigen/Core>
 
 #include <algorithm>
+#include <numeric>
 #include <vector>
 
 namespace cpb {
@@ -42,6 +43,10 @@ using Eigen::VectorXf;
 using Eigen::VectorXcf;
 using Eigen::VectorXd;
 using Eigen::VectorXcd;
+using Eigen::MatrixXf;
+using Eigen::MatrixXcf;
+using Eigen::MatrixXd;
+using Eigen::MatrixXcd;
 
 // convenient type aliases
 using Cartesian = Eigen::Vector3f;

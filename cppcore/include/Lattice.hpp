@@ -59,7 +59,7 @@ public:
 
     struct Sites {
         std::vector<Sublattice> structure; ///< positional data and aliases
-        std::vector<double> energy; ///< onsite energy indexed by sub_id
+        std::vector<MatrixXcd> energy; ///< onsite energy indexed by sub_id
         std::unordered_map<std::string, sub_id> id; ///< map from friendly name to numeric ID
 
         sub_id id_lookup(std::string const& name) const;
@@ -67,7 +67,7 @@ public:
 
     struct Hoppings {
         std::vector<Hopping> structure; ///< which sites are connected by hoppings
-        std::vector<std::complex<double>> energy; ///< unique energies indexed by hop_id
+        std::vector<MatrixXcd> energy; ///< unique energies indexed by hop_id
         std::unordered_map<std::string, hop_id> id; ///< map from friendly name to numeric ID
 
         hop_id id_lookup(std::string const& name) const;
@@ -80,20 +80,25 @@ public:
 
     /// Create a new sublattice
     void add_sublattice(string_view name, Cartesian position, double onsite_energy = .0);
+    void add_sublattice(string_view name, Cartesian position, VectorXd const& onsite_energy);
+    void add_sublattice(string_view name, Cartesian position, MatrixXcd const& onsite_energy);
 
     /// Create a sublattice which an alias for an existing lattice at a different position
     void add_alias(string_view name, string_view original, Cartesian position);
 
     /// Associate a name with a hopping energy, but don't connect any sites
-    void register_hopping_energy(std::string const& name, std::complex<double> energy);
+    void register_hopping_energy(string_view name, std::complex<double> energy);
+    void register_hopping_energy(string_view name, MatrixXcd const& energy);
 
     /// Connect sites with an already registered hopping name/energy
-    void add_registered_hopping(Index3D relative_index, std::string const& from_sublattice,
-                                std::string const& to_sublattice, std::string const& hopping);
+    void add_hopping(Index3D relative_index, string_view from_sub, string_view to_sub,
+                     string_view hopping);
 
     /// Connect sites with an anonymous hopping energy
-    void add_hopping(Index3D relative_index, std::string const& from_sublattice,
-                     std::string const& to_sublattice, std::complex<double> energy);
+    void add_hopping(Index3D relative_index, string_view from_sub, string_view to_sub,
+                     std::complex<double> energy);
+    void add_hopping(Index3D relative_index, string_view from_sub, string_view to_sub,
+                     MatrixXcd const& energy);
 
 public: // getters and setters
     /// The primitive vectors that define the lattice
@@ -110,7 +115,7 @@ public: // getters and setters
     /// Return a copy of this lattice with a different offset
     Lattice with_offset(Cartesian position) const;
 
-    /// Any site which has less neighbors than this minumum will be considered as "dangling"
+    /// Any site which has less neighbors than this minimum will be considered as "dangling"
     int get_min_neighbors() const { return min_neighbors; }
     /// Set the minimum number of neighbors for any site
     void set_min_neighbors(int n) { min_neighbors = n; }
@@ -126,14 +131,16 @@ public: // properties
     /// Get a single vector -- Expects: index < lattice.ndim()
     Cartesian vector(size_t index) const { return vectors[index]; }
     /// Onsite energy on the given sublattice
-    double onsite_energy(sub_id id) const { return sites.energy[id]; }
+    double onsite_energy(sub_id id) const { return sites.energy[id].real()(0, 0); }
     /// Hopping energy for the specified ID
-    std::complex<double> hopping_energy(hop_id id) const { return hoppings.energy[id]; }
+    std::complex<double> hopping_energy(hop_id id) const { return hoppings.energy[id](0, 0); }
 
     /// Get the maximum possible number of hoppings from any site of this lattice
     int max_hoppings() const;
     /// Does at least one sublattice have non-zero onsite energy?
     bool has_onsite_energy() const;
+    /// Does at least one sublattice have multiple orbitals?
+    bool has_multiple_orbitals() const;
     /// Is at least one hopping complex?
     bool has_complex_hoppings() const;
 
