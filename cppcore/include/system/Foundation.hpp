@@ -90,8 +90,8 @@ class Site {
 protected:
     Foundation* foundation; ///< the site's parent foundation
     Index3D index; ///< unit cell spatial index
-    int sublattice; ///< sublattice index
-    int idx; ///< flat index for array addressing
+    idx_t sublattice; ///< sublattice index
+    idx_t idx; ///< flat index for array addressing
 
     /// Recalculate flat `idx` from spatial `index` and `sublattice`
     void reset_idx() {
@@ -100,16 +100,16 @@ protected:
     }
 
 public:
-    Site(Foundation* foundation, Index3D index, int sublattice, int idx)
+    Site(Foundation* foundation, Index3D index, idx_t sublattice, idx_t idx)
         : foundation(foundation), index(index), sublattice(sublattice), idx(idx) {}
-    Site(Foundation* foundation, Index3D index, int sublattice)
+    Site(Foundation* foundation, Index3D index, idx_t sublattice)
         : foundation(foundation), index(index), sublattice(sublattice) {
         reset_idx();
     }
 
     Index3D const& get_index() const { return index; }
-    int get_sublattice() const { return sublattice; }
-    int get_idx() const { return idx; }
+    idx_t get_sublattice() const { return sublattice; }
+    idx_t get_idx() const { return idx; }
     Lattice const& get_lattice() const { return foundation->lattice; }
 
     Cartesian get_position() const { return foundation->positions[idx]; }
@@ -152,16 +152,18 @@ public:
 };
 
 template<bool is_const>
-class Foundation::Iterator
-    : public Site,
-      public std::iterator<std::input_iterator_tag,
-                           std14::conditional_t<is_const, Site const, Site>> {
-    using Ref = std14::conditional_t<is_const, Site const&, Site&>;
+class Foundation::Iterator : public Site {
+    using iterator_category = std::input_iterator_tag;
+    using difference_type = std::ptrdiff_t;
+    using value_type = std14::conditional_t<is_const, Site const, Site>;
+    using reference = value_type&;
+    using pointer = value_type*;
 
 public:
     Iterator(Foundation* foundation, int idx) : Site(foundation, {0, 0, 0}, 0, idx) {}
 
-    Ref operator*() { return *this; }
+    reference operator*() { return *this; }
+    pointer operator->() { return this; }
 
     Iterator& operator++() {
         ++idx;
@@ -188,23 +190,26 @@ class Foundation::Slice {
     SliceIndex3D index;
 
 private:
-    class Iterator
-        : public Site,
-          public std::iterator<std::input_iterator_tag,
-                               std14::conditional_t<is_const, Iterator const, Iterator>> {
-        using Ref = std14::conditional_t<is_const, Iterator const&, Iterator&>;
+    class Iterator : public Site {
+        using iterator_category = std::input_iterator_tag;
+        using difference_type = std::ptrdiff_t;
+        using value_type = std14::conditional_t<is_const, Iterator const, Iterator>;
+        using reference = value_type&;
+        using pointer = value_type*;
 
         SliceIndex3D slice_index;
-        int slice_idx;
+        idx_t slice_idx;
 
     public:
         Iterator(Foundation* foundation, SliceIndex3D index, int slice_idx)
             : Site(foundation, {index[0].start, index[1].start, index[2].start}, 0),
               slice_index(index), slice_idx(slice_idx) {}
 
-        int get_slice_idx() const { return slice_idx; }
+        /// Flat index within the slice: `0 < slice_idx < slice_size`
+        idx_t get_slice_idx() const { return slice_idx; }
 
-        Ref operator*() { return *this; }
+        reference operator*() { return *this; }
+        pointer operator->() { return this; }
 
         Iterator& operator++() {
             ++slice_idx;
