@@ -68,17 +68,17 @@ std::vector<Translation> TranslationalSymmetry::translations(Foundation const& f
 
         auto const shift_index = direction.cwiseProduct(symmetry_area.middle);
 
-        auto shift_lenght = Cartesian{0, 0, 0};
+        auto shift_length = Cartesian{0, 0, 0};
         for (auto n = 0, size = lattice.ndim(); n < size; ++n) {
             auto const shift = static_cast<float>(direction[n] * symmetry_area.middle[n]);
-            shift_lenght += shift * lattice.vector(n);
+            shift_length += shift * lattice.vector(n);
         }
 
-        translations.push_back({direction, boundary_slice, shift_index, shift_lenght});
+        translations.push_back({direction, boundary_slice, shift_index, shift_length});
     };
 
     auto const masks = detail::make_masks(enabled_directions, lattice.ndim());
-    for (auto const& sublattice : lattice.get_sites().structure) {
+    for (auto const& sublattice : lattice.optimized_structure()) {
         for (auto const& hopping : sublattice.hoppings) {
             for (auto const& mask : masks) {
                 add_translation(hopping.relative_index.cwiseProduct(mask));

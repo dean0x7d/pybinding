@@ -3,62 +3,54 @@
 using namespace cpb;
 
 void wrap_lattice(py::module& m) {
-    py::class_<Hopping>(m, "Hopping")
-        .def_readonly("relative_index", &Hopping::relative_index,
+    py::class_<Lattice::Sublattice>(m, "Sublattice")
+        .def_readonly("position", &Lattice::Sublattice::position,
+                      "Relative to global lattice offset")
+        .def_readonly("energy", &Lattice::Sublattice::energy, "Onsite energy matrix")
+        .def_readonly("unique_id", &Lattice::Sublattice::unique_id,
+                      "Different for each sublattice")
+        .def_readonly("alias_id", &Lattice::Sublattice::alias_id,
+                      "For supercells only: indicates sublattices which may be aliased")
+        .def("__getstate__", [](Lattice::Sublattice const& s) {
+            return py::dict("position"_a=s.position, "energy"_a=s.energy,
+                            "unique_id"_a=s.unique_id, "alias_id"_a=s.alias_id);
+        })
+        .def("__setstate__", [](Lattice::Sublattice& s, py::dict d) {
+            new (&s) Lattice::Sublattice();
+            s = {d["position"].cast<decltype(s.position)>(),
+                 d["energy"].cast<decltype(s.energy)>(),
+                 d["unique_id"].cast<decltype(s.unique_id)>(),
+                 d["alias_id"].cast<decltype(s.alias_id)>()};
+        });
+
+    py::class_<Lattice::HoppingTerm>(m, "HoppingTerm")
+        .def_readonly("relative_index", &Lattice::HoppingTerm::relative_index,
                       "Relative index between two unit cells - note that it may be [0, 0, 0]")
-        .def_readonly("to_sublattice", &Hopping::to_sublattice,
-                      "Sublattice ID of the hopping destination")
-        .def_readonly("id", &Hopping::id,
-                      "Points to the entry in :attr:`Lattice.hopping_energies`")
-        .def_readonly("is_conjugate", &Hopping::is_conjugate,
-                      "True if this is an automatically added complex conjugate")
-        .def("__getstate__", [](Hopping const& h) {
-            return py::make_tuple(h.relative_index, h.to_sublattice, h.id, h.is_conjugate);
+        .def_readonly("from", &Lattice::HoppingTerm::from, "Sublattice ID of the source")
+        .def_readonly("to", &Lattice::HoppingTerm::to, "Sublattice ID of the destination")
+        .def("__getstate__", [](Lattice::HoppingTerm const& h) {
+            return py::dict("relative_index"_a=h.relative_index, "from"_a=h.from, "to"_a=h.to);
         })
-        .def("__setstate__", [](Hopping& h, py::tuple t) {
-            new (&h) Hopping();
-            h = {t[0].cast<decltype(h.relative_index)>(), t[1].cast<decltype(h.to_sublattice)>(),
-                 t[2].cast<decltype(h.id)>(), t[3].cast<decltype(h.is_conjugate)>()};
+        .def("__setstate__", [](Lattice::HoppingTerm& s, py::dict d) {
+            new (&s) Lattice::HoppingTerm();
+            s = {d["relative_index"].cast<decltype(s.relative_index)>(),
+                 d["from"].cast<decltype(s.from)>(),
+                 d["to"].cast<decltype(s.to)>()};
         });
 
-    py::class_<Sublattice>(m, "Sublattice")
-        .def_readonly("position", &Sublattice::position, "Relative to global lattice offset")
-        .def_readonly("alias", &Sublattice::alias,
-                      "For supercells only: allows two sublattices to have the same ID")
-        .def_readonly("hoppings", &Sublattice::hoppings, "List of :class:`~_pybinding.Hopping`")
-        .def("__getstate__", [](Sublattice const& s) {
-            return py::make_tuple(s.position, s.alias, s.hoppings);
+    py::class_<Lattice::HoppingFamily>(m, "HoppingFamily")
+        .def_readonly("energy", &Lattice::HoppingFamily::energy, "Hopping energy matrix")
+        .def_readonly("unique_id", &Lattice::HoppingFamily::unique_id)
+        .def_readonly("terms", &Lattice::HoppingFamily::terms,
+                      "List of :class:`~_pybinding.HoppingTerm`")
+        .def("__getstate__", [](Lattice::HoppingFamily const& f) {
+            return py::dict("energy"_a=f.energy, "unique_id"_a=f.unique_id, "terms"_a=f.terms);
         })
-        .def("__setstate__", [](Sublattice& s, py::tuple t) {
-            new (&s) Sublattice();
-            s = {t[0].cast<decltype(s.position)>(), t[1].cast<decltype(s.alias)>(),
-                 t[2].cast<decltype(s.hoppings)>()};
-        });
-
-    py::class_<Lattice::Sites>(m, "LatticeSites")
-        .def_readonly("structure", &Lattice::Sites::structure)
-        .def_readonly("energy", &Lattice::Sites::energy)
-        .def_readonly("id", &Lattice::Sites::id)
-        .def("__getstate__", [](Lattice::Sites const& s) {
-            return py::make_tuple(s.structure, s.energy, s.id);
-        })
-        .def("__setstate__", [](Lattice::Sites& s, py::tuple t) {
-            new (&s) Lattice::Sites();
-            s = {t[0].cast<decltype(s.structure)>(), t[1].cast<decltype(s.energy)>(),
-                 t[2].cast<decltype(s.id)>()};
-        });
-
-    py::class_<Lattice::Hoppings>(m, "LatticeHoppings")
-        .def_readonly("structure", &Lattice::Hoppings::structure)
-        .def_readonly("energy", &Lattice::Hoppings::energy)
-        .def_readonly("id", &Lattice::Hoppings::id)
-        .def("__getstate__", [](Lattice::Hoppings const& h) {
-            return py::make_tuple(h.structure, h.energy, h.id);
-        })
-        .def("__setstate__", [](Lattice::Hoppings& h, py::tuple t) {
-            new (&h) Lattice::Hoppings();
-            h = {t[0].cast<decltype(h.structure)>(), t[1].cast<decltype(h.energy)>(),
-                 t[2].cast<decltype(h.id)>()};
+        .def("__setstate__", [](Lattice::HoppingFamily& s, py::dict d) {
+            new (&s) Lattice::HoppingFamily();
+            s = {d["energy"].cast<decltype(s.energy)>(),
+                 d["unique_id"].cast<decltype(s.unique_id)>(),
+                 d["terms"].cast<decltype(s.terms)>()};
         });
 
     py::class_<Lattice>(m, "Lattice")
@@ -81,26 +73,27 @@ void wrap_lattice(py::module& m) {
              &Lattice::add_hopping | resolve<Index3D, string_view, string_view, std::complex<double>>())
         .def("add_hopping",
              &Lattice::add_hopping | resolve<Index3D, string_view, string_view, MatrixXcd const&>())
+        .def_property_readonly("ndim", &Lattice::ndim)
+        .def_property_readonly("nsub", &Lattice::nsub)
         .def_property_readonly("vectors", &Lattice::get_vectors)
-        .def_property_readonly("sublattices",
-                               [](Lattice const& l) { return l.get_sites().structure; })
-        .def_property_readonly("sub_name_map",
-                               [](Lattice const& l) { return l.get_sites().id; })
-        .def_property_readonly("hopping_energies",
-                               [](Lattice const& l) { return l.get_hoppings().energy; })
-        .def_property_readonly("hop_name_map",
-                               [](Lattice const& l) { return l.get_hoppings().id; })
+        .def_property_readonly("sublattices", &Lattice::get_sublattices)
+        .def_property_readonly("hoppings", &Lattice::get_hoppings)
+        .def_property_readonly("sub_name_map", &Lattice::sub_name_map)
+        .def_property_readonly("hop_name_map", &Lattice::hop_name_map)
         .def_property("offset", &Lattice::get_offset, &Lattice::set_offset)
         .def_property("min_neighbors", &Lattice::get_min_neighbors, &Lattice::set_min_neighbors)
         .def("__getstate__", [](Lattice const& l) {
-            return py::make_tuple(l.get_vectors(), l.get_sites(), l.get_hoppings(),
-                                  l.get_offset(), l.get_min_neighbors());
+            return py::dict("vectors"_a=l.get_vectors(),
+                            "sublattices"_a=l.get_sublattices(),
+                            "hoppings"_a=l.get_hoppings(),
+                            "offset"_a=l.get_offset(),
+                            "min_neighbors"_a=l.get_min_neighbors());
         })
-        .def("__setstate__", [](Lattice& l, py::tuple t) {
-            new (&l) Lattice(t[0].cast<Lattice::Vectors>(),
-                             t[1].cast<Lattice::Sites>(),
-                             t[2].cast<Lattice::Hoppings>());
-            l.set_offset(t[3].cast<Cartesian>());
-            l.set_min_neighbors(t[4].cast<int>());
+        .def("__setstate__", [](Lattice& l, py::dict d) {
+            new (&l) Lattice(d["vectors"].cast<Lattice::Vectors>(),
+                             d["sublattices"].cast<Lattice::Sublattices>(),
+                             d["hoppings"].cast<Lattice::Hoppings>());
+            l.set_offset(d["offset"].cast<Cartesian>());
+            l.set_min_neighbors(d["min_neighbors"].cast<int>());
         });
 }

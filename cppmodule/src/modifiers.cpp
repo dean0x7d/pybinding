@@ -37,11 +37,11 @@ inline void extract_array(EigenType& v, py::object const& o) {
 void wrap_modifiers(py::module& m) {
     py::class_<SubIdRef>(m, "SubIdRef")
         .def_property_readonly("ids", [](SubIdRef const& s) { return arrayref(s.ids); })
-        .def_property_readonly("name_map", [](SubIdRef const& s) { return s.name_map; });
+        .def_readonly("name_map", &SubIdRef::name_map);
 
     py::class_<HopIdRef>(m, "HopIdRef")
         .def_property_readonly("ids", [](HopIdRef const& s) { return arrayref(s.ids); })
-        .def_property_readonly("name_map", [](HopIdRef const& s) { return s.name_map; });
+        .def_readonly("name_map", &HopIdRef::name_map);
 
     py::class_<SiteStateModifier>(m, "SiteStateModifier")
         .def("__init__", [](SiteStateModifier& self, py::object apply, int min_neighbors) {

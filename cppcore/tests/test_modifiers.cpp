@@ -80,7 +80,7 @@ TEST_CASE("HoppingGenerator") {
         return lattice;
     }());
     REQUIRE_FALSE(model.is_complex());
-    REQUIRE(model.get_lattice().get_hoppings().energy.size() == 1);
+    REQUIRE(model.get_lattice().get_hoppings().size() == 1);
     REQUIRE(model.system()->hoppings.isCompressed());
     REQUIRE(model.system()->hoppings.rows() == 2);
     REQUIRE(model.system()->hoppings.nonZeros() == 0);
@@ -94,13 +94,14 @@ TEST_CASE("HoppingGenerator") {
         }));
 
         REQUIRE_FALSE(model.is_complex());
-        REQUIRE(model.get_lattice().get_hoppings().energy.size() == 2);
+        REQUIRE(model.get_lattice().get_hoppings().size() == 2);
         REQUIRE(model.system()->hoppings.isCompressed());
         REQUIRE(model.system()->hoppings.rows() == 2);
         REQUIRE(model.system()->hoppings.nonZeros() == 1);
 
-        auto const hopping_it = model.get_lattice().get_hoppings().id.find("t2");
-        REQUIRE(hopping_it != model.get_lattice().get_hoppings().id.end());
+        auto const hop_names = model.get_lattice().hop_name_map();
+        auto const hopping_it = hop_names.find("t2");
+        REQUIRE(hopping_it != hop_names.end());
         auto const hopping_id = hopping_it->second;
         REQUIRE(model.system()->hoppings.coeff(0, 1) == hopping_id);
     }

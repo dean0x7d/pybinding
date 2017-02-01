@@ -108,7 +108,7 @@ void HamiltonianModifiers::apply_to_onsite(System const& system, Fn lambda) cons
 
         for (auto const& modifier : onsite) {
             modifier.apply(arrayref(potential), system.positions,
-                           {system.sublattices, system.lattice.get_sites().id});
+                           {system.sublattices, system.lattice.sub_name_map()});
         }
     }
 
@@ -172,7 +172,7 @@ void HamiltonianModifiers::apply_to_hoppings_impl(SystemOrBoundary const& system
 
                 for (auto const& modifier : hopping) {
                     modifier.apply(arrayref(hoppings), pos1, pos2,
-                                   {hop_ids, lattice.get_hoppings().id});
+                                   {hop_ids, lattice.hop_name_map()});
                 }
 
                 hopping_csr_matrix.slice_for_each(

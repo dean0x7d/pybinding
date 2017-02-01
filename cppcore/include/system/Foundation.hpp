@@ -38,6 +38,7 @@ void remove_dangling(Foundation& foundation, int min_neighbors);
  */
 class Foundation {
     Lattice const& lattice;
+    OptimizedLatticeStructure lattice_structure;
     std::pair<Index3D, Index3D> bounds; ///< in lattice vector coordinates
     Index3D size; ///< number of unit cells in each lattice vector direction
     int nsub; ///< number of sites in a unit cell
@@ -70,6 +71,7 @@ public:
     NonConstSlice operator[](SliceIndex3D const& index);
 
     Lattice const& get_lattice() const { return lattice; }
+    OptimizedLatticeStructure const& get_lattice_structure() const { return lattice_structure; }
     std::pair<Index3D, Index3D> const& get_bounds() const { return bounds; }
     Index3D const& get_size() const { return size; }
     int get_num_sublattices() const { return nsub; }
@@ -109,8 +111,8 @@ public:
 
     Index3D const& get_index() const { return index; }
     idx_t get_sublattice() const { return sublattice; }
+    sub_id get_alias() const { return foundation->lattice_structure[sublattice].alias; }
     idx_t get_idx() const { return idx; }
-    Lattice const& get_lattice() const { return foundation->lattice; }
 
     Cartesian get_position() const { return foundation->positions[idx]; }
 
@@ -122,7 +124,7 @@ public:
     /// Loop over all neighbours of this site
     template<class Fn>
     void for_each_neighbour(Fn lambda) const  {
-        for (auto const& hopping : foundation->lattice[sublattice].hoppings) {
+        for (auto const& hopping : foundation->lattice_structure[sublattice].hoppings) {
             Array3i const neighbor_index = (index + hopping.relative_index).array();
             if (any_of(neighbor_index < 0) || any_of(neighbor_index >= foundation->size.array()))
                 continue; // out of bounds

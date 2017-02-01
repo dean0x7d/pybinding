@@ -26,11 +26,12 @@ CartesianArray generate_positions(Cartesian origin, Index3D size, Lattice const&
     // because the intermediate a, b, c positions are reused.
     auto const nsub = lattice.nsub();
     auto const num_sites = size.prod() * nsub;
-    CartesianArray positions(num_sites);
+    auto const lattice_structure = lattice.optimized_structure();
 
+    auto positions = CartesianArray(num_sites);
     auto idx = 0;
-    for (auto s = 0; s < nsub; ++s) {
-        Cartesian ps = origin + lattice[s].position;
+    for (auto n = 0; n < nsub; ++n) {
+        Cartesian ps = origin + lattice_structure[n].position;
         for (auto c = 0; c < size[2]; ++c) {
             Cartesian pc = (c == 0) ? ps : ps + static_cast<float>(c) * lattice.vector(2);
             for (auto b = 0; b < size[1]; ++b) {
@@ -41,7 +42,7 @@ CartesianArray generate_positions(Cartesian origin, Index3D size, Lattice const&
                 } // a
             } // b
         } // c
-    } // sub
+    } // n
 
     return positions;
 }
@@ -49,11 +50,11 @@ CartesianArray generate_positions(Cartesian origin, Index3D size, Lattice const&
 ArrayXi count_neighbors(Foundation const& foundation) {
     ArrayXi neighbor_count(foundation.get_num_sites());
 
-    auto const& lattice = foundation.get_lattice();
+    auto const& lattice_structure = foundation.get_lattice_structure();
     auto const size = foundation.get_size().array();
 
     for (auto const& site : foundation) {
-        auto const& sublattice = lattice[site.get_sublattice()];
+        auto const& sublattice = lattice_structure[site.get_sublattice()];
         auto num_neighbors = static_cast<int>(sublattice.hoppings.size());
 
         // Reduce the neighbor count for sites on the edges
@@ -110,6 +111,7 @@ void remove_dangling(Foundation& foundation, int min_neighbors) {
 
 Foundation::Foundation(Lattice const& lattice, Primitive const& primitive)
     : lattice(lattice),
+      lattice_structure(lattice.optimized_structure()),
       bounds(-primitive.size.array() / 2, (primitive.size.array() - 1) / 2),
       size(primitive.size),
       nsub(lattice.nsub()),
@@ -119,6 +121,7 @@ Foundation::Foundation(Lattice const& lattice, Primitive const& primitive)
 
 Foundation::Foundation(Lattice const& lattice, Shape const& shape)
     : lattice(lattice),
+      lattice_structure(lattice.optimized_structure()),
       bounds(detail::find_bounds(shape, lattice)),
       size((bounds.second - bounds.first) + Index3D::Ones()),
       nsub(lattice.nsub()),

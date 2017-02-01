@@ -42,9 +42,14 @@ class Lattice:
         return lat
 
     @property
-    def ndim(self):
+    def ndim(self) -> int:
         """The dimensionality of the lattice: number of primitive vectors"""
-        return len(self.vectors)
+        return self.impl.ndim
+
+    @property
+    def nsub(self) -> int:
+        """The dimensionality of the lattice: number of primitive vectors"""
+        return self.impl.nsub
 
     @property
     def vectors(self):
@@ -53,13 +58,13 @@ class Lattice:
 
     @property
     def sublattices(self):
-        """List of :class:`~_pybinding.Sublattice`"""
+        """Dict of names and :class:`~_pybinding.Sublattice`"""
         return self.impl.sublattices
 
     @property
-    def hopping_energies(self):
-        """Unique energies indexed by hopping IDs"""
-        return self.impl.hopping_energies
+    def hoppings(self):
+        """Dict of names and :class:`~_pybinding.HoppingFamily`"""
+        return self.impl.hoppings
 
     @property
     def offset(self):
@@ -393,9 +398,8 @@ class Lattice:
                 v1, v2 = lattice.vectors
                 unit_cell_area = np.linalg.norm(np.cross(v1, v2))
 
-                num_sublattices = len(lattice.sublattices)
-                num_layers = len(np.unique([s.position[2] for s in lattice.sublattices]))
-                site_area = unit_cell_area * num_layers / num_sublattices
+                num_layers = len(np.unique([s.position[2] for s in lattice.sublattices.values()]))
+                site_area = unit_cell_area * num_layers / lattice.nsub
 
                 magic = 0.33
                 return magic * sqrt(site_area / pi)
@@ -405,7 +409,7 @@ class Lattice:
         def shortest_site_spacing(lattice):
             from scipy.spatial.distance import pdist
 
-            distances = pdist([s.position for s in lattice.sublattices])
+            distances = pdist([s.position for s in lattice.sublattices.values()])
             distances = distances[distances > 0]
 
             if np.any(distances):
@@ -435,35 +439,39 @@ class Lattice:
         model.system.plot(**with_defaults(kwargs, hopping=dict(color='#777777', width=1)))
 
         # by default, plot the lattice vectors from the center of the unit cell
-        sub_center = sum(s.position for s in self.sublattices) / len(self.sublattices)
+        sub_center = sum(s.position for s in self.sublattices.values()) / self.nsub
         if vector_position is not None:
             self.plot_vectors(sub_center if vector_position == 'center' else vector_position)
 
         # annotate sublattice names
         sub_names = {sub_id: name for name, sub_id in self.impl.sub_name_map.items()}
-        for sub in self.sublattices:
-            pltutils.annotate_box(sub_names[sub.alias], xy=sub.position[:2],
+        for sub in self.sublattices.values():
+            pltutils.annotate_box(sub_names[sub.alias_id], xy=sub.position[:2],
                                   bbox=dict(boxstyle="circle,pad=0.3", alpha=0.2, lw=0))
 
-        # annotate neighboring cell indices
-        offsets = [(0, 0, 0)]
-        for sub in self.sublattices:
-            for hop in sub.hoppings:
-                if tuple(hop.relative_index[:2]) == (0, 0):
+        # collect relative indices where annotations should be drawn
+        relative_indices = []
+        for hopping_family in self.hoppings.values():
+            for term in hopping_family.terms:
+                if tuple(term.relative_index[:2]) == (0, 0):
                     continue  # skip the original cell
+                relative_indices.append(term.relative_index)
+                relative_indices.append(-term.relative_index)
 
-                # offset of the neighboring cell from the original
-                offset = sum(r * v for r, v in zip(hop.relative_index, self.vectors))
-                offsets.append(offset)
+        # 3D distance (in length units) of the neighboring cell from the original
+        offsets = [sum(r * v for r, v in zip(ri, self.vectors)) for ri in relative_indices]
 
-                text = "[" + ", ".join(map(str, hop.relative_index[:self.ndim])) + "]"
+        # annotate neighboring cell indices
+        for relative_index, offset in zip(relative_indices, offsets):
+            text = "[" + ", ".join(map(str, relative_index[:self.ndim])) + "]"
 
-                # align the text so that it goes away from the original cell
-                ha, va = pltutils.align(*(-offset[:2]))
-                pltutils.annotate_box(text, xy=(sub_center[:2] + offset[:2]) * 1.05,
-                                      ha=ha, va=va, clip_on=True, bbox=dict(lw=0))
+            # align the text so that it goes away from the original cell
+            ha, va = pltutils.align(*(-offset[:2]))
+            pltutils.annotate_box(text, xy=(sub_center[:2] + offset[:2]) * 1.05,
+                                  ha=ha, va=va, clip_on=True, bbox=dict(lw=0))
 
         # ensure there is some padding around the lattice
+        offsets += [(0, 0, 0)]
         points = [n * v + o for n in (-0.5, 0.5) for v in self.vectors for o in offsets]
         x, y, _ = zip(*points)
         pltutils.set_min_axis_length(abs(max(x) - min(x)), 'x')

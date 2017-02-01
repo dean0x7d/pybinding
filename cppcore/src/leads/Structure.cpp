@@ -39,7 +39,7 @@ Structure::Structure(Foundation const& foundation, HamiltonianIndices const& ham
             auto const index = lead_index(hamiltonian_indices[site]);
 
             system.positions[index] = site.get_position() + shift;
-            system.sublattices[index] = lattice[site.get_sublattice()].alias;
+            system.sublattices[index] = site.get_alias();
 
             matrix_view.start_row(index);
             site.for_each_neighbour([&](Site neighbor, Hopping hopping) {

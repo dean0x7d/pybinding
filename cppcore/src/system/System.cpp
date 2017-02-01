@@ -42,7 +42,7 @@ idx_t System::find_nearest(Cartesian target_position, std::string const& sublatt
             check_index(i);
         }
     } else { // only sites belonging to the target sublattice
-        auto const target_sublattice = lattice.get_sites().id_lookup(sublattice);
+        auto const target_sublattice = lattice.sublattice(sublattice).unique_id;
         for (auto i = idx_t{1}; i < num_sites(); ++i) {
             if (sublattices[i] == target_sublattice) { check_index(i); }
         }
@@ -70,7 +70,7 @@ void populate_system(System& system, Foundation const& foundation,
             continue; // invalid site
 
         system.positions[index] = site.get_position();
-        system.sublattices[index] = lattice[site.get_sublattice()].alias;
+        system.sublattices[index] = site.get_alias();
 
         matrix_view.start_row(index);
         site.for_each_neighbour([&](Site neighbor, Hopping hopping) {
@@ -138,7 +138,7 @@ void populate_boundaries(System& system, Foundation const& foundation,
 
 void add_extra_hoppings(System& system, HoppingGenerator const& gen) {
     auto const& lattice = system.lattice;
-    auto const pairs = gen.make(system.positions, {system.sublattices, lattice.get_sites().id});
+    auto const pairs = gen.make(system.positions, {system.sublattices, lattice.sub_name_map()});
 
     system.hoppings.reserve([&]{
         auto reserve = ArrayXi(ArrayXi::Zero(system.num_sites()));
@@ -150,7 +150,7 @@ void add_extra_hoppings(System& system, HoppingGenerator const& gen) {
     }());
 
     auto const hopping_id = [&]{
-        auto const& ids = lattice.get_hoppings().id;
+        auto const& ids = lattice.hop_name_map();
         auto const it = ids.find(gen.name);
         assert(it != ids.end());
         return it->second;

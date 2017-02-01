@@ -3,12 +3,6 @@
 #include "Lattice.hpp"
 using namespace cpb;
 
-TEST_CASE("Sublattice") {
-    auto sublattice = Sublattice{};
-    sublattice.add_hopping({0, 0, 0}, 0, 0, false);
-    REQUIRE_THROWS(sublattice.add_hopping({0, 0, 0}, 0, 0, false));
-}
-
 TEST_CASE("Lattice") {
     auto lattice = Lattice({1, 0, 0}, {0, 1, 0});
     REQUIRE(lattice.ndim() == 2);
@@ -72,8 +66,8 @@ TEST_CASE("Lattice") {
         lattice.register_hopping_energy("t2", std::complex<double>{0, 1.0});
         REQUIRE(lattice.has_complex_hoppings());
 
-        while (lattice.get_hoppings().energy.size() != std::numeric_limits<hop_id>::max() + 1) {
-            auto e = static_cast<double>(lattice.get_hoppings().energy.size());
+        while (lattice.get_hoppings().size() != std::numeric_limits<hop_id>::max() + 1) {
+            auto e = static_cast<double>(lattice.get_hoppings().size());
             lattice.register_hopping_energy(std::to_string(e), e);
         }
         REQUIRE_THROWS(lattice.register_hopping_energy("overflow", 1.0));
@@ -98,9 +92,9 @@ TEST_CASE("Lattice") {
         REQUIRE(lattice.max_hoppings() == 3);
 
         lattice.add_hopping({1, 1, 0}, "A", "A", 2.0);
-        REQUIRE(lattice.get_hoppings().energy.size() == 2);
+        REQUIRE(lattice.get_hoppings().size() == 2);
         lattice.add_hopping({1, 1, 0}, "A", "B", 2.0);
-        REQUIRE(lattice.get_hoppings().energy.size() == 2);
+        REQUIRE(lattice.get_hoppings().size() == 2);
     }
 
     SECTION("Add matrix hoppings") {
