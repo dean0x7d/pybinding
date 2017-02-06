@@ -103,6 +103,7 @@ TEST_CASE("Lattice") {
         lattice.add_sublattice("C", {0, 0, 0}, VectorXd::Constant(3, 0.0).eval());
         lattice.register_hopping_energy("t22", MatrixXcd::Constant(2, 2, 1.0));
         lattice.register_hopping_energy("t23", MatrixXcd::Constant(2, 3, 1.0));
+        lattice.register_hopping_energy("t32", MatrixXcd::Constant(3, 2, 1.0));
 
         REQUIRE(lattice.max_hoppings() == 2);
         lattice.add_hopping({0, 0, 0}, "A", "B", "t22");
@@ -111,7 +112,7 @@ TEST_CASE("Lattice") {
         REQUIRE(lattice.max_hoppings() == 7);
         lattice.add_hopping({0, 0, 0}, "A", "C", "t23");
         REQUIRE(lattice.max_hoppings() == 10);
-        lattice.add_hopping({1, 0, 0}, "A", "C", "t23");
+        lattice.add_hopping({1, 0, 0}, "C", "A", "t32");
         REQUIRE(lattice.max_hoppings() == 13);
 
         REQUIRE_THROWS(lattice.add_hopping({0, 0, 0}, "A", "A", "t22"));

@@ -7,6 +7,19 @@ using namespace fmt::literals;
 
 namespace cpb {
 
+namespace {
+    /// Visit all hopping terms in all families
+    template<class F>
+    void for_each_term(Lattice::Hoppings const& hoppings, F lambda) {
+        for (auto const& pair : hoppings) {
+            auto const& family = pair.second;
+            for (auto const& term : family.terms) {
+                lambda(family, term);
+            }
+        }
+    }
+} // anonymous namespace
+
 Lattice::Lattice(Cartesian a1, Cartesian a2, Cartesian a3) {
     vectors.push_back(a1);
     if (!a2.isZero()) { vectors.push_back(a2); }
@@ -88,18 +101,14 @@ void Lattice::add_hopping(Index3D relative_index, string_view from_sub, string_v
         );
     }
 
-    auto const dup = std::any_of(hoppings.begin(), hoppings.end(), [&](Hoppings::reference r) {
-        auto const& hopping_terms = r.second.terms;
-        return std::any_of(hopping_terms.begin(), hopping_terms.end(), [&](HoppingTerm const& h) {
-            auto const candidate = std::tie(relative_index, from.unique_id, to.unique_id);
-            auto const existing = std::tie(h.relative_index, h.from, h.to);
-            auto const existing_conjugate = std::tie(-h.relative_index, h.to, h.from);
-            return candidate == existing || candidate == existing_conjugate;
-        });
+    auto const candidate = HoppingTerm{relative_index, from.unique_id, to.unique_id};
+    for_each_term(hoppings, [&](HoppingFamily const&, HoppingTerm const& existing) {
+        if (candidate == existing) {
+            throw std::logic_error("The specified hopping already exists.");
+        }
     });
-    if (dup) { throw std::logic_error("The specified hopping already exists."); }
 
-    hoppings[hopping_family_name].terms.push_back({relative_index, from.unique_id, to.unique_id});
+    hoppings[hopping_family_name].terms.push_back(candidate);
 }
 
 void Lattice::add_hopping(Index3D relative_index, string_view from_sub, string_view to_sub,
@@ -173,12 +182,17 @@ Lattice::HoppingFamily const& Lattice::hopping_family(hop_id id) const {
 
 int Lattice::max_hoppings() const {
     auto result = idx_t{0};
-    for (auto const& s : optimized_structure()) {
-        auto const num_scalar_hoppings = std::accumulate(
-            s.hoppings.begin(), s.hoppings.end(),
-            sublattice(s.alias).energy.cols() - 1, // num hops in onsite matrix (-1 for diagonal)
-            [&](idx_t n, Hopping const& h) { return n + hopping_family(h.id).energy.cols(); }
-        );
+    for (auto const& pair : sublattices) {
+        auto const& sub = pair.second;
+
+        // Include hoppings in onsite matrix (-1 for diagonal value which is not a hopping)
+        auto num_scalar_hoppings = sub.energy.cols() - 1;
+
+        // Conjugate term counts rows instead of columns
+        for_each_term(hoppings, [&](HoppingFamily const& family, HoppingTerm const& term) {
+            if (term.from == sub.unique_id) { num_scalar_hoppings += family.energy.cols(); }
+            if (term.to == sub.unique_id)   { num_scalar_hoppings += family.energy.rows(); }
+        });
 
         result = std::max(result, num_scalar_hoppings);
     }

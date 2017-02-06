@@ -71,6 +71,15 @@ public:
         Index3D relative_index; ///< relative index between two unit cells - may be (0, 0, 0)
         sub_id from; ///< source sublattice unique ID
         sub_id to; ///< destination sublattice unique ID
+
+        friend bool operator==(HoppingTerm const& a, HoppingTerm const& b) {
+            auto const left = std::tie(a.relative_index, a.from, a.to);
+            auto const right = std::tie(b.relative_index, b.from, b.to);
+            auto const right_conjugate = std::tie(-b.relative_index, b.to, b.from);
+            return left == right || left == right_conjugate;
+        }
+
+        friend bool operator!=(HoppingTerm const& a, HoppingTerm const& b) { return !(a == b); }
     };
 
     struct HoppingFamily {
