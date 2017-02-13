@@ -78,7 +78,7 @@ std::vector<Translation> TranslationalSymmetry::translations(Foundation const& f
     };
 
     auto const masks = detail::make_masks(enabled_directions, lattice.ndim());
-    for (auto const& sublattice : lattice.optimized_structure()) {
+    for (auto const& sublattice : lattice.optimized_unit_cell()) {
         for (auto const& hopping : sublattice.hoppings) {
             for (auto const& mask : masks) {
                 add_translation(hopping.relative_index.cwiseProduct(mask));

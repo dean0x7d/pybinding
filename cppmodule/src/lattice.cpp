@@ -40,16 +40,16 @@ void wrap_lattice(py::module& m) {
 
     py::class_<Lattice::HoppingFamily>(m, "HoppingFamily")
         .def_readonly("energy", &Lattice::HoppingFamily::energy, "Hopping energy matrix")
-        .def_readonly("unique_id", &Lattice::HoppingFamily::unique_id)
+        .def_readonly("family_id", &Lattice::HoppingFamily::family_id)
         .def_readonly("terms", &Lattice::HoppingFamily::terms,
                       "List of :class:`~_pybinding.HoppingTerm`")
         .def("__getstate__", [](Lattice::HoppingFamily const& f) {
-            return py::dict("energy"_a=f.energy, "unique_id"_a=f.unique_id, "terms"_a=f.terms);
+            return py::dict("energy"_a=f.energy, "family_id"_a=f.family_id, "terms"_a=f.terms);
         })
         .def("__setstate__", [](Lattice::HoppingFamily& s, py::dict d) {
             new (&s) Lattice::HoppingFamily();
             s = {d["energy"].cast<decltype(s.energy)>(),
-                 d["unique_id"].cast<decltype(s.unique_id)>(),
+                 d["family_id"].cast<decltype(s.family_id)>(),
                  d["terms"].cast<decltype(s.terms)>()};
         });
 

@@ -147,3 +147,54 @@ TEST_CASE("Lattice translate coordinates") {
     REQUIRE(lattice.translate_coordinates({1.5, 0.5, 0}).isApprox(Vector3f(1, 0.5, 0)));
     REQUIRE(lattice.translate_coordinates({0, 0, 1}).isApprox(Vector3f(0, 0, 0)));
 }
+
+TEST_CASE("Optimized unit cell") {
+    auto lattice = Lattice({1, 0, 0});
+
+    auto add_sublattice = [&lattice](string_view name, int norb) {
+        lattice.add_sublattice(name, Cartesian{0, 0, 0}, VectorXd::Constant(norb, 0.0).eval());
+    };
+
+    auto add_alias = [&lattice](string_view name, string_view original) {
+        lattice.add_alias(name, original, Cartesian{0, 0, 0});
+    };
+
+    auto require_alias_ids = [&lattice](std::vector<storage_idx_t> expected_alias_ids) {
+        auto const unit_cell = lattice.optimized_unit_cell();
+
+        auto actual_alias_ids = std::vector<storage_idx_t>(lattice.nsub());
+        std::transform(unit_cell.begin(), unit_cell.end(), actual_alias_ids.begin(),
+                       [](OptimizedUnitCell::Site const& site) { return site.alias_id; });
+
+        REQUIRE(actual_alias_ids == expected_alias_ids);
+    };
+
+    add_sublattice("0", 1);
+    add_sublattice("1", 1);
+    add_alias("2", "0");
+    require_alias_ids({0, 0, 1});
+
+    add_sublattice("3", 2);
+    require_alias_ids({0, 0, 1, 3});
+
+    add_sublattice("4", 1);
+    require_alias_ids({0, 0, 1, 4, 3});
+
+    add_sublattice("5", 3);
+    add_alias("6", "3");
+    require_alias_ids({0, 0, 1, 4, 3, 3, 5});
+
+    add_sublattice("7", 2);
+    add_sublattice("8", 2);
+    add_sublattice("9", 3);
+    add_sublattice("10", 5);
+    add_sublattice("11", 4);
+    add_sublattice("12", 1);
+    require_alias_ids({0, 0, 1, 4, 12, 3, 3, 7, 8, 5, 9, 11, 10});
+
+    add_alias("13", "1");
+    add_alias("14", "3");
+    add_alias("15", "7");
+    add_alias("16", "10");
+    require_alias_ids({0, 0, 1, 1, 4, 12, 3, 3, 3, 7, 7, 8, 5, 9, 11, 10, 10});
+}

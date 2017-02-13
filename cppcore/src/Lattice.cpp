@@ -173,7 +173,7 @@ Lattice::HoppingFamily const& Lattice::hopping_family(std::string const& name) c
 Lattice::HoppingFamily const& Lattice::hopping_family(hop_id id) const {
     using Pair = Hoppings::value_type;
     auto const it = std::find_if(hoppings.begin(), hoppings.end(),
-                                 [&](Pair const& p) { return p.second.unique_id == id; });
+                                 [&](Pair const& p) { return p.second.family_id == id; });
     if (it == hoppings.end()) {
         throw std::out_of_range("There is no hopping with ID = {}"_format(id));
     }
@@ -258,29 +258,8 @@ bool Lattice::has_complex_hoppings() const {
     });
 }
 
-OptimizedLatticeStructure Lattice::optimized_structure() const {
-    auto opt_structure = OptimizedLatticeStructure(nsub());
-
-    for (auto const& pair : sublattices) {
-        auto const& sublattice = pair.second;
-        opt_structure[sublattice.unique_id].position = sublattice.position;
-        opt_structure[sublattice.unique_id].alias = sublattice.alias_id;
-    }
-
-    for (auto const& pair : hoppings) {
-        auto const& hopping_family = pair.second;
-        for (auto const& term : hopping_family.terms) {
-            // The other sublattice has an opposite relative index (conjugate)
-            opt_structure[term.from].hoppings.push_back(
-                {term.relative_index, term.to, hopping_family.unique_id, /*is_conjugate*/false}
-            );
-            opt_structure[term.to].hoppings.push_back(
-                {-term.relative_index, term.from, hopping_family.unique_id, /*is_conjugate*/true}
-            );
-        }
-    }
-
-    return opt_structure;
+OptimizedUnitCell Lattice::optimized_unit_cell() const {
+    return OptimizedUnitCell(*this);
 }
 
 Lattice::NameMap Lattice::sub_name_map() const {
@@ -294,7 +273,7 @@ Lattice::NameMap Lattice::sub_name_map() const {
 Lattice::NameMap Lattice::hop_name_map() const {
     auto map = NameMap();
     for (auto const& p : hoppings) {
-        map[p.first] = p.second.unique_id;
+        map[p.first] = p.second.family_id;
     }
     return map;
 }
@@ -313,6 +292,48 @@ sub_id Lattice::register_sublattice(string_view name) {
     }
 
     return static_cast<sub_id>(sublattices.size());
+}
+
+OptimizedUnitCell::OptimizedUnitCell(Lattice const& lattice) : sites(lattice.nsub()) {
+    using Pair = Lattice::Sublattices::value_type;
+    auto const& sublattices = lattice.get_sublattices();
+    std::transform(sublattices.begin(), sublattices.end(), sites.begin(), [](Pair const& pair) {
+        auto const& sub = pair.second;
+        return Site{sub.position, /*norb*/static_cast<storage_idx_t>(sub.energy.cols()),
+                    sub.unique_id, sub.alias_id, /*hoppings*/{}};
+    });
+
+    // Sites with equal `alias_id` will be merged in the final system
+    std::sort(sites.begin(), sites.end(), [](Site const& a, Site const& b) {
+        return a.alias_id < b.alias_id;
+    });
+
+    // Sort by number of orbitals, but make sure alias ordering from the previous step
+    // is preserved (stable sort). Aliases have the same `norb` so these sites will
+    // remain as consecutive elements in the final sorted vector.
+    std::stable_sort(sites.begin(), sites.end(), [](Site const& a, Site const& b) {
+        return a.norb < b.norb;
+    });
+
+    // Find the index in `sites` of a site with the given unique ID
+    auto find_index = [&](sub_id unique_id) {
+        auto const it = std::find_if(sites.begin(), sites.end(), [&](Site const& s) {
+            return s.unique_id == unique_id;
+        });
+        assert(it != sites.end());
+        return static_cast<storage_idx_t>(it - sites.begin());
+    };
+
+    for_each_term(lattice.get_hoppings(), [&](Lattice::HoppingFamily const& hopping_family,
+                                              Lattice::HoppingTerm const& term) {
+        auto const idx1 = find_index(term.from);
+        auto const idx2 = find_index(term.to);
+        auto const id = hopping_family.family_id;
+
+        // The other sublattice has an opposite relative index (conjugate)
+        sites[idx1].hoppings.push_back({ term.relative_index, idx2, id, /*is_conjugate*/false});
+        sites[idx2].hoppings.push_back({-term.relative_index, idx1, id, /*is_conjugate*/true });
+    });
 }
 
 } // namespace cpb

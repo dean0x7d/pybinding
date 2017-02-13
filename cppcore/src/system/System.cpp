@@ -70,7 +70,7 @@ void populate_system(System& system, Foundation const& foundation,
             continue; // invalid site
 
         system.positions[index] = site.get_position();
-        system.sublattices[index] = site.get_alias();
+        system.sublattices[index] = site.get_alias_id();
 
         matrix_view.start_row(index);
         site.for_each_neighbour([&](Site neighbor, Hopping hopping) {
@@ -79,7 +79,7 @@ void populate_system(System& system, Foundation const& foundation,
                 return; // invalid
 
             if (!hopping.is_conjugate) // only make half the matrix, other half is the conjugate
-                matrix_view.insert(neighbor_index, hopping.id);
+                matrix_view.insert(neighbor_index, hopping.family_id);
         });
     }
     matrix_view.compress();
@@ -125,7 +125,7 @@ void populate_boundaries(System& system, Foundation const& foundation,
                 if (neighbor_index < 0)
                     return; // invalid
 
-                boundary_matrix_view.insert(neighbor_index, hopping.id);
+                boundary_matrix_view.insert(neighbor_index, hopping.family_id);
             });
         }
         boundary_matrix_view.compress();

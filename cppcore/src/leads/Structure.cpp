@@ -39,13 +39,13 @@ Structure::Structure(Foundation const& foundation, HamiltonianIndices const& ham
             auto const index = lead_index(hamiltonian_indices[site]);
 
             system.positions[index] = site.get_position() + shift;
-            system.sublattices[index] = site.get_alias();
+            system.sublattices[index] = site.get_alias_id();
 
             matrix_view.start_row(index);
             site.for_each_neighbour([&](Site neighbor, Hopping hopping) {
                 auto const neighbor_index = lead_index(hamiltonian_indices[neighbor]);
                 if (neighbor_index >= 0 && !hopping.is_conjugate) {
-                    matrix_view.insert(neighbor_index, hopping.id);
+                    matrix_view.insert(neighbor_index, hopping.family_id);
                 }
             });
         }
@@ -72,7 +72,7 @@ Structure::Structure(Foundation const& foundation, HamiltonianIndices const& ham
             shifted_site.for_each_neighbour([&](Site neighbor, Hopping hopping) {
                 auto const index = lead_index(hamiltonian_indices[neighbor]);
                 if (index >= 0) {
-                    matrix_view.insert(index, hopping.id);
+                    matrix_view.insert(index, hopping.family_id);
                 }
             });
         }

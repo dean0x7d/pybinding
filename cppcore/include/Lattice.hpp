@@ -14,32 +14,6 @@ using sub_id = std::int8_t;
 using hop_id = std::int8_t;
 
 /**
- Hopping description
- */
-struct Hopping {
-    Index3D relative_index; ///< relative index between two unit cells - may be (0, 0, 0)
-    sub_id to_sublattice; ///< destination sublattice ID
-    hop_id id; ///< hopping ID which points to the hopping energy -> Lattice::hopping_energies[id]
-    bool is_conjugate; ///< true if this is an automatically added complex conjugate
-};
-
-/**
- Sublattice description
- */
-struct Sublattice {
-    Cartesian position; ///< relative to lattice origin
-    sub_id alias; ///< in case two sublattices at different positions need to have the same ID
-    std::vector<Hopping> hoppings; ///< hoppings from this sublattice
-};
-
-/**
- Structural data of a `Lattice` (sublattices and hopping connections). The data layout
- is optimized for traversal over sublattices. In addition, the sublattices are sorted
- by the size of the onsite energy matrix and the alias ID.
- */
-using OptimizedLatticeStructure = std::vector<Sublattice>;
-
-/**
  Helper class for passing sublattice information to modifier functions
  */
 struct SubIdRef {
@@ -54,6 +28,8 @@ struct HopIdRef {
     ArrayX<hop_id> const& ids;
     std::unordered_map<std::string, hop_id> name_map;
 };
+
+class OptimizedUnitCell;
 
 /**
  Crystal lattice specification
@@ -84,7 +60,7 @@ public:
 
     struct HoppingFamily {
         MatrixXcd energy; ///< base hopping energy which is shared by all terms in this family
-        hop_id unique_id; ///< different for each family
+        hop_id family_id; ///< different for each family
         std::vector<HoppingTerm> terms; ///< site connections
     };
 
@@ -173,7 +149,7 @@ public: // properties
 
 public: // optimized access
     /// Return the optimized version of the lattice structure -- see `OptimizedLatticeStructure`
-    OptimizedLatticeStructure optimized_structure() const;
+    OptimizedUnitCell optimized_unit_cell() const;
 
     /// Mapping from friendly sublattice names to their unique IDs
     NameMap sub_name_map() const;
@@ -201,6 +177,44 @@ private:
     Hoppings hoppings; ///< connections inside the unit cell or to a neighboring cell
     Cartesian offset = {0, 0, 0}; ///< global offset: sublattices are defined relative to this
     int min_neighbors = 1; ///< minimum number of neighbours required at each lattice site
+};
+
+/**
+ Unit cell data for a `Lattice` (all sites and hopping connections)
+
+ The data layout is optimized for traversal over sites. In addition, the sites
+ are sorted by the size of the onsite energy matrix and the alias ID.
+ */
+class OptimizedUnitCell {
+public:
+    /// Similar to Lattice::HoppingTerm but `from_sublattice` is implicit
+    struct Hopping {
+        Index3D relative_index;
+        storage_idx_t to_sublattice; ///< destination sublattice index in `sites` (not `unique_id`)
+        hop_id family_id;
+        bool is_conjugate; ///< true if this is an automatically added complex conjugate term
+    };
+
+    /// Similar to Lattice::Sublattice but each site lists hopping from itself
+    struct Site {
+        Cartesian position;
+        storage_idx_t norb; ///< number of orbitals on this site
+        sub_id unique_id;
+        sub_id alias_id;
+        std::vector<Hopping> hoppings;
+    };
+
+    using Sites = std::vector<Site>;
+
+public:
+    explicit OptimizedUnitCell(Lattice const& lattice);
+
+    Site const& operator[](size_t n) const { return sites[n]; }
+    Sites::const_iterator begin() const { return sites.begin(); }
+    Sites::const_iterator end() const { return sites.end(); }
+
+private:
+    Sites sites;
 };
 
 } // end namespace cpb

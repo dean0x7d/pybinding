@@ -38,7 +38,7 @@ void remove_dangling(Foundation& foundation, int min_neighbors);
  */
 class Foundation {
     Lattice const& lattice;
-    OptimizedLatticeStructure lattice_structure;
+    OptimizedUnitCell unit_cell;
     std::pair<Index3D, Index3D> bounds; ///< in lattice vector coordinates
     Index3D size; ///< number of unit cells in each lattice vector direction
     int nsub; ///< number of sites in a unit cell
@@ -71,7 +71,7 @@ public:
     NonConstSlice operator[](SliceIndex3D const& index);
 
     Lattice const& get_lattice() const { return lattice; }
-    OptimizedLatticeStructure const& get_lattice_structure() const { return lattice_structure; }
+    OptimizedUnitCell const& get_optimized_unit_cell() const { return unit_cell; }
     std::pair<Index3D, Index3D> const& get_bounds() const { return bounds; }
     Index3D const& get_size() const { return size; }
     int get_num_sublattices() const { return nsub; }
@@ -82,6 +82,9 @@ public:
     ArrayX<bool> const& get_states() const { return is_valid; }
     ArrayX<bool>& get_states() { return is_valid; }
 };
+
+/// Convenient alias
+using Hopping = OptimizedUnitCell::Hopping;
 
 /**
  Describes a site on the lattice foundation
@@ -111,7 +114,7 @@ public:
 
     Index3D const& get_index() const { return index; }
     idx_t get_sublattice() const { return sublattice; }
-    sub_id get_alias() const { return foundation->lattice_structure[sublattice].alias; }
+    sub_id get_alias_id() const { return foundation->unit_cell[sublattice].alias_id; }
     idx_t get_idx() const { return idx; }
 
     Cartesian get_position() const { return foundation->positions[idx]; }
@@ -124,7 +127,7 @@ public:
     /// Loop over all neighbours of this site
     template<class Fn>
     void for_each_neighbour(Fn lambda) const  {
-        for (auto const& hopping : foundation->lattice_structure[sublattice].hoppings) {
+        for (auto const& hopping : foundation->unit_cell[sublattice].hoppings) {
             Array3i const neighbor_index = (index + hopping.relative_index).array();
             if (any_of(neighbor_index < 0) || any_of(neighbor_index >= foundation->size.array()))
                 continue; // out of bounds
