@@ -43,6 +43,9 @@ void Lattice::add_sublattice(string_view name, Cartesian position,
     if (onsite_energy.rows() != onsite_energy.cols()) {
         throw std::logic_error("The onsite hopping term must be a real vector or a square matrix");
     }
+    if (onsite_energy.rows() == 0) {
+        throw std::logic_error("The onsite hopping term can't be zero-dimensional");
+    }
     if (!onsite_energy.diagonal().imag().isZero()) {
         throw std::logic_error("The main diagonal of the onsite hopping term must be real");
     }
@@ -72,6 +75,10 @@ void Lattice::register_hopping_energy(std::string const& name, MatrixXcd const& 
     if (hoppings.size() > max_size) {
         throw std::logic_error("Exceeded maximum number of unique hoppings energies: "
                                + std::to_string(max_size));
+    }
+
+    if (energy.rows() == 0 || energy.cols() == 0) {
+        throw std::logic_error("Hoppings can't be zero-dimensional");
     }
 
     auto const unique_id = static_cast<hop_id>(hoppings.size());

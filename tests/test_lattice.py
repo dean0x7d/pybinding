@@ -84,6 +84,10 @@ def test_add_multiorbital_sublattice(mock_lattice):
                                                   [3, 5, 6]])
 
     with pytest.raises(RuntimeError) as excinfo:
+        mock_lattice.add_one_sublattice("zero-dimensional", [0, 0], [])
+    assert "can't be zero-dimensional" in str(excinfo.value)
+
+    with pytest.raises(RuntimeError) as excinfo:
         mock_lattice.add_one_sublattice("complex onsite energy", [0, 0], [1j, 2j, 3j])
     assert "must be a real vector or a square matrix" in str(excinfo.value)
 
@@ -178,6 +182,10 @@ def test_add_matrix_hopping(mock_lattice):
         "t23": [[1, 2, 3],
                 [4, 5, 6]],
     })
+
+    with pytest.raises(RuntimeError) as excinfo:
+        mock_lattice.register_hopping_energies({"zero-dimensional": []})
+    assert "can't be zero-dimensional" in str(excinfo.value)
 
     mock_lattice.add_hoppings(
         ([0, 0], "A2", "B2", "t22"),

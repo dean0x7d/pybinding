@@ -34,6 +34,9 @@ TEST_CASE("Lattice") {
         lattice.add_sublattice("A", {0, 0, 0}, VectorXd::Constant(2, 0.0).eval());
         REQUIRE(lattice.has_multiple_orbitals());
 
+        auto const zero_dim = MatrixXcd::Zero(0, 0).eval();
+        REQUIRE_THROWS(lattice.add_sublattice("zero_dim", {0, 0, 0}, zero_dim));
+
         auto const not_square = MatrixXcd::Zero(2, 3).eval();
         REQUIRE_THROWS(lattice.add_sublattice("not_square", {0, 0, 0}, not_square));
 
@@ -118,6 +121,8 @@ TEST_CASE("Lattice") {
         REQUIRE_THROWS(lattice.add_hopping({0, 0, 0}, "A", "A", "t22"));
         REQUIRE_THROWS(lattice.add_hopping({0, 0, 0}, "B", "C", "t22"));
         REQUIRE_THROWS(lattice.add_hopping({0, 0, 0}, "C", "B", "t23"));
+
+        REQUIRE_THROWS(lattice.register_hopping_energy("zero_dim", MatrixXcd::Zero(0, 0)));
     }
 
     SECTION("Calculate position") {
