@@ -73,8 +73,8 @@ struct arrayref_caster {
         auto const ndim = (src.rows == 1 || src.cols == 1) ? 1 : 2;
         auto shape = (ndim == 1) ? Shape{{src.is_row_major ? src.cols : src.rows}}
                                  : Shape{{src.rows, src.cols}};
-        auto const flags = base_flags | (src.is_row_major ? npy_api::NPY_C_CONTIGUOUS_
-                                                          : npy_api::NPY_F_CONTIGUOUS_);
+        auto const flags = base_flags | (src.is_row_major ? npy_api::NPY_ARRAY_C_CONTIGUOUS_
+                                                          : npy_api::NPY_ARRAY_F_CONTIGUOUS_);
 
         auto result = npy_api::get().PyArray_NewFromDescr_(
             npy_api::get().PyArray_Type_, data_type.release().ptr(), ndim, shape.data(),
