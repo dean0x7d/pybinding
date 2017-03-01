@@ -8,40 +8,28 @@
 
 namespace cpb { namespace kpm {
 
-/// A function which creates the KPM starter vector r0
-template<class scalar_t>
-using Starter = std::function<VectorX<scalar_t>()>;
-
 /// Return the starter vector r0 for the expectation value KPM procedure
 template<class scalar_t>
-Starter<scalar_t> exval_starter(OptimizedHamiltonian<scalar_t> const& oh) {
-    auto const size = oh.size();
-    auto const index = oh.idx().row;
-    return [size, index]() {
-        auto r0 = VectorX<scalar_t>::Zero(size).eval();
-        r0[index] = 1;
-        return r0;
-    };
+VectorX<scalar_t> exval_starter(OptimizedHamiltonian<scalar_t> const& oh) {
+    auto r0 = VectorX<scalar_t>::Zero(oh.size()).eval();
+    r0[oh.idx().row] = 1;
+    return r0;
 }
 
 /// Return the starter vector r0 for the stochastic KPM procedure
 template<class real_t>
-Starter<real_t> random_starter(OptimizedHamiltonian<real_t> const& oh, std::mt19937& generator) {
-    return [&oh, &generator]() -> VectorX<real_t> {
-        auto r0 = num::make_random<VectorX<real_t>>(oh.size(), generator);
-        r0 = oh.reorder_vector(r0); // needed to maintain consistent results for all optimizations
-        return transform<VectorX>(r0, [](real_t x) -> real_t { return (x < 0.5f) ? -1.f : 1.f; });
-    };
+VectorX<real_t> random_starter(OptimizedHamiltonian<real_t> const& oh, std::mt19937& generator) {
+    auto r0 = num::make_random<VectorX<real_t>>(oh.size(), generator);
+    r0 = oh.reorder_vector(r0); // needed to maintain consistent results for all optimizations
+    return transform<VectorX>(r0, [](real_t x) -> real_t { return (x < 0.5f) ? -1.f : 1.f; });
 }
 
 template<class real_t, class complex_t = std::complex<real_t>>
-Starter<complex_t> random_starter(OptimizedHamiltonian<std::complex<real_t>> const& oh,
+VectorX<complex_t> random_starter(OptimizedHamiltonian<std::complex<real_t>> const& oh,
                                   std::mt19937& generator) {
-    return [&oh, &generator]() -> VectorX<complex_t> {
-        auto phase = num::make_random<ArrayX<real_t>>(oh.size(), generator);
-        phase = oh.reorder_vector(phase);
-        return exp(complex_t{2 * constant::pi * constant::i1} * phase);
-    };
+    auto phase = num::make_random<ArrayX<real_t>>(oh.size(), generator);
+    phase = oh.reorder_vector(phase);
+    return exp(complex_t{2 * constant::pi * constant::i1} * phase);
 }
 
 /// Return the vector following the starter: r1 = h2 * r0 * 0.5

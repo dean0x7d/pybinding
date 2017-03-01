@@ -18,9 +18,8 @@ namespace diagonal {
  a unit vector for the expectation value variant or a random vector for the
  stochastic trace variant.
  */
-template<class Moments, class Starter, class Matrix>
-void basic(Moments& moments, Starter const& starter, Matrix const& h2) {
-    auto r0 = starter();
+template<class Moments, class Vector, class Matrix>
+void basic(Moments& moments, Vector r0, Matrix const& h2) {
     auto r1 = make_r1(h2, r0);
     moments.collect_initial(r0, r1);
 
@@ -54,9 +53,8 @@ void basic(Moments& moments, Starter const& starter, Matrix const& h2) {
  system which contains non-zero values. The speedup is about equal to the amount
  of removed work.
  */
-template<class Moments, class Starter, class Matrix>
-void opt_size(Moments& moments, Starter const& starter, Matrix const& h2, SliceMap const& map) {
-    auto r0 = starter();
+template<class Moments, class Vector, class Matrix>
+void opt_size(Moments& moments, Vector r0, Matrix const& h2, SliceMap const& map) {
     auto r1 = make_r1(h2, r0);
     moments.collect_initial(r0, r1);
 
@@ -82,9 +80,8 @@ void opt_size(Moments& moments, Starter const& starter, Matrix const& h2, SliceM
  The two concurrent operations share some of the same data, thus promoting cache
  usage and reducing main memory bandwidth.
  */
-template<class Moments, class Starter, class Matrix, class scalar_t = typename Matrix::Scalar>
-void interleaved(Moments& moments, Starter const& starter, Matrix const& h2, SliceMap const& map) {
-    auto r0 = starter();
+template<class Moments, class Vector, class Matrix, class scalar_t = typename Matrix::Scalar>
+void interleaved(Moments& moments, Vector r0, Matrix const& h2, SliceMap const& map) {
     auto r1 = make_r1(h2, r0);
     moments.collect_initial(r0, r1);
 
@@ -115,10 +112,8 @@ void interleaved(Moments& moments, Starter const& starter, Matrix const& h2, Sli
 /**
  Optimal size + interleaved
  */
-template<class Moments, class Starter, class Matrix, class scalar_t = typename Matrix::Scalar>
-void opt_size_and_interleaved(Moments& moments, Starter const& starter, Matrix const& h2,
-                              SliceMap const& map) {
-    auto r0 = starter();
+template<class Moments, class Vector, class Matrix, class scalar_t = typename Matrix::Scalar>
+void opt_size_and_interleaved(Moments& moments, Vector r0, Matrix const& h2, SliceMap const& map) {
     auto r1 = make_r1(h2, r0);
     moments.collect_initial(r0, r1);
 
@@ -160,9 +155,8 @@ namespace off_diagonal {
  can be computed, but the diagonal version of this function is more efficient
  for that special case.
  */
-template<class Moments, class Starter, class Matrix>
-void basic(Moments& moments, Starter const& starter, Matrix const& h2) {
-    auto r0 = starter();
+template<class Moments, class Vector, class Matrix>
+void basic(Moments& moments, Vector r0, Matrix const& h2) {
     auto r1 = make_r1(h2, r0);
     moments.collect_initial(r0, r1);
 
@@ -182,9 +176,8 @@ void basic(Moments& moments, Starter const& starter, Matrix const& h2) {
 
  See the diagonal version of this function for more information.
  */
-template<class Moments, class Starter, class Matrix>
-void opt_size(Moments& moments, Starter const& starter, Matrix const& h2, SliceMap const& map) {
-    auto r0 = starter();
+template<class Moments, class Vector, class Matrix>
+void opt_size(Moments& moments, Vector r0, Matrix const& h2, SliceMap const& map) {
     auto r1 = make_r1(h2, r0);
     moments.collect_initial(r0, r1);
 
@@ -206,9 +199,8 @@ void opt_size(Moments& moments, Starter const& starter, Matrix const& h2, SliceM
 
  See the diagonal version of this function for more information.
  */
-template<class Moments, class Starter, class Matrix, class scalar_t = typename Matrix::Scalar>
-void interleaved(Moments& moments, Starter const& starter, Matrix const& h2, SliceMap const& map) {
-    auto r0 = starter();
+template<class Moments, class Vector, class Matrix, class scalar_t = typename Matrix::Scalar>
+void interleaved(Moments& moments, Vector r0, Matrix const& h2, SliceMap const& map) {
     auto r1 = make_r1(h2, r0);
     moments.collect_initial(r0, r1);
 
@@ -236,10 +228,8 @@ void interleaved(Moments& moments, Starter const& starter, Matrix const& h2, Sli
 /**
  Optimal size + interleaved
  */
-template<class Moments, class Starter, class Matrix, class scalar_t = typename Matrix::Scalar>
-void opt_size_and_interleaved(Moments& moments, Starter const& starter, Matrix const& h2,
-                              SliceMap const& map) {
-    auto r0 = starter();
+template<class Moments, class Vector, class Matrix, class scalar_t = typename Matrix::Scalar>
+void opt_size_and_interleaved(Moments& moments, Vector r0, Matrix const& h2, SliceMap const& map) {
     auto r1 = make_r1(h2, r0);
     moments.collect_initial(r0, r1);
 

@@ -1,6 +1,6 @@
 #include "kpm/Strategy.hpp"
 
-#include "kpm/Starter.hpp"
+#include "kpm/starters.hpp"
 #include "kpm/calc_moments.hpp"
 #ifdef CPB_USE_CUDA
 # include "cuda/kpm/calc_moments.hpp"
@@ -146,10 +146,10 @@ std::string StrategyTemplate<scalar_t, Compute>::report(bool shortform) const {
 }
 
 struct DefaultCompute {
-    template<class Moments, class Starter>
+    template<class Moments, class Vector>
     struct Diagonal {
         Moments& moments;
-        Starter const& starter;
+        Vector r0;
         SliceMap const& map;
         AlgorithmConfig const& config;
 
@@ -159,27 +159,28 @@ struct DefaultCompute {
             simd::scope_disable_denormals guard;
 
             if (config.optimal_size && config.interleaved) {
-                opt_size_and_interleaved(moments, starter, h2, map);
+                opt_size_and_interleaved(moments, std::move(r0), h2, map);
             } else if (config.interleaved) {
-                interleaved(moments, starter, h2, map);
+                interleaved(moments, std::move(r0), h2, map);
             } else if (config.optimal_size) {
-                opt_size(moments, starter, h2, map);
+                opt_size(moments, std::move(r0), h2, map);
             } else {
-                basic(moments, starter, h2);
+                basic(moments, std::move(r0), h2);
             }
         }
     };
 
-    template<class Moments, class Starter, class OptimizedHamiltonian>
-    static void diagonal(Moments& m, Starter const& s, OptimizedHamiltonian const& oh,
+    template<class Moments, class Vector, class OptimizedHamiltonian>
+    static void diagonal(Moments& m, Vector&& r0, OptimizedHamiltonian const& oh,
                          AlgorithmConfig const& ac) {
-        oh.matrix().match(Diagonal<Moments, Starter>{m, s, oh.map(), ac});
+        static_assert(!std::is_lvalue_reference<Vector>(), "Starter vector r0 must be an rvalue");
+        oh.matrix().match(Diagonal<Moments, Vector>{m, std::move(r0), oh.map(), ac});
     }
 
-    template<class Moments, class Starter>
+    template<class Moments, class Vector>
     struct OffDiagonal {
         Moments& moments;
-        Starter const& starter;
+        Vector r0;
         SliceMap const& map;
         AlgorithmConfig const& config;
 
@@ -189,21 +190,22 @@ struct DefaultCompute {
             simd::scope_disable_denormals guard;
 
             if (config.optimal_size && config.interleaved) {
-                opt_size_and_interleaved(moments, starter, h2, map);
+                opt_size_and_interleaved(moments, std::move(r0), h2, map);
             } else if (config.interleaved) {
-                interleaved(moments, starter, h2, map);
+                interleaved(moments, std::move(r0), h2, map);
             } else if (config.optimal_size) {
-                opt_size(moments, starter, h2, map);
+                opt_size(moments, std::move(r0), h2, map);
             } else {
-                basic(moments, starter, h2);
+                basic(moments, std::move(r0), h2);
             }
         }
     };
 
-    template<class Moments, class OptimizedHamiltonian, class Starter>
-    static void off_diagonal(Moments& m, Starter const& s, OptimizedHamiltonian const& oh,
+    template<class Moments, class OptimizedHamiltonian, class Vector>
+    static void off_diagonal(Moments& m, Vector&& r0, OptimizedHamiltonian const& oh,
                              AlgorithmConfig const& ac) {
-        oh.matrix().match(OffDiagonal<Moments, Starter>{m, s, oh.map(), ac});
+        static_assert(!std::is_lvalue_reference<Vector>(), "Starter vector r0 must be an rvalue");
+        oh.matrix().match(OffDiagonal<Moments, Vector>{m, std::move(r0), oh.map(), ac});
     }
 };
 
