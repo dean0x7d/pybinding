@@ -214,7 +214,8 @@ namespace detail {
         CPB_ALWAYS_INLINE
         static __m256d call(double const* data, std::int32_t const* indices) {
             auto const idx = _mm_load_si128(reinterpret_cast<__m128i const*>(indices));
-            return _mm256_i32gather_pd(data, idx, sizeof(data[0]));
+            constexpr auto scale = sizeof(*data);
+            return _mm256_i32gather_pd(data, idx, scale);
         }
 
         CPB_ALWAYS_INLINE
@@ -230,7 +231,8 @@ namespace detail {
         CPB_ALWAYS_INLINE
         static __m256 call(float const* data, std::int32_t const* indices) {
             auto const idx = _mm256_load_si256(reinterpret_cast<__m256i const*>(indices));
-            return _mm256_i32gather_ps(data, idx, sizeof(data[0]));
+            constexpr auto scale = sizeof(*data);
+            return _mm256_i32gather_ps(data, idx, scale);
         }
 
         CPB_ALWAYS_INLINE

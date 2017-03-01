@@ -74,7 +74,7 @@ real_t lanczos_axpy(real_t a, VectorX<scalar_t> const& v1, VectorX<scalar_t>& v0
     for (auto i = idx_t{0}; i < loop.vec_end; i += loop.step) {
         auto const r0 = simd::load<simd_register_t>(v0.data() + i);
         auto const r1 = simd::load<simd_register_t>(v1.data() + i);
-        auto const tmp = r0 - a * r1;
+        auto const tmp = simd_register_t{r0 - a * r1};
         norm2_vec = norm2_vec + tmp * tmp;
         simd::store(v0.data() + i, tmp);
     }
