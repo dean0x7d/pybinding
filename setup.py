@@ -49,7 +49,8 @@ class CMakeBuild(build_ext):
                     cmake_args += ['-A', 'x64']
                 build_args += ['--', '/v:m', '/m']
             else:
-                build_args += ['--', '-j2']
+                parallel_jobs = 2 if not os.environ.get("READTHEDOCS") else 1
+                build_args += ['--', '-j{}'.format(parallel_jobs)]
 
             subprocess.check_call(['cmake', cmake_dir] + cmake_args, cwd=build_dir)
             subprocess.check_call(['cmake', '--build', '.'] + build_args, cwd=build_dir)
