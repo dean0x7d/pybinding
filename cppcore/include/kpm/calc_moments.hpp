@@ -1,5 +1,4 @@
 #pragma once
-#include "compute/kernel_polynomial.hpp"
 
 namespace cpb { namespace kpm { namespace calc_moments {
 
@@ -28,14 +27,8 @@ void basic(Moments& moments, Vector r0, Matrix const& h2) {
     assert(num_moments % 2 == 0);
 
     for (auto n = 2; n <= num_moments / 2; ++n) {
-        // Any kind of pre- and post-processing, e.g. complex absorbing potential
-        moments.pre_process(r0, r1);
-
         // Generalized SpMV: `r0 = h2 * r1 - r0` <- the most expensive part of the algorithm
         compute::kpm_spmv(0, h2.rows(), h2, r1, r0);
-
-        // The pre- and post-processing are usually empty functions
-        moments.post_process(r0, r1);
 
         // r1 gets the primary result of this iteration
         // r0 gets the value old value of r1 (it will be needed in the next iteration)
@@ -65,9 +58,7 @@ void opt_size(Moments& moments, Vector r0, Matrix const& h2, SliceMap const& map
         // Only compute up to optimal size for each iteration
         auto const opt_size = map.optimal_size(n, num_moments);
 
-        moments.pre_process(r0.head(opt_size), r1.head(opt_size));
         compute::kpm_spmv(0, opt_size, h2, r1, r0);
-        moments.post_process(r0.head(opt_size), r1.head(opt_size));
 
         r1.swap(r0);
         moments.collect(n, r0.head(opt_size), r1.head(opt_size));
@@ -162,9 +153,7 @@ void basic(Moments& moments, Vector r0, Matrix const& h2) {
 
     auto const num_moments = moments.size();
     for (auto n = idx_t{2}; n < num_moments; ++n) {
-        moments.pre_process(r0, r1);
         compute::kpm_spmv(0, h2.rows(), h2, r1, r0);
-        moments.post_process(r0, r1);
 
         r1.swap(r0);
         moments.collect(n, r1);
@@ -185,9 +174,7 @@ void opt_size(Moments& moments, Vector r0, Matrix const& h2, SliceMap const& map
     for (auto n = idx_t{2}; n < num_moments; ++n) {
         auto const opt_size = map.optimal_size(n, num_moments);
 
-        moments.pre_process(r0, r1);
         compute::kpm_spmv(0, opt_size, h2, r1, r0); // r0 = matrix * r1 - r0
-        moments.post_process(r0, r1);
 
         r1.swap(r0);
         moments.collect(n, r1);

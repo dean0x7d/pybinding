@@ -6,6 +6,7 @@
 #include "kpm/Config.hpp"
 #include "kpm/Kernel.hpp"
 #include "kpm/OptimizedHamiltonian.hpp"
+#include "kpm/Moments.hpp"
 #include "kpm/Stats.hpp"
 
 #include "utils/Chrono.hpp"
@@ -50,8 +51,8 @@ public:
  The `Compute` template parameter provides functions which compute raw KPM moments.
  See `DefaultCompute` for the reference implementation.
  */
-template<class scalar_t, class Compute>
-class StrategyTemplate final : public Strategy {
+template<class scalar_t>
+class StrategyTemplate : public Strategy {
     using real_t = num::get_real_t<scalar_t>;
     using complex_t = num::get_complex_t<scalar_t>;
 
@@ -70,6 +71,12 @@ public:
     std::string report(bool shortform) const final;
     Stats const& get_stats() const final { return stats; }
 
+protected:
+    virtual void compute(DiagonalMoments<scalar_t>&, VectorX<scalar_t>&& r0,
+                         OptimizedHamiltonian<scalar_t> const&, AlgorithmConfig const&) const = 0;
+    virtual void compute(OffDiagonalMoments<scalar_t>&, VectorX<scalar_t>&& r0,
+                         OptimizedHamiltonian<scalar_t> const&, AlgorithmConfig const&) const = 0;
+
 private:
     SparseMatrixRC<scalar_t> hamiltonian;
     Config config;
@@ -79,14 +86,7 @@ private:
     Stats stats;
 };
 
-/**
- Default CPU implementation for computing KPM moments, see `Strategy`
- */
-struct DefaultCompute;
-CPB_EXTERN_TEMPLATE_CLASS_VARGS(StrategyTemplate, DefaultCompute)
-
-template<class scalar_t>
-using DefaultStrategy = StrategyTemplate<scalar_t, DefaultCompute>;
+CPB_EXTERN_TEMPLATE_CLASS(StrategyTemplate)
 
 #ifdef CPB_USE_CUDA
 /**

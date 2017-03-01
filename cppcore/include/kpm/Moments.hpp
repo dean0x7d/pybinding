@@ -1,6 +1,5 @@
 #pragma once
-#include "numeric/dense.hpp"
-#include "detail/macros.hpp"
+#include "kpm/OptimizedHamiltonian.hpp"
 
 #include <vector>
 
@@ -12,31 +11,20 @@ namespace cpb { namespace kpm {
 template<class scalar_t>
 class DiagonalMoments {
 public:
+    using VectorRef = Ref<VectorX<scalar_t>>;
+
     DiagonalMoments(idx_t num_moments) : moments(ArrayX<scalar_t>::Zero(num_moments)) {}
+    virtual ~DiagonalMoments() = default;
 
     idx_t size() const { return moments.size(); }
     ArrayX<scalar_t>& get() { return moments; }
 
     /// Collect the first 2 moments which are computer outside the main KPM loop
-    void collect_initial(VectorX<scalar_t> const& r0, VectorX<scalar_t> const& r1) {
-        m0 = moments[0] = r0.squaredNorm() * scalar_t{0.5};
-        m1 = moments[1] = r1.dot(r0);
-    }
+    virtual void collect_initial(VectorRef r0, VectorRef r1);
 
     /// Collect moments `n` and `n + 1` from the result vectors. Expects `n >= 2`.
-    template<class Vector>
-    CPB_ALWAYS_INLINE void collect(idx_t n, Vector const& r0, Vector const& r1) {
-        collect(n, r0.squaredNorm(), r1.dot(r0));
-    }
-
-    CPB_ALWAYS_INLINE void collect(idx_t n, scalar_t a, scalar_t b) {
-        assert(n >= 2 && n <= size() / 2);
-        moments[2 * (n - 1)] = scalar_t{2} * (a - m0);
-        moments[2 * (n - 1) + 1] = scalar_t{2} * b - m1;
-    }
-
-    template<class V1, class V2> void pre_process(V1 const&, V2 const&) {}
-    template<class V1, class V2> void post_process(V1 const&, V2 const&) {}
+    virtual void collect(idx_t n, VectorRef r0, VectorRef r1);
+    virtual void collect(idx_t n, scalar_t a, scalar_t b);
 
 private:
     ArrayX<scalar_t> moments;
@@ -49,6 +37,7 @@ private:
 */
 template<class scalar_t>
 class OffDiagonalMoments {
+    using VectorRef = Ref<VectorX<scalar_t>>;
     using MomentsVector = ArrayX<scalar_t>;
     using Data = std::vector<MomentsVector>;
 
@@ -59,36 +48,23 @@ public:
             moments.resize(num_moments);
         }
     }
+    virtual ~OffDiagonalMoments() = default;
 
     idx_t size() const { return data[0].size(); }
     Data& get() { return data; }
 
     /// Collect the first 2 moments which are computer outside the main KPM loop
-    void collect_initial(VectorX<scalar_t> const& r0, VectorX<scalar_t> const& r1) {
-        using real_t = num::get_real_t<scalar_t>;
-
-        for (auto i = 0; i < idx.cols.size(); ++i) {
-            auto const col = idx.cols[i];
-            data[i][0] = r0[col] * real_t{0.5}; // 0.5 is special for the moment zero
-            data[i][1] = r1[col];
-        }
-    }
+    virtual void collect_initial(VectorRef r0, VectorRef r1);
 
     /// Collect moment `n` from the result vector `r1`. Expects `n >= 2`.
-    void collect(idx_t n, VectorX<scalar_t> const& r1) {
-        assert(n >= 2 && n < data[0].size());
-        for (auto i = 0; i < idx.cols.size(); ++i) {
-            auto const col = idx.cols[i];
-            data[i][n] = r1[col];
-        }
-    }
-
-    template<class V1, class V2> void pre_process(V1 const&, V2 const&) {}
-    template<class V1, class V2> void post_process(V1 const&, V2 const&) {}
+    virtual void collect(idx_t n, VectorRef r1);
 
 private:
     Indices idx;
     Data data;
 };
+
+CPB_EXTERN_TEMPLATE_CLASS(DiagonalMoments)
+CPB_EXTERN_TEMPLATE_CLASS(OffDiagonalMoments)
 
 }} // namespace cpb::kpm

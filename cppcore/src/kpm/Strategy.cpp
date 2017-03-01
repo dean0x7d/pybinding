@@ -1,11 +1,9 @@
 #include "kpm/Strategy.hpp"
 
 #include "kpm/starters.hpp"
-#include "kpm/calc_moments.hpp"
 #ifdef CPB_USE_CUDA
 # include "cuda/kpm/calc_moments.hpp"
 #endif
-#include "kpm/Moments.hpp"
 #include "kpm/reconstruct.hpp"
 
 namespace cpb { namespace kpm {
@@ -22,9 +20,8 @@ namespace {
     }
 } // anonymous namespace
 
-template<class scalar_t, class Compute>
-StrategyTemplate<scalar_t, Compute>::StrategyTemplate(SparseMatrixRC<scalar_t> h,
-                                                      Config const& config)
+template<class scalar_t>
+StrategyTemplate<scalar_t>::StrategyTemplate(SparseMatrixRC<scalar_t> h, Config const& config)
     : hamiltonian(std::move(h)), config(config), bounds(reset_bounds(hamiltonian.get(), config)),
       optimized_hamiltonian(hamiltonian.get(), config.matrix_format, config.algorithm.reorder()) {
     if (config.min_energy > config.max_energy) {
@@ -32,8 +29,8 @@ StrategyTemplate<scalar_t, Compute>::StrategyTemplate(SparseMatrixRC<scalar_t> h
     }
 }
 
-template<class scalar_t, class Compute>
-bool StrategyTemplate<scalar_t, Compute>::change_hamiltonian(Hamiltonian const& h) {
+template<class scalar_t>
+bool StrategyTemplate<scalar_t>::change_hamiltonian(Hamiltonian const& h) {
     if (!ham::is<scalar_t>(h)) {
         return false;
     }
@@ -45,9 +42,8 @@ bool StrategyTemplate<scalar_t, Compute>::change_hamiltonian(Hamiltonian const& 
     return true;
 }
 
-template<class scalar_t, class Compute>
-ArrayXd StrategyTemplate<scalar_t, Compute>::ldos(idx_t index, ArrayXd const& energy,
-                                                  double broadening) {
+template<class scalar_t>
+ArrayXd StrategyTemplate<scalar_t>::ldos(idx_t index, ArrayXd const& energy, double broadening) {
     auto const scale = bounds.scaling_factors();
     auto const num_moments = config.kernel.required_num_moments(broadening / scale.a);
 
@@ -58,23 +54,23 @@ ArrayXd StrategyTemplate<scalar_t, Compute>::ldos(idx_t index, ArrayXd const& en
     auto moments = DiagonalMoments<scalar_t>(num_moments);
 
     stats.moments_timer.tic();
-    Compute::diagonal(moments, exval_starter(oh), oh, config.algorithm);
+    compute(moments, exval_starter(oh), oh, config.algorithm);
     stats.moments_timer.toc();
 
     config.kernel.apply(moments.get());
     return reconstruct<real_t>(moments.get().real(), energy, scale);
 }
 
-template<class scalar_t, class Compute>
-ArrayXcd StrategyTemplate<scalar_t, Compute>::greens(idx_t row, idx_t col, ArrayXd const& energy,
-                                                     double broadening) {
+template<class scalar_t>
+ArrayXcd StrategyTemplate<scalar_t>::greens(idx_t row, idx_t col, ArrayXd const& energy,
+                                            double broadening) {
     return std::move(greens_vector(row, {col}, energy, broadening).front());
 }
 
-template<class scalar_t, class Compute>
+template<class scalar_t>
 std::vector<ArrayXcd>
-StrategyTemplate<scalar_t, Compute>::greens_vector(idx_t row, std::vector<idx_t> const& cols,
-                                                   ArrayXd const& energy, double broadening) {
+StrategyTemplate<scalar_t>::greens_vector(idx_t row, std::vector<idx_t> const& cols,
+                                          ArrayXd const& energy, double broadening) {
     assert(!cols.empty());
     auto const scale = bounds.scaling_factors();
     auto const num_moments = config.kernel.required_num_moments(broadening / scale.a);
@@ -87,7 +83,7 @@ StrategyTemplate<scalar_t, Compute>::greens_vector(idx_t row, std::vector<idx_t>
         auto moments = DiagonalMoments<scalar_t>(num_moments);
 
         stats.moments_timer.tic();
-        Compute::diagonal(moments, exval_starter(oh), oh, config.algorithm);
+        compute(moments, exval_starter(oh), oh, config.algorithm);
         stats.moments_timer.toc();
 
         config.kernel.apply(moments.get());
@@ -96,7 +92,7 @@ StrategyTemplate<scalar_t, Compute>::greens_vector(idx_t row, std::vector<idx_t>
         auto moments_vector = OffDiagonalMoments<scalar_t>(num_moments, oh.idx());
 
         stats.moments_timer.tic();
-        Compute::off_diagonal(moments_vector, exval_starter(oh), oh, config.algorithm);
+        compute(moments_vector, exval_starter(oh), oh, config.algorithm);
         stats.moments_timer.toc();
 
         for (auto& moments : moments_vector.get()) {
@@ -109,8 +105,8 @@ StrategyTemplate<scalar_t, Compute>::greens_vector(idx_t row, std::vector<idx_t>
     }
 }
 
-template<class scalar_t, class Compute>
-ArrayXd StrategyTemplate<scalar_t, Compute>::dos(ArrayXd const& energy, double broadening) {
+template<class scalar_t>
+ArrayXd StrategyTemplate<scalar_t>::dos(ArrayXd const& energy, double broadening) {
     auto const scale = bounds.scaling_factors();
     auto const num_moments = config.kernel.required_num_moments(broadening / scale.a);
 
@@ -128,7 +124,7 @@ ArrayXd StrategyTemplate<scalar_t, Compute>::dos(ArrayXd const& energy, double b
     stats.moments_timer.tic();
     std::mt19937 generator;
     for (auto j = 0; j < config.num_random; ++j) {
-        Compute::diagonal(moments, random_starter(oh, generator), oh, specialized_algorithm);
+        compute(moments, random_starter(oh, generator), oh, specialized_algorithm);
         total += moments.get();
     }
     total /= static_cast<real_t>(config.num_random);
@@ -138,78 +134,14 @@ ArrayXd StrategyTemplate<scalar_t, Compute>::dos(ArrayXd const& energy, double b
     return reconstruct<real_t>(total.real(), energy, scale);
 }
 
-template<class scalar_t, class Compute>
-std::string StrategyTemplate<scalar_t, Compute>::report(bool shortform) const {
+template<class scalar_t>
+std::string StrategyTemplate<scalar_t>::report(bool shortform) const {
     return bounds.report(shortform)
            + stats.report(shortform)
            + (shortform ? "|" : "Total time:");
 }
 
-struct DefaultCompute {
-    template<class Moments, class Vector>
-    struct Diagonal {
-        Moments& moments;
-        Vector r0;
-        SliceMap const& map;
-        AlgorithmConfig const& config;
-
-        template<class Matrix>
-        void operator()(Matrix const& h2) {
-            using namespace calc_moments::diagonal;
-            simd::scope_disable_denormals guard;
-
-            if (config.optimal_size && config.interleaved) {
-                opt_size_and_interleaved(moments, std::move(r0), h2, map);
-            } else if (config.interleaved) {
-                interleaved(moments, std::move(r0), h2, map);
-            } else if (config.optimal_size) {
-                opt_size(moments, std::move(r0), h2, map);
-            } else {
-                basic(moments, std::move(r0), h2);
-            }
-        }
-    };
-
-    template<class Moments, class Vector, class OptimizedHamiltonian>
-    static void diagonal(Moments& m, Vector&& r0, OptimizedHamiltonian const& oh,
-                         AlgorithmConfig const& ac) {
-        static_assert(!std::is_lvalue_reference<Vector>(), "Starter vector r0 must be an rvalue");
-        oh.matrix().match(Diagonal<Moments, Vector>{m, std::move(r0), oh.map(), ac});
-    }
-
-    template<class Moments, class Vector>
-    struct OffDiagonal {
-        Moments& moments;
-        Vector r0;
-        SliceMap const& map;
-        AlgorithmConfig const& config;
-
-        template<class Matrix>
-        void operator()(Matrix const& h2) {
-            using namespace calc_moments::off_diagonal;
-            simd::scope_disable_denormals guard;
-
-            if (config.optimal_size && config.interleaved) {
-                opt_size_and_interleaved(moments, std::move(r0), h2, map);
-            } else if (config.interleaved) {
-                interleaved(moments, std::move(r0), h2, map);
-            } else if (config.optimal_size) {
-                opt_size(moments, std::move(r0), h2, map);
-            } else {
-                basic(moments, std::move(r0), h2);
-            }
-        }
-    };
-
-    template<class Moments, class OptimizedHamiltonian, class Vector>
-    static void off_diagonal(Moments& m, Vector&& r0, OptimizedHamiltonian const& oh,
-                             AlgorithmConfig const& ac) {
-        static_assert(!std::is_lvalue_reference<Vector>(), "Starter vector r0 must be an rvalue");
-        oh.matrix().match(OffDiagonal<Moments, Vector>{m, std::move(r0), oh.map(), ac});
-    }
-};
-
-CPB_INSTANTIATE_TEMPLATE_CLASS_VARGS(StrategyTemplate, DefaultCompute)
+CPB_INSTANTIATE_TEMPLATE_CLASS(StrategyTemplate)
 
 #ifdef CPB_USE_CUDA
 struct CudaCalcMoments {

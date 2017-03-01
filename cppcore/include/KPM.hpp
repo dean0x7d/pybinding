@@ -1,5 +1,5 @@
 #pragma once
-#include "kpm/Strategy.hpp"
+#include "kpm/DefaultStrategy.hpp"
 
 namespace cpb {
 

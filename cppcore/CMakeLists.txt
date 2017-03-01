@@ -28,6 +28,7 @@ add_library(cppcore
     include/kpm/Bounds.hpp
     include/kpm/calc_moments.hpp
     include/kpm/Config.hpp
+    include/kpm/DefaultStrategy.hpp
     include/kpm/Kernel.hpp
     include/kpm/Moments.hpp
     include/kpm/OptimizedHamiltonian.hpp
@@ -66,7 +67,9 @@ add_library(cppcore
     src/hamiltonian/Hamiltonian.cpp
     src/hamiltonian/HamiltonianModifiers.cpp
     src/kpm/Bounds.cpp
+    src/kpm/DefaultStrategy.cpp
     src/kpm/Kernel.cpp
+    src/kpm/Moments.cpp
     src/kpm/OptimizedHamiltonian.cpp
     src/kpm/Stats.cpp
     src/kpm/Strategy.cpp
