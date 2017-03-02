@@ -30,25 +30,23 @@ TEST_CASE("Nonzeros per row of a triangular hopping matrix") {
 TEST_CASE("Symmetry masks") {
     SECTION("1") {
         auto const masks = detail::make_masks({true, false, false}, 1);
-        auto const expected = std::vector<Index3D>{{0, 0, 0}, {1, 0, 0}};
-        REQUIRE(masks == expected);
+        REQUIRE_THAT(masks, Catch::Equals(std::vector<Index3D>{{0, 0, 0}, {1, 0, 0}}));
     }
     SECTION("2-1") {
         auto const masks = detail::make_masks({false, true, false}, 2);
-        auto const expected = std::vector<Index3D>{{0, 0, 0}, {0, 1, 0}};
-        REQUIRE(masks == expected);
+        REQUIRE_THAT(masks, Catch::Equals(std::vector<Index3D>{{0, 0, 0}, {0, 1, 0}}));
     }
     SECTION("2-2") {
         auto const masks = detail::make_masks({true, true, false}, 2);
-        auto const expected = std::vector<Index3D>{{0, 0, 0}, {0, 1, 0}, {1, 0, 0}, {1, 1, 0}};
-        REQUIRE(masks == expected);
+        REQUIRE_THAT(masks, Catch::Equals(std::vector<Index3D>{
+            {0, 0, 0}, {0, 1, 0}, {1, 0, 0}, {1, 1, 0}
+        }));
     }
     SECTION("3") {
         auto const masks = detail::make_masks({true, true, true}, 3);
-        auto const expected = std::vector<Index3D>{
+        REQUIRE_THAT(masks, Catch::Equals(std::vector<Index3D>{
             {0, 0, 0}, {0, 0, 1}, {0, 1, 0}, {0, 1, 1},
             {1, 0, 0}, {1, 0, 1}, {1, 1, 0}, {1, 1, 1}
-        };
-        REQUIRE(masks == expected);
+        }));
     }
 }

@@ -31,6 +31,7 @@ TEST_CASE("OptimizedHamiltonian reordering", "[kpm]") {
         }
         return v;
     };
+    auto equals = [](std::vector<idx_t> const& v) { return Catch::Equals(v); };
 
     SECTION("Diagonal") {
         auto oh = kpm::OptimizedHamiltonian<scalat_t>(&matrix, kpm::MatrixFormat::CSR, true);
@@ -43,12 +44,9 @@ TEST_CASE("OptimizedHamiltonian reordering", "[kpm]") {
         REQUIRE(oh.map().get_data().back() == num_sites);
         REQUIRE(oh.map().get_offset() == 0);
 
-        auto const expected6 = std::vector<idx_t>{0, 1, 2, 2, 1, 0};
-        REQUIRE(size_indices(oh, 6) == expected6);
-        auto const expected9 = std::vector<idx_t>{0, 1, 2, 3, 4, 3, 2, 1, 0};
-        REQUIRE(size_indices(oh, 9) == expected9);
-        auto const expected12 = std::vector<idx_t>{0, 1, 2, 3, 4, 4, 4, 4, 3, 2, 1, 0};
-        REQUIRE(size_indices(oh, 12) == expected12);
+        REQUIRE_THAT(size_indices(oh,  6), equals({0, 1, 2, 2, 1, 0}));
+        REQUIRE_THAT(size_indices(oh,  9), equals({0, 1, 2, 3, 4, 3, 2, 1, 0}));
+        REQUIRE_THAT(size_indices(oh, 12), equals({0, 1, 2, 3, 4, 4, 4, 4, 3, 2, 1, 0}));
     }
 
     SECTION("Off-diagonal") {
@@ -57,19 +55,16 @@ TEST_CASE("OptimizedHamiltonian reordering", "[kpm]") {
         auto const j1 = model.system()->find_nearest({0, 0.07f, 0}, "B");
         auto const j2 = model.system()->find_nearest({0.12f, 0.14f, 0}, "A");
         auto const j3 = model.system()->find_nearest({0.12f, 0.28f, 0}, "B");
-        oh.optimize_for({i, std::vector<idx_t>{j1, j2, j3}}, bounds.scaling_factors());
+        oh.optimize_for({i, {j1, j2, j3}}, bounds.scaling_factors());
 
         REQUIRE(oh.idx().row != oh.idx().cols[0]);
         REQUIRE(oh.map().get_data().front() == 1);
         REQUIRE(oh.map().get_data().back() == num_sites);
         REQUIRE(oh.map().get_offset() > 0);
 
-        auto const expected6 = std::vector<idx_t>{0, 1, 2, 3, 3, 3};
-        REQUIRE(size_indices(oh, 6) == expected6);
-        auto const expected9 = std::vector<idx_t>{0, 1, 2, 3, 4, 4, 4, 4, 3};
-        REQUIRE(size_indices(oh, 9) == expected9);
-        auto const expected12 = std::vector<idx_t>{0, 1, 2, 3, 4, 5, 6, 6, 6, 5, 4, 3};
-        REQUIRE(size_indices(oh, 12) == expected12);
+        REQUIRE_THAT(size_indices(oh,  6), equals({0, 1, 2, 3, 3, 3}));
+        REQUIRE_THAT(size_indices(oh,  9), equals({0, 1, 2, 3, 4, 4, 4, 4, 3}));
+        REQUIRE_THAT(size_indices(oh, 12), equals({0, 1, 2, 3, 4, 5, 6, 6, 6, 5, 4, 3}));
     }
 }
 

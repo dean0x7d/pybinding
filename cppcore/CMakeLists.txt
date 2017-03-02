@@ -132,6 +132,6 @@ endif()
 
 if(PB_TESTS)
     set(catch_url https://raw.githubusercontent.com/philsquared/Catch/v\${VERSION}/single_include)
-    download_dependency(catch 1.4.0 ${catch_url} catch.hpp)
+    download_dependency(catch 1.8.1 ${catch_url} catch.hpp)
     add_subdirectory(tests)
 endif()

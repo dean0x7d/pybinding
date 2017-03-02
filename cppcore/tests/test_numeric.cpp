@@ -18,7 +18,7 @@ TEST_CASE("ArrayRef and match", "[arrayref]") {
     REQUIRE(v1[3] == .0);
 
     Eigen::VectorXcf v2(4); v2 << 0, 1, 2, 3;
-    REQUIRE_THROWS(RealArrayRef{arrayref(v2)});
+    REQUIRE_THROWS_WITH(RealArrayRef{arrayref(v2)}, "Invalid VariantArrayRef assignment");
     auto ref2 = ComplexArrayRef{arrayref(v2)};
     REQUIRE(num::match<VectorX>(ref2, ArrayRefTestOp{}) == num::Tag::cf32);
     REQUIRE(v2[3] == .0f);
@@ -41,7 +41,8 @@ TEST_CASE("ArrayRef and match2", "[arrayref]") {
 
     REQUIRE((num::match2<VectorX, VectorX>(ref1, ref2, ArrayRefTestOp2{})) == num::Tag::cf64);
     REQUIRE(v2[3] == .0);
-    REQUIRE_THROWS((num::match2sp<VectorX, VectorX>(ref1, ref2, ArrayRefTestOp2{})));
+    REQUIRE_THROWS_WITH((num::match2sp<VectorX, VectorX>(ref1, ref2, ArrayRefTestOp2{})),
+                        "A match was not found");
 }
 
 TEST_CASE("Aligned size") {

@@ -21,10 +21,8 @@ TEST_CASE("Attach leads") {
     model.attach_lead(+1, Line({0, -height/2, 0}, {0, height/2, 0}));
     REQUIRE(model.leads().size() == 2);
 
-    auto const indices0 = std::vector<int>{0, 2, 4};
-    REQUIRE(model.lead(0).indices() == indices0);
-    auto const indices1 = std::vector<int>{1, 3, 5};
-    REQUIRE(model.lead(1).indices() == indices1);
+    REQUIRE_THAT(model.lead(0).indices(), Catch::Equals(std::vector<int>{0, 2, 4}));
+    REQUIRE_THAT(model.lead(1).indices(), Catch::Equals(std::vector<int>{1, 3, 5}));
 
     SECTION("Hoppings grow from lead 0 to system") {
         model.add(field::linear_hopping());
