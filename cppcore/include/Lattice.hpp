@@ -41,6 +41,10 @@ public:
         MatrixXcd energy; ///< onsite energy term
         sub_id unique_id; ///< different for each entry
         sub_id alias_id; ///< may be shared by multiple entries, e.g. for creating supercells
+
+        /// Return the onsite energy vector (matrix diagonal) in the given scalar type
+        template<class scalar_t>
+        VectorX<scalar_t> energy_vector_as() const;
     };
 
     struct HoppingTerm {
@@ -126,14 +130,14 @@ public: // properties
 
     /// Get a single vector -- Expects: index < lattice.ndim()
     Cartesian vector(size_t index) const { return vectors[index]; }
-    /// Onsite energy on the given sublattice
-    double onsite_energy(sub_id id) const { return sublattice(id).energy.real()(0, 0); }
     /// Hopping energy for the specified ID
     std::complex<double> hopping_energy(hop_id id) const { return hopping_family(id).energy(0, 0); }
 
     /// Access sublattice information by name or ID
     Sublattice const& sublattice(string_view name) const;
     Sublattice const& sublattice(sub_id id) const;
+    Sublattice const& operator[](string_view name) const { return sublattice(name); }
+    Sublattice const& operator[](sub_id id) const { return sublattice(id); }
     /// Assess hopping family information by name or ID
     HoppingFamily const& hopping_family(string_view name) const;
     HoppingFamily const& hopping_family(hop_id id) const;
@@ -216,5 +220,20 @@ public:
 private:
     Sites sites;
 };
+
+template<class scalar_t>
+VectorX<scalar_t> Lattice::Sublattice::energy_vector_as() const {
+    return energy.diagonal().cast<scalar_t>();
+}
+
+template<>
+inline VectorX<double> Lattice::Sublattice::energy_vector_as<double>() const {
+    return energy.diagonal().real();
+}
+
+template<>
+inline VectorX<float> Lattice::Sublattice::energy_vector_as<float>() const {
+    return energy.diagonal().real().cast<float>();
+}
 
 } // end namespace cpb

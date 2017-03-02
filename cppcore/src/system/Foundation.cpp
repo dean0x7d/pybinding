@@ -134,7 +134,7 @@ Foundation::Foundation(Lattice const& lattice, Shape const& shape)
 HamiltonianIndices::HamiltonianIndices(Foundation const& foundation)
     : indices(ArrayX<int>::Constant(foundation.get_num_sites(), -1)), num_valid_sites(0) {
     // Assign Hamiltonian indices to all valid sites
-    auto& is_valid = foundation.get_states();
+    auto const& is_valid = foundation.get_states();
     for (auto i = 0; i < foundation.get_num_sites(); ++i) {
         if (is_valid[i])
             indices[i] = num_valid_sites++;

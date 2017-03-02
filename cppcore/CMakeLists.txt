@@ -54,6 +54,7 @@ add_library(cppcore
     include/support/format.hpp
     include/support/simd.hpp
     include/support/variant.hpp
+    include/system/CompressedSublattices.hpp
     include/system/Foundation.hpp
     include/system/Shape.hpp
     include/system/Symmetry.hpp
@@ -78,6 +79,7 @@ add_library(cppcore
     src/leads/Structure.cpp
     src/solver/FEAST.cpp
     src/solver/Solver.cpp
+    src/system/CompressedSublattices.cpp
     src/system/Foundation.cpp
     src/system/Shape.cpp
     src/system/Symmetry.cpp

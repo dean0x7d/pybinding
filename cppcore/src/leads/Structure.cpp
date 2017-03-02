@@ -26,7 +26,6 @@ Structure::Structure(Foundation const& foundation, HamiltonianIndices const& ham
     /*system*/ {
         auto const size = static_cast<int>(indices.size());
         system.positions.resize(size);
-        system.sublattices.resize(size);
         system.hoppings.resize(size, size);
 
         auto const reserve_nonzeros = (lattice.max_hoppings() * size) / 2;
@@ -39,7 +38,7 @@ Structure::Structure(Foundation const& foundation, HamiltonianIndices const& ham
             auto const index = lead_index(hamiltonian_indices[site]);
 
             system.positions[index] = site.get_position() + shift;
-            system.sublattices[index] = site.get_alias_id();
+            system.compressed_sublattices.add(site.get_alias_id());
 
             matrix_view.start_row(index);
             site.for_each_neighbour([&](Site neighbor, Hopping hopping) {
@@ -50,6 +49,7 @@ Structure::Structure(Foundation const& foundation, HamiltonianIndices const& ham
             });
         }
         matrix_view.compress();
+        system.compressed_sublattices.verify(size);
     }
 
     system.boundaries.push_back([&]{

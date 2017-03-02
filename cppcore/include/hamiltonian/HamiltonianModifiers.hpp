@@ -91,31 +91,37 @@ namespace detail {
 
 template<class scalar_t, class Fn>
 void HamiltonianModifiers::apply_to_onsite(System const& system, Fn lambda) const {
-    auto const num_sites = system.num_sites();
-    auto potential = ArrayX<scalar_t>{};
-
-    if (system.lattice.has_onsite_energy()) {
-        potential.resize(num_sites);
-        transform(system.sublattices, potential, [&](sub_id id) {
-            using real_t = num::get_real_t<scalar_t>;
-            return static_cast<real_t>(system.lattice.onsite_energy(id));
-        });
+    auto const& lattice = system.lattice;
+    auto const has_intrinsic_onsite = lattice.has_onsite_energy();
+    if (!has_intrinsic_onsite && onsite.empty()) {
+        return;
     }
 
-    if (!onsite.empty()) {
-        if (potential.size() == 0)
-            potential.setZero(num_sites);
+    auto const hamiltonian_size = system.hamiltonian_size();
+    auto potential = ArrayX<scalar_t>::Zero(hamiltonian_size).eval();
 
-        for (auto const& modifier : onsite) {
-            modifier.apply(arrayref(potential), system.positions,
-                           {system.sublattices, system.lattice.sub_name_map()});
+    if (lattice.has_onsite_energy()) {
+        auto start = idx_t{0};
+        for (auto const& sub : system.compressed_sublattices) {
+            auto const energy = lattice[sub.alias_id()].energy_vector_as<scalar_t>();
+            auto const norb = energy.size();
+            auto const nsites = sub.site_count();
+            potential.segment(start, nsites * norb) = energy.replicate(nsites, 1);
+            start += nsites * norb;
         }
     }
 
-    if (potential.size() > 0) {
-        for (int i = 0; i < num_sites; ++i) {
-            if (potential[i] != scalar_t{0})
-                lambda(i, potential[i]);
+    if (!onsite.empty()) {
+        auto const sub_ids = system.compressed_sublattices.decompress();
+        for (auto const& modifier : onsite) {
+            modifier.apply(arrayref(potential), system.positions,
+                           {sub_ids, lattice.sub_name_map()});
+        }
+    }
+
+    for (int i = 0; i < hamiltonian_size; ++i) {
+        if (potential[i] != scalar_t{0}) {
+            lambda(i, potential[i]);
         }
     }
 }

@@ -1,5 +1,6 @@
 #pragma once
 #include "Lattice.hpp"
+#include "system/CompressedSublattices.hpp"
 #include "system/Generators.hpp"
 
 #include "numeric/dense.hpp"
@@ -22,7 +23,7 @@ struct System {
 
     Lattice lattice;
     CartesianArray positions;
-    ArrayX<sub_id> sublattices;
+    CompressedSublattices compressed_sublattices;
     SparseMatrixX<hop_id> hoppings;
     std::vector<Boundary> boundaries;
     bool has_unbalanced_hoppings = false; ///< some sites have a lot more hopping than others
@@ -31,10 +32,17 @@ struct System {
     System(Foundation const& foundation, HamiltonianIndices const& hamiltonian_indices,
            TranslationalSymmetry const& symmetry, HoppingGenerators const& hopping_generators);
 
+    /// The total number of lattice sites i.e. unique positions. Note that a single site may
+    /// consist of several orbitals/spins which means that the size of the Hamiltonian matrix
+    /// must be >= to the number of sites. See `System::hamiltonian_size()`.
     idx_t num_sites() const { return positions.size(); }
 
+    /// The square matrix size required to hold all the Hamiltonian terms after taking into
+    /// account the number of orbitals/spins at each lattice site.
+    idx_t hamiltonian_size() const;
+
     /// Find the index of the site nearest to the given position. Optional: filter by sublattice.
-    idx_t find_nearest(Cartesian position, std::string const& sublattice = "") const;
+    idx_t find_nearest(Cartesian position, string_view sublattice_name = "") const;
 };
 
 /**

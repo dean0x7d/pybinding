@@ -144,16 +144,16 @@ public:
  Hamiltonian indices of valid Foundation sites
  */
 class HamiltonianIndices {
-    ArrayX<int> indices;
-    int num_valid_sites;
+    ArrayX<storage_idx_t> indices;
+    storage_idx_t num_valid_sites;
 
 public:
     HamiltonianIndices(Foundation const& foundation);
 
     /// Return the Hamiltonian matrix index for the given site
-    int operator[](Site const& site) const { return indices[site.get_idx()]; }
+    storage_idx_t operator[](Site const& site) const { return indices[site.get_idx()]; }
     /// Size of the Hamiltonian matrix
-    int size() const { return num_valid_sites; }
+    idx_t size() const { return num_valid_sites; }
 };
 
 template<bool is_const>

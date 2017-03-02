@@ -25,26 +25,43 @@ System::System(Foundation const& foundation, HamiltonianIndices const& hamiltoni
         throw std::runtime_error{"Impossible system: built 0 lattice sites"};
 }
 
-idx_t System::find_nearest(Cartesian target_position, std::string const& sublattice) const {
-    auto nearest_index = idx_t{0};
-    auto min_distance = (positions[0] - target_position).norm();
+idx_t System::hamiltonian_size() const {
+    auto result = idx_t{0};
+    for (auto const& sub : compressed_sublattices) {
+        result += sub.site_count() * lattice[sub.alias_id()].energy.cols();
+    }
+    return result;
+}
 
-    auto check_index = [&](idx_t i) {
+idx_t System::find_nearest(Cartesian target_position, string_view sublattice_name) const {
+    auto const range = [&]{
+        struct Range { idx_t start, end; };
+
+        if (sublattice_name.empty()) {
+            // Check all sites
+            return Range{0, num_sites()};
+        } else {
+            // Only check sites belonging to the target sublattice
+            auto const target_id = lattice[sublattice_name].alias_id;
+
+            auto r = Range{0, 0};
+            for (auto const& sub : compressed_sublattices) {
+                r.end += sub.site_count();
+                if (sub.alias_id() == target_id) { break; }
+                r.start += sub.site_count();
+            }
+            return r;
+        }
+    }();
+
+    auto nearest_index = range.start;
+    auto min_distance = (positions[range.start] - target_position).norm();
+
+    for (auto i = range.start + 1; i < range.end; ++i) {
         auto const distance = (positions[i] - target_position).norm();
         if (distance < min_distance) {
             min_distance = distance;
             nearest_index = i;
-        }
-    };
-
-    if (sublattice.empty()) { // check all sites
-        for (auto i = idx_t{1}; i < num_sites(); ++i) {
-            check_index(i);
-        }
-    } else { // only sites belonging to the target sublattice
-        auto const target_sublattice = lattice.sublattice(sublattice).unique_id;
-        for (auto i = idx_t{1}; i < num_sites(); ++i) {
-            if (sublattices[i] == target_sublattice) { check_index(i); }
         }
     }
 
@@ -57,7 +74,6 @@ void populate_system(System& system, Foundation const& foundation,
                      HamiltonianIndices const& hamiltonian_indices) {
     auto const size = hamiltonian_indices.size();
     system.positions.resize(size);
-    system.sublattices.resize(size);
     system.hoppings.resize(size, size);
 
     auto const& lattice = foundation.get_lattice();
@@ -70,7 +86,7 @@ void populate_system(System& system, Foundation const& foundation,
             continue; // invalid site
 
         system.positions[index] = site.get_position();
-        system.sublattices[index] = site.get_alias_id();
+        system.compressed_sublattices.add(site.get_alias_id());
 
         matrix_view.start_row(index);
         site.for_each_neighbour([&](Site neighbor, Hopping hopping) {
@@ -83,6 +99,7 @@ void populate_system(System& system, Foundation const& foundation,
         });
     }
     matrix_view.compress();
+    system.compressed_sublattices.verify(size);
 }
 
 void populate_boundaries(System& system, Foundation const& foundation,
@@ -138,7 +155,8 @@ void populate_boundaries(System& system, Foundation const& foundation,
 
 void add_extra_hoppings(System& system, HoppingGenerator const& gen) {
     auto const& lattice = system.lattice;
-    auto const pairs = gen.make(system.positions, {system.sublattices, lattice.sub_name_map()});
+    auto const sublattices = system.compressed_sublattices.decompress();
+    auto const pairs = gen.make(system.positions, {sublattices, lattice.sub_name_map()});
 
     system.hoppings.reserve([&]{
         auto reserve = ArrayXi(ArrayXi::Zero(system.num_sites()));
