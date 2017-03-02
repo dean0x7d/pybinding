@@ -73,6 +73,25 @@ ArrayXd KPM::calc_dos(ArrayXd const& energy, double broadening, idx_t num_random
     return dos;
 }
 
+ArrayXd KPM::calc_conductivity(ArrayXd const& chemical_potential, double broadening,
+                               double temperature, string_view direction, idx_t num_random,
+                               idx_t num_points) const {
+    auto const xyz = std::string("xyz");
+    if (direction.size() != 2 || xyz.find_first_of(direction) == std::string::npos) {
+        throw std::logic_error("Invalid direction: must be 'xx', 'xy', 'zz', or similar.");
+    }
+
+    auto const& p = system()->positions;
+    auto map = std::unordered_map<char, ArrayXf const*>{{'x', &p.x}, {'y', &p.y}, {'z', &p.z}};
+
+    calculation_timer.tic();
+    ArrayXcd conductivity = strategy->conductivity(*map[direction[0]], *map[direction[1]],
+                                                   chemical_potential, broadening, temperature,
+                                                   num_random, num_points);
+    calculation_timer.toc();
+    return conductivity.real();
+}
+
 std::string KPM::report(bool shortform) const {
     return strategy->report(shortform) + " " + calculation_timer.str();
 }

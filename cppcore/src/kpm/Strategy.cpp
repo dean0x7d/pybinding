@@ -136,6 +136,49 @@ ArrayXd StrategyTemplate<scalar_t>::dos(ArrayXd const& energy, double broadening
 }
 
 template<class scalar_t>
+ArrayXcd StrategyTemplate<scalar_t>::conductivity(
+    ArrayXf const& left_coords, ArrayXf const& right_coords, ArrayXd const& chemical_potential,
+    double broadening, double temperature, idx_t num_random, idx_t num_points
+) {
+    auto const scale = bounds.scaling_factors();
+    auto const num_moments = config.kernel.required_num_moments(broadening / scale.a);
+
+    auto specialized_algorithm = config.algorithm;
+    specialized_algorithm.optimal_size = false; // not applicable for this calculation
+
+    auto& oh = optimized_hamiltonian;
+    oh.optimize_for({0, 0}, scale);
+    oh.populate_stats(stats, num_moments, specialized_algorithm);
+
+    auto velocity_l = velocity(*hamiltonian, left_coords);
+    auto velocity_r = velocity(*hamiltonian, right_coords);
+    oh.reorder(velocity_l);
+    oh.reorder(velocity_r);
+
+    auto moments_l = DenseMatrixCollector<scalar_t>(num_moments, hamiltonian->rows());
+    auto moments_r = DenseMatrixCollector<scalar_t>(num_moments, hamiltonian->rows(), velocity_r);
+    auto total_mu = MatrixX<scalar_t>::Zero(num_moments, num_moments).eval();
+
+    stats.multiplier = static_cast<double>(2 * num_random);
+    stats.moments_timer.tic();
+    std::mt19937 generator;
+    for (auto j = 0; j < num_random; ++j) {
+        auto r0 = random_starter(oh, generator);
+        auto l0 = (velocity_l * r0).eval();
+        compute(moments_l, std::move(l0), oh, specialized_algorithm);
+        compute(moments_r, std::move(r0), oh, specialized_algorithm);
+
+        total_mu += moments_l.matrix() * moments_r.matrix().adjoint();
+    }
+    total_mu /= static_cast<real_t>(num_random);
+    stats.moments_timer.toc();
+
+    config.kernel.apply(total_mu);
+	return reconstruct_kubo_bastin(total_mu, chemical_potential, bounds.linspaced(num_points),
+                                   temperature, scale);
+}
+
+template<class scalar_t>
 std::string StrategyTemplate<scalar_t>::report(bool shortform) const {
     return bounds.report(shortform)
            + stats.report(shortform)

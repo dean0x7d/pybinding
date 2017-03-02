@@ -22,6 +22,17 @@ struct Kernel {
         auto const N = static_cast<int>(moments.size());
         moments *= damping_coefficients(N).template cast<real_t>();
     }
+
+    /// Apply the kernel damping to a matrix of moments
+    template<class scalar_t>
+    void apply(MatrixX<scalar_t>& moments) const {
+        using real_t = num::get_real_t<scalar_t>;
+        assert(moments.rows() == moments.cols());
+
+        auto const N = static_cast<int>(moments.rows());
+        auto const g = damping_coefficients(N).template cast<real_t>().eval();
+        moments.array() *= g.replicate(1, N).rowwise() * g.transpose();
+    }
 };
 
 /**

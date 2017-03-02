@@ -16,4 +16,6 @@ namespace cpb { namespace constant {
     constexpr float epsilon0 = 8.854e-12f;
     // magnetic flux quantum (h/e)
     constexpr float phi0 = 2 * pi*hbar;
+    // Boltzmann constant
+    constexpr float kb = 8.6173303e-5f;
 }} // namespace cpb::constant

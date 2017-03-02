@@ -127,3 +127,35 @@ def test_dos(params, baseline, plot_if_fails):
 
     for result in results:
         assert pytest.fuzzy_equal(result, expected, rtol=1e-3, atol=1e-6)
+
+
+cond_models = {
+    'graphene-const_potential': [graphene.monolayer(), pb.rectangle(20),
+                                 pb.constant_potential(0.5)],
+    'graphene-magnetic_field': [graphene.monolayer(), pb.rectangle(20),
+                                graphene.constant_magnetic_field(1e3)]
+}
+
+
+@pytest.mark.parametrize("params", cond_models.values(), ids=list(cond_models.keys()))
+def test_conductivity(params, baseline, plot_if_fails):
+    configurations = [
+        {'matrix_format': "ELL", 'optimal_size': False, 'interleaved': False},
+        {'matrix_format': "ELL", 'optimal_size': True, 'interleaved': True},
+    ]
+    model = pb.Model(*params)
+
+    kernel = pb.lorentz_kernel()
+    strategies = [pb.kpm(model, energy_range=[-9, 9], kernel=kernel, **c)
+                  for c in configurations]
+
+    energy = np.linspace(-2, 2, 25)
+    results = [kpm.calc_conductivity(energy, broadening=0.5, temperature=0, num_points=200)
+               for kpm in strategies]
+
+    expected = results[0].with_data(baseline(results[0].data.astype(np.float32)))
+    for i in range(len(results)):
+        plot_if_fails(results[i], expected, "plot", label=i)
+
+    for result in results:
+        assert pytest.fuzzy_equal(result, expected, rtol=1e-2, atol=1e-5)

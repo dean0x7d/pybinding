@@ -67,6 +67,11 @@ public:
         return factors;
     }
 
+    /// Return an array with `size` linearly spaced values within the bounds
+    ArrayX<real_t> linspaced(idx_t size) const {
+        return ArrayX<real_t>::LinSpaced(size, min, max);
+    }
+
     std::string report(bool shortform = false) const;
 
 private:

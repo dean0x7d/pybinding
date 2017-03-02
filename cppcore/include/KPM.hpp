@@ -28,6 +28,10 @@ public:
 
     ArrayXd calc_dos(ArrayXd const& energy, double broadening, idx_t num_random) const;
 
+	ArrayXd calc_conductivity(ArrayXd const& chemical_potential, double broadening,
+                              double temperature, string_view direction, idx_t num_random,
+                              idx_t num_points) const;
+
     /// Get some information about what happened during the last calculation
     std::string report(bool shortform) const;
     kpm::Stats const& get_stats() const;

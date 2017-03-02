@@ -39,6 +39,10 @@ public:
                                                 ArrayXd const& energy, double broadening) = 0;
     /// Return the total DOS for the given energy range and broadening
     virtual ArrayXd dos(ArrayXd const& energy, double broadening, idx_t num_random) = 0;
+    /// Bastin's DC conductivity in the directions defined by the `left` and `right` coordinates
+    virtual ArrayXcd conductivity(ArrayXf const& left_coords, ArrayXf const& right_coords,
+                                  ArrayXd const& chemical_potential, double broadening,
+                                  double temperature, idx_t num_random, idx_t num_points) = 0;
 
     /// Get some information about what happened during the last calculation
     virtual std::string report(bool shortform = false) const = 0;
@@ -67,6 +71,9 @@ public:
     std::vector<ArrayXcd> greens_vector(idx_t row, std::vector<idx_t> const& cols,
                                         ArrayXd const& energy, double broadening) final;
     ArrayXd dos(ArrayXd const& energy, double broadening, idx_t num_random) final;
+	ArrayXcd conductivity(ArrayXf const& left_coords, ArrayXf const& right_coords,
+                          ArrayXd const& chemical_potential, double broadening,
+                          double temperature, idx_t num_random, idx_t num_points) final;
 
     std::string report(bool shortform) const final;
     Stats const& get_stats() const final { return stats; }

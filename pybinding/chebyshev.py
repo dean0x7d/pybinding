@@ -158,6 +158,48 @@ class KernelPolynomialMethod:
         """
         return self.impl.deferred_ldos(energy, broadening, position, sublattice)
 
+    def calc_conductivity(self, chemical_potential, broadening, temperature,
+                          direction="xx", volume=1.0, num_random=1, num_points=1000):
+        """Calculate Kubo-Bastin DC conductivity as a function of chemical potential
+ 
+        The return value is in units of the conductance quantum (e^2 / hbar) not taking into
+        account spin or any other degeneracy.
+
+        The calculation is based on: https://doi.org/10.1103/PhysRevLett.114.116602.
+
+        Parameters
+        ----------
+        chemical_potential : array_like
+            Values (in eV) for which the conductivity is calculated.
+        broadening : float
+            Width (in eV) of the smallest detail which can be resolved in the chemical potential.
+            Lower values result in longer calculation time.
+        temperature : float
+            Value of temperature for the Fermi-Dirac distribution.
+        direction : Optional[str]
+            Direction in which the conductivity is calculated. E.g., "xx", "xy", "zz", etc.
+        volume : Optional[float]
+            The volume of the system.
+        num_random : int
+            The number of random vectors to use for the stochastic calculation of KPM moments. 
+            Larger numbers improve the quality of the result but also increase calculation time
+            linearly. Fortunately, result quality also improves with system size, so the DOS of
+            very large systems can be calculated accurately with only a small number of random
+            vectors.
+        num_points : Optional[int]
+            Number of points for integration.
+
+        Returns
+        -------
+        :class:`~pybinding.Series`
+        """
+        data = self.impl.calc_conductivity(chemical_potential, broadening, temperature,
+                                           direction, num_random, num_points)
+        if volume != 1.0:
+            data /= volume
+        return results.Series(chemical_potential, data,
+                              labels=dict(variable=r"$\mu$ (eV)", data="$\sigma$"))
+
 
 def kpm(model, energy_range=None, kernel="default", **kwargs):
     """The default CPU implementation of the Kernel Polynomial Method
