@@ -24,13 +24,32 @@ void wrap_system(py::module& m) {
                                            d["site_counts"].cast<std::vector<storage_idx_t>>());
         });
 
+    py::class_<HoppingBlocks::COO>(m, "HoppingBlocksCOO")
+        .def("__getstate__", [](HoppingBlocks::COO const& coo) {
+            return py::make_tuple(coo.row, coo.col);
+        })
+        .def("__setstate__", [](HoppingBlocks::COO& coo, py::tuple t) {
+            new (&coo) HoppingBlocks::COO(t[0].cast<idx_t>(), t[1].cast<idx_t>());
+        });
+
+    py::class_<HoppingBlocks>(m, "HoppingBlocks")
+        .def("__getstate__", [](HoppingBlocks const& hb) {
+            return py::dict("data"_a= hb.get_blocks());
+        })
+        .def("__setstate__", [](HoppingBlocks& hb, py::dict d) {
+            new (&hb) HoppingBlocks(d["data"].cast<HoppingBlocks::Blocks>());
+        });
+
     using Boundary = System::Boundary;
     py::class_<Boundary>(m, "Boundary")
-        .def_property_readonly("hoppings", [](Boundary const& b) { return csrref(b.hoppings); })
+        .def_property_readonly("hoppings", [](Boundary const& b) {
+            return b.hopping_blocks.to_csr();
+        })
         .def_readonly("shift", &Boundary::shift)
-        .def("__getstate__", [](Boundary const& b) { return py::make_tuple(b.hoppings, b.shift); })
+        .def("__getstate__", [](Boundary const& b) { return py::make_tuple(b.hopping_blocks, b.shift); })
         .def("__setstate__", [](Boundary& b, py::tuple t) {
-            new (&b) Boundary{t[0].cast<decltype(b.hoppings)>(), t[1].cast<decltype(b.shift)>()};
+            new (&b) Boundary{t[0].cast<decltype(b.hopping_blocks)>(),
+                              t[1].cast<decltype(b.shift)>()};
         });
 
     py::class_<System, std::shared_ptr<System>>(m, "System")
@@ -40,23 +59,22 @@ void wrap_system(py::module& m) {
         .def_property_readonly("sublattices", [](System const& s) {
             return s.compressed_sublattices.decompress();
         })
-        .def_property_readonly("hoppings", [](System const& s) { return csrref(s.hoppings); })
+        .def_property_readonly("hoppings", [](System const& s) {
+            return s.hopping_blocks.to_csr();
+        })
         .def_readonly("boundaries", &System::boundaries)
-        .def_readonly("has_unbalanced_hoppings", &System::has_unbalanced_hoppings)
         .def("__getstate__", [](System const& s) {
             return py::dict("lattice"_a=s.lattice, "positions"_a=s.positions,
                             "compressed_sublattices"_a=s.compressed_sublattices,
-                            "hoppings"_a=s.hoppings, "boundaries"_a=s.boundaries,
-                            "has_unbalanced_hoppings"_a=s.has_unbalanced_hoppings);
+                            "hopping_blocks"_a=s.hopping_blocks,
+                            "boundaries"_a=s.boundaries);
         })
         .def("__setstate__", [](System& s, py::dict d) {
             new (&s) System(d["lattice"].cast<decltype(s.lattice)>());
             s.positions = d["positions"].cast<decltype(s.positions)>();
             s.compressed_sublattices =
                 d["compressed_sublattices"].cast<decltype(s.compressed_sublattices)>();
-            s.hoppings = d["hoppings"].cast<decltype(s.hoppings)>();
+            s.hopping_blocks = d["hopping_blocks"].cast<decltype(s.hopping_blocks)>();
             s.boundaries = d["boundaries"].cast<decltype(s.boundaries)>();
-            s.has_unbalanced_hoppings =
-                d["has_unbalanced_hoppings"].cast<decltype(s.has_unbalanced_hoppings)>();
         });
 }

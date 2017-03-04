@@ -13,7 +13,7 @@ struct Structure {
     std::vector<int> indices; ///< map from lead Hamiltonian indices to main system indices
     System system; ///< description of lead sites and boundaries
 
-    Structure(Foundation const& foundation, HamiltonianIndices const& indices,
+    Structure(Foundation const& foundation, FinalizedIndices const& indices,
               Spec const& spec);
 
     /// Return the lead index corresponding to the main system Hamiltonian index

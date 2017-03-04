@@ -141,19 +141,23 @@ public:
 };
 
 /**
- Hamiltonian indices of valid Foundation sites
+ Keeps the final indices of valid `Foundation` sites as they should appear in `System`
  */
-class HamiltonianIndices {
-    ArrayX<storage_idx_t> indices;
-    storage_idx_t num_valid_sites;
-
+class FinalizedIndices {
 public:
-    HamiltonianIndices(Foundation const& foundation);
+    FinalizedIndices(Foundation const& foundation);
 
     /// Return the Hamiltonian matrix index for the given site
     storage_idx_t operator[](Site const& site) const { return indices[site.get_idx()]; }
     /// Size of the Hamiltonian matrix
-    idx_t size() const { return num_valid_sites; }
+    idx_t size() const { return total_valid_sites; }
+    /// Upper limit for the number of hoppings, indexed by family ID (useful for reservation)
+    ArrayXi const& max_hoppings_per_family() const { return hopping_counts; }
+
+private:
+    ArrayXi indices;
+    ArrayXi hopping_counts;
+    storage_idx_t total_valid_sites = 0;
 };
 
 template<bool is_const>

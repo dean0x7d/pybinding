@@ -5,24 +5,19 @@
 
 namespace cpb {
 
-System::System(Foundation const& foundation, HamiltonianIndices const& hamiltonian_indices,
+System::System(Foundation const& foundation, FinalizedIndices const& finalized_indices,
                TranslationalSymmetry const& symmetry, HoppingGenerators const& hopping_generators)
     : lattice(foundation.get_lattice()) {
-    detail::populate_system(*this, foundation, hamiltonian_indices);
+    detail::populate_system(*this, foundation, finalized_indices);
     if (symmetry) {
-        detail::populate_boundaries(*this, foundation, hamiltonian_indices, symmetry);
+        detail::populate_boundaries(*this, foundation, finalized_indices, symmetry);
     }
 
-    if (!hopping_generators.empty()) {
-        for (auto const& gen : hopping_generators) {
-            detail::add_extra_hoppings(*this, gen);
-        }
-        hoppings.makeCompressed();
-        has_unbalanced_hoppings = true;
+    for (auto const& gen : hopping_generators) {
+        detail::add_extra_hoppings(*this, gen);
     }
 
-    if (num_sites() == 0)
-        throw std::runtime_error{"Impossible system: built 0 lattice sites"};
+    if (num_sites() == 0) { throw std::runtime_error{"Impossible system: 0 sites"}; }
 }
 
 idx_t System::hamiltonian_size() const {
@@ -71,117 +66,69 @@ idx_t System::find_nearest(Cartesian target_position, string_view sublattice_nam
 namespace detail {
 
 void populate_system(System& system, Foundation const& foundation,
-                     HamiltonianIndices const& hamiltonian_indices) {
-    auto const size = hamiltonian_indices.size();
-    system.positions.resize(size);
-    system.hoppings.resize(size, size);
-
+                     FinalizedIndices const& finalized_indices) {
     auto const& lattice = foundation.get_lattice();
-    auto const reserve_nonzeros = (lattice.max_hoppings() * size) / 2;
-    auto matrix_view = compressed_inserter(system.hoppings, reserve_nonzeros);
+    auto const size = finalized_indices.size();
+    system.positions.resize(size);
+    system.hopping_blocks = {size, lattice.nhop()};
+    system.hopping_blocks.reserve(finalized_indices.max_hoppings_per_family());
 
     for (auto const& site : foundation) {
-        auto const index = hamiltonian_indices[site];
-        if (index < 0)
-            continue; // invalid site
+        auto const index = finalized_indices[site];
+        if (index < 0) { continue; } // invalid site
 
         system.positions[index] = site.get_position();
         system.compressed_sublattices.add(site.get_alias_id());
 
-        matrix_view.start_row(index);
         site.for_each_neighbour([&](Site neighbor, Hopping hopping) {
-            auto const neighbor_index = hamiltonian_indices[neighbor];
-            if (neighbor_index < 0)
-                return; // invalid
+            auto const neighbor_index = finalized_indices[neighbor];
+            if (neighbor_index < 0) { return; } // invalid neighbor
 
-            if (!hopping.is_conjugate) // only make half the matrix, other half is the conjugate
-                matrix_view.insert(neighbor_index, hopping.family_id);
+            if (!hopping.is_conjugate) { // only make half the matrix, other half is the conjugate
+                system.hopping_blocks.add(hopping.family_id, index, neighbor_index);
+            }
         });
     }
-    matrix_view.compress();
     system.compressed_sublattices.verify(size);
 }
 
 void populate_boundaries(System& system, Foundation const& foundation,
-                         HamiltonianIndices const& hamiltonian_indices,
+                         FinalizedIndices const& finalized_indices,
                          TranslationalSymmetry const& symmetry) {
-    // a boundary is added first to prevent copying of Eigen::SparseMatrix
-    // --> revise when Eigen types become movable
-
-    auto const size = hamiltonian_indices.size();
     auto const& lattice = foundation.get_lattice();
+    auto const size = finalized_indices.size();
 
-    system.boundaries.emplace_back();
     for (const auto& translation : symmetry.translations(foundation)) {
-        auto& boundary = system.boundaries.back();
-
+        auto boundary = System::Boundary();
         boundary.shift = translation.shift_lenght;
-        boundary.hoppings.resize(size, size);
-
-        // the reservation number is intentionally overestimated
-        auto const reserve_nonzeros = [&]{
-            auto nz = lattice.nsub() * lattice.max_hoppings() / 2;
-            for (auto i = 0; i < translation.boundary_slice.ndims(); ++i) {
-                if (translation.boundary_slice[i].end < 0)
-                    nz *= foundation.get_size()[i];
-            }
-            return nz;
-        }();
-        auto boundary_matrix_view = compressed_inserter(boundary.hoppings, reserve_nonzeros);
+        boundary.hopping_blocks = {size, lattice.nhop()};
 
         for (auto const& site : foundation[translation.boundary_slice]) {
-            if (!site.is_valid())
-                continue;
+            auto const index = finalized_indices[site];
+            if (index < 0) { continue; }
 
-            boundary_matrix_view.start_row(hamiltonian_indices[site]);
-
+            // The site is shifted to the opposite edge of the translation unit
             auto const shifted_site = site.shifted(translation.shift_index);
-            // the site is shifted to the opposite edge of the translation unit
             shifted_site.for_each_neighbour([&](Site neighbor, Hopping hopping) {
-                auto const neighbor_index = hamiltonian_indices[neighbor];
-                if (neighbor_index < 0)
-                    return; // invalid
+                auto const neighbor_index = finalized_indices[neighbor];
+                if (neighbor_index < 0) { return; }
 
-                boundary_matrix_view.insert(neighbor_index, hopping.family_id);
+                boundary.hopping_blocks.add(hopping.family_id, index, neighbor_index);
             });
         }
-        boundary_matrix_view.compress();
 
-        if (boundary.hoppings.nonZeros() > 0)
-            system.boundaries.emplace_back();
+        if (boundary.hopping_blocks.nnz() > 0) {
+            system.boundaries.push_back(std::move(boundary));
+        }
     }
-    system.boundaries.pop_back();
 }
 
 void add_extra_hoppings(System& system, HoppingGenerator const& gen) {
     auto const& lattice = system.lattice;
     auto const sublattices = system.compressed_sublattices.decompress();
-    auto const pairs = gen.make(system.positions, {sublattices, lattice.sub_name_map()});
-
-    system.hoppings.reserve([&]{
-        auto reserve = ArrayXi(ArrayXi::Zero(system.num_sites()));
-        for (auto i = 0; i < pairs.from.size(); ++i) {
-            auto const row = std::min(pairs.from[i], pairs.to[i]); // upper triangular format
-            reserve[row] += 1;
-        }
-        return reserve;
-    }());
-
-    auto const hopping_id = [&]{
-        auto const& ids = lattice.hop_name_map();
-        auto const it = ids.find(gen.name);
-        assert(it != ids.end());
-        return it->second;
-    }();
-
-    for (auto i = 0; i < pairs.from.size(); ++i) {
-        auto m = pairs.from[i];
-        auto n = pairs.to[i];
-        if (m > n) { // ensure that only the upper triangle of the matrix is populated
-            std::swap(m, n);
-        }
-        system.hoppings.coeffRef(m, n) = hopping_id;
-    }
+    auto const family_id = lattice.hopping_family(gen.name).family_id;
+    auto pairs = gen.make(system.positions, {sublattices, lattice.sub_name_map()});
+    system.hopping_blocks.append(family_id, std::move(pairs.from), std::move(pairs.to));
 }
 
 } // namespace detail

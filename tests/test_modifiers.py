@@ -157,7 +157,7 @@ def test_site_state():
 
     with pytest.raises(RuntimeError) as excinfo:
         build_model(remove_dangling)
-    assert "0 lattice sites" in str(excinfo.value)
+    assert "0 sites" in str(excinfo.value)
 
 
 def test_site_position():

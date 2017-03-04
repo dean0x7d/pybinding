@@ -46,7 +46,7 @@ public:
     void create_attachment_area(Foundation& foundation) const;
 
     /// Create the structure of each lead
-    void make_structure(Foundation const& foundation, HamiltonianIndices const& indices);
+    void make_structure(Foundation const& foundation, FinalizedIndices const& indices);
 
     /// Create a Hamiltonian pair for each lead
     void make_hamiltonian(HamiltonianModifiers const& modifiers, bool is_double, bool is_complex);

@@ -4,8 +4,9 @@
 #include "numeric/dense.hpp"
 #include "numeric/sparse.hpp"
 
+#include "detail/algorithm.hpp"
+
 #include <vector>
-#include <algorithm>
 #include <memory>
 
 namespace cpb {
@@ -130,66 +131,68 @@ template<class scalar_t, class SystemOrBoundary, class Fn>
 void HamiltonianModifiers::apply_to_hoppings_impl(SystemOrBoundary const& system,
                                                   CartesianArray const& positions,
                                                   Lattice const& lattice, Fn lambda) const {
-    auto hopping_csr_matrix = sparse::make_loop(system.hoppings);
-
     if (hopping.empty()) {
         // fast path: modifiers don't need to be applied
-        hopping_csr_matrix.for_each([&](idx_t row, idx_t col, hop_id id) {
-            lambda(row, col, num::complex_cast<scalar_t>(lattice.hopping_energy(id)));
-        });
-    } else {
-        /*
-         Applying modifiers to each hopping individually would be slow.
-         Passing all the values in one call would require a lot of memory.
-         The loop below buffers hoppings to balance performance and memory usage.
-        */
-        // TODO: experiment with buffer_size -> currently: hoppings + pos1 + pos2 is about 3MB
-        auto const buffer_size = [&]{
-            constexpr auto max_buffer_size = idx_t{100000};
-            auto const max_hoppings = system.hoppings.nonZeros();
-            return std::min(max_hoppings, max_buffer_size);
-        }();
+        for (auto const& block : system.hopping_blocks) {
+            auto const family_id = static_cast<hop_id>(block.family_id());
+            auto const energy = lattice(family_id).energy_matrix_as<scalar_t>()(0, 0);
 
-        auto hoppings = ArrayX<scalar_t>{buffer_size};
-        auto pos1 = CartesianArray{buffer_size};
-        auto pos2 = CartesianArray{buffer_size};
+            for (auto const& coo : block.coordinates()) {
+                lambda(coo.row, coo.col, energy);
+            }
+        }
 
-        // TODO: Hopping IDs can be mapped directly from the matrix, thus removing the need for
-        //       this temporary buffer. However `apply()` needs to accept an array map.
-        auto hop_ids = ArrayX<hop_id>{buffer_size};
+        return;
+    }
 
-        hopping_csr_matrix.buffered_for_each(
+    /*
+     Applying modifiers to each hopping individually would be slow.
+     Passing all the values in one call would require a lot of memory.
+     The loop below buffers hoppings to balance performance and memory usage.
+    */
+
+    // TODO: experiment with buffer_size -> currently: hoppings + pos1 + pos2 is about 3MB
+    auto const buffer_size = [&]{
+        constexpr auto max_buffer_size = idx_t{100000};
+        auto const max_hoppings = system.hopping_blocks.nnz();
+        return std::min(max_hoppings, max_buffer_size);
+    }();
+
+    for (auto const& block : system.hopping_blocks) {
+        auto const family_id = static_cast<hop_id>(block.family_id());
+        auto const energy = lattice(family_id).energy_matrix_as<scalar_t>()(0, 0);
+
+        auto hoppings = ArrayX<scalar_t>::Constant(buffer_size, energy).eval();
+        auto hop_ids = ArrayX<hop_id>::Constant(buffer_size, family_id).eval();
+        auto pos1 = CartesianArray(buffer_size);
+        auto pos2 = CartesianArray(buffer_size);
+
+        buffered_for_each(
+            block.coordinates(),
             buffer_size,
-            // fill buffer
-            [&](idx_t row, idx_t col, hop_id id, idx_t n) {
-                hoppings[n] = num::complex_cast<scalar_t>(lattice.hopping_energy(id));
-                pos1[n] = positions[row];
-                pos2[n] = detail::shifted(positions[col], system);
-                hop_ids[n] = id;
+            /*fill buffer*/ [&](HoppingBlocks::COO const& coo, idx_t n) {
+                pos1[n] = positions[coo.row];
+                pos2[n] = detail::shifted(positions[coo.col], system);
             },
-            // process buffer
-            [&](idx_t start_row, idx_t start_idx, idx_t size) {
-                if (size < buffer_size) {
+            /*filled*/ [&](idx_t size) {
+                if (size < buffer_size) { // only true for the last batch
                     hoppings.conservativeResize(size);
+                    hop_ids.conservativeResize(size);
                     pos1.conservativeResize(size);
                     pos2.conservativeResize(size);
-                    hop_ids.conservativeResize(size);
                 }
 
                 for (auto const& modifier : hopping) {
                     modifier.apply(arrayref(hoppings), pos1, pos2,
                                    {hop_ids, lattice.hop_name_map()});
                 }
-
-                hopping_csr_matrix.slice_for_each(
-                    start_row, start_idx, size,
-                    [&](idx_t row, idx_t col, hop_id, idx_t n) {
-                        if (hoppings[n] != scalar_t{0})
-                            lambda(row, col, hoppings[n]);
-                    }
-                );
+            },
+            /*process buffer*/ [&](HoppingBlocks::COO const& coo, idx_t n) {
+                if (hoppings[n] != scalar_t{0}) {
+                    lambda(coo.row, coo.col, hoppings[n]);
+                }
             }
-        );
+        ); // buffered_for_each
     }
 }
 

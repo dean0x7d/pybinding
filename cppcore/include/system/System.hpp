@@ -1,6 +1,7 @@
 #pragma once
 #include "Lattice.hpp"
 #include "system/CompressedSublattices.hpp"
+#include "system/HoppingBlocks.hpp"
 #include "system/Generators.hpp"
 
 #include "numeric/dense.hpp"
@@ -12,7 +13,7 @@
 namespace cpb {
 
 class Foundation;
-class HamiltonianIndices;
+class FinalizedIndices;
 class TranslationalSymmetry;
 
 /**
@@ -24,12 +25,11 @@ struct System {
     Lattice lattice;
     CartesianArray positions;
     CompressedSublattices compressed_sublattices;
-    SparseMatrixX<hop_id> hoppings;
+    HoppingBlocks hopping_blocks;
     std::vector<Boundary> boundaries;
-    bool has_unbalanced_hoppings = false; ///< some sites have a lot more hopping than others
 
     System(Lattice const& lattice) : lattice(lattice) {}
-    System(Foundation const& foundation, HamiltonianIndices const& hamiltonian_indices,
+    System(Foundation const& foundation, FinalizedIndices const& finalized_indices,
            TranslationalSymmetry const& symmetry, HoppingGenerators const& hopping_generators);
 
     /// The total number of lattice sites i.e. unique positions. Note that a single site may
@@ -49,15 +49,15 @@ struct System {
  Stores sites that belong to a system boundary
  */
 struct System::Boundary {
-    SparseMatrixX<hop_id> hoppings;
+    HoppingBlocks hopping_blocks;
     Cartesian shift; ///< shift length (periodic boundary condition)
 };
 
 namespace detail {
     void populate_system(System& system, Foundation const& foundation,
-                         HamiltonianIndices const& indices);
+                         FinalizedIndices const& indices);
     void populate_boundaries(System& system, Foundation const& foundation,
-                             HamiltonianIndices const& indices,
+                             FinalizedIndices const& indices,
                              TranslationalSymmetry const& symmetry);
     void add_extra_hoppings(System& system, HoppingGenerator const& gen);
 } // namespace detail

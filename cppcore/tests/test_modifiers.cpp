@@ -81,9 +81,7 @@ TEST_CASE("HoppingGenerator") {
     }());
     REQUIRE_FALSE(model.is_complex());
     REQUIRE(model.get_lattice().get_hoppings().size() == 1);
-    REQUIRE(model.system()->hoppings.isCompressed());
-    REQUIRE(model.system()->hoppings.rows() == 2);
-    REQUIRE(model.system()->hoppings.nonZeros() == 0);
+    REQUIRE(model.system()->hopping_blocks.nnz() == 0);
 
     SECTION("Add real generator") {
         model.add(HoppingGenerator("t2", 2.0, [](CartesianArray const&, SubIdRef) {
@@ -95,15 +93,13 @@ TEST_CASE("HoppingGenerator") {
 
         REQUIRE_FALSE(model.is_complex());
         REQUIRE(model.get_lattice().get_hoppings().size() == 2);
-        REQUIRE(model.system()->hoppings.isCompressed());
-        REQUIRE(model.system()->hoppings.rows() == 2);
-        REQUIRE(model.system()->hoppings.nonZeros() == 1);
+        REQUIRE(model.system()->hopping_blocks.nnz() == 1);
 
         auto const hop_names = model.get_lattice().hop_name_map();
         auto const hopping_it = hop_names.find("t2");
         REQUIRE(hopping_it != hop_names.end());
         auto const hopping_id = hopping_it->second;
-        REQUIRE(model.system()->hoppings.coeff(0, 1) == hopping_id);
+        REQUIRE(model.system()->hopping_blocks.to_csr().coeff(0, 1) == hopping_id);
     }
 
     SECTION("Add complex generator") {
@@ -112,9 +108,7 @@ TEST_CASE("HoppingGenerator") {
         }));
 
         REQUIRE(model.is_complex());
-        REQUIRE(model.system()->hoppings.isCompressed());
-        REQUIRE(model.system()->hoppings.rows() == 2);
-        REQUIRE(model.system()->hoppings.nonZeros() == 0);
+        REQUIRE(model.system()->hopping_blocks.nnz() == 0);
     }
 
     SECTION("Upper triangular form should be preserved") {
@@ -125,9 +119,9 @@ TEST_CASE("HoppingGenerator") {
             return r;
         }));
 
-        REQUIRE(model.system()->hoppings.rows() == 2);
-        REQUIRE(model.system()->hoppings.nonZeros() == 1);
-        REQUIRE(model.system()->hoppings.coeff(0, 1) == 1);
-        REQUIRE(model.system()->hoppings.coeff(1, 0) == 0);
+        REQUIRE(model.system()->hopping_blocks.nnz() == 1);
+        auto const csr = model.system()->hopping_blocks.to_csr();
+        REQUIRE(csr.coeff(0, 1) == 1);
+        REQUIRE(csr.coeff(1, 0) == 0);
     }
 }

@@ -17,6 +17,7 @@ add_library(cppcore
     include/compute/detail.hpp
     include/compute/kernel_polynomial.hpp
     include/compute/lanczos.hpp
+    include/detail/algorithm.hpp
     include/detail/config.hpp
     include/detail/macros.hpp
     include/detail/slice.hpp
@@ -56,6 +57,7 @@ add_library(cppcore
     include/support/variant.hpp
     include/system/CompressedSublattices.hpp
     include/system/Foundation.hpp
+    include/system/HoppingBlocks.hpp
     include/system/Shape.hpp
     include/system/Symmetry.hpp
     include/system/System.hpp
@@ -81,6 +83,7 @@ add_library(cppcore
     src/solver/Solver.cpp
     src/system/CompressedSublattices.cpp
     src/system/Foundation.cpp
+    src/system/HoppingBlocks.cpp
     src/system/Shape.cpp
     src/system/Symmetry.cpp
     src/system/System.cpp

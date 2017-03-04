@@ -133,9 +133,9 @@ std::shared_ptr<System> Model::make_system() const {
 
     _leads.create_attachment_area(foundation);
 
-    auto const hamiltonian_indices = HamiltonianIndices(foundation);
-    _leads.make_structure(foundation, hamiltonian_indices);
-    return std::make_shared<System>(foundation, hamiltonian_indices, symmetry, hopping_generators);
+    auto const finalized_indices = FinalizedIndices(foundation);
+    _leads.make_structure(foundation, finalized_indices);
+    return std::make_shared<System>(foundation, finalized_indices, symmetry, hopping_generators);
 }
 
 Hamiltonian Model::make_hamiltonian() const {

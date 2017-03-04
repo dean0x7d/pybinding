@@ -131,13 +131,36 @@ Foundation::Foundation(Lattice const& lattice, Shape const& shape)
     remove_dangling(*this, lattice.get_min_neighbors());
 }
 
-HamiltonianIndices::HamiltonianIndices(Foundation const& foundation)
-    : indices(ArrayX<int>::Constant(foundation.get_num_sites(), -1)), num_valid_sites(0) {
-    // Assign Hamiltonian indices to all valid sites
-    auto const& is_valid = foundation.get_states();
-    for (auto i = 0; i < foundation.get_num_sites(); ++i) {
-        if (is_valid[i])
-            indices[i] = num_valid_sites++;
+FinalizedIndices::FinalizedIndices(Foundation const& foundation)
+    : indices(ArrayXi::Constant(foundation.get_num_sites(), -1)),
+      hopping_counts(ArrayXi::Zero(foundation.get_lattice().nhop())) {
+    // Each sublattice block has the same initial number of sites (block_size),
+    // but the number of final valid sites may differ.
+    auto const nsub = foundation.get_num_sublattices();
+    auto const block_size = foundation.get_size().prod();
+
+    for (auto n = 0; n < nsub; ++n) {
+        auto valid_sites_for_this_sublattice = 0;
+
+        // Assign final indices to all valid sites
+        auto const& is_valid = foundation.get_states();
+        for (auto i = n * block_size; i < (n + 1) * block_size; ++i) {
+            if (is_valid[i]) {
+                indices[i] = total_valid_sites;
+                ++total_valid_sites;
+                ++valid_sites_for_this_sublattice;
+            }
+        }
+
+        // Count the number of non-conjugate hoppings per family ID. This is
+        // overestimated, i.e. it includes some invalid hoppings, but it's a
+        // good quick estimate for memory reservation.
+        auto const& unit_cell = foundation.get_optimized_unit_cell();
+        for (auto const& hop : unit_cell[n].hoppings) {
+            if (!hop.is_conjugate) {
+                hopping_counts[hop.family_id] += valid_sites_for_this_sublattice;
+            }
+        }
     }
 }
 

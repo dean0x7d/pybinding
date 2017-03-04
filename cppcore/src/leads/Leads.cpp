@@ -8,7 +8,7 @@ void Leads::create_attachment_area(Foundation& foundation) const {
     }
 }
 
-void Leads::make_structure(Foundation const& foundation, HamiltonianIndices const& indices) {
+void Leads::make_structure(Foundation const& foundation, FinalizedIndices const& indices) {
     if (!structures.empty()) {
         return;
     }

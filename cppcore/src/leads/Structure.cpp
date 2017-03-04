@@ -3,7 +3,7 @@
 
 namespace cpb { namespace leads {
 
-Structure::Structure(Foundation const& foundation, HamiltonianIndices const& hamiltonian_indices,
+Structure::Structure(Foundation const& foundation, FinalizedIndices const& finalized_indices,
                      Spec const& lead)
     : system(foundation.get_lattice()) {
     auto const& lattice = foundation.get_lattice();
@@ -17,7 +17,7 @@ Structure::Structure(Foundation const& foundation, HamiltonianIndices const& ham
 
         for (auto const& site : slice) {
             if (junction.is_valid[site.get_slice_idx()]) {
-                indices.push_back(hamiltonian_indices[site]);
+                indices.push_back(finalized_indices[site]);
             }
         }
         return indices;
@@ -26,36 +26,30 @@ Structure::Structure(Foundation const& foundation, HamiltonianIndices const& ham
     /*system*/ {
         auto const size = static_cast<int>(indices.size());
         system.positions.resize(size);
-        system.hoppings.resize(size, size);
-
-        auto const reserve_nonzeros = (lattice.max_hoppings() * size) / 2;
-        auto matrix_view = compressed_inserter(system.hoppings, reserve_nonzeros);
+        system.hopping_blocks = {size, lattice.nhop()};
 
         for (auto const& site : slice) {
             if (!junction.is_valid[site.get_slice_idx()]) {
                 continue;
             }
-            auto const index = lead_index(hamiltonian_indices[site]);
+            auto const index = lead_index(finalized_indices[site]);
 
             system.positions[index] = site.get_position() + shift;
             system.compressed_sublattices.add(site.get_alias_id());
 
-            matrix_view.start_row(index);
             site.for_each_neighbour([&](Site neighbor, Hopping hopping) {
-                auto const neighbor_index = lead_index(hamiltonian_indices[neighbor]);
+                auto const neighbor_index = lead_index(finalized_indices[neighbor]);
                 if (neighbor_index >= 0 && !hopping.is_conjugate) {
-                    matrix_view.insert(neighbor_index, hopping.family_id);
+                    system.hopping_blocks.add(hopping.family_id, index, neighbor_index);
                 }
             });
         }
-        matrix_view.compress();
         system.compressed_sublattices.verify(size);
     }
 
     system.boundaries.push_back([&]{
         auto const size = static_cast<int>(indices.size());
-        auto matrix = SparseMatrixX<hop_id>(size, size);
-        auto matrix_view = compressed_inserter(matrix, size * lattice.max_hoppings());
+        auto hopping_blocks = HoppingBlocks(size, lattice.nhop());
 
         for (auto const& site : slice) {
             if (!junction.is_valid[site.get_slice_idx()]) {
@@ -68,17 +62,16 @@ Structure::Structure(Foundation const& foundation, HamiltonianIndices const& ham
                 return site.shifted(shift_index);
             }();
 
-            matrix_view.start_row();
+            auto const index = lead_index(finalized_indices[site]);
             shifted_site.for_each_neighbour([&](Site neighbor, Hopping hopping) {
-                auto const index = lead_index(hamiltonian_indices[neighbor]);
-                if (index >= 0) {
-                    matrix_view.insert(index, hopping.family_id);
+                auto const neighbor_index = lead_index(finalized_indices[neighbor]);
+                if (neighbor_index >= 0) {
+                    hopping_blocks.add(hopping.family_id, index, neighbor_index);
                 }
             });
         }
-        matrix_view.compress();
 
-        return System::Boundary{matrix, shift};
+        return System::Boundary{hopping_blocks, shift};
     }());
 }
 

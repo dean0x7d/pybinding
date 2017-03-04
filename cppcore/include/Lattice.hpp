@@ -66,6 +66,10 @@ public:
         MatrixXcd energy; ///< base hopping energy which is shared by all terms in this family
         hop_id family_id; ///< different for each family
         std::vector<HoppingTerm> terms; ///< site connections
+
+        /// Return the hopping energy matrix in the given scalar type
+        template<class scalar_t>
+        MatrixX<scalar_t> energy_matrix_as() const;
     };
 
     using Vectors = std::vector<Cartesian>;
@@ -127,11 +131,11 @@ public: // properties
     int ndim() const { return static_cast<int>(vectors.size()); }
     /// Number of sublattices
     int nsub() const { return static_cast<int>(sublattices.size()); }
+    /// Number of hopping families
+    int nhop() const { return static_cast<int>(hoppings.size()); }
 
     /// Get a single vector -- Expects: index < lattice.ndim()
     Cartesian vector(size_t index) const { return vectors[index]; }
-    /// Hopping energy for the specified ID
-    std::complex<double> hopping_energy(hop_id id) const { return hopping_family(id).energy(0, 0); }
 
     /// Access sublattice information by name or ID
     Sublattice const& sublattice(string_view name) const;
@@ -141,6 +145,8 @@ public: // properties
     /// Assess hopping family information by name or ID
     HoppingFamily const& hopping_family(string_view name) const;
     HoppingFamily const& hopping_family(hop_id id) const;
+    HoppingFamily const& operator()(string_view name) const { return hopping_family(name); }
+    HoppingFamily const& operator()(hop_id id) const { return hopping_family(id); }
 
     /// Get the maximum possible number of hoppings from any site of this lattice
     int max_hoppings() const;
@@ -234,6 +240,21 @@ inline VectorX<double> Lattice::Sublattice::energy_vector_as<double>() const {
 template<>
 inline VectorX<float> Lattice::Sublattice::energy_vector_as<float>() const {
     return energy.diagonal().real().cast<float>();
+}
+
+template<class scalar_t>
+MatrixX<scalar_t> Lattice::HoppingFamily::energy_matrix_as() const {
+    return energy.cast<scalar_t>();
+}
+
+template<>
+inline MatrixX<double> Lattice::HoppingFamily::energy_matrix_as<double>() const {
+    return energy.real();
+}
+
+template<>
+inline MatrixX<float> Lattice::HoppingFamily::energy_matrix_as<float>() const {
+    return energy.real().cast<float>();
 }
 
 } // end namespace cpb

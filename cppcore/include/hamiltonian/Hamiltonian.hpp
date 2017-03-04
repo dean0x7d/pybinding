@@ -49,12 +49,8 @@ void build_main(SparseMatrixX<scalar_t>& matrix, System const& system,
     matrix.resize(num_sites, num_sites);
 
     auto const has_onsite_energy = system.lattice.has_onsite_energy() || !modifiers.onsite.empty();
-    if (system.has_unbalanced_hoppings) {
-        matrix.reserve(nonzeros_per_row(system.hoppings, has_onsite_energy));
-    } else {
-        auto const num_per_row = system.lattice.max_hoppings() + has_onsite_energy;
-        matrix.reserve(ArrayXi::Constant(num_sites, num_per_row));
-    }
+    auto const num_per_row = system.lattice.max_hoppings() + has_onsite_energy;
+    matrix.reserve(ArrayXi::Constant(num_sites, num_per_row));
 
     modifiers.apply_to_onsite<scalar_t>(system, [&](idx_t i, scalar_t onsite) {
         matrix.insert(i, i) = onsite;
