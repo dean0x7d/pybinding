@@ -30,6 +30,9 @@ template<class T>
 using add_const_t = typename std::add_const<T>::type;
 
 template<class T>
+using remove_const_t = typename std::remove_const<T>::type;
+
+template<class T>
 using decay_t = typename std::decay<T>::type;
 
 } // namespace std14

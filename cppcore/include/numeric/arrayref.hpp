@@ -4,12 +4,14 @@
 #include "numeric/traits.hpp"
 
 #include <algorithm>
+#include <numeric>
 #include <stdexcept>
+#include <array>
 
 namespace cpb { namespace num {
 
 /// Array scalar type
-enum class Tag {f32, cf32, f64, cf64, b, i8, i16, i32, i64, u8, u16, u32, u64};
+enum class Tag : std::int8_t {f32, cf32, f64, cf64, b, i8, i16, i32, i64, u8, u16, u32, u64};
 
 namespace detail {
     template<class scalar_t> constexpr Tag get_tag();
@@ -37,22 +39,51 @@ namespace detail {
         >;
         return get_tag<type>();
     }
+
+    /// Reference to any 1D, 2D or 3D array with any scalar type supported by Tag
+    template<bool is_const>
+    struct BasicArrayRef {
+        using Ptr = std14::conditional_t<is_const, void const*, void*>;
+        using Dim = std::int8_t;
+        using Shape = std::array<idx_t, 3>;
+
+        Ptr data;
+        Tag tag;
+        Dim ndim;
+        bool is_row_major;
+        Shape shape;
+
+        BasicArrayRef(Ptr data, Tag tag, Dim ndim, bool rm, Shape shape)
+            : data(data), tag(tag), ndim(ndim), is_row_major(rm), shape(shape) {}
+
+        BasicArrayRef(Ptr data, Tag tag, Dim ndim, bool rm, idx_t x, idx_t y = 0, idx_t z = 0)
+            : BasicArrayRef(data, tag, ndim, rm, {{x, y, z}}) {}
+
+        template<class T>
+        BasicArrayRef(T* data, Dim ndim, bool rm, idx_t x, idx_t y = 0, idx_t z = 0)
+            : BasicArrayRef(data, get_tag<std14::remove_const_t<T>>(), ndim, rm, x, y, z) {}
+
+        /// Non-const array can be converted to const, but not the other way around
+        BasicArrayRef(BasicArrayRef<false> const& a)
+            : BasicArrayRef(a.data, a.tag, a.ndim, a.is_row_major, a.shape) {}
+
+        idx_t size() const { return std::accumulate(shape.begin(), shape.begin() + ndim,
+                                                    idx_t{1}, std::multiplies<idx_t>()); }
+    };
+
+    template<class T>
+    using MakeArrayRef = BasicArrayRef<std::is_const<T>::value>;
+
+    template<class T>
+    auto make_arrayref(T* data, std::int8_t ndim, bool is_row_major, idx_t x, idx_t y, idx_t z)
+                       -> MakeArrayRef<T> {
+        return {data, get_tag<T>(), ndim, is_row_major, {{x, y, z}}};
+    }
 } // namespace detail
 
-/// Reference to any 1D or 2D array with any scalar type supported by Tag
-template<bool is_const>
-struct BasicArrayRef {
-    using ptr_type = std14::conditional_t<is_const, void const*, void*>;
-
-    Tag const tag;
-    bool const is_row_major;
-    ptr_type const data;
-    int const rows;
-    int const cols;
-};
-
-using ArrayConstRef = BasicArrayRef<true>;
-using ArrayRef = BasicArrayRef<false>;
+/// Const or mutable reference to any 1D, 2D or 3D array with any scalar type
+using ArrayConstRef = detail::BasicArrayRef<true>;
+using ArrayRef = detail::BasicArrayRef<false>;
 
 /// Reference to an array which is limited to a set of scalar types
 template<class Scalar, class... Scalars>
@@ -60,18 +91,17 @@ struct VariantArrayConstRef : ArrayConstRef {
     using First = Scalar;
     using Types = TypeList<Scalar, Scalars...>;
 
-    VariantArrayConstRef(ArrayConstRef const& other) : ArrayConstRef(other) {
+    VariantArrayConstRef(ArrayConstRef const& other) : ArrayConstRef(other) { check(other.tag); }
+    VariantArrayConstRef(ArrayRef const& other) : ArrayConstRef(other) { check(other.tag); }
+
+    void check(Tag candidate_tag) const {
         auto const possible_tags = {detail::get_tag<Scalar>(), detail::get_tag<Scalars>()...};
         auto const is_invalid = std::none_of(possible_tags.begin(), possible_tags.end(),
-                                             [&](Tag tag) { return other.tag == tag; });
+                                             [&](Tag tag) { return candidate_tag == tag; });
         if (is_invalid) {
             throw std::runtime_error("Invalid VariantArrayConstRef assignment");
         }
     }
-
-    VariantArrayConstRef(ArrayRef const& a)
-        : VariantArrayConstRef(ArrayConstRef{a.tag, a.is_row_major, a.data, a.rows, a.cols})
-    {}
 };
 
 template<class Scalar, class... Scalars>
@@ -89,28 +119,25 @@ struct VariantArrayRef : ArrayRef {
     }
 };
 
-/**
- Make 1D array reference from pointer and size
- */
-template<class scalar_t>
-inline ArrayConstRef arrayref(scalar_t const* data, int size) {
-    return {detail::get_tag<scalar_t>(), true, data, 1, size};
+/// Return a 1D array reference from pointer and size
+template<class T>
+auto arrayref(T* data, idx_t size) -> detail::MakeArrayRef<T> {
+    return detail::make_arrayref(data, 1, true, size, 0, 0);
 };
 
-template<class scalar_t>
-inline ArrayRef arrayref(scalar_t* data, int size) {
-    return {detail::get_tag<scalar_t>(), true, data, 1, size};
+/// Return a 2D array reference from pointer and sizes
+template<class T>
+auto arrayref(T* data, idx_t x, idx_t y) -> detail::MakeArrayRef<T> {
+    return detail::make_arrayref(data, 2, true, x, y, 0);
 };
 
-inline ArrayConstRef arrayref(Tag tag, void const* data, int size) {
-    return {tag, true, data, 1, size};
+/// Return a 3D array reference from pointer and sizes
+template<class T>
+auto arrayref(T* data, idx_t x, idx_t y, idx_t z) -> detail::MakeArrayRef<T> {
+    return detail::make_arrayref(data, 3, true, x, y, z);
 };
 
-inline ArrayRef arrayref(Tag tag, void* data, int size) {
-    return {tag, true, data, 1, size};
-};
-
-// Common typedefs
+// Common aliases
 using RealArrayConstRef = VariantArrayConstRef<float, double>;
 using ComplexArrayConstRef = VariantArrayConstRef<
     float, double, std::complex<float>, std::complex<double>

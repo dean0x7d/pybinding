@@ -42,7 +42,7 @@ struct AnyCsrConstRef : detail::BasicCsrConstRef {
     AnyCsrConstRef(CsrConstRef<scalar_t> const& other)
         : detail::BasicCsrConstRef(other), tag(detail::get_tag<scalar_t>()) {}
 
-    ArrayConstRef data_ref() const { return arrayref(tag, void_data, nnz); }
+    ArrayConstRef data_ref() const { return {void_data, tag, 1, true, nnz}; }
     ArrayConstRef indices_ref() const { return arrayref(indices, nnz); }
     ArrayConstRef indptr_ref() const { return arrayref(indptr, rows + 1); }
 };
@@ -106,7 +106,7 @@ struct AnyEllConstRef : detail::BasicEllConstRef {
     AnyEllConstRef(EllConstRef<scalar_t> const& other)
         : detail::BasicEllConstRef(other), tag(num::detail::get_tag<scalar_t>()) {}
 
-    ArrayConstRef data_ref() const { return arrayref(tag, void_data, size()); }
+    ArrayConstRef data_ref() const { return {void_data, tag, 1, true, size()}; }
     ArrayConstRef indices_ref() const { return arrayref(indices, size()); }
 };
 

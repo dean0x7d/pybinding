@@ -44,8 +44,8 @@ template<> struct type_caster<Eigen::Vector3i> : static_vec_caster<Eigen::Vector
 
 template<bool is_const>
 struct arrayref_caster {
-    using Type = cpb::num::BasicArrayRef<is_const>;
-    using Shape = std::array<Py_intptr_t, 2>;
+    using Type = cpb::num::detail::BasicArrayRef<is_const>;
+    using Shape = std::array<Py_intptr_t, 3>;
     static constexpr auto writable = !is_const ? npy_api::NPY_ARRAY_WRITEABLE_ : 0;
     static constexpr auto base_flags = npy_api::NPY_ARRAY_ALIGNED_ | writable;
 
@@ -70,14 +70,12 @@ struct arrayref_caster {
             }
         }();
 
-        auto const ndim = (src.rows == 1 || src.cols == 1) ? 1 : 2;
-        auto shape = (ndim == 1) ? Shape{{src.is_row_major ? src.cols : src.rows}}
-                                 : Shape{{src.rows, src.cols}};
+        auto shape = Shape{{src.shape[0], src.shape[1], src.shape[2]}};
         auto const flags = base_flags | (src.is_row_major ? npy_api::NPY_ARRAY_C_CONTIGUOUS_
                                                           : npy_api::NPY_ARRAY_F_CONTIGUOUS_);
 
         auto result = npy_api::get().PyArray_NewFromDescr_(
-            npy_api::get().PyArray_Type_, data_type.release().ptr(), ndim, shape.data(),
+            npy_api::get().PyArray_Type_, data_type.release().ptr(), src.ndim, shape.data(),
             /*strides*/nullptr, const_cast<void*>(src.data), flags, nullptr
         );
         if (!result) { pybind11_fail("ArrayRef: unable to create array"); }
@@ -89,7 +87,7 @@ struct arrayref_caster {
 };
 
 template<bool is_const>
-struct type_caster<cpb::num::BasicArrayRef<is_const>> : arrayref_caster<is_const> {};
+struct type_caster<cpb::num::detail::BasicArrayRef<is_const>> : arrayref_caster<is_const> {};
 template<class T, class... Ts>
 struct type_caster<cpb::num::VariantArrayConstRef<T, Ts...>> : arrayref_caster<true> {};
 template<class T, class... Ts>

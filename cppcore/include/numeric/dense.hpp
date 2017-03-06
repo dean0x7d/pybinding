@@ -176,11 +176,11 @@ namespace num {
     struct MakeContainer<EigenType<scalar_t, 1, cols, options...>> {
         using ConstMap = Eigen::Map<const EigenType<scalar_t, 1, cols, options...>>;
         static ConstMap make(ArrayConstRef const& ref) {
-            return ConstMap{static_cast<scalar_t const*>(ref.data), ref.cols};
+            return ConstMap{static_cast<scalar_t const*>(ref.data), ref.shape[0]};
         }
         using Map = Eigen::Map<EigenType<scalar_t, 1, cols, options...>>;
         static Map make(ArrayRef const& ref) {
-            return Map{static_cast<scalar_t*>(ref.data), ref.cols};
+            return Map{static_cast<scalar_t*>(ref.data), ref.shape[0]};
         }
     };
 
@@ -188,11 +188,11 @@ namespace num {
     struct MakeContainer<EigenType<scalar_t, rows, 1, options...>> {
         using ConstMap = Eigen::Map<const EigenType<scalar_t, rows, 1, options...>>;
         static ConstMap make(ArrayConstRef const& ref) {
-            return ConstMap{static_cast<scalar_t const*>(ref.data), ref.rows};
+            return ConstMap{static_cast<scalar_t const*>(ref.data), ref.shape[0]};
         }
         using Map = Eigen::Map<EigenType<scalar_t, rows, 1, options...>>;
         static Map make(ArrayRef const& ref) {
-            return Map{static_cast<scalar_t*>(ref.data), ref.rows};
+            return Map{static_cast<scalar_t*>(ref.data), ref.shape[0]};
         }
     };
 
@@ -201,41 +201,43 @@ namespace num {
     struct MakeContainer<EigenType<scalar_t, rows, cols, options...>> {
         using ConstMap = Eigen::Map<const EigenType<scalar_t, rows, cols, options...>>;
         static ConstMap make(ArrayConstRef const& ref) {
-            return ConstMap{static_cast<scalar_t const*>(ref.data), ref.rows, ref.cols};
+            return ConstMap{static_cast<scalar_t const*>(ref.data), ref.shape[0], ref.shape[1]};
         }
         using Map = Eigen::Map<EigenType<scalar_t, rows, cols, options...>>;
         static Map make(ArrayRef const& ref) {
-            return Map{static_cast<scalar_t*>(ref.data), ref.rows, ref.cols};
+            return Map{static_cast<scalar_t*>(ref.data), ref.shape[0], ref.shape[1]};
         }
     };
 } // namespace num
 
 template<class Derived>
-inline ArrayConstRef arrayref(DenseBase<Derived> const& v) {
-    return {num::detail::get_tag<typename Derived::Scalar>(),
+ArrayConstRef arrayref(DenseBase<Derived> const& v) {
+    auto const& d = v.derived();
+    return {v.derived().data(),
+            Derived::IsVectorAtCompileTime ? 1 : 2,
             Derived::IsRowMajor,
-            v.derived().data(),
-            static_cast<int>(v.derived().rows()),
-            static_cast<int>(v.derived().cols())};
+            Derived::IsVectorAtCompileTime ? d.size() : d.rows(),
+            Derived::IsVectorAtCompileTime ? 0        : d.cols()};
 };
 
 template<class Derived>
-inline ArrayRef arrayref(DenseBase<Derived>& v) {
-    return {num::detail::get_tag<typename Derived::Scalar>(),
+ArrayRef arrayref(DenseBase<Derived>& v) {
+    auto& d = v.derived();
+    return {v.derived().data(),
+            Derived::IsVectorAtCompileTime ? 1 : 2,
             Derived::IsRowMajor,
-            v.derived().data(),
-            static_cast<int>(v.derived().rows()),
-            static_cast<int>(v.derived().cols())};
+            Derived::IsVectorAtCompileTime ? d.size() : d.rows(),
+            Derived::IsVectorAtCompileTime ? 0        : d.cols()};
 };
 
 template<class scalar_t>
-inline ArrayConstRef arrayref(std::vector<scalar_t> const& v) {
-    return {num::detail::get_tag<scalar_t>(), true, v.data(), 1, static_cast<int>(v.size())};
+ArrayConstRef arrayref(std::vector<scalar_t> const& v) {
+    return arrayref(v.data(), static_cast<idx_t>(v.size()));
 }
 
 template<class scalar_t>
-inline ArrayRef arrayref(std::vector<scalar_t>& v) {
-    return {num::detail::get_tag<scalar_t>(), true, v.data(), 1, static_cast<int>(v.size())};
+ArrayRef arrayref(std::vector<scalar_t>& v) {
+    return arrayref(v.data(), 1, true, static_cast<idx_t>(v.size()));
 }
 
 /// Range from 0 to `size` of scalar type `T` which does not have to be an integral type
