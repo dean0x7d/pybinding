@@ -115,6 +115,7 @@ public:
     Index3D const& get_index() const { return index; }
     idx_t get_sublattice() const { return sublattice; }
     sub_id get_alias_id() const { return foundation->unit_cell[sublattice].alias_id; }
+    storage_idx_t get_norb() const { return foundation->unit_cell[sublattice].norb; }
     idx_t get_idx() const { return idx; }
 
     Cartesian get_position() const { return foundation->positions[idx]; }

@@ -23,7 +23,7 @@ System::System(Foundation const& foundation, FinalizedIndices const& finalized_i
 idx_t System::hamiltonian_size() const {
     auto result = idx_t{0};
     for (auto const& sub : compressed_sublattices) {
-        result += sub.site_count() * lattice[sub.alias_id()].energy.cols();
+        result += sub.num_sites * lattice[sub.alias_id].energy.cols();
     }
     return result;
 }
@@ -41,9 +41,9 @@ idx_t System::find_nearest(Cartesian target_position, string_view sublattice_nam
 
             auto r = Range{0, 0};
             for (auto const& sub : compressed_sublattices) {
-                r.end += sub.site_count();
-                if (sub.alias_id() == target_id) { break; }
-                r.start += sub.site_count();
+                r.end += sub.num_sites;
+                if (sub.alias_id == target_id) { break; }
+                r.start += sub.num_sites;
             }
             return r;
         }
@@ -78,7 +78,7 @@ void populate_system(System& system, Foundation const& foundation,
         if (index < 0) { continue; } // invalid site
 
         system.positions[index] = site.get_position();
-        system.compressed_sublattices.add(site.get_alias_id());
+        system.compressed_sublattices.add(site.get_alias_id(), site.get_norb());
 
         site.for_each_neighbour([&](Site neighbor, Hopping hopping) {
             auto const neighbor_index = finalized_indices[neighbor];

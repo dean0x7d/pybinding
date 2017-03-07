@@ -35,7 +35,7 @@ Structure::Structure(Foundation const& foundation, FinalizedIndices const& final
             auto const index = lead_index(finalized_indices[site]);
 
             system.positions[index] = site.get_position() + shift;
-            system.compressed_sublattices.add(site.get_alias_id());
+            system.compressed_sublattices.add(site.get_alias_id(), site.get_norb());
 
             site.for_each_neighbour([&](Site neighbor, Hopping hopping) {
                 auto const neighbor_index = lead_index(finalized_indices[neighbor]);

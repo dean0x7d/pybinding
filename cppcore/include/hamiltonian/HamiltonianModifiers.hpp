@@ -104,11 +104,10 @@ void HamiltonianModifiers::apply_to_onsite(System const& system, Fn lambda) cons
     if (lattice.has_onsite_energy()) {
         auto start = idx_t{0};
         for (auto const& sub : system.compressed_sublattices) {
-            auto const energy = lattice[sub.alias_id()].energy_vector_as<scalar_t>();
+            auto const energy = lattice[sub.alias_id].energy_vector_as<scalar_t>();
             auto const norb = energy.size();
-            auto const nsites = sub.site_count();
-            potential.segment(start, nsites * norb) = energy.replicate(nsites, 1);
-            start += nsites * norb;
+            potential.segment(start, sub.num_sites * norb) = energy.replicate(sub.num_sites, 1);
+            start += sub.num_sites * norb;
         }
     }
 

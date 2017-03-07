@@ -2,38 +2,89 @@
 
 namespace cpb {
 
-void CompressedSublattices::add(sub_id id) {
-    if (alias_ids.empty() || alias_ids.back() != id) {
-        alias_ids.push_back(id);
-        site_counts.push_back(1);
+CompressedSublattices::CompressedSublattices(ArrayXi const& alias_ids, ArrayXi const& site_counts,
+                                             ArrayXi const& orbital_counts)
+    : data(alias_ids.size()) {
+    for (auto i = size_t{0}; i < data.size(); ++i) {
+        data[i].alias_id = static_cast<sub_id>(alias_ids[i]);
+        data[i].num_sites = site_counts[i];
+        data[i].num_orbitals = orbital_counts[i];
+    }
+}
+
+void CompressedSublattices::add(sub_id id, idx_t norb) {
+    if (data.empty() || data.back().alias_id != id) {
+        data.push_back({id, 1, static_cast<storage_idx_t>(norb)});
     } else {
-        site_counts.back() += 1;
+        data.back().num_sites += 1;
     }
 }
 
 void CompressedSublattices::verify(idx_t num_sites) const {
-    // alias_ids: [1, 0, 2] --> OK
-    //            [1, 0, 2, 1] --> Bad, repeating ID
-    auto unique_ids = alias_ids;
-    std::sort(unique_ids.begin(), unique_ids.end());
-    unique_ids.erase(std::unique(unique_ids.begin(), unique_ids.end()),
-                     unique_ids.end());
+    using std::begin; using std::end;
 
-    auto const actual_nsites = std::accumulate(site_counts.begin(), site_counts.end(), idx_t{0});
-    if (unique_ids.size() != alias_ids.size() || actual_nsites != num_sites) {
+    auto const alias_ids_are_unique = [&]{
+        // alias_ids: [1, 0, 2] --> OK
+        //            [1, 0, 2, 1] --> Bad, repeating ID
+        auto ids = alias_ids();
+        std::sort(begin(ids), end(ids));
+        auto const unique_size = std::unique(begin(ids), end(ids)) - begin(ids);
+        return static_cast<size_t>(unique_size) == data.size();
+    }();
+
+    auto const is_sorted_by_orb_count = [&]{
+        auto const norb = orbital_counts();
+        return std::is_sorted(begin(norb), end(norb));
+    }();
+
+    if (decompressed_size() != num_sites || !alias_ids_are_unique || !is_sorted_by_orb_count) {
         throw std::runtime_error("CompressedSublatticeIDs: this should never happen");
     }
 }
 
+idx_t CompressedSublattices::start_index(idx_t num_orbitals) const {
+    auto result = idx_t{0};
+    for (auto const& sub : data) {
+        if (sub.num_orbitals == num_orbitals) {
+            return result;
+        }
+        result += sub.num_sites;
+    }
+    throw std::runtime_error("CompressedSublattices::start_index(): invalid num_orbitals");
+}
+
+idx_t CompressedSublattices::decompressed_size() const {
+    return std::accumulate(data.begin(), data.end(), idx_t{0}, [](idx_t n, Element const& v) {
+        return n + v.num_sites;
+    });
+}
+
 ArrayX<sub_id> CompressedSublattices::decompress() const {
-    auto const total_size = std::accumulate(site_counts.begin(), site_counts.end(), idx_t{0});
-    auto sublattices = ArrayX<sub_id>(total_size);
+    auto sublattices = ArrayX<sub_id>(decompressed_size());
     auto start = idx_t{0};
-    for (auto const& sub : *this) {
-        sublattices.segment(start, sub.site_count()).setConstant(sub.alias_id());
-        start += sub.site_count();
+    for (auto const& sub : data) {
+        sublattices.segment(start, sub.num_sites).setConstant(sub.alias_id);
+        start += sub.num_sites;
     }
     return sublattices;
+}
+
+ArrayXi CompressedSublattices::alias_ids() const {
+    auto result = ArrayXi(data.size());
+    std::transform(begin(), end(), result.data(), [](Element const& v) { return v.alias_id; });
+    return result;
+}
+
+ArrayXi CompressedSublattices::site_counts() const {
+    auto result = ArrayXi(data.size());
+    std::transform(begin(), end(), result.data(), [](Element const& v) { return v.num_sites; });
+    return result;
+}
+
+ArrayXi CompressedSublattices::orbital_counts() const {
+    auto result = ArrayXi(data.size());
+    std::transform(begin(), end(), result.data(), [](Element const& v) { return v.num_orbitals; });
+    return result;
 }
 
 } // namespace cpb

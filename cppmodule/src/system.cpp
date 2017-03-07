@@ -17,11 +17,13 @@ void wrap_system(py::module& m) {
 
     py::class_<CompressedSublattices>(m, "CompressedSublattices")
         .def("__getstate__", [](CompressedSublattices const& c) {
-            return py::dict("alias_ids"_a=c.get_alias_ids(), "site_counts"_a=c.get_site_counts());
+            return py::dict("alias_ids"_a=c.alias_ids(), "site_counts"_a=c.site_counts(),
+                            "orbital_counts"_a=c.orbital_counts());
         })
         .def("__setstate__", [](CompressedSublattices& c, py::dict d) {
-            new (&c) CompressedSublattices(d["alias_ids"].cast<std::vector<storage_idx_t>>(),
-                                           d["site_counts"].cast<std::vector<storage_idx_t>>());
+            new (&c) CompressedSublattices(d["alias_ids"].cast<ArrayXi>(),
+                                           d["site_counts"].cast<ArrayXi>(),
+                                           d["orbital_counts"].cast<ArrayXi>());
         });
 
     py::class_<HoppingBlocks::COO>(m, "HoppingBlocksCOO")
