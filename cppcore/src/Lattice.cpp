@@ -221,7 +221,7 @@ Cartesian Lattice::calc_position(Index3D index, string_view sublattice_name) con
 Vector3f Lattice::translate_coordinates(Cartesian position) const {
     auto const size = ndim();
     auto const lattice_matrix = [&]{
-        auto m = Eigen::MatrixXf(size, size);
+        auto m = ColMajorMatrixX<float>(size, size);
         for (auto i = 0; i < size; ++i) {
             m.col(i) = vectors[i].head(size);
         }

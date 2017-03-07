@@ -65,8 +65,8 @@ public: // overrides
         return arrayref(Map<const ArrayX<real_t>>(_eigenvalues.data(), info.final_size));
     }
     ComplexArrayConstRef eigenvectors() const override {
-        return arrayref(Map<const ArrayXX<scalar_t>>(_eigenvectors.data(),
-                                                     _eigenvectors.rows(), info.final_size));
+        using MapType = Map<ColMajorArrayXX<scalar_t> const>;
+        return arrayref(MapType(_eigenvectors.data(), _eigenvectors.rows(), info.final_size));
     }
 
 private: // implementation
@@ -81,7 +81,7 @@ private:
     Config config;
 
     ArrayX<real_t> _eigenvalues;
-    ArrayXX<scalar_t> _eigenvectors;
+    ColMajorArrayXX<scalar_t> _eigenvectors;
 
     int fpm[128]; ///< FEAST init parameters
     Info info;

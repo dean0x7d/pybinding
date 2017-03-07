@@ -57,6 +57,11 @@ template<class T> using ArrayXX = Eigen::Array<T, Eigen::Dynamic, Eigen::Dynamic
 template<class T> using VectorX = Eigen::Matrix<T, Eigen::Dynamic, 1>;
 template<class T> using MatrixX = Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic>;
 
+template<class T>
+using ColMajorArrayXX = Eigen::Array<T, Eigen::Dynamic, Eigen::Dynamic, Eigen::ColMajor>;
+template<class T>
+using ColMajorMatrixX = Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic, Eigen::ColMajor>;
+
 // array variants
 using num::arrayref;
 using num::ArrayConstRef;

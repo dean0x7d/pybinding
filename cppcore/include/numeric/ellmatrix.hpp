@@ -9,8 +9,8 @@ namespace cpb { namespace num {
  */
 template<class scalar_t>
 class EllMatrix {
-    using DataArray = Eigen::Array<scalar_t, Eigen::Dynamic, Eigen::Dynamic, Eigen::ColMajor>;
-    using IndexArray = Eigen::Array<storage_idx_t, Eigen::Dynamic, Eigen::Dynamic, Eigen::ColMajor>;
+    using DataArray = ColMajorArrayXX<scalar_t>;
+    using IndexArray = ColMajorArrayXX<storage_idx_t>;
     static constexpr auto align_bytes = 32;
 
 public:

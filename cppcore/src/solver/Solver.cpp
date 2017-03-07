@@ -89,7 +89,7 @@ ArrayXd BaseSolver::calc_dos(ArrayXf target_energies, float broadening) {
 }
 
 ArrayXd BaseSolver::calc_spatial_ldos(float target_energy, float broadening) {
-    return num::match2sp<ArrayX, ArrayXX>(
+    return num::match2sp<ArrayX, ColMajorArrayXX>(
         eigenvalues(), eigenvectors(),
         compute::CalcSpatialLDOS{target_energy, broadening}
     );

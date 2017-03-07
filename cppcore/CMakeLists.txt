@@ -104,7 +104,7 @@ include(warnings)
 enable_warnings(cppcore)
 
 include(download)
-download_dependency(eigen3 3.3.1
+download_dependency(eigen3 3.3.3
                     https://bitbucket.org/eigen/eigen/get
                     \${VERSION}.tar.gz */Eigen)
 target_include_directories(cppcore SYSTEM PUBLIC ${EIGEN3_INCLUDE_DIR})
