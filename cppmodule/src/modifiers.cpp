@@ -81,8 +81,9 @@ void wrap_modifiers(py::module& m) {
         .def("__init__", [](OnsiteModifier& self, py::object apply,
                             bool is_complex, bool is_double) {
             new (&self) OnsiteModifier(
-                [apply](ComplexArrayRef energy, CartesianArray const& p, SubIdRef sub) {
-                    auto result = apply(energy, arrayref(p.x), arrayref(p.y), arrayref(p.z), sub);
+                [apply](ComplexArrayRef energy, CartesianArrayConstRef p, SubIdRef sub) {
+                    auto result = apply(energy, arrayref(p.x()), arrayref(p.y()),
+                                        arrayref(p.z()), sub);
                     num::match<ArrayX>(energy, ExtractArray{result});
                 },
                 is_complex, is_double

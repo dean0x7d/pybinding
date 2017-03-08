@@ -45,12 +45,12 @@ namespace detail {
 template<class scalar_t>
 void build_main(SparseMatrixX<scalar_t>& matrix, System const& system,
                 HamiltonianModifiers const& modifiers) {
-    auto const num_sites = system.num_sites();
-    matrix.resize(num_sites, num_sites);
+    auto const size = system.hamiltonian_size();
+    matrix.resize(size, size);
 
     auto const has_onsite_energy = system.lattice.has_onsite_energy() || !modifiers.onsite.empty();
     auto const num_per_row = system.lattice.max_hoppings() + has_onsite_energy;
-    matrix.reserve(ArrayXi::Constant(num_sites, num_per_row));
+    matrix.reserve(ArrayXi::Constant(size, num_per_row));
 
     modifiers.apply_to_onsite<scalar_t>(system, [&](idx_t i, scalar_t onsite) {
         matrix.insert(i, i) = onsite;

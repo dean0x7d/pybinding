@@ -76,7 +76,7 @@ namespace {
 }
 
 cpb::OnsiteModifier constant_potential(float value) {
-    return {[value](ComplexArrayRef energy, CartesianArray const&, SubIdRef) {
+    return {[value](ComplexArrayRef energy, CartesianArrayConstRef, SubIdRef) {
         num::match<ArrayX>(energy, OnsiteEnergyOp{value});
     }};
 }
@@ -113,7 +113,7 @@ cpb::HoppingModifier constant_magnetic_field(float value) {
 namespace {
     struct LinearOnsite {
         float k;
-        ArrayXf x;
+        Eigen::Ref<ArrayXf const> x;
 
         template<class Array>
         void operator()(Array energy) const {
@@ -124,8 +124,8 @@ namespace {
 }
 
 cpb::OnsiteModifier linear_onsite(float k) {
-    return {[k](ComplexArrayRef energy, CartesianArray const& pos, SubIdRef) {
-        num::match<ArrayX>(energy, LinearOnsite{k, pos.x});
+    return {[k](ComplexArrayRef energy, CartesianArrayConstRef pos, SubIdRef) {
+        num::match<ArrayX>(energy, LinearOnsite{k, pos.x()});
     }};
 }
 

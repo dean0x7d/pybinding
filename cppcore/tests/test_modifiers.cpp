@@ -41,7 +41,7 @@ TEST_CASE("OnsiteEnergyModifier") {
     REQUIRE(h_init.rows() == 2);
     REQUIRE(h_init.non_zeros() == 2);
 
-    model.add(OnsiteModifier([](ComplexArrayRef energy, CartesianArray const&, SubIdRef) {
+    model.add(OnsiteModifier([](ComplexArrayRef energy, CartesianArrayConstRef, SubIdRef) {
         num::match<ArrayX>(energy, OnsiteEnergyOp{});
     }));
     auto const& h = model.hamiltonian();

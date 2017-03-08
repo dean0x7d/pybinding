@@ -23,7 +23,7 @@ System::System(Foundation const& foundation, FinalizedIndices const& finalized_i
 idx_t System::hamiltonian_size() const {
     auto result = idx_t{0};
     for (auto const& sub : compressed_sublattices) {
-        result += sub.num_sites * lattice[sub.alias_id].energy.cols();
+        result += sub.ham_size();
     }
     return result;
 }
@@ -38,14 +38,15 @@ idx_t System::find_nearest(Cartesian target_position, string_view sublattice_nam
         } else {
             // Only check sites belonging to the target sublattice
             auto const target_id = lattice[sublattice_name].alias_id;
-
-            auto r = Range{0, 0};
-            for (auto const& sub : compressed_sublattices) {
-                r.end += sub.num_sites;
-                if (sub.alias_id == target_id) { break; }
-                r.start += sub.num_sites;
+            auto const it = std::find_if(
+                compressed_sublattices.begin(), compressed_sublattices.end(),
+                [&](CompressedSublattices::It const& sub) { return sub.alias_id() == target_id; }
+            );
+            if (it == compressed_sublattices.end()) {
+                throw std::runtime_error("System::find_nearest() This should never happen");
             }
-            return r;
+
+            return Range{it->sys_start(), it->sys_end()};
         }
     }();
 

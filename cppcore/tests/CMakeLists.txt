@@ -10,6 +10,7 @@ add_executable(catch
     test_modifiers.cpp
     test_numeric.cpp
     test_shape.cpp
+    test_system.cpp
 )
 target_include_directories(catch PRIVATE ${CATCH_INCLUDE_DIR})
 target_link_libraries(catch PRIVATE cppcore)

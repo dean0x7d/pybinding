@@ -139,6 +139,20 @@ template<class Derived> inline bool any_of(const DenseBase<Derived>& v) { return
 template<class Derived> inline bool all_of(const DenseBase<Derived>& v) { return v.all(); }
 template<class Derived> inline bool none_of(const DenseBase<Derived>& v) { return !v.any(); }
 
+class CartesianArrayConstRef {
+public:
+    using Reference = Eigen::Ref<ArrayXf const>;
+
+    CartesianArrayConstRef(Reference x, Reference y,  Reference z)
+        : x_ref(x), y_ref(y), z_ref(z) {}
+
+    Reference const& x() const { return x_ref; }
+    Reference const& y() const { return y_ref; }
+    Reference const& z() const { return z_ref; }
+
+private:
+    Reference x_ref, y_ref, z_ref;
+};
 
 class CartesianArray {
 private:
@@ -157,6 +171,10 @@ public:
     Cartesian operator[](idx_t i) const { return {x[i], y[i], z[i]}; }
 
     idx_t size() const { return x.size(); }
+
+    CartesianArrayConstRef segment(idx_t start, idx_t size) const {
+        return {x.segment(start, size), y.segment(start, size), z.segment(start, size)};
+    }
 
     template<class Fn>
     void for_each(Fn lambda) {
@@ -181,11 +199,11 @@ namespace num {
     struct MakeContainer<EigenType<scalar_t, 1, cols, options...>> {
         using ConstMap = Eigen::Map<const EigenType<scalar_t, 1, cols, options...>>;
         static ConstMap make(ArrayConstRef const& ref) {
-            return ConstMap{static_cast<scalar_t const*>(ref.data), ref.shape[0]};
+            return ConstMap{static_cast<scalar_t const*>(ref.data), ref.size()};
         }
         using Map = Eigen::Map<EigenType<scalar_t, 1, cols, options...>>;
         static Map make(ArrayRef const& ref) {
-            return Map{static_cast<scalar_t*>(ref.data), ref.shape[0]};
+            return Map{static_cast<scalar_t*>(ref.data), ref.size()};
         }
     };
 
@@ -193,11 +211,11 @@ namespace num {
     struct MakeContainer<EigenType<scalar_t, rows, 1, options...>> {
         using ConstMap = Eigen::Map<const EigenType<scalar_t, rows, 1, options...>>;
         static ConstMap make(ArrayConstRef const& ref) {
-            return ConstMap{static_cast<scalar_t const*>(ref.data), ref.shape[0]};
+            return ConstMap{static_cast<scalar_t const*>(ref.data), ref.size()};
         }
         using Map = Eigen::Map<EigenType<scalar_t, rows, 1, options...>>;
         static Map make(ArrayRef const& ref) {
-            return Map{static_cast<scalar_t*>(ref.data), ref.shape[0]};
+            return Map{static_cast<scalar_t*>(ref.data), ref.size()};
         }
     };
 

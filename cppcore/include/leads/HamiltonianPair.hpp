@@ -18,9 +18,9 @@ namespace detail {
         auto h1 = std::make_shared<SparseMatrixX<scalar_t>>();
         auto& matrix = *h1;
 
-        auto const num_sites = system.num_sites();
-        matrix.resize(num_sites, num_sites);
-        matrix.reserve(ArrayXi::Constant(num_sites, system.lattice.max_hoppings()));
+        auto const size = system.hamiltonian_size();
+        matrix.resize(size, size);
+        matrix.reserve(ArrayXi::Constant(size, system.lattice.max_hoppings()));
 
         modifiers.apply_to_hoppings<scalar_t>(system, 0, [&](idx_t i, idx_t j, scalar_t hopping) {
             matrix.insert(i, j) = hopping;

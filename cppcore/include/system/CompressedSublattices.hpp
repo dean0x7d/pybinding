@@ -20,6 +20,51 @@ public:
         storage_idx_t num_orbitals; ///< number of orbitals on this sublattice
     };
 
+    class It {
+    public:
+        using iterator_category = std::input_iterator_tag;
+        using difference_type = std::ptrdiff_t;
+        using value_type = It;
+        using reference = value_type const&;
+        using pointer = value_type const*;
+
+        It(std::vector<Element>::const_iterator it) : it(it) {}
+
+        /// Directly correspond to fields in `Element`
+        sub_id alias_id() const { return it->alias_id; }
+        idx_t num_sites() const { return it->num_sites; }
+        idx_t num_orbitals() const { return it->num_orbitals; }
+
+        /// The starting system index for sites of this sublattice
+        idx_t sys_start() const { return sys_idx; }
+        /// The past end system site index (== sys_start + num_sites)
+        idx_t sys_end() const { return sys_idx + it->num_sites; }
+        /// The starting hamiltonian index (>= sys_start due to multiple orbitals)
+        idx_t ham_start() const { return ham_idx; }
+        /// The past end hamiltonian index
+        idx_t ham_end() const { return ham_idx + ham_size(); }
+        /// The number of Hamiltonian matrix elements for this sublattice
+        idx_t ham_size() const { return it->num_sites * it->num_orbitals; }
+
+        reference operator*() const { return *this; }
+        pointer operator->() const { return this; }
+
+        It& operator++() {
+            sys_idx += it->num_sites;
+            ham_idx += it->num_sites * it->num_orbitals;
+            ++it;
+            return *this;
+        }
+
+        friend bool operator==(It const& a, It const& b) { return a.it == b.it; }
+        friend bool operator!=(It const& a, It const& b) { return !(a == b); }
+
+    private:
+        std::vector<Element>::const_iterator it;
+        idx_t sys_idx = 0;
+        idx_t ham_idx = 0;
+    };
+
     CompressedSublattices() = default;
     CompressedSublattices(ArrayXi const& alias_ids, ArrayXi const& site_counts,
                           ArrayXi const& orbital_counts);
@@ -37,8 +82,8 @@ public:
     /// Return the full uncompressed array of IDs
     ArrayX<sub_id> decompress() const;
 
-    std::vector<Element>::const_iterator begin() const { return data.begin(); }
-    std::vector<Element>::const_iterator end() const { return data.end(); }
+    It begin() const { return data.begin(); }
+    It end() const { return data.end(); }
 
     /// Assess raw data
     ArrayXi alias_ids() const;

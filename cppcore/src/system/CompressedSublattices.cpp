@@ -43,12 +43,10 @@ void CompressedSublattices::verify(idx_t num_sites) const {
 }
 
 idx_t CompressedSublattices::start_index(idx_t num_orbitals) const {
-    auto result = idx_t{0};
-    for (auto const& sub : data) {
-        if (sub.num_orbitals == num_orbitals) {
-            return result;
+    for (auto const& sub : *this) {
+        if (sub.num_orbitals() == num_orbitals) {
+            return sub.sys_start();
         }
-        result += sub.num_sites;
     }
     throw std::runtime_error("CompressedSublattices::start_index(): invalid num_orbitals");
 }
@@ -61,29 +59,30 @@ idx_t CompressedSublattices::decompressed_size() const {
 
 ArrayX<sub_id> CompressedSublattices::decompress() const {
     auto sublattices = ArrayX<sub_id>(decompressed_size());
-    auto start = idx_t{0};
-    for (auto const& sub : data) {
-        sublattices.segment(start, sub.num_sites).setConstant(sub.alias_id);
-        start += sub.num_sites;
+    for (auto const& sub : *this) {
+        sublattices.segment(sub.sys_start(), sub.num_sites()).setConstant(sub.alias_id());
     }
     return sublattices;
 }
 
 ArrayXi CompressedSublattices::alias_ids() const {
     auto result = ArrayXi(data.size());
-    std::transform(begin(), end(), result.data(), [](Element const& v) { return v.alias_id; });
+    std::transform(data.begin(), data.end(), result.data(),
+                   [](Element const& v) { return v.alias_id; });
     return result;
 }
 
 ArrayXi CompressedSublattices::site_counts() const {
     auto result = ArrayXi(data.size());
-    std::transform(begin(), end(), result.data(), [](Element const& v) { return v.num_sites; });
+    std::transform(data.begin(), data.end(), result.data(),
+                   [](Element const& v) { return v.num_sites; });
     return result;
 }
 
 ArrayXi CompressedSublattices::orbital_counts() const {
     auto result = ArrayXi(data.size());
-    std::transform(begin(), end(), result.data(), [](Element const& v) { return v.num_orbitals; });
+    std::transform(data.begin(), data.end(), result.data(),
+                   [](Element const& v) { return v.num_orbitals; });
     return result;
 }
 

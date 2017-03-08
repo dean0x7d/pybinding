@@ -191,22 +191,44 @@ def test_onsite():
     assert np.all(2 == mod(zero))
     assert np.all(2 == mod.apply(zero, zero, zero, zero, one))
 
-    capture = []
+    capture = {}
 
     @pb.onsite_energy_modifier
     def check_args(energy, x, y, z, sub_id, sites):
-        capture[:] = (v.copy() for v in (energy, x, y, z, sub_id))
-        capture.append(sites.argsort_nearest([0, graphene.a_cc / 2]))
+        capture[sub_id[0]] = [v.copy() for v in (energy, x, y, z, sub_id)]
+        capture[sub_id[0]].append(sites.argsort_nearest([0, graphene.a_cc / 2]))
         return energy
 
     model = build_model(check_args)
     assert model.hamiltonian.dtype == np.float32
 
-    energy, x, y, z, sub_id, nearest = capture
-    assert np.allclose(energy, [0, 0])
-    assert_position(x, y, z)
-    assert_sublattice(sub_id, model)
-    assert np.all(nearest == [1, 0])
+    energy, x, y, z, sub_id, nearest = capture[model.lattice["A"]]
+    assert np.allclose(energy, 0)
+    assert np.allclose(x, 0)
+    assert np.allclose(y, -graphene.a_cc / 2)
+    assert np.allclose(z, 0)
+    assert np.all(nearest == [0])
+
+    assert np.argwhere(sub_id == model.lattice["A"]) == 0
+    assert np.argwhere(sub_id != model.lattice["A"]).size == 0
+    assert np.argwhere(sub_id == "A") == 0
+    assert np.argwhere(sub_id != "A").size == 0
+    with pytest.raises(KeyError):
+        assert sub_id == "invalid_sublattice_name"
+
+    energy, x, y, z, sub_id, nearest = capture[model.lattice["B"]]
+    assert np.allclose(energy, 0)
+    assert np.allclose(x, 0)
+    assert np.isclose(y, graphene.a_cc / 2)
+    assert np.allclose(z, 0)
+    assert np.all(nearest == [0])
+
+    assert np.argwhere(sub_id == model.lattice["B"]) == 0
+    assert np.argwhere(sub_id != model.lattice["B"]).size == 0
+    assert np.argwhere(sub_id == "B") == 0
+    assert np.argwhere(sub_id != "B").size == 0
+    with pytest.raises(KeyError):
+        assert sub_id == "invalid_sublattice_name"
 
     @pb.onsite_energy_modifier(double=True)
     def make_double(energy):
@@ -342,3 +364,54 @@ def test_mutability():
     with pytest.raises(ValueError) as excinfo:
         build_model(mod_x)
     assert "read-only" in str(excinfo.value)
+
+
+def test_multiorbital():
+    def multi_orbital_lattice():
+        lat = pb.Lattice([1, 0], [0, 1])
+
+        tau_z = np.array([[1, 0],
+                          [0, -1]])
+        tau_x = np.array([[0, 1],
+                          [1, 0]])
+        lat.add_sublattices(("A", [0,   0], tau_z + 2 * tau_x),
+                            ("B", [0, 0.1], 0.5),
+                            ("C", [0, 0.2], [1, 2, 3]))
+        lat.add_hoppings(([0, -1], "A", "A", 3 * tau_z),
+                         ([1,  0], "A", "A", 3 * tau_z),
+                         ([0, 0], "B", "C", [[2, 3, 4]]))
+        return lat
+
+    capture = {}
+
+    @pb.onsite_energy_modifier
+    def onsite(energy, x, y, z, sub_id):
+        capture[sub_id[0]] = [v.copy() for v in (energy, x, y, z, sub_id)]
+        return energy
+
+    model = pb.Model(multi_orbital_lattice(), pb.rectangle(2, 1), onsite)
+    assert model.hamiltonian is not None
+
+    energy, x, y, z, sub_id = capture[model.lattice["A"]]
+    assert energy.shape == (2, 2)
+    assert np.allclose(energy, [[1, -1], [1, -1]])
+    assert np.allclose(x, [0, 1])
+    assert np.allclose(y, [0, 0])
+    assert np.allclose(z, [0, 0])
+    assert np.allclose(sub_id, [0, 0])
+
+    energy, x, y, z, sub_id = capture[model.lattice["B"]]
+    assert energy.shape == (2,)
+    assert np.allclose(energy, [0.5, 0.5])
+    assert np.allclose(x, [0.0, 1.0])
+    assert np.allclose(y, [0.1, 0.1])
+    assert np.allclose(z, [0.0, 0.0])
+    assert np.allclose(sub_id, [1, 1])
+
+    energy, x, y, z, sub_id = capture[model.lattice["C"]]
+    assert energy.shape == (2, 3)
+    assert np.allclose(energy, [[1, 2, 3], [1, 2, 3]])
+    assert np.allclose(x, [0.0, 1.0])
+    assert np.allclose(y, [0.2, 0.2])
+    assert np.allclose(z, [0.0, 0.0])
+    assert np.allclose(sub_id, [2, 2])

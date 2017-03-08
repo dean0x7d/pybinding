@@ -16,8 +16,9 @@ namespace cpb {
 */
 class OnsiteModifier {
 public:
-    using Function = std::function<void(ComplexArrayRef /*energy*/, CartesianArray const& /*pos*/,
-                                        SubIdRef /*sublattice*/)>;
+    using Function = std::function<void(ComplexArrayRef energy, CartesianArrayConstRef positions,
+                                        SubIdRef sublattice)>;
+
     Function apply; ///< to be user-implemented
     bool is_complex = false; ///< the modeled effect requires complex values
     bool is_double = false; ///< the modeled effect requires double precision
@@ -98,30 +99,33 @@ void HamiltonianModifiers::apply_to_onsite(System const& system, Fn lambda) cons
         return;
     }
 
-    auto const hamiltonian_size = system.hamiltonian_size();
-    auto potential = ArrayX<scalar_t>::Zero(hamiltonian_size).eval();
+    for (auto const& sub : system.compressed_sublattices) {
+        auto onsite_energy = ArrayX<scalar_t>::Zero(sub.ham_size()).eval();
 
-    if (lattice.has_onsite_energy()) {
-        auto start = idx_t{0};
-        for (auto const& sub : system.compressed_sublattices) {
-            auto const energy = lattice[sub.alias_id].energy_vector_as<scalar_t>();
-            auto const norb = energy.size();
-            potential.segment(start, sub.num_sites * norb) = energy.replicate(sub.num_sites, 1);
-            start += sub.num_sites * norb;
+        if (lattice.has_onsite_energy()) {
+            // Intrinsic lattice onsite energy -- just replicate the value at each site
+            auto const vector = lattice[sub.alias_id()].energy_vector_as<scalar_t>();
+            onsite_energy = vector.replicate(sub.num_sites(), 1);
         }
-    }
 
-    if (!onsite.empty()) {
-        auto const sub_ids = system.compressed_sublattices.decompress();
-        for (auto const& modifier : onsite) {
-            modifier.apply(arrayref(potential), system.positions,
-                           {sub_ids, lattice.sub_name_map()});
+        if (!onsite.empty()) {
+            // Apply all user-defined onsite modifier functions
+            auto onsite_ref = arrayref(onsite_energy.data(), sub.num_sites(), sub.num_orbitals());
+            if (sub.num_orbitals() == 1) { onsite_ref.ndim = 1; } // squeeze dimensions
+
+            auto const position_ref = system.positions.segment(sub.sys_start(), sub.num_sites());
+            auto const sub_ids = ArrayX<sub_id>::Constant(sub.num_sites(), sub.alias_id());
+
+            for (auto const& modifier : onsite) {
+                modifier.apply(onsite_ref, position_ref, {sub_ids, lattice.sub_name_map()});
+            }
         }
-    }
 
-    for (int i = 0; i < hamiltonian_size; ++i) {
-        if (potential[i] != scalar_t{0}) {
-            lambda(i, potential[i]);
+        for (auto n = idx_t{0}; n < onsite_energy.size(); ++n) {
+            auto const v = onsite_energy[n];
+            if (v != scalar_t{0}) {
+                lambda(sub.ham_start() + n, v);
+            }
         }
     }
 }
