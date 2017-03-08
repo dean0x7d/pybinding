@@ -128,7 +128,8 @@ void Lattice::add_hopping(Index3D relative_index, string_view from_sub, string_v
     auto const hopping_name = [&] {
         // Look for an existing hopping ID with the same energy
         auto const it = std::find_if(hoppings.begin(), hoppings.end(), [&](Hoppings::reference r) {
-            return r.second.energy == energy;
+            auto const& e = r.second.energy;
+            return e.rows() == energy.rows() && e.cols() == energy.cols() && e == energy;
         });
 
         if (it != hoppings.end()) {
