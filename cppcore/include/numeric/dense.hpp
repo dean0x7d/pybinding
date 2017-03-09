@@ -172,6 +172,10 @@ public:
 
     idx_t size() const { return x.size(); }
 
+    CartesianArrayConstRef head(idx_t size) const {
+        return {x.head(size), y.head(size), z.head(size)};
+    }
+
     CartesianArrayConstRef segment(idx_t start, idx_t size) const {
         return {x.segment(start, size), y.segment(start, size), z.segment(start, size)};
     }

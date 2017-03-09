@@ -41,6 +41,9 @@ struct System {
     /// account the number of orbitals/spins at each lattice site.
     idx_t hamiltonian_size() const;
 
+    /// Translate the given System index into it's corresponding Hamiltonian index
+    idx_t to_hamiltonian_index(idx_t system_index) const;
+
     /// Find the index of the site nearest to the given position. Optional: filter by sublattice.
     idx_t find_nearest(Cartesian position, string_view sublattice_name = "") const;
 };

@@ -26,12 +26,12 @@ void wrap_system(py::module& m) {
                                            d["orbital_counts"].cast<ArrayXi>());
         });
 
-    py::class_<HoppingBlocks::COO>(m, "HoppingBlocksCOO")
-        .def("__getstate__", [](HoppingBlocks::COO const& coo) {
+    py::class_<COO>(m, "COO")
+        .def("__getstate__", [](COO const& coo) {
             return py::make_tuple(coo.row, coo.col);
         })
-        .def("__setstate__", [](HoppingBlocks::COO& coo, py::tuple t) {
-            new (&coo) HoppingBlocks::COO(t[0].cast<idx_t>(), t[1].cast<idx_t>());
+        .def("__setstate__", [](COO& coo, py::tuple t) {
+            new (&coo) COO(t[0].cast<idx_t>(), t[1].cast<idx_t>());
         });
 
     py::class_<HoppingBlocks>(m, "HoppingBlocks")

@@ -69,7 +69,7 @@ public:
 
         /// Return the hopping energy matrix in the given scalar type
         template<class scalar_t>
-        MatrixX<scalar_t> energy_matrix_as() const;
+        MatrixX<scalar_t> energy_as() const;
     };
 
     using Vectors = std::vector<Cartesian>;
@@ -243,17 +243,17 @@ inline VectorX<float> Lattice::Sublattice::energy_vector_as<float>() const {
 }
 
 template<class scalar_t>
-MatrixX<scalar_t> Lattice::HoppingFamily::energy_matrix_as() const {
+MatrixX<scalar_t> Lattice::HoppingFamily::energy_as() const {
     return energy.cast<scalar_t>();
 }
 
 template<>
-inline MatrixX<double> Lattice::HoppingFamily::energy_matrix_as<double>() const {
+inline MatrixX<double> Lattice::HoppingFamily::energy_as<double>() const {
     return energy.real();
 }
 
 template<>
-inline MatrixX<float> Lattice::HoppingFamily::energy_matrix_as<float>() const {
+inline MatrixX<float> Lattice::HoppingFamily::energy_as<float>() const {
     return energy.real().cast<float>();
 }
 

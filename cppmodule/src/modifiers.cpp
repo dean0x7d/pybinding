@@ -96,10 +96,12 @@ void wrap_modifiers(py::module& m) {
         .def("__init__", [](HoppingModifier& self, py::object apply,
                             bool is_complex, bool is_double) {
             new (&self) HoppingModifier(
-                [apply](ComplexArrayRef energy, CartesianArray const& p1,
-                        CartesianArray const& p2, HopIdRef hopping) {
-                    auto result = apply(energy, arrayref(p1.x), arrayref(p1.y), arrayref(p1.z),
-                                        arrayref(p2.x), arrayref(p2.y), arrayref(p2.z), hopping);
+                [apply](ComplexArrayRef energy, CartesianArrayConstRef p1,
+                        CartesianArrayConstRef p2, HopIdRef hopping) {
+                    auto result = apply(
+                        energy, arrayref(p1.x()), arrayref(p1.y()), arrayref(p1.z()),
+                        arrayref(p2.x()), arrayref(p2.y()), arrayref(p2.z()), hopping
+                    );
                     num::match<ArrayX>(energy, ExtractArray{result});
                 },
                 is_complex, is_double

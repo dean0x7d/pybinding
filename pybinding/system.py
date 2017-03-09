@@ -578,24 +578,25 @@ def plot_site_indices(system):
         pltutils.annotate_box(i, xy)
 
 
-def plot_hopping_values(system, lattice):
+def plot_hopping_values(system):
     """Show the hopping energy over each hopping line (mainly for debugging)
 
     Parameters
     ----------
     system : System
-    lattice : Lattice
     """
     pos = system.xyz[:, :2]
 
     def get_energy(hopping_id):
-        t = lattice.hopping_energies[hopping_id]
-        return t.real if t.imag == 0 else t
+        inv_name_map = {v: k for k, v in system.lattice.impl.hop_name_map.items()}
+        return inv_name_map[hopping_id]
 
-    for i, j, k in system.hoppings.triplets():
+    coo = system.hoppings.tocoo()
+    for i, j, k in zip(coo.row, coo.col, coo.data):
         pltutils.annotate_box(get_energy(k), (pos[i] + pos[j]) / 2)
 
     for boundary in system.boundaries:
-        for i, j, k in boundary.hoppings.triplets():
+        coo = boundary.hoppings.tocoo()
+        for i, j, k in zip(coo.row, coo.col, coo.data):
             pltutils.annotate_box(get_energy(k), (pos[i] + pos[j] + boundary.shift[:2]) / 2)
             pltutils.annotate_box(get_energy(k), (pos[i] + pos[j] - boundary.shift[:2]) / 2)

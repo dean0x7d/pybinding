@@ -37,3 +37,31 @@ TEST_CASE("CompressedSublattices") {
     REQUIRE(cs.start_index(3) == 27);
     REQUIRE_THROWS_WITH(cs.start_index(4), Catch::Contains("invalid num_orbitals"));
 }
+
+TEST_CASE("to_hamiltonian_index") {
+    SECTION("single-orbital") {
+        auto const model = Model(lattice::square(), shape::rectangle(3, 3));
+        auto const& system = *model.system();
+
+        REQUIRE(system.num_sites() == 9);
+        REQUIRE(system.hamiltonian_size() == 9);
+        REQUIRE(system.to_hamiltonian_index(0) == 0);
+        REQUIRE(system.to_hamiltonian_index(4) == 4);
+        REQUIRE(system.to_hamiltonian_index(8) == 8);
+    }
+
+    SECTION("multi-orbital") {
+        auto const model = Model(lattice::square_multiorbital(), shape::rectangle(1, 2));
+        auto const& system = *model.system();
+
+        REQUIRE(system.num_sites() == 8);
+        REQUIRE(system.hamiltonian_size() == 16);
+        REQUIRE(system.to_hamiltonian_index(0) == 0);
+        REQUIRE(system.to_hamiltonian_index(2) == 2);
+        REQUIRE(system.to_hamiltonian_index(3) == 4);
+        REQUIRE(system.to_hamiltonian_index(4) == 6);
+        REQUIRE(system.to_hamiltonian_index(5) == 8);
+        REQUIRE(system.to_hamiltonian_index(6) == 10);
+        REQUIRE(system.to_hamiltonian_index(7) == 13);
+    }
+}

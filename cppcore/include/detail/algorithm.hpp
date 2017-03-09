@@ -12,9 +12,9 @@ namespace cpb {
 /// Following that `process_buffer` is called for each `last_buffer_size` elements:
 ///     process_buffer(reference element, idx_t buffer_position)
 /// Requires `Vector` to be random-access-iterable.
-template<class Vector, class F1, class F2, class F3>
+template<class Vector, class F1, class F2, class F3, class F4>
 void buffered_for_each(Vector const& v, idx_t buffer_capacity, F1 fill_buffer,
-                       F2 notify_filled, F3 process_buffer) {
+                       F2 notify_filled, F3 process_buffer, F4 notify_processed) {
     using std::begin; using std::end;
 
     auto it = begin(v);
@@ -30,6 +30,7 @@ void buffered_for_each(Vector const& v, idx_t buffer_capacity, F1 fill_buffer,
             }
             previous_start = it;
             buffer_level = 0;
+            notify_processed();
         }
 
         fill_buffer(*it, buffer_level++);

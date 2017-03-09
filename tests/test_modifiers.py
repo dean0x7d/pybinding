@@ -366,7 +366,7 @@ def test_mutability():
     assert "read-only" in str(excinfo.value)
 
 
-def test_multiorbital():
+def test_multiorbital_onsite():
     def multi_orbital_lattice():
         lat = pb.Lattice([1, 0], [0, 1])
 
@@ -390,7 +390,8 @@ def test_multiorbital():
         return energy
 
     model = pb.Model(multi_orbital_lattice(), pb.rectangle(2, 1), onsite)
-    assert model.hamiltonian is not None
+    assert model.system.num_sites == 6
+    assert model.hamiltonian.shape[0] == 12
 
     energy, x, y, z, sub_id = capture[model.lattice["A"]]
     assert energy.shape == (2, 2)
@@ -415,3 +416,107 @@ def test_multiorbital():
     assert np.allclose(y, [0.2, 0.2])
     assert np.allclose(z, [0.0, 0.0])
     assert np.allclose(sub_id, [2, 2])
+
+
+def test_multiorbital_hoppings():
+    """For multi-orbital lattices, hopping modifiers get `energy` as 3D array"""
+    def multi_orbital_lattice():
+        lat = pb.Lattice([1, 0], [0, 1])
+
+        tau_z = np.array([[1, 0],
+                          [0, -1]])
+        tau_x = np.array([[0, 1],
+                          [1, 0]])
+        lat.add_sublattices(("A", [-0.25, 0.0], tau_z + 2 * tau_x),
+                            ("B", [0.0, 0.5], 0.5),
+                            ("C", [0.25, 0.0], [1, 2, 3]))
+        lat.register_hopping_energies({
+            "t11": 1,
+            "t22": 3 * tau_z,
+            "t23": [[0, 1, 2],
+                    [3, 4, 5]],
+            "t13": [[11, 12, 13]],
+        })
+        lat.add_hoppings(([1, 0], "B", "B", "t11"),
+                         ([0, 1], "B", "B", "t11"),
+                         ([0, 1], "A", "A", "t22"),
+                         ([0, 0], "A", "C", "t23"),
+                         ([0, 0], "B", "C", "t13"))
+        return lat
+
+    capture = {}
+
+    @pb.hopping_energy_modifier
+    def hopping(energy, hop_id, x1, y1, z1, x2, y2, z2):
+        capture[hop_id[0]] = [v.copy() for v in (energy, hop_id, x1, y1, z1, x2, y2, z2)]
+        return energy
+
+    def assert_hoppings(name, **kwargs):
+        energy, hop_id, x1, y1, z1, x2, y2, z2 = capture[model.lattice(name)]
+        assert energy.shape == kwargs["shape"]
+        assert pytest.fuzzy_equal(energy, kwargs["energy"])
+        assert pytest.fuzzy_equal(x1, kwargs["x1"])
+        assert pytest.fuzzy_equal(y1, kwargs["y1"])
+        assert pytest.fuzzy_equal(z1, kwargs["z1"])
+        assert pytest.fuzzy_equal(x2, kwargs["x2"])
+        assert pytest.fuzzy_equal(y2, kwargs["y2"])
+        assert pytest.fuzzy_equal(z1, kwargs["z2"])
+        assert np.all(hop_id == model.lattice(name))
+
+    model = pb.Model(multi_orbital_lattice(), pb.primitive(2, 2), hopping)
+    assert model.system.num_sites == 12
+    assert model.hamiltonian.shape[0] == 24
+
+    assert_hoppings("t11", shape=(4,), energy=[1, 1, 1, 1],
+                    x1=[-1, -1, 0, -1], y1=[-0.5, -0.5, -0.5, 0.5], z1=[0, 0, 0, 0],
+                    x2=[0, -1, 0, 0], y2=[-0.5, 0.5, 0.5, 0.5], z2=[0, 0, 0, 0])
+
+    assert_hoppings("t22", shape=(2, 2, 2), energy=[[[3, 0],
+                                                     [0, -3]]] * 2,
+                    x1=[-1.25, -0.25], y1=[-1, -1], z1=[0, 0],
+                    x2=[-1.25, -0.25], y2=[0, 0], z2=[0, 0])
+
+    assert_hoppings("t23", shape=(4, 2, 3), energy=[[[0, 1, 2],
+                                                     [3, 4, 5]]] * 4,
+                    x1=[-1.25, -0.25, -1.25, -0.25], y1=[-1, -1, 0, 0], z1=[0, 0, 0, 0],
+                    x2=[-0.75, 0.25, -0.75, 0.25], y2=[-1, -1, 0, 0], z2=[0, 0, 0, 0])
+
+    assert_hoppings("t13", shape=(4, 1, 3), energy=[[[11, 12, 13]]] * 4,
+                    x1=[-1, 0, -1, 0], y1=[-0.5, -0.5, 0.5, 0.5], z1=[0, 0, 0, 0],
+                    x2=[-0.75, 0.25, -0.75, 0.25], y2=[-1, -1, 0, 0], z2=[0, 0, 0, 0])
+
+
+def test_hopping_buffer():
+    """The energy passed to hopping modifiers is buffered, but users should not be aware of it"""
+    def lattice():
+        lat = pb.Lattice([1, 0], [0, 1])
+
+        lat.add_sublattices(("A", [0, 0], [0, 0, 0, 0]))
+        lat.register_hopping_energies({
+            "t44": [[ 0,  1,  2,  3],
+                    [ 4,  5,  6,  7],
+                    [ 8,  9, 10, 11],
+                    [12, 13, 14, 15]]
+        })
+        lat.add_hoppings(([1, 0], "A", "A", "t44"),
+                         ([0, 1], "A", "A", "t44"))
+        return lat
+
+    capture = {}
+
+    @pb.hopping_energy_modifier
+    def check_buffer(energy, hop_id):
+        capture.setdefault(hop_id[0], [])
+        capture[hop_id[0]] += [energy.copy()]
+        energy[0] = 99
+        return energy
+
+    model = pb.Model(lattice(), pb.primitive(3000, 2), check_buffer)
+    assert model.system.num_sites == 6000
+    assert model.hamiltonian.shape[0] == 24000
+
+    energies = capture[model.lattice("t44")]
+    assert len(energies) >= 2
+    assert energies[0].shape == (6250, 4, 4)
+    for energy in energies:
+        assert np.argwhere(energy == 99).size == 0

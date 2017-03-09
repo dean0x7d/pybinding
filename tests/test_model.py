@@ -59,3 +59,50 @@ def test_hamiltonian(model):
     h2 = model.hamiltonian
     assert h2.data is not h.data
     assert point_to_same_memory(h2.data, h.data)
+
+
+def test_multiorbital_hamiltonian():
+    """For multi-orbital lattices the Hamiltonian size is larger than the number of sites"""
+    def lattice():
+        lat = pb.Lattice([1])
+        lat.add_sublattices(("A", [0], [1, 2]))
+        lat.register_hopping_energies({
+            "t22": [[0, 1],
+                    [2, 3]]
+        })
+        lat.add_hoppings(([1], "A", "A", "t22"))
+        return lat
+
+    model = pb.Model(lattice(), pb.primitive(3))
+    h = model.hamiltonian.todense()
+
+    assert model.system.num_sites == 3
+    assert h.shape[0] == 6
+    assert pytest.fuzzy_equal(h, h.T)
+    assert pytest.fuzzy_equal(h[:2, :2], h[-2:, -2:])
+    assert pytest.fuzzy_equal(h[:2, :2], [[1, 0],
+                                          [0, 2]])
+    assert pytest.fuzzy_equal(h[:2, 2:4], [[0, 1],
+                                           [2, 3]])
+
+    @pb.onsite_energy_modifier
+    def onsite(energy):
+        return 3 * energy
+
+    @pb.hopping_energy_modifier
+    def hopping(energy):
+        return 2 * energy
+
+    model = pb.Model(lattice(), pb.primitive(3), onsite, hopping)
+    h = model.hamiltonian.todense()
+
+    assert model.system.num_sites == 3
+    assert h.shape[0] == 6
+    assert pytest.fuzzy_equal(h, h.T)
+    assert pytest.fuzzy_equal(h[:2, :2], h[-2:, -2:])
+    assert pytest.fuzzy_equal(h[:2, :2], [[3, 0],
+                                          [0, 6]])
+    assert pytest.fuzzy_equal(h[:2, 2:4], [[0, 2],
+                                           [4, 6]])
+    assert pytest.fuzzy_equal(h[2:4, 4:6], [[0, 2],
+                                            [4, 6]])

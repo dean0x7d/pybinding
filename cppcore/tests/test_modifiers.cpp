@@ -62,8 +62,8 @@ TEST_CASE("HoppingEnergyModifier") {
     REQUIRE(h_init.rows() == 2);
     REQUIRE(h_init.non_zeros() == 2);
 
-    model.add(HoppingModifier([](ComplexArrayRef energy, CartesianArray const&,
-                                   CartesianArray const&, HopIdRef) {
+    model.add(HoppingModifier([](ComplexArrayRef energy, CartesianArrayConstRef,
+                                 CartesianArrayConstRef, HopIdRef) {
         num::match<ArrayX>(energy, HoppingEnergyOp{});
     }));
     auto const& h = model.hamiltonian();

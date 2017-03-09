@@ -28,6 +28,15 @@ idx_t System::hamiltonian_size() const {
     return result;
 }
 
+idx_t System::to_hamiltonian_index(idx_t system_index) const {
+    for (auto const& sub : compressed_sublattices) {
+        if (sub.sys_start() <= system_index && system_index < sub.sys_end()) {
+            return sub.ham_start() + (system_index - sub.sys_start()) * sub.num_orbitals();
+        }
+    }
+    throw std::runtime_error("to_hamiltonian_index: this should never happen");
+}
+
 idx_t System::find_nearest(Cartesian target_position, string_view sublattice_name) const {
     auto const range = [&]{
         struct Range { idx_t start, end; };

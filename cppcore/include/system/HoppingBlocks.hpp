@@ -5,6 +5,26 @@
 namespace cpb {
 
 /**
+ A simple row and column index pair
+ */
+struct COO {
+    storage_idx_t row;
+    storage_idx_t col;
+
+    COO() = default;
+    COO(idx_t row, idx_t col)
+        : row(static_cast<storage_idx_t>(row)),
+          col(static_cast<storage_idx_t>(col)) {}
+
+    friend bool operator==(COO const& a, COO const& b) {
+        return std::tie(a.row, a.col) == std::tie(b.row, b.col);
+    }
+    friend bool operator<(COO const& a, COO const& b) {
+        return std::tie(a.row, a.col) < std::tie(b.row, b.col);
+    }
+};
+
+/**
  Hopping coordinates arranged in per-family blocks
 
  Each block corresponds to a COO sparse matrix where all the elements in
@@ -27,23 +47,6 @@ namespace cpb {
  */
 class HoppingBlocks {
 public:
-    struct COO {
-        storage_idx_t row;
-        storage_idx_t col;
-
-        COO() = default;
-        COO(idx_t row, idx_t col)
-            : row(static_cast<storage_idx_t>(row)),
-              col(static_cast<storage_idx_t>(col)) {}
-
-        friend bool operator==(COO const& a, COO const& b) {
-            return std::tie(a.row, a.col) == std::tie(b.row, b.col);
-        }
-        friend bool operator<(COO const& a, COO const& b) {
-            return std::tie(a.row, a.col) < std::tie(b.row, b.col);
-        }
-    };
-
     using Block = std::vector<COO>;
     using Blocks = std::vector<Block>;
 
@@ -59,6 +62,7 @@ public:
 
         storage_idx_t family_id() const { return id; }
         Block const& coordinates() const { return *it; }
+        idx_t size() const { return static_cast<idx_t>(it->size()); }
 
         reference operator*() { return *this; }
         pointer operator->() { return this; }
