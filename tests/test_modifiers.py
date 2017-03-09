@@ -389,33 +389,30 @@ def test_multiorbital_onsite():
         capture[sub_id[0]] = [v.copy() for v in (energy, x, y, z, sub_id)]
         return energy
 
+    def assert_onsite(name, **kwargs):
+        energy, x, y, z, sub_id = capture[model.lattice[name]]
+        assert energy.shape == kwargs["shape"]
+        assert pytest.fuzzy_equal(energy, kwargs["energy"])
+        assert pytest.fuzzy_equal(x, kwargs["x"])
+        assert pytest.fuzzy_equal(y, kwargs["y"])
+        assert pytest.fuzzy_equal(z, kwargs["z"])
+        assert np.all(sub_id == model.lattice[name])
+
     model = pb.Model(multi_orbital_lattice(), pb.rectangle(2, 1), onsite)
     assert model.system.num_sites == 6
     assert model.hamiltonian.shape[0] == 12
 
-    energy, x, y, z, sub_id = capture[model.lattice["A"]]
-    assert energy.shape == (2, 2)
-    assert np.allclose(energy, [[1, -1], [1, -1]])
-    assert np.allclose(x, [0, 1])
-    assert np.allclose(y, [0, 0])
-    assert np.allclose(z, [0, 0])
-    assert np.allclose(sub_id, [0, 0])
+    assert_onsite("A", shape=(2, 2, 2), energy=[[[1, 2],
+                                                 [2, -1]]] * 2,
+                  x=[0, 1], y=[0, 0], z=[0, 0])
 
-    energy, x, y, z, sub_id = capture[model.lattice["B"]]
-    assert energy.shape == (2,)
-    assert np.allclose(energy, [0.5, 0.5])
-    assert np.allclose(x, [0.0, 1.0])
-    assert np.allclose(y, [0.1, 0.1])
-    assert np.allclose(z, [0.0, 0.0])
-    assert np.allclose(sub_id, [1, 1])
+    assert_onsite("B", shape=(2,), energy=[0.5] * 2,
+                  x=[0, 1], y=[0.1, 0.1], z=[0, 0])
 
-    energy, x, y, z, sub_id = capture[model.lattice["C"]]
-    assert energy.shape == (2, 3)
-    assert np.allclose(energy, [[1, 2, 3], [1, 2, 3]])
-    assert np.allclose(x, [0.0, 1.0])
-    assert np.allclose(y, [0.2, 0.2])
-    assert np.allclose(z, [0.0, 0.0])
-    assert np.allclose(sub_id, [2, 2])
+    assert_onsite("C", shape=(2, 3, 3), energy=[[[1, 0, 0],
+                                                 [0, 2, 0],
+                                                 [0, 0, 3]]] * 2,
+                  x=[0, 1], y=[0.2, 0.2], z=[0, 0])
 
 
 def test_multiorbital_hoppings():

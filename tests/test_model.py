@@ -65,7 +65,8 @@ def test_multiorbital_hamiltonian():
     """For multi-orbital lattices the Hamiltonian size is larger than the number of sites"""
     def lattice():
         lat = pb.Lattice([1])
-        lat.add_sublattices(("A", [0], [1, 2]))
+        lat.add_sublattices(("A", [0], [[1, 3j],
+                                        [0, 2]]))
         lat.register_hopping_energies({
             "t22": [[0, 1],
                     [2, 3]]
@@ -78,10 +79,10 @@ def test_multiorbital_hamiltonian():
 
     assert model.system.num_sites == 3
     assert h.shape[0] == 6
-    assert pytest.fuzzy_equal(h, h.T)
+    assert pytest.fuzzy_equal(h, h.H)
     assert pytest.fuzzy_equal(h[:2, :2], h[-2:, -2:])
-    assert pytest.fuzzy_equal(h[:2, :2], [[1, 0],
-                                          [0, 2]])
+    assert pytest.fuzzy_equal(h[:2, :2], [[  1, 3j],
+                                          [-3j, 2]])
     assert pytest.fuzzy_equal(h[:2, 2:4], [[0, 1],
                                            [2, 3]])
 
@@ -98,10 +99,10 @@ def test_multiorbital_hamiltonian():
 
     assert model.system.num_sites == 3
     assert h.shape[0] == 6
-    assert pytest.fuzzy_equal(h, h.T)
+    assert pytest.fuzzy_equal(h, h.H)
     assert pytest.fuzzy_equal(h[:2, :2], h[-2:, -2:])
-    assert pytest.fuzzy_equal(h[:2, :2], [[3, 0],
-                                          [0, 6]])
+    assert pytest.fuzzy_equal(h[:2, :2], [[  3, 9j],
+                                          [-9j,  6]])
     assert pytest.fuzzy_equal(h[:2, 2:4], [[0, 2],
                                            [4, 6]])
     assert pytest.fuzzy_equal(h[2:4, 4:6], [[0, 2],

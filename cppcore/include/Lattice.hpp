@@ -42,9 +42,9 @@ public:
         sub_id unique_id; ///< different for each entry
         sub_id alias_id; ///< may be shared by multiple entries, e.g. for creating supercells
 
-        /// Return the onsite energy vector (matrix diagonal) in the given scalar type
+        /// Return the onsite energy matrix in the given scalar type
         template<class scalar_t>
-        VectorX<scalar_t> energy_vector_as() const;
+        MatrixX<scalar_t> energy_as() const { return num::force_cast<scalar_t>(energy); }
     };
 
     struct HoppingTerm {
@@ -69,7 +69,7 @@ public:
 
         /// Return the hopping energy matrix in the given scalar type
         template<class scalar_t>
-        MatrixX<scalar_t> energy_as() const;
+        MatrixX<scalar_t> energy_as() const { return num::force_cast<scalar_t>(energy); }
     };
 
     using Vectors = std::vector<Cartesian>;
@@ -226,35 +226,5 @@ public:
 private:
     Sites sites;
 };
-
-template<class scalar_t>
-VectorX<scalar_t> Lattice::Sublattice::energy_vector_as() const {
-    return energy.diagonal().cast<scalar_t>();
-}
-
-template<>
-inline VectorX<double> Lattice::Sublattice::energy_vector_as<double>() const {
-    return energy.diagonal().real();
-}
-
-template<>
-inline VectorX<float> Lattice::Sublattice::energy_vector_as<float>() const {
-    return energy.diagonal().real().cast<float>();
-}
-
-template<class scalar_t>
-MatrixX<scalar_t> Lattice::HoppingFamily::energy_as() const {
-    return energy.cast<scalar_t>();
-}
-
-template<>
-inline MatrixX<double> Lattice::HoppingFamily::energy_as<double>() const {
-    return energy.real();
-}
-
-template<>
-inline MatrixX<float> Lattice::HoppingFamily::energy_as<float>() const {
-    return energy.real().cast<float>();
-}
 
 } // end namespace cpb

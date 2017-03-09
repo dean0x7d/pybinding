@@ -54,7 +54,8 @@ void Lattice::add_sublattice(string_view name, Cartesian position,
     }
 
     auto const unique_id = register_sublattice(name);
-    sublattices[name] = {position, onsite_energy, unique_id, unique_id};
+    auto const hermitian_view = onsite_energy.selfadjointView<Eigen::Upper>();
+    sublattices[name] = {position, hermitian_view, unique_id, unique_id};
 }
 
 void Lattice::add_alias(string_view alias_name, string_view original_name, Cartesian position) {
@@ -262,6 +263,8 @@ bool Lattice::has_multiple_orbitals() const {
 
 bool Lattice::has_complex_hoppings() const {
     return std::any_of(hoppings.begin(), hoppings.end(), [](Hoppings::const_reference r) {
+        return !r.second.energy.imag().isZero();
+    }) || std::any_of(sublattices.begin(), sublattices.end(), [](Sublattices::const_reference r) {
         return !r.second.energy.imag().isZero();
     });
 }

@@ -52,8 +52,8 @@ void build_main(SparseMatrixX<scalar_t>& matrix, System const& system,
     auto const num_per_row = system.lattice.max_hoppings() + has_onsite_energy;
     matrix.reserve(ArrayXi::Constant(size, num_per_row));
 
-    modifiers.apply_to_onsite<scalar_t>(system, [&](idx_t i, scalar_t onsite) {
-        matrix.insert(i, i) = onsite;
+    modifiers.apply_to_onsite<scalar_t>(system, [&](idx_t i, idx_t j, scalar_t onsite) {
+        matrix.insert(i, j) = onsite;
     });
 
     modifiers.apply_to_hoppings<scalar_t>(system, [&](idx_t i, idx_t j, scalar_t hopping) {

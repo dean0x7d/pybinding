@@ -235,6 +235,16 @@ namespace num {
             return Map{static_cast<scalar_t*>(ref.data), ref.shape[0], ref.shape[1]};
         }
     };
+
+    /// Force cast a matrix to any scalar type (lose precision and/or imaginary part)
+    template<class scalar_t>
+    MatrixX<scalar_t> force_cast(MatrixXcd const& m) { return m.cast<scalar_t>(); }
+
+    template<>
+    inline MatrixX<double> force_cast<double>(MatrixXcd const& m) { return m.real(); }
+
+    template<>
+    inline MatrixX<float> force_cast<float>(MatrixXcd const& m) { return m.real().cast<float>(); }
 } // namespace num
 
 template<class Derived>

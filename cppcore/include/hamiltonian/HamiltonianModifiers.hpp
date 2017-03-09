@@ -100,17 +100,19 @@ void HamiltonianModifiers::apply_to_onsite(System const& system, Fn lambda) cons
     }
 
     for (auto const& sub : system.compressed_sublattices) {
-        auto onsite_energy = ArrayX<scalar_t>::Zero(sub.ham_size()).eval();
+        auto onsite_energy = ArrayX<scalar_t>::Zero(sub.ham_size() * sub.num_orbitals()).eval();
 
-        if (lattice.has_onsite_energy()) {
+        if (has_intrinsic_onsite) {
             // Intrinsic lattice onsite energy -- just replicate the value at each site
-            auto const vector = lattice[sub.alias_id()].energy_vector_as<scalar_t>();
-            onsite_energy = vector.replicate(sub.num_sites(), 1);
+            auto const energy = lattice[sub.alias_id()].energy_as<scalar_t>();
+            auto const flat = Eigen::Map<ArrayX<scalar_t> const>(energy.data(), energy.size());
+            onsite_energy = flat.replicate(sub.num_sites(), 1);
         }
 
         if (!onsite.empty()) {
             // Apply all user-defined onsite modifier functions
-            auto onsite_ref = arrayref(onsite_energy.data(), sub.num_sites(), sub.num_orbitals());
+            auto onsite_ref = arrayref(onsite_energy.data(), sub.num_sites(),
+                                       sub.num_orbitals(), sub.num_orbitals());
             if (sub.num_orbitals() == 1) { onsite_ref.ndim = 1; } // squeeze dimensions
 
             auto const position_ref = system.positions.segment(sub.sys_start(), sub.num_sites());
@@ -121,13 +123,27 @@ void HamiltonianModifiers::apply_to_onsite(System const& system, Fn lambda) cons
             }
         }
 
-        for (auto n = idx_t{0}; n < onsite_energy.size(); ++n) {
-            auto const v = onsite_energy[n];
-            if (v != scalar_t{0}) {
-                lambda(sub.ham_start() + n, v);
+        auto const* data = onsite_energy.data();
+        if (sub.num_orbitals() == 1) {
+            // Fast path: `onsite_energy` corresponds directly with the diagonal of the Hamiltonian
+            for (auto idx = sub.ham_start(), end = sub.ham_end(); idx < end; ++idx) {
+                auto const value = *data++;
+                if (value != scalar_t{0}) { lambda(idx, idx, value); }
             }
-        }
-    }
+        } else {
+            // Slow path: `onsite_energy` holds matrices: (norb x norb)
+            auto const norb = sub.num_orbitals();
+
+            for (auto start = sub.ham_start(), end = sub.ham_end(); start < end; start += norb) {
+                for (auto row = start; row < start + norb; ++row) {
+                    for (auto col = start; col < start + norb; ++col) {
+                        auto const value = *data++;
+                        if (value != scalar_t{0}) { lambda(row, col, value); }
+                    }
+                }
+            }
+        } // if (sub.num_orbitals() == 1)
+    } // for (auto const& sub : system.compressed_sublattices)
 }
 
 /**
