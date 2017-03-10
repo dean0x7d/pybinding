@@ -12,7 +12,7 @@ bool SymmetryArea::contains(Index3D const& index) const {
 
 SymmetryArea TranslationalSymmetry::area(Foundation const& foundation) const {
     auto const& lattice = foundation.get_lattice();
-    auto const size = static_cast<Array3i>(foundation.get_size());
+    auto const size = static_cast<Array3i>(foundation.get_spatial_size());
 
     SymmetryArea a;
     a.left.setZero();
@@ -93,7 +93,7 @@ void TranslationalSymmetry::apply(Foundation& foundation) const {
     auto symmetry_area = area(foundation);
 
     for (auto& site : foundation) {
-        site.set_valid(site.is_valid() && symmetry_area.contains(site.get_index()));
+        site.set_valid(site.is_valid() && symmetry_area.contains(site.get_spatial_idx()));
     }
 }
 

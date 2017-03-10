@@ -8,13 +8,13 @@ void Leads::create_attachment_area(Foundation& foundation) const {
     }
 }
 
-void Leads::make_structure(Foundation const& foundation, FinalizedIndices const& indices) {
+void Leads::make_structure(Foundation const& foundation) {
     if (!structures.empty()) {
         return;
     }
 
     for (auto const& spec : specs) {
-        structures.emplace_back(foundation, indices, spec);
+        structures.emplace_back(foundation, spec);
     }
 }
 

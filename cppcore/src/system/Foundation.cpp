@@ -48,37 +48,36 @@ CartesianArray generate_positions(Cartesian origin, Index3D size, Lattice const&
 }
 
 ArrayXi count_neighbors(Foundation const& foundation) {
-    ArrayXi neighbor_count(foundation.get_num_sites());
+    ArrayXi neighbor_count(foundation.size());
 
     auto const& unit_cell = foundation.get_optimized_unit_cell();
-    auto const size = foundation.get_size().array();
+    auto const spatial_size = foundation.get_spatial_size().array();
 
     for (auto const& site : foundation) {
-        auto const& sublattice = unit_cell[site.get_sublattice()];
-        auto num_neighbors = static_cast<int>(sublattice.hoppings.size());
+        auto const& sublattice = unit_cell[site.get_sub_idx()];
+        auto num_neighbors = static_cast<storage_idx_t>(sublattice.hoppings.size());
 
         // Reduce the neighbor count for sites on the edges
         for (auto const& hopping : sublattice.hoppings) {
-            auto const index = (site.get_index() + hopping.relative_index).array();
-            if (any_of(index < 0) || any_of(index >= size))
+            auto const index = Array3i(site.get_spatial_idx() + hopping.relative_index);
+            if ((index < 0).any() || (index >= spatial_size).any()) {
                 num_neighbors -= 1;
+            }
         }
 
-        neighbor_count[site.get_idx()] = num_neighbors;
+        neighbor_count[site.get_flat_idx()] = num_neighbors;
     }
 
     return neighbor_count;
 }
 
 void clear_neighbors(Site& site, ArrayXi& neighbor_count, int min_neighbors) {
-    if (neighbor_count[site.get_idx()] == 0)
-        return;
+    if (neighbor_count[site.get_flat_idx()] == 0) { return; }
 
-    site.for_each_neighbour([&](Site neighbor, Hopping) {
-        if (!neighbor.is_valid())
-            return;
+    site.for_each_neighbor([&](Site neighbor, Hopping) {
+        if (!neighbor.is_valid()) { return; }
 
-        auto const neighbor_idx = neighbor.get_idx();
+        auto const neighbor_idx = neighbor.get_flat_idx();
         neighbor_count[neighbor_idx] -= 1;
         if (neighbor_count[neighbor_idx] < min_neighbors) {
             neighbor.set_valid(false);
@@ -87,13 +86,13 @@ void clear_neighbors(Site& site, ArrayXi& neighbor_count, int min_neighbors) {
         }
     });
 
-    neighbor_count[site.get_idx()] = 0;
+    neighbor_count[site.get_flat_idx()] = 0;
 }
 
 ArrayX<sub_id> make_sublattice_ids(Foundation const& foundation) {
-    ArrayX<sub_id> sublattice_ids(foundation.get_num_sites());
+    ArrayX<sub_id> sublattice_ids(foundation.size());
     for (auto const& site : foundation) {
-        sublattice_ids[site.get_idx()] = static_cast<sub_id>(site.get_sublattice());
+        sublattice_ids[site.get_flat_idx()] = static_cast<sub_id>(site.get_sub_idx());
     }
     return sublattice_ids;
 }
@@ -109,41 +108,47 @@ void remove_dangling(Foundation& foundation, int min_neighbors) {
     }
 }
 
+FinalizedIndices::FinalizedIndices(ArrayXi i, ArrayXi h, idx_t n)
+    : indices(std::move(i)), hopping_counts(std::move(h)), total_valid_sites(n) {}
+
+
 Foundation::Foundation(Lattice const& lattice, Primitive const& primitive)
     : lattice(lattice),
       unit_cell(lattice.optimized_unit_cell()),
       bounds(-primitive.size.array() / 2, (primitive.size.array() - 1) / 2),
-      size(primitive.size),
-      nsub(lattice.nsub()),
-      num_sites(size.prod() * nsub),
-      positions(detail::generate_positions(lattice.calc_position(bounds.first), size, lattice)),
-      is_valid(ArrayX<bool>::Constant(num_sites, true)) {}
+      spatial_size(primitive.size),
+      sub_size(lattice.nsub()),
+      positions(detail::generate_positions(lattice.calc_position(bounds.first), spatial_size, lattice)),
+      is_valid(ArrayX<bool>::Constant(size(), true)) {}
 
 Foundation::Foundation(Lattice const& lattice, Shape const& shape)
     : lattice(lattice),
       unit_cell(lattice.optimized_unit_cell()),
       bounds(detail::find_bounds(shape, lattice)),
-      size((bounds.second - bounds.first) + Index3D::Ones()),
-      nsub(lattice.nsub()),
-      num_sites(size.prod() * nsub),
-      positions(detail::generate_positions(lattice.calc_position(bounds.first), size, lattice)),
+      spatial_size((bounds.second - bounds.first) + Index3D::Ones()),
+      sub_size(lattice.nsub()),
+      positions(detail::generate_positions(lattice.calc_position(bounds.first), spatial_size, lattice)),
       is_valid(shape.contains(positions)) {
     remove_dangling(*this, lattice.get_min_neighbors());
 }
 
-FinalizedIndices::FinalizedIndices(Foundation const& foundation)
-    : indices(ArrayXi::Constant(foundation.get_num_sites(), -1)),
-      hopping_counts(ArrayXi::Zero(foundation.get_lattice().nhop())) {
+FinalizedIndices const& Foundation::get_finalized_indices() const {
+    if (finalized_indices) {
+        return finalized_indices;
+    }
+
+    auto indices = ArrayXi::Constant(size(), -1).eval();
+    auto hopping_counts = ArrayXi::Zero(lattice.nhop()).eval();
+    auto total_valid_sites = storage_idx_t{0};
+
     // Each sublattice block has the same initial number of sites (block_size),
     // but the number of final valid sites may differ.
-    auto const nsub = foundation.get_num_sublattices();
-    auto const block_size = foundation.get_size().prod();
+    auto const block_size = spatial_size.prod();
 
-    for (auto n = 0; n < nsub; ++n) {
+    for (auto n = 0; n < sub_size; ++n) {
         auto valid_sites_for_this_sublattice = 0;
 
         // Assign final indices to all valid sites
-        auto const& is_valid = foundation.get_states();
         for (auto i = n * block_size; i < (n + 1) * block_size; ++i) {
             if (is_valid[i]) {
                 indices[i] = total_valid_sites;
@@ -155,13 +160,15 @@ FinalizedIndices::FinalizedIndices(Foundation const& foundation)
         // Count the number of non-conjugate hoppings per family ID. This is
         // overestimated, i.e. it includes some invalid hoppings, but it's a
         // good quick estimate for memory reservation.
-        auto const& unit_cell = foundation.get_optimized_unit_cell();
         for (auto const& hop : unit_cell[n].hoppings) {
             if (!hop.is_conjugate) {
                 hopping_counts[hop.family_id] += valid_sites_for_this_sublattice;
             }
         }
     }
+
+    finalized_indices = {std::move(indices), std::move(hopping_counts), total_valid_sites};
+    return finalized_indices;
 }
 
 } // namespace cpb

@@ -3,10 +3,11 @@
 
 namespace cpb { namespace leads {
 
-Structure::Structure(Foundation const& foundation, FinalizedIndices const& finalized_indices,
-                     Spec const& lead)
+Structure::Structure(Foundation const& foundation, Spec const& lead)
     : system(foundation.get_lattice()) {
     auto const& lattice = foundation.get_lattice();
+    auto const& finalized_indices = foundation.get_finalized_indices();
+
     auto const shift = Cartesian(static_cast<float>(lead.sign) * lattice.vector(lead.axis));
     auto const junction = detail::Junction(foundation, lead);
     auto const slice = foundation[junction.slice_index];
@@ -37,7 +38,7 @@ Structure::Structure(Foundation const& foundation, FinalizedIndices const& final
             system.positions[index] = site.get_position() + shift;
             system.compressed_sublattices.add(site.get_alias_id(), site.get_norb());
 
-            site.for_each_neighbour([&](Site neighbor, Hopping hopping) {
+            site.for_each_neighbor([&](Site neighbor, Hopping hopping) {
                 auto const neighbor_index = lead_index(finalized_indices[neighbor]);
                 if (neighbor_index >= 0 && !hopping.is_conjugate) {
                     system.hopping_blocks.add(hopping.family_id, index, neighbor_index);
@@ -63,7 +64,7 @@ Structure::Structure(Foundation const& foundation, FinalizedIndices const& final
             }();
 
             auto const index = lead_index(finalized_indices[site]);
-            shifted_site.for_each_neighbour([&](Site neighbor, Hopping hopping) {
+            shifted_site.for_each_neighbor([&](Site neighbor, Hopping hopping) {
                 auto const neighbor_index = lead_index(finalized_indices[neighbor]);
                 if (neighbor_index >= 0) {
                     hopping_blocks.add(hopping.family_id, index, neighbor_index);

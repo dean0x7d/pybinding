@@ -5,10 +5,6 @@
 #include "numeric/dense.hpp"
 #include "support/cppfuture.hpp"
 
-#include <array>
-#include <vector>
-#include <cstdint>
-
 namespace cpb {
 
 class Primitive;
@@ -33,30 +29,40 @@ namespace detail {
 void remove_dangling(Foundation& foundation, int min_neighbors);
 
 /**
+ Keeps the final indices of valid `Foundation` sites as they should appear in `System`
+ */
+class FinalizedIndices {
+public:
+    FinalizedIndices() = default;
+    FinalizedIndices(ArrayXi indices, ArrayXi hopping_counts, idx_t total_valid_sites);
+
+    explicit operator bool() const { return total_valid_sites != 0; }
+
+    /// Return the System index for the given site
+    storage_idx_t operator[](Site const& site) const;
+    /// Size of the Hamiltonian matrix
+    idx_t size() const { return total_valid_sites; }
+    /// Upper limit for the number of hoppings, indexed by family ID (useful for reservation)
+    ArrayXi const& max_hoppings_per_family() const { return hopping_counts; }
+
+private:
+    ArrayXi indices;
+    ArrayXi hopping_counts;
+    idx_t total_valid_sites = 0;
+};
+
+/**
  The foundation class creates a lattice-vector-aligned set of sites. The number of sites is high
  enough to encompass the given shape. After creation, the foundation can be cut down to the shape.
  */
 class Foundation {
-    Lattice const& lattice;
-    OptimizedUnitCell unit_cell;
-    std::pair<Index3D, Index3D> bounds; ///< in lattice vector coordinates
-    Index3D size; ///< number of unit cells in each lattice vector direction
-    int nsub; ///< number of sites in a unit cell
-    int num_sites; ///< total number of sites: product of all sizes (3D and sublattice)
-
-    CartesianArray positions; ///< real space coordinates of lattice sites
-    ArrayX<bool> is_valid; ///< indicates if the site should be included in the final system
-
-    friend class Site;
-
-private:
     template<bool is_const> class Iterator;
     using ConstIterator = Iterator<true>;
     using NonConstIterator = Iterator<false>;
 
-    template<bool is_const> class Slice;
-    using ConstSlice = Slice<true>;
-    using NonConstSlice = Slice<false>;
+    template<bool is_const> class SpatialSlice;
+    using ConstSpatialSlice = SpatialSlice<true>;
+    using NonConstSpatialSlice = SpatialSlice<false>;
 
 public:
     Foundation(Lattice const& lattice, Primitive const& shape);
@@ -67,20 +73,38 @@ public:
     NonConstIterator begin();
     NonConstIterator end();
 
-    ConstSlice operator[](SliceIndex3D const& index) const;
-    NonConstSlice operator[](SliceIndex3D const& index);
+    ConstSpatialSlice operator[](SliceIndex3D const& index) const;
+    NonConstSpatialSlice operator[](SliceIndex3D const& index);
+
+    /// Total number of sites: product of all sizes (3D space and sublattice)
+    idx_t size() const { return spatial_size.prod() * sub_size; }
 
     Lattice const& get_lattice() const { return lattice; }
     OptimizedUnitCell const& get_optimized_unit_cell() const { return unit_cell; }
     std::pair<Index3D, Index3D> const& get_bounds() const { return bounds; }
-    Index3D const& get_size() const { return size; }
-    int get_num_sublattices() const { return nsub; }
-    int get_num_sites() const { return num_sites; }
+    Index3D const& get_spatial_size() const { return spatial_size; }
+    idx_t get_sub_size() const { return sub_size; }
 
     CartesianArray const& get_positions() const { return positions; }
     CartesianArray& get_positions() { return positions; }
     ArrayX<bool> const& get_states() const { return is_valid; }
     ArrayX<bool>& get_states() { return is_valid; }
+
+    FinalizedIndices const& get_finalized_indices() const;
+
+private:
+    Lattice const& lattice;
+    OptimizedUnitCell unit_cell;
+    std::pair<Index3D, Index3D> bounds; ///< in lattice vector coordinates
+    Index3D spatial_size; ///< number of unit cells in each lattice vector direction
+    idx_t sub_size; ///< number of sites in a unit cell (sublattices)
+
+    CartesianArray positions; ///< real space coordinates of lattice sites
+    ArrayX<bool> is_valid; ///< indicates if the site should be included in the final system
+
+    mutable FinalizedIndices finalized_indices;
+
+    friend class Site;
 };
 
 /// Convenient alias
@@ -92,75 +116,63 @@ using Hopping = OptimizedUnitCell::Hopping;
  Proxy type for a single index in the foundation arrays.
  */
 class Site {
-protected:
-    Foundation* foundation; ///< the site's parent foundation
-    Index3D index; ///< unit cell spatial index
-    idx_t sublattice; ///< sublattice index
-    idx_t idx; ///< flat index for array addressing
-
-    /// Recalculate flat `idx` from spatial `index` and `sublattice`
-    void reset_idx() {
-        auto const& size = foundation->size;
-        idx = ((sublattice * size[2] + index[2]) * size[1] + index[1]) * size[0] + index[0];
-    }
-
 public:
-    Site(Foundation* foundation, Index3D index, idx_t sublattice, idx_t idx)
-        : foundation(foundation), index(index), sublattice(sublattice), idx(idx) {}
-    Site(Foundation* foundation, Index3D index, idx_t sublattice)
-        : foundation(foundation), index(index), sublattice(sublattice) {
-        reset_idx();
-    }
+    /// Direct index assignment
+    Site(Foundation* foundation, Index3D spatial_idx, idx_t sub_idx, idx_t idx)
+        : foundation(foundation), spatial_idx(spatial_idx), sub_idx(sub_idx), flat_idx(idx) {}
+    /// Compute flat index based on 3D space + sub_idx
+    Site(Foundation* foundation, Index3D spatial_idx, idx_t sub_idx)
+        : foundation(foundation), spatial_idx(spatial_idx), sub_idx(sub_idx) { reset_idx(); }
 
-    Index3D const& get_index() const { return index; }
-    idx_t get_sublattice() const { return sublattice; }
-    sub_id get_alias_id() const { return foundation->unit_cell[sublattice].alias_id; }
-    storage_idx_t get_norb() const { return foundation->unit_cell[sublattice].norb; }
-    idx_t get_idx() const { return idx; }
+    Index3D const& get_spatial_idx() const { return spatial_idx; }
+    idx_t get_sub_idx() const { return sub_idx; }
+    idx_t get_flat_idx() const { return flat_idx; }
 
-    Cartesian get_position() const { return foundation->positions[idx]; }
+    sub_id get_alias_id() const { return foundation->unit_cell[sub_idx].alias_id; }
+    storage_idx_t get_norb() const { return foundation->unit_cell[sub_idx].norb; }
 
-    bool is_valid() const { return foundation->is_valid[idx]; }
-    void set_valid(bool state) {foundation->is_valid[idx] = state; }
+    Cartesian get_position() const { return foundation->positions[flat_idx]; }
+    bool is_valid() const { return foundation->is_valid[flat_idx]; }
+    void set_valid(bool state) {foundation->is_valid[flat_idx] = state; }
 
-    Site shifted(Index3D shift) const { return {foundation, index + shift, sublattice}; }
+    /// Return a new site which has a shifted spatial index
+    Site shifted(Index3D shift) const { return {foundation, spatial_idx + shift, sub_idx}; }
 
     /// Loop over all neighbours of this site
     template<class Fn>
-    void for_each_neighbour(Fn lambda) const  {
-        for (auto const& hopping : foundation->unit_cell[sublattice].hoppings) {
-            Array3i const neighbor_index = (index + hopping.relative_index).array();
-            if (any_of(neighbor_index < 0) || any_of(neighbor_index >= foundation->size.array()))
+    void for_each_neighbor(Fn lambda) const  {
+        auto const spatial_size = foundation->spatial_size.array();
+
+        for (auto const& hopping : foundation->unit_cell[sub_idx].hoppings) {
+            auto const neighbor_index = Array3i(spatial_idx + hopping.relative_index);
+            if ((neighbor_index < 0).any() || (neighbor_index >= spatial_size).any())
                 continue; // out of bounds
 
-            lambda(Site(foundation, neighbor_index, hopping.to_sublattice), hopping);
+            lambda(Site(foundation, neighbor_index, hopping.to_sub_idx), hopping);
         }
     }
 
-    friend bool operator==(Site const& l, Site const& r) { return l.idx == r.idx; }
+    friend bool operator==(Site const& l, Site const& r) { return l.flat_idx == r.flat_idx; }
     friend bool operator!=(Site const& l, Site const& r) { return !(l == r); }
+
+protected:
+    /// Recalculate `flat_idx`
+    void reset_idx() {
+        auto const& i = spatial_idx;
+        auto const& size = foundation->spatial_size;
+        flat_idx = ((sub_idx * size[2] + i[2]) * size[1] + i[1]) * size[0] + i[0];
+    }
+
+protected:
+    Foundation* foundation; ///< the site's parent foundation
+    Index3D spatial_idx; ///< unit cell spatial index
+    idx_t sub_idx; ///< sublattice index
+    idx_t flat_idx; ///< directly corresponds to array elements
 };
 
 /**
- Keeps the final indices of valid `Foundation` sites as they should appear in `System`
+ Iterate over all foundation sites
  */
-class FinalizedIndices {
-public:
-    FinalizedIndices(Foundation const& foundation);
-
-    /// Return the Hamiltonian matrix index for the given site
-    storage_idx_t operator[](Site const& site) const { return indices[site.get_idx()]; }
-    /// Size of the Hamiltonian matrix
-    idx_t size() const { return total_valid_sites; }
-    /// Upper limit for the number of hoppings, indexed by family ID (useful for reservation)
-    ArrayXi const& max_hoppings_per_family() const { return hopping_counts; }
-
-private:
-    ArrayXi indices;
-    ArrayXi hopping_counts;
-    storage_idx_t total_valid_sites = 0;
-};
-
 template<bool is_const>
 class Foundation::Iterator : public Site {
     using iterator_category = std::input_iterator_tag;
@@ -170,23 +182,23 @@ class Foundation::Iterator : public Site {
     using pointer = value_type*;
 
 public:
-    Iterator(Foundation* foundation, int idx) : Site(foundation, {0, 0, 0}, 0, idx) {}
+    Iterator(Foundation* foundation, idx_t flat_idx) : Site(foundation, {0, 0, 0}, 0, flat_idx) {}
 
     reference operator*() { return *this; }
     pointer operator->() { return this; }
 
     Iterator& operator++() {
-        ++idx;
-        ++index[0];
-        if (index[0] == foundation->size[0]) {
-            index[0] = 0;
-            ++index[1];
-            if (index[1] == foundation->size[1]) {
-                index[1] = 0;
-                ++index[2];
-                if (index[2] == foundation->size[2]) {
-                    index[2] = 0;
-                    ++sublattice;
+        ++flat_idx;
+        ++spatial_idx[0];
+        if (spatial_idx[0] == foundation->spatial_size[0]) {
+            spatial_idx[0] = 0;
+            ++spatial_idx[1];
+            if (spatial_idx[1] == foundation->spatial_size[1]) {
+                spatial_idx[1] = 0;
+                ++spatial_idx[2];
+                if (spatial_idx[2] == foundation->spatial_size[2]) {
+                    spatial_idx[2] = 0;
+                    ++sub_idx;
                 }
             }
         }
@@ -194,74 +206,79 @@ public:
     }
 };
 
+/**
+ Iterate only over sites inside the spatial slice
+ */
 template<bool is_const>
-class Foundation::Slice {
-    Foundation* foundation;
-    SliceIndex3D index;
-
-private:
-    class Iterator : public Site {
-        using iterator_category = std::input_iterator_tag;
-        using difference_type = std::ptrdiff_t;
-        using value_type = std14::conditional_t<is_const, Iterator const, Iterator>;
-        using reference = value_type&;
-        using pointer = value_type*;
-
-        SliceIndex3D slice_index;
-        idx_t slice_idx;
-
-    public:
-        Iterator(Foundation* foundation, SliceIndex3D index, int slice_idx)
-            : Site(foundation, {index[0].start, index[1].start, index[2].start}, 0),
-              slice_index(index), slice_idx(slice_idx) {}
-
-        /// Flat index within the slice: `0 < slice_idx < slice_size`
-        idx_t get_slice_idx() const { return slice_idx; }
-
-        reference operator*() { return *this; }
-        pointer operator->() { return this; }
-
-        Iterator& operator++() {
-            ++slice_idx;
-            ++index[0];
-            if (index[0] == slice_index[0].end) {
-                index[0] = slice_index[0].start;
-                ++index[1];
-                if (index[1] == slice_index[1].end) {
-                    index[1] = slice_index[1].start;
-                    ++index[2];
-                    if (index[2] == slice_index[2].end) {
-                        index[2] = slice_index[2].start;
-                        ++sublattice;
-                    }
-                }
-            }
-            reset_idx();
-            return *this;
-        }
-
-        friend bool operator==(Iterator const& l, Iterator const& r) {
-            return l.slice_idx == r.slice_idx;
-        }
-        friend bool operator!=(Iterator const& l, Iterator const& r) { return !(l == r); }
-    };
+class SpatialSliceIterator : public Site {
+    using It = SpatialSliceIterator<is_const>;
+    using iterator_category = std::input_iterator_tag;
+    using difference_type = std::ptrdiff_t;
+    using value_type = std14::conditional_t<is_const, It const, It>;
+    using reference = value_type&;
+    using pointer = value_type*;
 
 public:
-    Slice(Foundation* foundation, SliceIndex3D const& index)
-        : foundation(foundation), index(index) { normalize(); }
+    SpatialSliceIterator(Foundation* foundation, SliceIndex3D range, idx_t slice_idx)
+        : Site(foundation, {range[0].start, range[1].start, range[2].start}, 0),
+          range(range), slice_idx(slice_idx) {}
 
-    Iterator begin() const { return {foundation, index, 0}; }
-    Iterator end() const { return {foundation, index, size()}; }
+    /// Flat index within the slice: `0 < slice_idx < slice_size`
+    idx_t get_slice_idx() const { return slice_idx; }
 
-    int size() const { return index.size() * foundation->get_num_sublattices(); }
-    SliceIndex const& operator[](int n) const { return index[n]; }
-    SliceIndex& operator[](int n) { return index[n]; }
+    reference operator*() { return *this; }
+    pointer operator->() { return this; }
+
+    It& operator++() {
+        ++slice_idx;
+        ++spatial_idx[0];
+        if (spatial_idx[0] == range[0].end) {
+            spatial_idx[0] = range[0].start;
+            ++spatial_idx[1];
+            if (spatial_idx[1] == range[1].end) {
+                spatial_idx[1] = range[1].start;
+                ++spatial_idx[2];
+                if (spatial_idx[2] == range[2].end) {
+                    spatial_idx[2] = range[2].start;
+                    ++sub_idx;
+                }
+            }
+        }
+        reset_idx();
+        return *this;
+    }
+
+    friend bool operator==(It const& l, It const& r) { return l.slice_idx == r.slice_idx; }
+    friend bool operator!=(It const& l, It const& r) { return !(l == r); }
+
+private:
+    SliceIndex3D range; ///< slice start and end indices in 3 dimensions
+    idx_t slice_idx; ///< flat index within the slice
+};
+
+/**
+ A 3D slice view of a foundation
+ */
+template<bool is_const>
+class Foundation::SpatialSlice {
+    using Iterator = SpatialSliceIterator<is_const>;
+
+public:
+    SpatialSlice(Foundation* foundation, SliceIndex3D const& range)
+        : foundation(foundation), range(range) { normalize(); }
+
+    Iterator begin() const { return {foundation, range, 0}; }
+    Iterator end() const { return {foundation, range, size()}; }
+
+    idx_t size() const { return range.size() * foundation->get_sub_size(); }
+    SliceIndex const& operator[](int n) const { return range[n]; }
+    SliceIndex& operator[](int n) { return range[n]; }
 
     /// Replace open ended indices [0, -1) with proper [0, size) indices
     void normalize() {
-        for (auto i = 0; i < index.ndims(); ++i) {
-            if (index[i].end < 0) {
-                index[i].end = foundation->get_size()[i];
+        for (auto i = 0; i < range.ndims(); ++i) {
+            if (range[i].end < 0) {
+                range[i].end = foundation->get_spatial_size()[i];
             }
         }
     }
@@ -273,15 +290,22 @@ public:
         }
         return positions;
     }
+
+private:
+    Foundation* foundation;
+    SliceIndex3D range;
 };
 
+inline storage_idx_t FinalizedIndices::operator[](Site const& site) const {
+    return indices[site.get_flat_idx()];
+}
 
 inline Foundation::ConstIterator Foundation::begin() const {
     return {const_cast<Foundation*>(this), 0};
 }
 
 inline Foundation::ConstIterator Foundation::end() const {
-    return {const_cast<Foundation*>(this), num_sites};
+    return {const_cast<Foundation*>(this), size()};
 }
 
 inline Foundation::NonConstIterator Foundation::begin() {
@@ -289,14 +313,14 @@ inline Foundation::NonConstIterator Foundation::begin() {
 }
 
 inline Foundation::NonConstIterator Foundation::end() {
-    return {this, num_sites};
+    return {this, size()};
 }
 
-inline Foundation::ConstSlice Foundation::operator[](SliceIndex3D const& index) const {
+inline Foundation::ConstSpatialSlice Foundation::operator[](SliceIndex3D const& index) const {
     return {const_cast<Foundation*>(this), index};
 }
 
-inline Foundation::NonConstSlice Foundation::operator[](SliceIndex3D const& index) {
+inline Foundation::NonConstSpatialSlice Foundation::operator[](SliceIndex3D const& index) {
     return {this, index};
 }
 

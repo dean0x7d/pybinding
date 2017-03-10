@@ -189,7 +189,7 @@ public:
     /// Similar to Lattice::HoppingTerm but `from_sublattice` is implicit
     struct Hopping {
         Index3D relative_index;
-        storage_idx_t to_sublattice; ///< destination sublattice index in `sites` (not `unique_id`)
+        storage_idx_t to_sub_idx; ///< destination sublattice index in `sites` (not `unique_id`)
         hop_id family_id;
         bool is_conjugate; ///< true if this is an automatically added complex conjugate term
     };

@@ -5,12 +5,12 @@
 
 namespace cpb {
 
-System::System(Foundation const& foundation, FinalizedIndices const& finalized_indices,
-               TranslationalSymmetry const& symmetry, HoppingGenerators const& hopping_generators)
+System::System(Foundation const& foundation, TranslationalSymmetry const& symmetry,
+               HoppingGenerators const& hopping_generators)
     : lattice(foundation.get_lattice()) {
-    detail::populate_system(*this, foundation, finalized_indices);
+    detail::populate_system(*this, foundation);
     if (symmetry) {
-        detail::populate_boundaries(*this, foundation, finalized_indices, symmetry);
+        detail::populate_boundaries(*this, foundation, symmetry);
     }
 
     for (auto const& gen : hopping_generators) {
@@ -75,9 +75,10 @@ idx_t System::find_nearest(Cartesian target_position, string_view sublattice_nam
 
 namespace detail {
 
-void populate_system(System& system, Foundation const& foundation,
-                     FinalizedIndices const& finalized_indices) {
+void populate_system(System& system, Foundation const& foundation) {
     auto const& lattice = foundation.get_lattice();
+    auto const& finalized_indices = foundation.get_finalized_indices();
+
     auto const size = finalized_indices.size();
     system.positions.resize(size);
     system.hopping_blocks = {size, lattice.nhop()};
@@ -90,7 +91,7 @@ void populate_system(System& system, Foundation const& foundation,
         system.positions[index] = site.get_position();
         system.compressed_sublattices.add(site.get_alias_id(), site.get_norb());
 
-        site.for_each_neighbour([&](Site neighbor, Hopping hopping) {
+        site.for_each_neighbor([&](Site neighbor, Hopping hopping) {
             auto const neighbor_index = finalized_indices[neighbor];
             if (neighbor_index < 0) { return; } // invalid neighbor
 
@@ -103,9 +104,9 @@ void populate_system(System& system, Foundation const& foundation,
 }
 
 void populate_boundaries(System& system, Foundation const& foundation,
-                         FinalizedIndices const& finalized_indices,
                          TranslationalSymmetry const& symmetry) {
     auto const& lattice = foundation.get_lattice();
+    auto const& finalized_indices = foundation.get_finalized_indices();
     auto const size = finalized_indices.size();
 
     for (const auto& translation : symmetry.translations(foundation)) {
@@ -119,7 +120,7 @@ void populate_boundaries(System& system, Foundation const& foundation,
 
             // The site is shifted to the opposite edge of the translation unit
             auto const shifted_site = site.shifted(translation.shift_index);
-            shifted_site.for_each_neighbour([&](Site neighbor, Hopping hopping) {
+            shifted_site.for_each_neighbor([&](Site neighbor, Hopping hopping) {
                 auto const neighbor_index = finalized_indices[neighbor];
                 if (neighbor_index < 0) { return; }
 

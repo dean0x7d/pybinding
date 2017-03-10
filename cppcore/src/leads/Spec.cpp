@@ -9,7 +9,7 @@ Spec::Spec(int direction, Shape const& shape)
       shape(shape) {}
 
 void create_attachment_area(Foundation& foundation, Spec const& spec) {
-    auto const size = foundation.get_size();
+    auto const size = foundation.get_spatial_size();
     auto const step = -spec.sign;
     auto const end = (step > 0) ? size[spec.axis] : -1;
 
@@ -44,7 +44,7 @@ void create_attachment_area(Foundation& foundation, Spec const& spec) {
 namespace detail {
 
 SliceIndex3D shape_slice(Foundation const& foundation, Shape const& shape) {
-    auto const size = foundation.get_size();
+    auto const size = foundation.get_spatial_size();
     auto const foundation_bounds = foundation.get_bounds();
     auto const lead_bounds = cpb::detail::find_bounds(shape, foundation.get_lattice());
 
@@ -58,7 +58,7 @@ SliceIndex3D shape_slice(Foundation const& foundation, Shape const& shape) {
 }
 
 SliceIndex3D attachment_slice(Foundation const& foundation, Spec const& spec) {
-    auto const size = foundation.get_size();
+    auto const size = foundation.get_spatial_size();
     auto const step = -spec.sign;
     auto const start = (step > 0) ? 0 : size[spec.axis] - 1;
     auto const end = (step > 0) ? size[spec.axis] : -1;
