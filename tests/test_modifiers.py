@@ -45,7 +45,7 @@ def assert_hoppings(hop_id, model):
         assert hop_id == 'invalid_hopping_name'
 
 
-def test_decorator():
+def test_modifier_function_signature():
     pb.onsite_energy_modifier(lambda energy: energy)
     with pytest.raises(RuntimeError) as excinfo:
         pb.onsite_energy_modifier(lambda this_is_unexpected: None)
@@ -54,34 +54,6 @@ def test_decorator():
     with pytest.raises(RuntimeError) as excinfo:
         pb.onsite_energy_modifier(lambda energy, x, y, z, w: None)
     assert "Unexpected argument" in str(excinfo.value)
-
-    pb.onsite_energy_modifier(lambda energy: energy + 1)
-    with pytest.raises(RuntimeError) as excinfo:
-        pb.onsite_energy_modifier(lambda: 1)
-    assert "Modifier must return numpy.ndarray" in str(excinfo.value)
-
-    pb.site_position_modifier(lambda x, y, z: (x, y, z))
-    with pytest.raises(RuntimeError) as excinfo:
-        pb.site_position_modifier(lambda x, y, z: (x, y))
-    assert "expected to return 3 ndarray(s), but got 2" in str(excinfo.value)
-
-    with pytest.raises(RuntimeError) as excinfo:
-        pb.onsite_energy_modifier(lambda: (one, one))
-    assert "expected to return 1 ndarray(s), but got 2" in str(excinfo.value)
-
-    with pytest.raises(RuntimeError) as excinfo:
-        pb.onsite_energy_modifier(lambda x: np.zeros(x.size // 2))
-    assert "must return the same shape" in str(excinfo.value)
-
-    pb.hopping_energy_modifier(lambda energy: np.ones_like(energy, dtype=np.complex128))
-    with pytest.raises(RuntimeError) as excinfo:
-        pb.onsite_energy_modifier(lambda energy: np.ones_like(energy, dtype=np.complex128))
-    assert "must not return complex" in str(excinfo.value)
-
-    @pb.onsite_energy_modifier
-    def modifier_return_checker_should_ignore_invalid_sublattices(energy, sub_id):
-        energy[sub_id == 'invalid'] = 0
-        return energy
 
 
 @pb.site_state_modifier
@@ -108,22 +80,67 @@ def test_callsig():
     assert "test_callsig.<locals>.wrapped_mod(a=1, b=8)" == repr(wrapped_mod(1, 8))
 
 
-def test_cast():
-    @pb.hopping_energy_modifier
-    def complex_in_real_out(energy):
-        return np.ones_like(energy, dtype=np.float64)
+def test_type_errors():
+    """Modifier return values should be arrays and satisfy a few dtype criteria"""
+    build_model(pb.onsite_energy_modifier(lambda energy: energy + 1))
+    with pytest.raises(TypeError) as excinfo:
+        build_model(pb.onsite_energy_modifier(lambda: 1))
+    assert "Modifiers must return ndarray(s)" in str(excinfo.value)
 
-    assert np.isrealobj(complex_in_real_out(complex_one))
-    assert np.iscomplexobj(complex_in_real_out.apply(complex_one, zero, zero, zero))
-    assert not complex_in_real_out.is_complex
+    build_model(pb.site_position_modifier(lambda x, y, z: (x, y, z)))
+    with pytest.raises(TypeError) as excinfo:
+        build_model(pb.site_position_modifier(lambda x, y, z: (x, y)))
+    assert "expected to return 3 ndarray(s), but got 2" in str(excinfo.value)
 
-    @pb.hopping_energy_modifier
-    def real_in_complex_out(energy):
+    with pytest.raises(TypeError) as excinfo:
+        build_model(pb.onsite_energy_modifier(lambda: (one, one)))
+    assert "expected to return 1 ndarray(s), but got 2" in str(excinfo.value)
+
+    with pytest.raises(TypeError) as excinfo:
+        build_model(pb.onsite_energy_modifier(lambda x: np.zeros(x.size // 2)))
+    assert "must return the same shape" in str(excinfo.value)
+
+    def complex_ones(energy):
         return np.ones_like(energy, dtype=np.complex128)
 
-    assert np.iscomplexobj(real_in_complex_out(complex_one))
-    assert np.iscomplexobj(real_in_complex_out.apply(complex_one, zero, zero, zero))
-    assert real_in_complex_out.is_complex
+    build_model(pb.hopping_energy_modifier(complex_ones))
+    build_model(pb.onsite_energy_modifier(complex_ones))
+
+    with pytest.raises(TypeError) as excinfo:
+        build_model(pb.site_position_modifier(lambda x: (np.ones_like(x, dtype=np.complex128),)*3))
+    assert "'complex128', but expected same kind as 'float32'" in str(excinfo.value)
+
+
+def test_cast():
+    dtypes = [np.float32, np.float64, np.complex64, np.complex128]
+
+    @pb.hopping_energy_modifier
+    def float32_out(energy):
+        return np.ones_like(energy, dtype=np.float32)
+
+    for dtype in dtypes:
+        assert float32_out.apply(np.ones(1, dtype=dtype), zero, zero, zero).dtype == dtype
+
+    @pb.hopping_energy_modifier
+    def float64_out(energy):
+        return np.ones_like(energy, dtype=np.float64)
+
+    for dtype in dtypes:
+        assert float64_out.apply(np.ones(1, dtype=dtype), zero, zero, zero).dtype == dtype
+
+    @pb.hopping_energy_modifier
+    def complex64_out(energy):
+        return np.ones_like(energy, dtype=np.complex64)
+
+    for dtype, result in zip(dtypes, [np.complex64, np.complex64, np.complex64, np.complex128]):
+        assert complex64_out.apply(np.ones(1, dtype=dtype), zero, zero, zero).dtype == result
+
+    @pb.hopping_energy_modifier
+    def complex128_out(energy):
+        return np.ones_like(energy, dtype=np.complex128)
+
+    for dtype, result in zip(dtypes, [np.complex128, np.complex128, np.complex64, np.complex128]):
+        assert complex128_out.apply(np.ones(1, dtype=dtype), zero, zero, zero).dtype == result
 
 
 def test_site_state():

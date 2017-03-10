@@ -7,29 +7,35 @@ using namespace cpb;
 namespace {
 
 /// Extract an Eigen array from a Python object, but avoid a copy if possible
-struct ExtractArray {
+struct ExtractModifierResult {
     py::object o;
 
     template<class EigenType>
-    void operator()(Eigen::Map<EigenType> v) const {
+    void operator()(Eigen::Map<EigenType> eigen_map) const {
         static_assert(EigenType::IsVectorAtCompileTime, "");
-        using scalar_t = typename EigenType::Scalar;
 
-        auto const a = py::array_t<scalar_t>(o);
-        auto const size = static_cast<idx_t>(a.size());
-        if (v.size() != size) {
+        using scalar_t = typename EigenType::Scalar;
+        using NumpyType = py::array_t<typename EigenType::Scalar>;
+        if (!py::isinstance<NumpyType>(o)) {
+            std::is_floating_point<scalar_t>()
+                  ? throw ComplexOverride()
+                  : throw std::runtime_error("Unexpected modifier result size");
+        }
+
+        auto const a = py::reinterpret_borrow<NumpyType>(o);
+        if (eigen_map.size() != static_cast<idx_t>(a.size())) {
             throw std::runtime_error("Unexpected modifier result size");
         }
-        auto const data = a.data();
-        if (v.data() != data) {
-            v = Eigen::Map<EigenType const>(data, size);
+
+        if (eigen_map.data() != a.data()) {
+            eigen_map = Eigen::Map<EigenType const>(a.data(), static_cast<idx_t>(a.size()));
         }
     }
 };
 
 template<class EigenType>
-inline void extract_array(EigenType& v, py::object const& o) {
-    ExtractArray{o}(Eigen::Map<EigenType>(v.data(), v.size()));
+void extract_modifier_result(EigenType& v, py::object const& o) {
+    ExtractModifierResult{o}(Eigen::Map<EigenType>(v.data(), v.size()));
 }
 
 } // anonymous namespace
@@ -49,7 +55,7 @@ void wrap_modifiers(py::module& m) {
                 [apply](ArrayX<bool>& state, CartesianArray const& p, SubIdRef sub) {
                     auto result = apply(arrayref(state), arrayref(p.x),
                                         arrayref(p.y), arrayref(p.z), sub);
-                    extract_array(state, result);
+                    extract_modifier_result(state, result);
                 },
                 min_neighbors
             );
@@ -59,9 +65,9 @@ void wrap_modifiers(py::module& m) {
         .def("__init__", [](PositionModifier& self, py::object apply) {
             new (&self) PositionModifier([apply](CartesianArray& p, SubIdRef sub) {
                 auto t = py::tuple(apply(arrayref(p.x), arrayref(p.y), arrayref(p.z), sub));
-                extract_array(p.x, t[0]);
-                extract_array(p.y, t[1]);
-                extract_array(p.z, t[2]);
+                extract_modifier_result(p.x, t[0]);
+                extract_modifier_result(p.y, t[1]);
+                extract_modifier_result(p.z, t[2]);
             });
         });
 
@@ -84,7 +90,7 @@ void wrap_modifiers(py::module& m) {
                 [apply](ComplexArrayRef energy, CartesianArrayConstRef p, SubIdRef sub) {
                     auto result = apply(energy, arrayref(p.x()), arrayref(p.y()),
                                         arrayref(p.z()), sub);
-                    num::match<ArrayX>(energy, ExtractArray{result});
+                    num::match<ArrayX>(energy, ExtractModifierResult{result});
                 },
                 is_complex, is_double
             );
@@ -102,7 +108,7 @@ void wrap_modifiers(py::module& m) {
                         energy, arrayref(p1.x()), arrayref(p1.y()), arrayref(p1.z()),
                         arrayref(p2.x()), arrayref(p2.y()), arrayref(p2.z()), hopping
                     );
-                    num::match<ArrayX>(energy, ExtractArray{result});
+                    num::match<ArrayX>(energy, ExtractModifierResult{result});
                 },
                 is_complex, is_double
             );

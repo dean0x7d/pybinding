@@ -5,7 +5,6 @@ such as various fields, defects or geometric deformations.
 """
 import inspect
 import functools
-from collections import defaultdict
 
 import numpy as np
 
@@ -69,43 +68,32 @@ def _check_modifier_spec(func, keywords, has_sites=False):
                            "Arguments must be any of: {expected}".format(**locals()))
 
 
-def _check_modifier_return(func, num_arguments, num_return, can_be_complex):
-    """Make sure the modifier returns the correct type and size
+def _sanitize_modifier_result(result, arg, expected_num_return, can_be_complex):
+    """Make sure the modifier returns ndarrays with type and shape matching the input `arg`"""
+    result = result if isinstance(result, tuple) else (result,)
 
-    Parameters
-    ----------
-    func : callable
-        The function which is to become a modifier.
-    num_arguments : int
-        Expected number of modifier arguments.
-    num_return : int
-        Expected number of return values.
-    can_be_complex : bool
-        Is this modifier allowed to have a complex return value.
-    """
-    in_shape = 10,
-    dummy_input = [AliasArray(np.ones(in_shape), defaultdict(int))] * num_arguments
+    if any(not isinstance(r, np.ndarray) for r in result):
+        raise TypeError("Modifiers must return ndarray(s)")
 
-    try:
-        out_data = func(*dummy_input)
-    except AttributeError as e:
-        if "astype" in str(e):  # known issue
-            raise RuntimeError("Modifier must return numpy.ndarray")
-        else:  # unknown issue
-            raise
+    if len(result) != expected_num_return:
+        raise TypeError("Modifier expected to return {} ndarray(s), "
+                        "but got {}".format(expected_num_return, len(result)))
 
-    out_data = out_data if isinstance(out_data, tuple) else (out_data,)
-    if len(out_data) != num_return:
-        raise RuntimeError("Modifier expected to return {} ndarray(s), "
-                           "but got {}".format(num_return, len(out_data)))
-    if any(v.shape != in_shape for v in out_data):
-        raise RuntimeError("Modifier must return the same shape ndarray as the arguments")
+    if any(r.shape != arg.shape for r in result):
+        raise TypeError("Modifier must return the same shape ndarray as the arguments")
 
-    is_complex = any(np.iscomplexobj(v) for v in out_data)
-    if is_complex and not can_be_complex:
-        raise RuntimeError("This modifier must not return complex values")
+    def cast(r):
+        try:
+            return r.astype(arg.dtype, casting="same_kind", copy=False)
+        except TypeError:
+            if np.iscomplexobj(r) and can_be_complex:
+                return r  # fine, the model will be upgraded to complex for certain modifiers
+            else:
+                raise TypeError("Modifier result is '{}', but expected same kind as '{}'"
+                                " (precision is flexible)".format(r.dtype, arg.dtype))
 
-    return is_complex
+    result = tuple(map(cast, result))
+    return result[0] if expected_num_return == 1 else result
 
 
 def _make_modifier(func, kind, init, keywords, has_sites=True, num_return=1, can_be_complex=False):
@@ -138,22 +126,8 @@ def _make_modifier(func, kind, init, keywords, has_sites=True, num_return=1, can
 
     def apply_func(*args):
         requested_kwargs = _process_modifier_args(args, keywords, requested_argnames)
-        ret = func(**requested_kwargs)
-
-        def cast_dtype(v):
-            return v.astype(args[0].dtype, casting='same_kind', copy=False)
-
-        try:  # cast output array to same element type as the input
-            if isinstance(ret, tuple):
-                return tuple(map(cast_dtype, ret))
-            else:
-                return cast_dtype(ret)
-        except TypeError:
-            return ret
-
-    is_complex = _check_modifier_return(apply_func, len(keywords), num_return, can_be_complex)
-    if can_be_complex:
-        init.update(is_complex=is_complex)
+        result = func(**requested_kwargs)
+        return _sanitize_modifier_result(result, args[0], num_return, can_be_complex)
 
     class Modifier(kind):
         callsig = getattr(func, 'callsig', None)
@@ -319,7 +293,7 @@ def onsite_energy_modifier(double=False):
         )
     """
     return functools.partial(_make_modifier, kind=_cpp.OnsiteModifier,
-                             init=dict(is_double=double),
+                             init=dict(is_double=double), can_be_complex=True,
                              keywords="energy, x, y, z, sub_id")
 
 

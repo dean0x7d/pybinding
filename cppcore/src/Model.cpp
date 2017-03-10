@@ -73,7 +73,8 @@ bool Model::is_double() const {
 }
 
 bool Model::is_complex() const {
-    return lattice.has_complex_hoppings() || hamiltonian_modifiers.any_complex() || symmetry;
+    return lattice.has_complex_hoppings() || hamiltonian_modifiers.any_complex()
+           || symmetry || complex_override;
 }
 
 std::shared_ptr<System const> const& Model::system() const {
@@ -141,18 +142,22 @@ std::shared_ptr<System> Model::make_system() const {
 Hamiltonian Model::make_hamiltonian() const {
     auto const& built_system = *system();
 
-    if (is_double()) {
-        if (is_complex()) {
-            return ham::make<std::complex<double>>(built_system, hamiltonian_modifiers, wave_vector);
-        } else {
-            return ham::make<double>(built_system, hamiltonian_modifiers, wave_vector);
+    if (!is_complex()) {
+        try {
+            if (!is_double()) {
+                return ham::make<float>(built_system, hamiltonian_modifiers, wave_vector);
+            } else {
+                return ham::make<double>(built_system, hamiltonian_modifiers, wave_vector);
+            }
+        } catch (ComplexOverride const&) {
+            complex_override = true;
         }
+    }
+
+    if (!is_double()) {
+        return ham::make<std::complex<float>>(built_system, hamiltonian_modifiers, wave_vector);
     } else {
-        if (is_complex()) {
-            return ham::make<std::complex<float>>(built_system, hamiltonian_modifiers, wave_vector);
-        } else {
-            return ham::make<float>(built_system, hamiltonian_modifiers, wave_vector);
-        }
+        return ham::make<std::complex<double>>(built_system, hamiltonian_modifiers, wave_vector);
     }
 }
 

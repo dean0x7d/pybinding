@@ -103,6 +103,8 @@ private:
     mutable Leads _leads;
     mutable Chrono system_build_time;
     mutable Chrono hamiltonian_build_time;
+    mutable bool complex_override = false; ///< set if a modifier was found to (dynamically)
+                                           ///< return complex output for real input data
 };
 
 } // namespace cpb

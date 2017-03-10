@@ -13,6 +13,18 @@
 namespace cpb {
 
 /**
+ Thrown by a modifier if it determines that complex numbers must be
+ returned even though it was given real input data. The model will
+ catch this and switch the scalar type to complex.
+ */
+class ComplexOverride : public std::exception {
+public:
+    char const* what() const noexcept override {
+        return "Trying to return a complex result from a real modifier.";
+    }
+};
+
+/**
  Modify the onsite energy, e.g. to apply an electric field
 */
 class OnsiteModifier {
