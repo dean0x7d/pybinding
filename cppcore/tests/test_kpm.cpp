@@ -55,7 +55,7 @@ TEST_CASE("OptimizedHamiltonian reordering", "[kpm]") {
         auto const j1 = model.system()->find_nearest({0, 0.07f, 0}, "B");
         auto const j2 = model.system()->find_nearest({0.12f, 0.14f, 0}, "A");
         auto const j3 = model.system()->find_nearest({0.12f, 0.28f, 0}, "B");
-        oh.optimize_for({i, {j1, j2, j3}}, bounds.scaling_factors());
+        oh.optimize_for({i, std::vector<idx_t>{j1, j2, j3}}, bounds.scaling_factors());
 
         REQUIRE(oh.idx().row != oh.idx().cols[0]);
         REQUIRE(oh.map().get_data().front() == 1);

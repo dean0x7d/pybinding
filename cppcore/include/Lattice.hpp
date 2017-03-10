@@ -33,10 +33,6 @@ public:
         MatrixXcd energy; ///< onsite energy term
         sub_id unique_id; ///< different for each entry
         sub_id alias_id; ///< may be shared by multiple entries, e.g. for creating supercells
-
-        /// Return the onsite energy matrix in the given scalar type
-        template<class scalar_t>
-        MatrixX<scalar_t> energy_as() const { return num::force_cast<scalar_t>(energy); }
     };
 
     struct HoppingTerm {
@@ -58,10 +54,6 @@ public:
         MatrixXcd energy; ///< base hopping energy which is shared by all terms in this family
         hop_id family_id; ///< different for each family
         std::vector<HoppingTerm> terms; ///< site connections
-
-        /// Return the hopping energy matrix in the given scalar type
-        template<class scalar_t>
-        MatrixX<scalar_t> energy_as() const { return num::force_cast<scalar_t>(energy); }
     };
 
     using Vectors = std::vector<Cartesian>;

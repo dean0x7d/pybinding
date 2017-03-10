@@ -20,7 +20,7 @@ namespace cpb { namespace kpm {
  */
 struct Indices {
     storage_idx_t row = -1;
-    ArrayX<storage_idx_t> cols;
+    ArrayXi cols;
 
     Indices() = default;
     Indices(idx_t row, idx_t col) : row(static_cast<storage_idx_t>(row)), cols(1) {
@@ -29,7 +29,8 @@ struct Indices {
     Indices(idx_t row, std::vector<idx_t> const& cols)
         : row(static_cast<storage_idx_t>(row)),
           cols(eigen_cast<ArrayX>(cols).cast<storage_idx_t>()) {}
-    Indices(storage_idx_t row, ArrayX<storage_idx_t> cols) : row(row), cols(std::move(cols)) {}
+    Indices(idx_t row, ArrayXi cols)
+        : row(static_cast<storage_idx_t>(row)), cols(std::move(cols)) {}
 
     /// Indicates a single element on the main diagonal
     bool is_diagonal() const { return cols.size() == 1 && row == cols[0]; }
