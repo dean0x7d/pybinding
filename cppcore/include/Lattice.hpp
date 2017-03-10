@@ -21,14 +21,6 @@ struct SubIdRef {
     std::unordered_map<std::string, sub_id> name_map;
 };
 
-/**
- Helper class for passing hopping information to modifier functions
- */
-struct HopIdRef {
-    ArrayX<hop_id> const& ids;
-    std::unordered_map<std::string, hop_id> name_map;
-};
-
 class OptimizedUnitCell;
 
 /**
@@ -147,6 +139,11 @@ public: // properties
     HoppingFamily const& hopping_family(hop_id id) const;
     HoppingFamily const& operator()(string_view name) const { return hopping_family(name); }
     HoppingFamily const& operator()(hop_id id) const { return hopping_family(id); }
+
+    /// Return name for this ID
+    string_view sublattice_name(sub_id id) const;
+    /// Return name for this ID
+    string_view hopping_family_name(hop_id id) const;
 
     /// Get the maximum possible number of hoppings from any site of this lattice
     int max_hoppings() const;

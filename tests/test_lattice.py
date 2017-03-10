@@ -1,5 +1,6 @@
 import pytest
 
+import numpy as np
 import pybinding as pb
 from pybinding.repository import graphene
 
@@ -60,18 +61,12 @@ def test_add_sublattice(mock_lattice):
         mock_lattice.add_one_sublattice('a', (0, 0))
     assert "Sublattice 'a' already exists" in str(excinfo.value)
 
-    with pytest.raises(KeyError) as excinfo:
-        assert mock_lattice['c']
-    assert "There is no sublattice named 'c'" in str(excinfo.value)
-
-    with pytest.raises(KeyError) as excinfo:
-        assert mock_lattice[5]
-    assert "There is no sublattice with ID = 5" in str(excinfo.value)
-
     with pytest.raises(RuntimeError) as excinfo:
         for i in range(127):
             mock_lattice.add_one_sublattice(str(i), (0, 0))
     assert "Exceeded maximum number of unique sublattices" in str(excinfo.value)
+
+    pytest.deprecated_call(mock_lattice.__getitem__, "a")
 
 
 def test_add_multiorbital_sublattice(mock_lattice):
@@ -115,8 +110,9 @@ def test_add_sublattice_alias(mock_lattice):
     model = pb.Model(mock_lattice)
     c_index = model.system.find_nearest(c_position)
 
-    assert mock_lattice['c'] != mock_lattice['a']
-    assert model.system.sublattices[c_index] == mock_lattice['a']
+    assert mock_lattice.sub_name_to_id["c"] != mock_lattice.sub_name_to_id["a"]
+    assert model.system.sublattices[c_index] == mock_lattice.sub_name_to_id["a"]
+    assert c_index in np.argwhere(model.system.sublattices == "a")
 
     with pytest.raises(IndexError) as excinfo:
         mock_lattice.add_one_alias('d', 'bad_name', [0, 0])
@@ -138,16 +134,12 @@ def test_add_hopping(mock_lattice):
         mock_lattice.add_one_hopping((0, 0), 'c', 'a', 1)
     assert "There is no sublattice named 'c'" in str(excinfo.value)
 
-    with pytest.raises(KeyError) as excinfo:
-        assert mock_lattice('t_nn')
-    assert "There is no hopping named 't_nn'" in str(excinfo.value)
-
     mock_lattice.register_hopping_energies({
         't_nn': 0.1,
         't_nnn': 0.01
     })
-    assert mock_lattice('t_nn') == 1
-    assert mock_lattice('t_nnn') == 2
+    assert "t_nn" in mock_lattice.hop_name_to_id
+    assert "t_nnn" in mock_lattice.hop_name_to_id
 
     mock_lattice.add_one_hopping((0, 1), 'a', 'a', 't_nn')
 
@@ -167,6 +159,8 @@ def test_add_hopping(mock_lattice):
         for i in range(1, 128):
             mock_lattice.add_one_hopping((0, i), 'a', 'b', i)
     assert "Exceeded maximum number of unique hoppings energies" in str(excinfo.value)
+
+    pytest.deprecated_call(mock_lattice.__call__, "t_nn")
 
 
 def test_add_matrix_hopping(mock_lattice):

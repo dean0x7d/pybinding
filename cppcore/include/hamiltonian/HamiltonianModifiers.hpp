@@ -30,7 +30,7 @@ public:
 class OnsiteModifier {
 public:
     using Function = std::function<void(ComplexArrayRef energy, CartesianArrayConstRef positions,
-                                        SubIdRef sublattice)>;
+                                        string_view sublattice)>;
 
     Function apply; ///< to be user-implemented
     bool is_complex = false; ///< the modeled effect requires complex values
@@ -48,7 +48,7 @@ public:
 class HoppingModifier {
 public:
     using Function = std::function<void(ComplexArrayRef energy, CartesianArrayConstRef pos1,
-                                        CartesianArrayConstRef pos2, HopIdRef hopping_ids)>;
+                                        CartesianArrayConstRef pos2, string_view hopping_family)>;
     Function apply; ///< to be user-implemented
     bool is_complex = false; ///< the modeled effect requires complex values
     bool is_double = false; ///< the modeled effect requires double precision
@@ -128,10 +128,10 @@ void HamiltonianModifiers::apply_to_onsite(System const& system, Fn lambda) cons
             if (sub.num_orbitals() == 1) { onsite_ref.ndim = 1; } // squeeze dimensions
 
             auto const position_ref = system.positions.segment(sub.sys_start(), sub.num_sites());
-            auto const sub_ids = ArrayX<sub_id>::Constant(sub.num_sites(), sub.alias_id());
+            auto const sub_name = lattice.sublattice_name(sub.alias_id());
 
             for (auto const& modifier : onsite) {
-                modifier.apply(onsite_ref, position_ref, {sub_ids, lattice.sub_name_map()});
+                modifier.apply(onsite_ref, position_ref, sub_name);
             }
         }
 
@@ -265,7 +265,7 @@ void HamiltonianModifiers::apply_to_hoppings_impl(System const& system,
         auto const index_translator = IndexTranslator(system, hopping_family.energy);
 
         auto buffer = HoppingBuffer<scalar_t>(hopping_family.energy_as<scalar_t>(), block.size());
-        auto hop_ids = ArrayX<hop_id>::Constant(buffer.size, family_id).eval();
+        auto const hop_name = system.lattice.hopping_family_name(family_id);
 
         buffered_for_each(
             block.coordinates(),
@@ -275,12 +275,9 @@ void HamiltonianModifiers::apply_to_hoppings_impl(System const& system,
                 buffer.pos2[n] = detail::shifted(system.positions[coo.col], system_or_boundary);
             },
             /*filled*/ [&](idx_t size) {
-                if (size < buffer.size) { hop_ids.conservativeResize(size); }
-
                 for (auto const& modifier : hopping) {
-                    modifier.apply(buffer.hoppings_ref(size),
-                                   buffer.pos1.head(size), buffer.pos2.head(size),
-                                   {hop_ids, system.lattice.hop_name_map()});
+                    modifier.apply(buffer.hoppings_ref(size), buffer.pos1.head(size),
+                                   buffer.pos2.head(size), hop_name);
                 }
             },
             /*process buffer*/ [&](COO const& coo, idx_t n) {

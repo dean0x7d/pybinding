@@ -41,7 +41,7 @@ TEST_CASE("OnsiteEnergyModifier") {
     REQUIRE(h_init.rows() == 2);
     REQUIRE(h_init.non_zeros() == 2);
 
-    model.add(OnsiteModifier([](ComplexArrayRef energy, CartesianArrayConstRef, SubIdRef) {
+    model.add(OnsiteModifier([](ComplexArrayRef energy, CartesianArrayConstRef, string_view) {
         num::match<ArrayX>(energy, OnsiteEnergyOp{});
     }));
     auto const& h = model.hamiltonian();
@@ -63,7 +63,7 @@ TEST_CASE("HoppingEnergyModifier") {
     REQUIRE(h_init.non_zeros() == 2);
 
     model.add(HoppingModifier([](ComplexArrayRef energy, CartesianArrayConstRef,
-                                 CartesianArrayConstRef, HopIdRef) {
+                                 CartesianArrayConstRef, string_view) {
         num::match<ArrayX>(energy, HoppingEnergyOp{});
     }));
     auto const& h = model.hamiltonian();

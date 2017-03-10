@@ -101,7 +101,7 @@ namespace {
 }
 
 cpb::OnsiteModifier constant_potential(float value) {
-    return {[value](ComplexArrayRef energy, CartesianArrayConstRef, SubIdRef) {
+    return {[value](ComplexArrayRef energy, CartesianArrayConstRef, string_view) {
         num::match<ArrayX>(energy, OnsiteEnergyOp{value});
     }};
 }
@@ -130,7 +130,7 @@ namespace {
 
 cpb::HoppingModifier constant_magnetic_field(float value) {
     return {[value](ComplexArrayRef energy, CartesianArrayConstRef pos1,
-                    CartesianArrayConstRef pos2, HopIdRef) {
+                    CartesianArrayConstRef pos2, string_view) {
         num::match<ArrayX>(energy, MagneticFieldOp{value, pos1, pos2});
     }, /*is_complex*/true, /*is_double*/false};
 }
@@ -149,7 +149,7 @@ namespace {
 }
 
 cpb::OnsiteModifier linear_onsite(float k) {
-    return {[k](ComplexArrayRef energy, CartesianArrayConstRef pos, SubIdRef) {
+    return {[k](ComplexArrayRef energy, CartesianArrayConstRef pos, string_view) {
         num::match<ArrayX>(energy, LinearOnsite{k, pos.x()});
     }};
 }
@@ -169,18 +169,18 @@ namespace {
 
 cpb::HoppingModifier linear_hopping(float k) {
     return {[k](ComplexArrayRef energy, CartesianArrayConstRef pos1,
-                CartesianArrayConstRef pos2, HopIdRef) {
+                CartesianArrayConstRef pos2, string_view) {
         num::match<ArrayX>(energy, LinearHopping{k, 0.5f * (pos1.x() + pos2.x())});
     }, /*is_complex*/false, /*is_double*/false};
 }
 
 cpb::HoppingModifier force_double_precision() {
-    auto nop = [](ComplexArrayRef, CartesianArrayConstRef, CartesianArrayConstRef, HopIdRef) {};
+    auto nop = [](ComplexArrayRef, CartesianArrayConstRef, CartesianArrayConstRef, string_view) {};
     return cpb::HoppingModifier(nop, /*is_complex*/false, /*is_double*/true);
 }
 
 cpb::HoppingModifier force_complex_numbers() {
-    auto nop = [](ComplexArrayRef, CartesianArrayConstRef, CartesianArrayConstRef, HopIdRef) {};
+    auto nop = [](ComplexArrayRef, CartesianArrayConstRef, CartesianArrayConstRef, string_view) {};
     return cpb::HoppingModifier(nop, /*is_complex*/true, /*is_double*/false);
 }
 

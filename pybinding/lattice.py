@@ -89,25 +89,35 @@ class Lattice:
     def min_neighbors(self, value):
         self.impl.min_neighbors = value
 
+    @property
+    def sub_name_to_id(self) -> dict:
+        """Map from sublattice name to numeric ID"""
+        return self.impl.sub_name_map
+
+    @property
+    def sub_id_to_name(self) -> dict:
+        """Map from sublattice ID to string name"""
+        return {v: k for k, v in self.sub_name_to_id.items()}
+
+    @property
+    def hop_name_to_id(self) -> dict:
+        """Map from hopping family name to numeric ID"""
+        return self.impl.hop_name_map
+
+    @property
+    def hop_id_to_name(self) -> dict:
+        """Map from hopping family ID to string name"""
+        return {v: k for k, v in self.hop_name_to_id.items()}
+
     def __getitem__(self, name):
-        """Get sublattice ID from its user-friendly `name`"""
-        if isinstance(name, str):
-            try:
-                return self.impl.sub_name_map[name]
-            except KeyError:
-                raise KeyError("There is no sublattice named '{}'".format(name))
-        else:  # an ID was given instead of a name, verify it
-            sub_id = name
-            if sub_id not in self.impl.sub_name_map.values():
-                raise KeyError("There is no sublattice with ID = {}".format(sub_id))
-            return sub_id
+        """Deprecated: Use the sublattice name directly instead"""
+        warnings.warn("Use the sublattice name directly instead", DeprecationWarning, stacklevel=2)
+        return name
 
     def __call__(self, name):
-        """Get the hopping ID from its user-friendly `name`"""
-        try:
-            return self.impl.hop_name_map[name]
-        except KeyError:
-            raise KeyError("There is no hopping named '{}'".format(name))
+        """Deprecated: Use the hopping name directly instead"""
+        warnings.warn("Use the hopping name directly instead", DeprecationWarning, stacklevel=2)
+        return name
 
     def register_hopping_energies(self, mapping):
         """Register a mapping of user-friendly names to hopping energies

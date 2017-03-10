@@ -11,7 +11,7 @@ import numpy as np
 from . import _cpp
 from .system import Sites
 from .support.inspect import get_call_signature
-from .support.alias import AliasArray
+from .support.alias import AliasArray, AliasIndex
 from .utils.misc import decorator_decorator
 
 __all__ = ['constant_potential', 'force_double_precision', 'hopping_energy_modifier',
@@ -20,8 +20,10 @@ __all__ = ['constant_potential', 'force_double_precision', 'hopping_energy_modif
 
 
 def _make_alias_array(obj):
-    if isinstance(obj, (_cpp.SubIdRef, _cpp.HopIdRef)):
+    if isinstance(obj, _cpp.SubIdRef):
         return AliasArray(obj.ids, obj.name_map)
+    elif isinstance(obj, str):
+        return AliasIndex(obj)
     else:
         return obj
 
@@ -35,7 +37,7 @@ def _process_modifier_args(args, keywords, requested_argnames):
     if 'sub_id' in requested_argnames or 'sites' in requested_argnames:
         kwargs['sub_id'] = _make_alias_array(kwargs['sub_id'])
     if 'hop_id' in requested_argnames:
-        kwargs['hop_id'] = _make_alias_array(kwargs['hop_id'])
+        kwargs['hop_id'] = AliasIndex(kwargs['hop_id'])
 
     requested_kwargs = {name: value for name, value in kwargs.items()
                         if name in requested_argnames}

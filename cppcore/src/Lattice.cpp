@@ -189,6 +189,26 @@ Lattice::HoppingFamily const& Lattice::hopping_family(hop_id id) const {
     return it->second;
 }
 
+string_view Lattice::sublattice_name(sub_id id) const {
+    using Pair = Sublattices::value_type;
+    auto const it = std::find_if(sublattices.begin(), sublattices.end(),
+                                 [&](Pair const& p) { return p.second.unique_id == id; });
+    if (it == sublattices.end()) {
+        throw std::out_of_range("There is no sublattice with ID = {}"_format(id));
+    }
+    return it->first;
+}
+
+string_view Lattice::hopping_family_name(hop_id id) const {
+    using Pair = Hoppings::value_type;
+    auto const it = std::find_if(hoppings.begin(), hoppings.end(),
+                                 [&](Pair const& p) { return p.second.family_id == id; });
+    if (it == hoppings.end()) {
+        throw std::out_of_range("There is no hopping with ID = {}"_format(id));
+    }
+    return it->first;
+}
+
 int Lattice::max_hoppings() const {
     auto result = idx_t{0};
     for (auto const& pair : sublattices) {

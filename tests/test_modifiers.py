@@ -21,28 +21,16 @@ def assert_position(x, y, z):
     assert np.allclose(z, [0, 0])
 
 
-def assert_sublattice(sub_id, model):
+def assert_sublattice(sub_id):
     assert np.allclose(sub_id, [0, 1])
 
-    assert np.argwhere(sub_id == model.lattice['A']) == 0
-    assert np.argwhere(sub_id != model.lattice['A']) == 1
+    assert np.argwhere(sub_id == 'A') == 0
+    assert np.argwhere(sub_id != 'A') == 1
     assert np.argwhere(sub_id == 'A') == 0
     assert np.argwhere(sub_id != 'A') == 1
 
     with pytest.raises(KeyError):
         assert sub_id == 'invalid_sublattice_name'
-
-
-def assert_hoppings(hop_id, model):
-    assert np.all(hop_id == 0)
-
-    assert np.all(hop_id == model.lattice('t'))
-    assert not np.any(hop_id != model.lattice('t'))
-    assert np.all(hop_id == 't')
-    assert not np.any(hop_id != 't')
-
-    with pytest.raises(KeyError):
-        assert hop_id == 'invalid_hopping_name'
 
 
 def test_modifier_function_signature():
@@ -164,7 +152,7 @@ def test_site_state():
     state, x, y, z, sub_id, nearest = capture
     assert np.all(state == [True, True])
     assert_position(x, y, z)
-    assert_sublattice(sub_id, model)
+    assert_sublattice(sub_id)
     assert np.all(nearest == [1, 0])
 
     @pb.site_state_modifier(min_neighbors=2)
@@ -197,7 +185,7 @@ def test_site_position():
 
     x, y, z, sub_id, nearest = capture
     assert_position(x, y, z)
-    assert_sublattice(sub_id, model)
+    assert_sublattice(sub_id)
     assert np.all(nearest == [1, 0])
 
 
@@ -212,40 +200,26 @@ def test_onsite():
 
     @pb.onsite_energy_modifier
     def check_args(energy, x, y, z, sub_id, sites):
-        capture[sub_id[0]] = [v.copy() for v in (energy, x, y, z, sub_id)]
-        capture[sub_id[0]].append(sites.argsort_nearest([0, graphene.a_cc / 2]))
+        capture[sub_id] = [v.copy() for v in (energy, x, y, z)]
+        capture[sub_id].append(sites.argsort_nearest([0, graphene.a_cc / 2]))
         return energy
 
     model = build_model(check_args)
     assert model.hamiltonian.dtype == np.float32
 
-    energy, x, y, z, sub_id, nearest = capture[model.lattice["A"]]
+    energy, x, y, z, nearest = capture["A"]
     assert np.allclose(energy, 0)
     assert np.allclose(x, 0)
     assert np.allclose(y, -graphene.a_cc / 2)
     assert np.allclose(z, 0)
     assert np.all(nearest == [0])
 
-    assert np.argwhere(sub_id == model.lattice["A"]) == 0
-    assert np.argwhere(sub_id != model.lattice["A"]).size == 0
-    assert np.argwhere(sub_id == "A") == 0
-    assert np.argwhere(sub_id != "A").size == 0
-    with pytest.raises(KeyError):
-        assert sub_id == "invalid_sublattice_name"
-
-    energy, x, y, z, sub_id, nearest = capture[model.lattice["B"]]
+    energy, x, y, z, nearest = capture["B"]
     assert np.allclose(energy, 0)
     assert np.allclose(x, 0)
     assert np.isclose(y, graphene.a_cc / 2)
     assert np.allclose(z, 0)
     assert np.all(nearest == [0])
-
-    assert np.argwhere(sub_id == model.lattice["B"]) == 0
-    assert np.argwhere(sub_id != model.lattice["B"]).size == 0
-    assert np.argwhere(sub_id == "B") == 0
-    assert np.argwhere(sub_id != "B").size == 0
-    with pytest.raises(KeyError):
-        assert sub_id == "invalid_sublattice_name"
 
     @pb.onsite_energy_modifier(double=True)
     def make_double(energy):
@@ -262,19 +236,18 @@ def test_hopping_energy():
     assert np.all(2 == mod(one))
     assert np.all(2 == mod.apply(one, zero, zero, zero, zero, zero, zero, zero))
 
-    capture = []
+    capture = {}
 
     @pb.hopping_energy_modifier
     def check_args(energy, hop_id, x1, y1, z1, x2, y2, z2):
-        capture[:] = (v.copy() for v in (energy, hop_id, x1, y1, z1, x2, y2, z2))
+        capture[hop_id] = [v.copy() for v in (energy, x1, y1, z1, x2, y2, z2)]
         return energy
 
     model = build_model(check_args)
     assert model.hamiltonian.dtype == np.float32
 
-    energy, hop_id, x1, y1, z1, x2, y2, z2 = capture
+    energy, x1, y1, z1, x2, y2, z2 = capture["t"]
     assert np.allclose(energy, graphene.t)
-    assert_hoppings(hop_id, model)
     assert np.allclose(x1, 0)
     assert np.allclose(y1, -graphene.a_cc / 2)
     assert np.allclose(z1, 0)
@@ -403,17 +376,16 @@ def test_multiorbital_onsite():
 
     @pb.onsite_energy_modifier
     def onsite(energy, x, y, z, sub_id):
-        capture[sub_id[0]] = [v.copy() for v in (energy, x, y, z, sub_id)]
+        capture[sub_id] = [v.copy() for v in (energy, x, y, z)]
         return energy
 
     def assert_onsite(name, **kwargs):
-        energy, x, y, z, sub_id = capture[model.lattice[name]]
+        energy, x, y, z = capture[name]
         assert energy.shape == kwargs["shape"]
         assert pytest.fuzzy_equal(energy, kwargs["energy"])
         assert pytest.fuzzy_equal(x, kwargs["x"])
         assert pytest.fuzzy_equal(y, kwargs["y"])
         assert pytest.fuzzy_equal(z, kwargs["z"])
-        assert np.all(sub_id == model.lattice[name])
 
     model = pb.Model(multi_orbital_lattice(), pb.rectangle(2, 1), onsite)
     assert model.system.num_sites == 6
@@ -462,11 +434,11 @@ def test_multiorbital_hoppings():
 
     @pb.hopping_energy_modifier
     def hopping(energy, hop_id, x1, y1, z1, x2, y2, z2):
-        capture[hop_id[0]] = [v.copy() for v in (energy, hop_id, x1, y1, z1, x2, y2, z2)]
+        capture[hop_id] = [v.copy() for v in (energy, x1, y1, z1, x2, y2, z2)]
         return energy
 
     def assert_hoppings(name, **kwargs):
-        energy, hop_id, x1, y1, z1, x2, y2, z2 = capture[model.lattice(name)]
+        energy, x1, y1, z1, x2, y2, z2 = capture[name]
         assert energy.shape == kwargs["shape"]
         assert pytest.fuzzy_equal(energy, kwargs["energy"])
         assert pytest.fuzzy_equal(x1, kwargs["x1"])
@@ -475,7 +447,6 @@ def test_multiorbital_hoppings():
         assert pytest.fuzzy_equal(x2, kwargs["x2"])
         assert pytest.fuzzy_equal(y2, kwargs["y2"])
         assert pytest.fuzzy_equal(z1, kwargs["z2"])
-        assert np.all(hop_id == model.lattice(name))
 
     model = pb.Model(multi_orbital_lattice(), pb.primitive(2, 2), hopping)
     assert model.system.num_sites == 12
@@ -520,8 +491,8 @@ def test_hopping_buffer():
 
     @pb.hopping_energy_modifier
     def check_buffer(energy, hop_id):
-        capture.setdefault(hop_id[0], [])
-        capture[hop_id[0]] += [energy.copy()]
+        capture.setdefault(hop_id, [])
+        capture[hop_id] += [energy.copy()]
         energy[0] = 99
         return energy
 
@@ -529,7 +500,7 @@ def test_hopping_buffer():
     assert model.system.num_sites == 6000
     assert model.hamiltonian.shape[0] == 24000
 
-    energies = capture[model.lattice("t44")]
+    energies = capture["t44"]
     assert len(energies) >= 2
     assert energies[0].shape == (6250, 4, 4)
     for energy in energies:

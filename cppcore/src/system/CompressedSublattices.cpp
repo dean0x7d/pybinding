@@ -66,21 +66,21 @@ ArrayX<sub_id> CompressedSublattices::decompress() const {
 }
 
 ArrayXi CompressedSublattices::alias_ids() const {
-    auto result = ArrayXi(data.size());
+    auto result = ArrayXi(static_cast<idx_t>(data.size()));
     std::transform(data.begin(), data.end(), result.data(),
                    [](Element const& v) { return v.alias_id; });
     return result;
 }
 
 ArrayXi CompressedSublattices::site_counts() const {
-    auto result = ArrayXi(data.size());
+    auto result = ArrayXi(static_cast<idx_t>(data.size()));
     std::transform(data.begin(), data.end(), result.data(),
                    [](Element const& v) { return v.num_sites; });
     return result;
 }
 
 ArrayXi CompressedSublattices::orbital_counts() const {
-    auto result = ArrayXi(data.size());
+    auto result = ArrayXi(static_cast<idx_t>(data.size()));
     std::transform(data.begin(), data.end(), result.data(),
                    [](Element const& v) { return v.num_orbitals; });
     return result;

@@ -45,10 +45,6 @@ void wrap_modifiers(py::module& m) {
         .def_property_readonly("ids", [](SubIdRef const& s) { return arrayref(s.ids); })
         .def_readonly("name_map", &SubIdRef::name_map);
 
-    py::class_<HopIdRef>(m, "HopIdRef")
-        .def_property_readonly("ids", [](HopIdRef const& s) { return arrayref(s.ids); })
-        .def_readonly("name_map", &HopIdRef::name_map);
-
     py::class_<SiteStateModifier>(m, "SiteStateModifier")
         .def("__init__", [](SiteStateModifier& self, py::object apply, int min_neighbors) {
             new (&self) SiteStateModifier(
@@ -87,9 +83,10 @@ void wrap_modifiers(py::module& m) {
         .def("__init__", [](OnsiteModifier& self, py::object apply,
                             bool is_complex, bool is_double) {
             new (&self) OnsiteModifier(
-                [apply](ComplexArrayRef energy, CartesianArrayConstRef p, SubIdRef sub) {
-                    auto result = apply(energy, arrayref(p.x()), arrayref(p.y()),
-                                        arrayref(p.z()), sub);
+                [apply](ComplexArrayRef energy, CartesianArrayConstRef p, string_view sublattice) {
+                    auto result = apply(
+                        energy, arrayref(p.x()), arrayref(p.y()), arrayref(p.z()), sublattice
+                    );
                     num::match<ArrayX>(energy, ExtractModifierResult{result});
                 },
                 is_complex, is_double
@@ -103,10 +100,10 @@ void wrap_modifiers(py::module& m) {
                             bool is_complex, bool is_double) {
             new (&self) HoppingModifier(
                 [apply](ComplexArrayRef energy, CartesianArrayConstRef p1,
-                        CartesianArrayConstRef p2, HopIdRef hopping) {
+                        CartesianArrayConstRef p2, string_view hopping_family) {
                     auto result = apply(
                         energy, arrayref(p1.x()), arrayref(p1.y()), arrayref(p1.z()),
-                        arrayref(p2.x()), arrayref(p2.y()), arrayref(p2.z()), hopping
+                        arrayref(p2.x()), arrayref(p2.y()), arrayref(p2.z()), hopping_family
                     );
                     num::match<ArrayX>(energy, ExtractModifierResult{result});
                 },

@@ -16,13 +16,10 @@ def mass_term(delta):
     delta : float
         Onsite energy +delta is added to sublattice 'A' and -delta to 'B'.
     """
-    from .lattice import monolayer
-    lattice = monolayer()
-
     @pb.onsite_energy_modifier
     def onsite(energy, sub_id):
-        energy[sub_id == lattice['A']] += delta
-        energy[sub_id == lattice['B']] -= delta
+        energy[sub_id == "A"] += delta
+        energy[sub_id == "B"] -= delta
         return energy
 
     return onsite

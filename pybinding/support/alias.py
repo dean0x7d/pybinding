@@ -90,3 +90,51 @@ class AliasCSRMatrix(csr_matrix):
             return AliasCSRMatrix(result, mapping=self.mapping)
         else:
             return result
+
+
+class AliasIndex:
+    """An all-or-nothing array index based on equality with a specific value
+
+    The `==` and `!=` operators are overloaded to return a slice of the entire
+    array or an empty slice. See the examples below. This is useful for modifiers
+    where the each call gets arrays with the same sub_id/hop_id for all elements.
+    Instead of passing an `AliasArray` with `.size` identical element, `AliasIndex`
+    does the same all-or-nothing indexing.
+
+    Examples
+    --------
+    >>> l = [1, 2, 3]
+    >>> ai = AliasIndex("A")
+    >>> l[ai == "A"]
+    [1, 2, 3]
+    >>> l[ai == "B"]
+    []
+    >>> l[ai != "A"]
+    []
+    >>> l[ai != "B"]
+    [1, 2, 3]
+    >>> str(ai)
+    'A'
+    >>> hash(ai) == hash("A")
+    True
+    """
+    def __init__(self, name):
+        self.name = name
+
+    def __str__(self):
+        return self.name
+
+    def __eq__(self, other):
+        if self.name == other:
+            return slice(None)
+        else:
+            return slice(0, 0)
+
+    def __ne__(self, other):
+        if self.name != other:
+            return slice(None)
+        else:
+            return slice(0, 0)
+
+    def __hash__(self):
+        return hash(self.name)
