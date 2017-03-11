@@ -3,62 +3,50 @@
 using namespace cpb;
 
 void wrap_lattice(py::module& m) {
-    py::class_<Lattice::Sublattice>(m, "Sublattice")
-        .def_readonly("position", &Lattice::Sublattice::position,
-                      "Relative to global lattice offset")
-        .def_readonly("energy", &Lattice::Sublattice::energy, "Onsite energy matrix")
-        .def_property_readonly("unique_id",
-                               [](Lattice::Sublattice const& s) { return s.unique_id.value(); },
-                               "Different for each sublattice")
-        .def_property_readonly("alias_id",
-                               [](Lattice::Sublattice const& s) { return s.alias_id.value(); },
-                               "For supercells only: indicates sublattices which may be aliased")
-        .def("__getstate__", [](Lattice::Sublattice const& s) {
+    using Sub = Lattice::Sublattice;
+    py::class_<Sub>(m, "Sublattice")
+        .def_readonly("position", &Sub::position, "Relative to global lattice offset")
+        .def_readonly("energy", &Sub::energy, "Onsite energy matrix")
+        .def_readonly("unique_id", &Sub::unique_id, "Different for each sublattice")
+        .def_readonly("alias_id", &Sub::alias_id, "May be shared by multiple (e.g. supercells)")
+        .def("__getstate__", [](Sub const& s) {
             return py::dict("position"_a=s.position, "energy"_a=s.energy,
-                            "unique_id"_a= s.unique_id.value(), "alias_id"_a= s.alias_id.value());
+                            "unique_id"_a=s.unique_id, "alias_id"_a=s.alias_id);
         })
-        .def("__setstate__", [](Lattice::Sublattice& s, py::dict d) {
-            new (&s) Lattice::Sublattice();
-            s = {d["position"].cast<decltype(s.position)>(),
-                 d["energy"].cast<decltype(s.energy)>(),
-                 SubID(d["unique_id"].cast<storage_idx_t>()),
-                 SubAliasID(d["alias_id"].cast<storage_idx_t>())};
+        .def("__setstate__", [](Sub& s, py::dict d) {
+            new (&s) Sub{d["position"].cast<decltype(s.position)>(),
+                         d["energy"].cast<decltype(s.energy)>(),
+                         d["unique_id"].cast<decltype(s.unique_id)>(),
+                         d["alias_id"].cast<decltype(s.alias_id)>()};
         });
 
-    py::class_<Lattice::HoppingTerm>(m, "HoppingTerm")
-        .def_readonly("relative_index", &Lattice::HoppingTerm::relative_index,
+    using HT = Lattice::HoppingTerm;
+    py::class_<HT>(m, "HoppingTerm")
+        .def_readonly("relative_index", &HT::relative_index,
                       "Relative index between two unit cells - note that it may be [0, 0, 0]")
-        .def_property_readonly("from", [](Lattice::HoppingTerm const& h) { return h.from.value();},
-                               "Sublattice ID of the source")
-        .def_property_readonly("to", [](Lattice::HoppingTerm const& h) { return h.to.value();},
-                               "Sublattice ID of the destination")
-        .def("__getstate__", [](Lattice::HoppingTerm const& h) {
-            return py::dict("relative_index"_a=h.relative_index, "from"_a= h.from.value(),
-                            "to"_a= h.to.value());
+        .def_readonly("from", &HT::from, "Sublattice ID of the source")
+        .def_readonly("to", &HT::to, "Sublattice ID of the destination")
+        .def("__getstate__", [](HT const& h) {
+            return py::dict("relative_index"_a=h.relative_index, "from"_a=h.from, "to"_a=h.to);
         })
-        .def("__setstate__", [](Lattice::HoppingTerm& s, py::dict d) {
-            new (&s) Lattice::HoppingTerm();
-            s = {d["relative_index"].cast<decltype(s.relative_index)>(),
-                 SubID(d["from"].cast<storage_idx_t>()),
-                 SubID(d["to"].cast<storage_idx_t>())};
+        .def("__setstate__", [](HT& h, py::dict d) {
+            new (&h) HT{d["relative_index"].cast<decltype(h.relative_index)>(),
+                        d["from"].cast<decltype(h.from)>(),
+                        d["to"].cast<decltype(h.to)>()};
         });
 
-    py::class_<Lattice::HoppingFamily>(m, "HoppingFamily")
-        .def_readonly("energy", &Lattice::HoppingFamily::energy, "Hopping energy matrix")
-        .def_property_readonly("family_id", [](Lattice::HoppingFamily const& f) {
-            return f.family_id.value();
+    using HF = Lattice::HoppingFamily;
+    py::class_<HF>(m, "HoppingFamily")
+        .def_readonly("energy", &HF::energy, "Hopping matrix shared by all terms in this family")
+        .def_readonly("family_id", &HF::family_id, "Different for each family")
+        .def_readonly("terms", &HF::terms, "List of :class:`~_pybinding.HoppingTerm`")
+        .def("__getstate__", [](HF const& f) {
+            return py::dict("energy"_a=f.energy, "family_id"_a=f.family_id, "terms"_a=f.terms);
         })
-        .def_readonly("terms", &Lattice::HoppingFamily::terms,
-                      "List of :class:`~_pybinding.HoppingTerm`")
-        .def("__getstate__", [](Lattice::HoppingFamily const& f) {
-            return py::dict("energy"_a=f.energy, "family_id"_a= f.family_id.value(),
-                            "terms"_a=f.terms);
-        })
-        .def("__setstate__", [](Lattice::HoppingFamily& s, py::dict d) {
-            new (&s) Lattice::HoppingFamily();
-            s = {d["energy"].cast<decltype(s.energy)>(),
-                 HopID(d["family_id"].cast<storage_idx_t>()),
-                 d["terms"].cast<decltype(s.terms)>()};
+        .def("__setstate__", [](HF& f, py::dict d) {
+            new (&f) HF{d["energy"].cast<decltype(f.energy)>(),
+                        d["family_id"].cast<decltype(f.family_id)>(),
+                        d["terms"].cast<decltype(f.terms)>()};
         });
 
     py::class_<Lattice>(m, "Lattice")
@@ -83,6 +71,7 @@ void wrap_lattice(py::module& m) {
              &Lattice::add_hopping | resolve<Index3D, string_view, string_view, MatrixXcd const&>())
         .def_property_readonly("ndim", &Lattice::ndim)
         .def_property_readonly("nsub", &Lattice::nsub)
+        .def_property_readonly("nhop", &Lattice::nhop)
         .def_property_readonly("vectors", &Lattice::get_vectors)
         .def_property_readonly("sublattices", &Lattice::get_sublattices)
         .def_property_readonly("hoppings", &Lattice::get_hoppings)

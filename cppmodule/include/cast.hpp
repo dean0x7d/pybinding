@@ -2,6 +2,7 @@
 #include "numeric/arrayref.hpp"
 #include "numeric/sparseref.hpp"
 #include "support/variant.hpp"
+#include "detail/opaque_alias.hpp"
 
 namespace pybind11 { namespace detail {
 
@@ -159,5 +160,27 @@ struct variant_caster<V<Ts...>> {
 
 template<class... Args> struct type_caster<cpb::var::variant<Args...>>
     : variant_caster<cpb::var::variant<Args...>> {};
+
+
+template<class Tag, class T>
+struct type_caster<cpb::detail::OpaqueIntegerAlias<Tag, T>> {
+    using Type = cpb::detail::OpaqueIntegerAlias<Tag, T>;
+    using Caster = type_caster<T>;
+
+    bool load(handle src, bool convert) {
+        auto caster = Caster();
+        if (caster.load(src, convert)) {
+            value = Type(caster.operator T&());
+            return true;
+        }
+        return false;
+    }
+
+    static handle cast(Type const& src, return_value_policy policy, handle parent) {
+        return Caster::cast(src.value(), policy, parent);
+    }
+
+    PYBIND11_TYPE_CASTER(Type, _("int"));
+};
 
 }} // namespace pybind11::detail

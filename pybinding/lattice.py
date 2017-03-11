@@ -48,21 +48,26 @@ class Lattice:
 
     @property
     def nsub(self) -> int:
-        """The dimensionality of the lattice: number of primitive vectors"""
+        """Number of sublattices"""
         return self.impl.nsub
 
     @property
-    def vectors(self):
+    def nhop(self) -> int:
+        """Number of hopping families"""
+        return self.impl.nhop
+
+    @property
+    def vectors(self) -> list:
         """Primitive lattice vectors"""
         return self.impl.vectors
 
     @property
-    def sublattices(self):
+    def sublattices(self) -> dict:
         """Dict of names and :class:`~_pybinding.Sublattice`"""
         return self.impl.sublattices
 
     @property
-    def hoppings(self):
+    def hoppings(self) -> dict:
         """Dict of names and :class:`~_pybinding.HoppingFamily`"""
         return self.impl.hoppings
 
@@ -88,26 +93,6 @@ class Lattice:
     @min_neighbors.setter
     def min_neighbors(self, value):
         self.impl.min_neighbors = value
-
-    @property
-    def sub_name_to_id(self) -> dict:
-        """Map from sublattice name to numeric ID"""
-        return self.impl.sub_name_map
-
-    @property
-    def sub_id_to_name(self) -> dict:
-        """Map from sublattice ID to string name"""
-        return {v: k for k, v in self.sub_name_to_id.items()}
-
-    @property
-    def hop_name_to_id(self) -> dict:
-        """Map from hopping family name to numeric ID"""
-        return self.impl.hop_name_map
-
-    @property
-    def hop_id_to_name(self) -> dict:
-        """Map from hopping family ID to string name"""
-        return {v: k for k, v in self.hop_name_to_id.items()}
 
     def __getitem__(self, name):
         """Deprecated: Use the sublattice name directly instead"""
@@ -454,9 +439,8 @@ class Lattice:
             self.plot_vectors(sub_center if vector_position == 'center' else vector_position)
 
         # annotate sublattice names
-        sub_names = {sub_id: name for name, sub_id in self.impl.sub_name_map.items()}
-        for sub in self.sublattices.values():
-            pltutils.annotate_box(sub_names[sub.alias_id], xy=sub.position[:2],
+        for name, sub in self.sublattices.items():
+            pltutils.annotate_box(name, xy=sub.position[:2],
                                   bbox=dict(boxstyle="circle,pad=0.3", alpha=0.2, lw=0))
 
         # collect relative indices where annotations should be drawn

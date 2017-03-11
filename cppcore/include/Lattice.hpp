@@ -211,4 +211,4 @@ private:
     Sites sites;
 };
 
-} // end namespace cpb
+} // namespace cpb

@@ -588,7 +588,7 @@ def plot_hopping_values(system):
     pos = system.xyz[:, :2]
 
     def get_energy(hopping_id):
-        inv_name_map = {v: k for k, v in system.lattice.impl.hop_name_map.items()}
+        inv_name_map = {hop.family_id: name for name, hop in system.lattice.hoppings.items()}
         return inv_name_map[hopping_id]
 
     coo = system.hoppings.tocoo()
