@@ -20,6 +20,7 @@ add_library(cppcore
     include/detail/algorithm.hpp
     include/detail/config.hpp
     include/detail/macros.hpp
+    include/detail/opaque_alias.hpp
     include/detail/slice.hpp
     include/detail/strategy.hpp
     include/detail/sugar.hpp

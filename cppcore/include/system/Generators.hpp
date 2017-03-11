@@ -7,6 +7,14 @@
 namespace cpb {
 
 /**
+ Helper class for passing sublattice information
+ */
+struct SubIdRef {
+    ArrayX<storage_idx_t> const& ids;
+    std::unordered_map<std::string, storage_idx_t> name_map;
+};
+
+/**
  Introduces a new hopping family (with new hop_id) via a list of index pairs
 
  This can be used to create new hoppings independent of the main Lattice definition.

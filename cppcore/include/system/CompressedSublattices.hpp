@@ -15,7 +15,7 @@ namespace cpb {
 class CompressedSublattices {
 public:
     struct Element {
-        sub_id alias_id; ///< the alias ID of each sublattice (unique among elements)
+        SubAliasID alias_id; ///< the alias ID of each sublattice (unique among elements)
         storage_idx_t num_sites; ///< number of sublattice sites in the final system
         storage_idx_t num_orbitals; ///< number of orbitals on this sublattice
     };
@@ -31,7 +31,7 @@ public:
         It(std::vector<Element>::const_iterator it) : it(it) {}
 
         /// Directly correspond to fields in `Element`
-        sub_id alias_id() const { return it->alias_id; }
+        SubAliasID alias_id() const { return it->alias_id; }
         idx_t num_sites() const { return it->num_sites; }
         idx_t num_orbitals() const { return it->num_orbitals; }
 
@@ -70,7 +70,7 @@ public:
                           ArrayXi const& orbital_counts);
 
     /// Start a new sublattice block or increment the site count for the existing block
-    void add(sub_id id, idx_t norb);
+    void add(SubAliasID id, idx_t norb);
     /// Verify that the stored data is correct: `sum(site_counts) == num_sites`
     void verify(idx_t num_sites) const;
 
@@ -80,7 +80,7 @@ public:
     /// Total size if decompressed (sum of the number of sites in all sublattices)
     idx_t decompressed_size() const;
     /// Return the full uncompressed array of IDs
-    ArrayX<sub_id> decompress() const;
+    ArrayX<storage_idx_t> decompress() const;
 
     It begin() const { return data.begin(); }
     It end() const { return data.end(); }

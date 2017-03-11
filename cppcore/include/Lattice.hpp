@@ -1,5 +1,7 @@
 #pragma once
 #include "numeric/dense.hpp"
+#include "detail/opaque_alias.hpp"
+
 #include <vector>
 #include <string>
 #include <unordered_map>
@@ -10,16 +12,9 @@ namespace cpb {
 using string_view = std::string const&;
 
 /// Sublattice and hopping ID data types
-using sub_id = std::int8_t;
-using hop_id = std::int8_t;
-
-/**
- Helper class for passing sublattice information to modifier functions
- */
-struct SubIdRef {
-    ArrayX<sub_id> const& ids;
-    std::unordered_map<std::string, sub_id> name_map;
-};
+using SubID = detail::OpaqueIntegerAlias<class SubIDTag>;
+using SubAliasID = detail::OpaqueIntegerAlias<class SubAliasIDTag>;
+using HopID = detail::OpaqueIntegerAlias<class HopIDTag>;
 
 class OptimizedUnitCell;
 
@@ -31,14 +26,14 @@ public:
     struct Sublattice {
         Cartesian position; ///< relative to lattice origin
         MatrixXcd energy; ///< onsite energy term
-        sub_id unique_id; ///< different for each entry
-        sub_id alias_id; ///< may be shared by multiple entries, e.g. for creating supercells
+        SubID unique_id; ///< different for each entry
+        SubAliasID alias_id; ///< may be shared by multiple entries, e.g. for creating supercells
     };
 
     struct HoppingTerm {
         Index3D relative_index; ///< relative index between two unit cells - may be (0, 0, 0)
-        sub_id from; ///< source sublattice unique ID
-        sub_id to; ///< destination sublattice unique ID
+        SubID from; ///< source sublattice unique ID
+        SubID to; ///< destination sublattice unique ID
 
         friend bool operator==(HoppingTerm const& a, HoppingTerm const& b) {
             auto const left = std::tie(a.relative_index, a.from, a.to);
@@ -52,14 +47,14 @@ public:
 
     struct HoppingFamily {
         MatrixXcd energy; ///< base hopping energy which is shared by all terms in this family
-        hop_id family_id; ///< different for each family
+        HopID family_id; ///< different for each family
         std::vector<HoppingTerm> terms; ///< site connections
     };
 
     using Vectors = std::vector<Cartesian>;
     using Sublattices = std::unordered_map<std::string, Sublattice>;
     using Hoppings = std::unordered_map<std::string, HoppingFamily>;
-    using NameMap = std::unordered_map<std::string, std::int8_t>;
+    using NameMap = std::unordered_map<std::string, storage_idx_t>;
 
 public:
     Lattice(Cartesian a1, Cartesian a2 = {0, 0, 0}, Cartesian a3 = {0, 0, 0});
@@ -123,19 +118,19 @@ public: // properties
 
     /// Access sublattice information by name or ID
     Sublattice const& sublattice(string_view name) const;
-    Sublattice const& sublattice(sub_id id) const;
+    Sublattice const& sublattice(SubID id) const;
     Sublattice const& operator[](string_view name) const { return sublattice(name); }
-    Sublattice const& operator[](sub_id id) const { return sublattice(id); }
+    Sublattice const& operator[](SubID id) const { return sublattice(id); }
     /// Assess hopping family information by name or ID
     HoppingFamily const& hopping_family(string_view name) const;
-    HoppingFamily const& hopping_family(hop_id id) const;
+    HoppingFamily const& hopping_family(HopID id) const;
     HoppingFamily const& operator()(string_view name) const { return hopping_family(name); }
-    HoppingFamily const& operator()(hop_id id) const { return hopping_family(id); }
+    HoppingFamily const& operator()(HopID id) const { return hopping_family(id); }
 
     /// Return name for this ID
-    string_view sublattice_name(sub_id id) const;
+    string_view sublattice_name(SubID id) const;
     /// Return name for this ID
-    string_view hopping_family_name(hop_id id) const;
+    string_view hopping_family_name(HopID id) const;
 
     /// Get the maximum possible number of hoppings from any site of this lattice
     int max_hoppings() const;
@@ -168,7 +163,7 @@ public: // utilities
     Vector3f translate_coordinates(Cartesian position) const;
 
 private:
-    sub_id register_sublattice(string_view name);
+    SubID make_unique_sublattice_id(string_view name);
 
 private:
     Vectors vectors; ///< primitive vectors that define the lattice
@@ -190,7 +185,7 @@ public:
     struct Hopping {
         Index3D relative_index;
         storage_idx_t to_sub_idx; ///< destination sublattice index in `sites` (not `unique_id`)
-        hop_id family_id;
+        HopID family_id;
         bool is_conjugate; ///< true if this is an automatically added complex conjugate term
     };
 
@@ -198,8 +193,8 @@ public:
     struct Site {
         Cartesian position;
         storage_idx_t norb; ///< number of orbitals on this site
-        sub_id unique_id;
-        sub_id alias_id;
+        SubID unique_id;
+        SubAliasID alias_id;
         std::vector<Hopping> hoppings;
     };
 

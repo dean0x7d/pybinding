@@ -77,8 +77,8 @@ public:
 
     ConstSpatialSlice operator[](SliceIndex3D const& index) const;
     NonConstSpatialSlice operator[](SliceIndex3D const& index);
-    ConstSublatticeSlice operator[](sub_id id) const;
-    NonConstSublatticeSlice operator[](sub_id id);
+    ConstSublatticeSlice operator[](SubID id) const;
+    NonConstSublatticeSlice operator[](SubID id);
 
     /// Total number of sites: product of all sizes (3D space and sublattice)
     idx_t size() const { return spatial_size.prod() * sub_size; }
@@ -132,7 +132,7 @@ public:
     idx_t get_sub_idx() const { return sub_idx; }
     idx_t get_flat_idx() const { return flat_idx; }
 
-    sub_id get_alias_id() const { return foundation->unit_cell[sub_idx].alias_id; }
+    SubAliasID get_alias_id() const { return foundation->unit_cell[sub_idx].alias_id; }
     storage_idx_t get_norb() const { return foundation->unit_cell[sub_idx].norb; }
 
     Cartesian get_position() const { return foundation->positions[flat_idx]; }
@@ -308,7 +308,7 @@ class Foundation::SublatticeSlice {
     using Iterator = SpatialSliceIterator<is_const>;
 
 public:
-    SublatticeSlice(Foundation* foundation, sub_id unique_id) : foundation(foundation) {
+    SublatticeSlice(Foundation* foundation, SubID unique_id) : foundation(foundation) {
         using CellSite = OptimizedUnitCell::Site;
         auto const& unit_cell = foundation->get_optimized_unit_cell();
         auto const it = std::find_if(unit_cell.begin(), unit_cell.end(),
@@ -376,11 +376,11 @@ inline Foundation::NonConstSpatialSlice Foundation::operator[](SliceIndex3D cons
     return {this, index};
 }
 
-inline Foundation::ConstSublatticeSlice Foundation::operator[](sub_id unique_id) const {
+inline Foundation::ConstSublatticeSlice Foundation::operator[](SubID unique_id) const {
     return {const_cast<Foundation*>(this), unique_id};
 }
 
-inline Foundation::NonConstSublatticeSlice Foundation::operator[](sub_id unique_id) {
+inline Foundation::NonConstSublatticeSlice Foundation::operator[](SubID unique_id) {
     return {this, unique_id};
 }
 

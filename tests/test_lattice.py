@@ -61,11 +61,6 @@ def test_add_sublattice(mock_lattice):
         mock_lattice.add_one_sublattice('a', (0, 0))
     assert "Sublattice 'a' already exists" in str(excinfo.value)
 
-    with pytest.raises(RuntimeError) as excinfo:
-        for i in range(127):
-            mock_lattice.add_one_sublattice(str(i), (0, 0))
-    assert "Exceeded maximum number of unique sublattices" in str(excinfo.value)
-
     pytest.deprecated_call(mock_lattice.__getitem__, "a")
 
 
@@ -154,11 +149,6 @@ def test_add_hopping(mock_lattice):
     with pytest.raises(IndexError) as excinfo:
         mock_lattice.add_one_hopping((0, 1), 'a', 'a', 'tt')
     assert "There is no hopping named 'tt'" in str(excinfo.value)
-
-    with pytest.raises(RuntimeError) as excinfo:
-        for i in range(1, 128):
-            mock_lattice.add_one_hopping((0, i), 'a', 'b', i)
-    assert "Exceeded maximum number of unique hoppings energies" in str(excinfo.value)
 
     pytest.deprecated_call(mock_lattice.__call__, "t_nn")
 

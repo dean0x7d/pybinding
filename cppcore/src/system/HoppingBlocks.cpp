@@ -15,9 +15,9 @@ void HoppingBlocks::reserve(ArrayXi const& counts) {
     }
 }
 
-void HoppingBlocks::append(idx_t family_id, ArrayXi&& rows, ArrayXi&& cols) {
+void HoppingBlocks::append(HopID family_id, ArrayXi&& rows, ArrayXi&& cols) {
     assert(rows.size() == cols.size());
-    auto& block = blocks[family_id];
+    auto& block = blocks[family_id.as<size_t>()];
     block.resize(rows.size());
 
     for (auto i = 0; i < rows.size(); ++i) {
@@ -37,7 +37,7 @@ SparseMatrixX<storage_idx_t> HoppingBlocks::to_csr() const {
     csr.reserve(nnz());
     for (auto const& block : *this) {
         for (auto const& coo : block.coordinates()) {
-            csr.insert(coo.row, coo.col) = block.family_id();
+            csr.insert(coo.row, coo.col) = block.family_id().value();
         }
     }
     csr.makeCompressed();

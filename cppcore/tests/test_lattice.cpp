@@ -26,12 +26,6 @@ TEST_CASE("Lattice") {
                             "There is no sublattice named 'bad_name'");
         REQUIRE_THROWS_WITH(lattice.add_alias("B4", "B4", {2, 0, 0}),
                             "There is no sublattice named 'B4'");
-
-        while (lattice.nsub() != std::numeric_limits<sub_id>::max() + 1) {
-            lattice.add_sublattice(std::to_string(lattice.nsub()), {0, 0, 0});
-        }
-        REQUIRE_THROWS_WITH(lattice.add_sublattice("overflow", {0, 0, 0}),
-                            "Exceeded maximum number of unique sublattices: 127");
     }
 
     SECTION("Add multi-orbital sublattice") {
@@ -80,13 +74,6 @@ TEST_CASE("Lattice") {
 
         lattice.register_hopping_energy("t2", std::complex<double>{0, 1.0});
         REQUIRE(lattice.has_complex_hoppings());
-
-        while (lattice.get_hoppings().size() != std::numeric_limits<hop_id>::max() + 1) {
-            auto e = static_cast<double>(lattice.get_hoppings().size());
-            lattice.register_hopping_energy(std::to_string(e), e);
-        }
-        REQUIRE_THROWS_WITH(lattice.register_hopping_energy("overflow", 1.0),
-                            "Exceeded maximum number of unique hoppings energies: 127");
     }
 
     SECTION("Add scalar hoppings") {
@@ -193,7 +180,7 @@ TEST_CASE("Optimized unit cell") {
         auto const unit_cell = lattice.optimized_unit_cell();
         auto v = std::vector<storage_idx_t>(lattice.nsub());
         std::transform(unit_cell.begin(), unit_cell.end(), v.begin(),
-                       [](OptimizedUnitCell::Site const& site) { return site.alias_id; });
+                       [](OptimizedUnitCell::Site const& site) { return site.alias_id.value(); });
         return v;
     };
 

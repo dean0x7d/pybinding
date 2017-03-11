@@ -1,4 +1,6 @@
 #pragma once
+#include "Lattice.hpp"
+
 #include "numeric/dense.hpp"
 #include "numeric/sparse.hpp"
 
@@ -60,7 +62,7 @@ public:
 
         Iterator(Blocks::const_iterator it) : it(it) {}
 
-        storage_idx_t family_id() const { return id; }
+        HopID family_id() const { return HopID(id); }
         Block const& coordinates() const { return *it; }
         idx_t size() const { return static_cast<idx_t>(it->size()); }
 
@@ -94,12 +96,12 @@ public:
     void reserve(ArrayXi const& counts);
 
     /// Add a single coordinate pair to the given family block
-    void add(idx_t family_id, idx_t row, idx_t col) {
-        blocks[family_id].push_back({row, col});
+    void add(HopID family_id, idx_t row, idx_t col) {
+        blocks[family_id.as<size_t>()].push_back({row, col});
     }
 
     /// Append a range of coordinates to the given family block
-    void append(idx_t family_id, ArrayXi&& rows, ArrayXi&& cols);
+    void append(HopID family_id, ArrayXi&& rows, ArrayXi&& cols);
 
     /// Return the matrix in the CSR sparse matrix format
     SparseMatrixX<storage_idx_t> to_csr() const;

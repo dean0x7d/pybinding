@@ -53,15 +53,16 @@ void Lattice::add_sublattice(string_view name, Cartesian position,
         throw std::logic_error("The onsite hopping matrix must be upper triangular or Hermitian");
     }
 
-    auto const unique_id = register_sublattice(name);
     auto const hermitian_view = onsite_energy.selfadjointView<Eigen::Upper>();
-    sublattices[name] = {position, hermitian_view, unique_id, unique_id};
+    auto const unique_id = make_unique_sublattice_id(name);
+    auto const alias_id = SubAliasID(unique_id);
+    sublattices[name] = {position, hermitian_view, unique_id, alias_id};
 }
 
 void Lattice::add_alias(string_view alias_name, string_view original_name, Cartesian position) {
     auto const& original = sublattice(original_name);
-    auto const alias_id = original.unique_id;
-    auto const unique_id = register_sublattice(alias_name);
+    auto const alias_id = SubAliasID(original.unique_id);
+    auto const unique_id = make_unique_sublattice_id(alias_name);
     sublattices[alias_name] = {position, original.energy, unique_id, alias_id};
 }
 
@@ -72,17 +73,11 @@ void Lattice::register_hopping_energy(std::string const& name, std::complex<doub
 void Lattice::register_hopping_energy(std::string const& name, MatrixXcd const& energy) {
     if (name.empty()) { throw std::logic_error("Hopping name can't be blank"); }
 
-    constexpr auto max_size = static_cast<size_t>(std::numeric_limits<hop_id>::max());
-    if (hoppings.size() > max_size) {
-        throw std::logic_error("Exceeded maximum number of unique hoppings energies: "
-                               + std::to_string(max_size));
-    }
-
     if (energy.rows() == 0 || energy.cols() == 0) {
         throw std::logic_error("Hoppings can't be zero-dimensional");
     }
 
-    auto const unique_id = static_cast<hop_id>(hoppings.size());
+    auto const unique_id = HopID(hoppings.size());
     auto const is_unique_name = hoppings.insert({name, {energy, unique_id, {}}}).second;
     if (!is_unique_name) { throw std::logic_error("Hopping '" + name + "' already exists"); }
 }
@@ -161,12 +156,12 @@ Lattice::Sublattice const& Lattice::sublattice(std::string const& name) const {
     return it->second;
 }
 
-Lattice::Sublattice const& Lattice::sublattice(sub_id id) const {
+Lattice::Sublattice const& Lattice::sublattice(SubID id) const {
     using Pair = Sublattices::value_type;
     auto const it = std::find_if(sublattices.begin(), sublattices.end(),
                                  [&](Pair const& p) { return p.second.unique_id == id; });
     if (it == sublattices.end()) {
-        throw std::out_of_range("There is no sublattice with ID = {}"_format(id));
+        throw std::out_of_range("There is no sublattice with ID = {}"_format(id.value()));
     }
     return it->second;
 }
@@ -179,32 +174,32 @@ Lattice::HoppingFamily const& Lattice::hopping_family(std::string const& name) c
     return it->second;
 }
 
-Lattice::HoppingFamily const& Lattice::hopping_family(hop_id id) const {
+Lattice::HoppingFamily const& Lattice::hopping_family(HopID id) const {
     using Pair = Hoppings::value_type;
     auto const it = std::find_if(hoppings.begin(), hoppings.end(),
                                  [&](Pair const& p) { return p.second.family_id == id; });
     if (it == hoppings.end()) {
-        throw std::out_of_range("There is no hopping with ID = {}"_format(id));
+        throw std::out_of_range("There is no hopping with ID = {}"_format(id.value()));
     }
     return it->second;
 }
 
-string_view Lattice::sublattice_name(sub_id id) const {
+string_view Lattice::sublattice_name(SubID id) const {
     using Pair = Sublattices::value_type;
     auto const it = std::find_if(sublattices.begin(), sublattices.end(),
                                  [&](Pair const& p) { return p.second.unique_id == id; });
     if (it == sublattices.end()) {
-        throw std::out_of_range("There is no sublattice with ID = {}"_format(id));
+        throw std::out_of_range("There is no sublattice with ID = {}"_format(id.value()));
     }
     return it->first;
 }
 
-string_view Lattice::hopping_family_name(hop_id id) const {
+string_view Lattice::hopping_family_name(HopID id) const {
     using Pair = Hoppings::value_type;
     auto const it = std::find_if(hoppings.begin(), hoppings.end(),
                                  [&](Pair const& p) { return p.second.family_id == id; });
     if (it == hoppings.end()) {
-        throw std::out_of_range("There is no hopping with ID = {}"_format(id));
+        throw std::out_of_range("There is no hopping with ID = {}"_format(id.value()));
     }
     return it->first;
 }
@@ -296,7 +291,7 @@ OptimizedUnitCell Lattice::optimized_unit_cell() const {
 Lattice::NameMap Lattice::sub_name_map() const {
     auto map = NameMap();
     for (auto const& p : sublattices) {
-        map[p.first] = p.second.unique_id;
+        map[p.first] = p.second.unique_id.value();
     }
     return map;
 }
@@ -304,25 +299,19 @@ Lattice::NameMap Lattice::sub_name_map() const {
 Lattice::NameMap Lattice::hop_name_map() const {
     auto map = NameMap();
     for (auto const& p : hoppings) {
-        map[p.first] = p.second.family_id;
+        map[p.first] = p.second.family_id.value();
     }
     return map;
 }
 
-sub_id Lattice::register_sublattice(string_view name) {
+SubID Lattice::make_unique_sublattice_id(string_view name) {
     if (name.empty()) { throw std::logic_error("Sublattice name can't be blank"); }
-
-    constexpr auto max_size = static_cast<size_t>(std::numeric_limits<sub_id>::max());
-    if (sublattices.size() > max_size) {
-        throw std::logic_error("Exceeded maximum number of unique sublattices: "
-                               + std::to_string(max_size));
-    }
 
     if (sublattices.find(name) != sublattices.end()) {
         throw std::logic_error("Sublattice '" + name + "' already exists");
     }
 
-    return static_cast<sub_id>(sublattices.size());
+    return SubID(sublattices.size());
 }
 
 OptimizedUnitCell::OptimizedUnitCell(Lattice const& lattice) : sites(lattice.nsub()) {
@@ -347,7 +336,7 @@ OptimizedUnitCell::OptimizedUnitCell(Lattice const& lattice) : sites(lattice.nsu
     });
 
     // Find the index in `sites` of a site with the given unique ID
-    auto find_index = [&](sub_id unique_id) {
+    auto find_index = [&](SubID unique_id) {
         auto const it = std::find_if(sites.begin(), sites.end(), [&](Site const& s) {
             return s.unique_id == unique_id;
         });

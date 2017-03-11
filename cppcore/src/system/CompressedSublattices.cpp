@@ -6,13 +6,13 @@ CompressedSublattices::CompressedSublattices(ArrayXi const& alias_ids, ArrayXi c
                                              ArrayXi const& orbital_counts)
     : data(alias_ids.size()) {
     for (auto i = size_t{0}; i < data.size(); ++i) {
-        data[i].alias_id = static_cast<sub_id>(alias_ids[i]);
+        data[i].alias_id = SubAliasID(alias_ids[i]);
         data[i].num_sites = site_counts[i];
         data[i].num_orbitals = orbital_counts[i];
     }
 }
 
-void CompressedSublattices::add(sub_id id, idx_t norb) {
+void CompressedSublattices::add(SubAliasID id, idx_t norb) {
     if (data.empty() || data.back().alias_id != id) {
         data.push_back({id, 1, static_cast<storage_idx_t>(norb)});
     } else {
@@ -57,10 +57,11 @@ idx_t CompressedSublattices::decompressed_size() const {
     });
 }
 
-ArrayX<sub_id> CompressedSublattices::decompress() const {
-    auto sublattices = ArrayX<sub_id>(decompressed_size());
+ArrayX<storage_idx_t> CompressedSublattices::decompress() const {
+    auto sublattices = ArrayX<storage_idx_t>(decompressed_size());
     for (auto const& sub : *this) {
-        sublattices.segment(sub.sys_start(), sub.num_sites()).setConstant(sub.alias_id());
+        sublattices.segment(sub.sys_start(), sub.num_sites())
+            .setConstant(sub.alias_id().value());
     }
     return sublattices;
 }
@@ -68,7 +69,7 @@ ArrayX<sub_id> CompressedSublattices::decompress() const {
 ArrayXi CompressedSublattices::alias_ids() const {
     auto result = ArrayXi(static_cast<idx_t>(data.size()));
     std::transform(data.begin(), data.end(), result.data(),
-                   [](Element const& v) { return v.alias_id; });
+                   [](Element const& v) { return v.alias_id.value(); });
     return result;
 }
 

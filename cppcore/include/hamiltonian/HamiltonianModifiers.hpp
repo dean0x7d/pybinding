@@ -116,7 +116,7 @@ void HamiltonianModifiers::apply_to_onsite(System const& system, Fn lambda) cons
 
         if (has_intrinsic_onsite) {
             // Intrinsic lattice onsite energy -- just replicate the value at each site
-            auto const energy = num::force_cast<scalar_t>(lattice[sub.alias_id()].energy);
+            auto const energy = num::force_cast<scalar_t>(lattice[SubID(sub.alias_id())].energy);
             auto const flat = Eigen::Map<ArrayX<scalar_t> const>(energy.data(), energy.size());
             onsite_energy = flat.replicate(sub.num_sites(), 1);
         }
@@ -128,7 +128,7 @@ void HamiltonianModifiers::apply_to_onsite(System const& system, Fn lambda) cons
             if (sub.num_orbitals() == 1) { onsite_ref.ndim = 1; } // squeeze dimensions
 
             auto const position_ref = system.positions.segment(sub.sys_start(), sub.num_sites());
-            auto const sub_name = lattice.sublattice_name(sub.alias_id());
+            auto const sub_name = lattice.sublattice_name(SubID(sub.alias_id()));
 
             for (auto const& modifier : onsite) {
                 modifier.apply(onsite_ref, position_ref, sub_name);
@@ -243,7 +243,7 @@ void HamiltonianModifiers::apply_to_hoppings_impl(System const& system,
     if (hopping.empty()) {
         // Fast path: modifiers don't need to be applied
         for (auto const& block : system_or_boundary.hopping_blocks) {
-            auto const& hopping_family = system.lattice(static_cast<hop_id>(block.family_id()));
+            auto const& hopping_family = system.lattice(block.family_id());
             auto const index_translator = IndexTranslator(system, hopping_family.energy);
             auto const energy = num::force_cast<scalar_t>(hopping_family.energy);
 
@@ -261,8 +261,7 @@ void HamiltonianModifiers::apply_to_hoppings_impl(System const& system,
 
     // Slow path: apply modifiers
     for (auto const& block : system_or_boundary.hopping_blocks) {
-        auto const family_id = static_cast<hop_id>(block.family_id());
-        auto const& hopping_family = system.lattice(family_id);
+        auto const& hopping_family = system.lattice(block.family_id());
         auto const index_translator = IndexTranslator(system, hopping_family.energy);
 
         auto buffer = HoppingBuffer<scalar_t>(hopping_family.energy, block.size());
@@ -275,7 +274,7 @@ void HamiltonianModifiers::apply_to_hoppings_impl(System const& system,
                 buffer.pos2[n] = detail::shifted(system.positions[coo.col], system_or_boundary);
             },
             /*filled*/ [&](idx_t size) {
-                auto const hop_name = system.lattice.hopping_family_name(family_id);
+                auto const hop_name = system.lattice.hopping_family_name(block.family_id());
 
                 for (auto const& modifier : hopping) {
                     modifier.apply(buffer.hoppings_ref(size), buffer.pos1.head(size),

@@ -63,12 +63,4 @@ namespace detail {
     void add_extra_hoppings(System& system, HoppingGenerator const& gen);
 } // namespace detail
 
-/**
- Return the number of non-zeros in each row of the sparse matrix
-
- The input matrix must be compressed and triangular in the System::hoppings format.
- The result is used to reserve space for a Hamiltonian matrix.
- */
-ArrayXi nonzeros_per_row(SparseMatrixX<hop_id> const& hoppings, bool has_onsite_energy = false);
-
 } // namespace cpb

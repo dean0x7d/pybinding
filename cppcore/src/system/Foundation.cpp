@@ -154,7 +154,7 @@ FinalizedIndices const& Foundation::get_finalized_indices() const {
         // good quick estimate for memory reservation.
         for (auto const& hop : unit_cell[n].hoppings) {
             if (!hop.is_conjugate) {
-                hopping_counts[hop.family_id] += valid_sites_for_this_sublattice;
+                hopping_counts[hop.family_id.value()] += valid_sites_for_this_sublattice;
             }
         }
     }

@@ -143,28 +143,4 @@ void add_extra_hoppings(System& system, HoppingGenerator const& gen) {
 }
 
 } // namespace detail
-
-
-ArrayXi nonzeros_per_row(SparseMatrixX<hop_id> const& hoppings,  bool has_onsite_energy) {
-    assert(hoppings.isCompressed());
-    auto const outer_size = hoppings.outerSize();
-    auto nnz = has_onsite_energy ? ArrayXi(ArrayXi::Ones(outer_size))
-                                 : ArrayXi(ArrayXi::Zero(outer_size));
-
-    auto const indptr = hoppings.outerIndexPtr();
-    for (auto i = 0; i < outer_size; ++i) {
-        nnz[i] += indptr[i + 1] - indptr[i];
-    }
-
-    // The hop_id sparse matrix is triangular, so the total number of non-zeros per row
-    // must also include an extra 1 per column index to account for the other triangle.
-    auto const indices_size = hoppings.nonZeros();
-    auto const indices = hoppings.innerIndexPtr();
-    for (auto i = 0; i < indices_size; ++i) {
-        nnz[indices[i]] += 1;
-    }
-
-    return nnz;
-}
-
 } // namespace cpb
