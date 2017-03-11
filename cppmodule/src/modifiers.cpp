@@ -33,8 +33,8 @@ struct ExtractModifierResult {
     }
 };
 
-template<class EigenType>
-void extract_modifier_result(EigenType& v, py::object const& o) {
+template<class EigenType, class T>
+void extract_modifier_result(T& v, py::object const& o) {
     ExtractModifierResult{o}(Eigen::Map<EigenType>(v.data(), v.size()));
 }
 
@@ -48,10 +48,11 @@ void wrap_modifiers(py::module& m) {
     py::class_<SiteStateModifier>(m, "SiteStateModifier")
         .def("__init__", [](SiteStateModifier& self, py::object apply, int min_neighbors) {
             new (&self) SiteStateModifier(
-                [apply](ArrayX<bool>& state, CartesianArray const& p, SubIdRef sub) {
-                    auto result = apply(arrayref(state), arrayref(p.x),
-                                        arrayref(p.y), arrayref(p.z), sub);
-                    extract_modifier_result(state, result);
+                [apply](Eigen::Ref<ArrayX<bool>> state, CartesianArrayConstRef p, string_view s) {
+                    auto result = apply(
+                        arrayref(state), arrayref(p.x()), arrayref(p.y()), arrayref(p.z()), s
+                    );
+                    extract_modifier_result<ArrayX<bool>>(state, result);
                 },
                 min_neighbors
             );
@@ -59,11 +60,11 @@ void wrap_modifiers(py::module& m) {
 
     py::class_<PositionModifier>(m, "PositionModifier")
         .def("__init__", [](PositionModifier& self, py::object apply) {
-            new (&self) PositionModifier([apply](CartesianArray& p, SubIdRef sub) {
-                auto t = py::tuple(apply(arrayref(p.x), arrayref(p.y), arrayref(p.z), sub));
-                extract_modifier_result(p.x, t[0]);
-                extract_modifier_result(p.y, t[1]);
-                extract_modifier_result(p.z, t[2]);
+            new (&self) PositionModifier([apply](CartesianArrayRef p, string_view sub) {
+                auto t = py::tuple(apply(arrayref(p.x()), arrayref(p.y()), arrayref(p.z()), sub));
+                extract_modifier_result<ArrayXf>(p.x(), t[0]);
+                extract_modifier_result<ArrayXf>(p.y(), t[1]);
+                extract_modifier_result<ArrayXf>(p.z(), t[2]);
             });
         });
 

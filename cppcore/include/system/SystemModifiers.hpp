@@ -14,8 +14,8 @@ namespace cpb {
  */
 class SiteStateModifier {
 public:
-    using Function = std::function<void(ArrayX<bool>& /*state*/, CartesianArray const& /*pos*/,
-                                        SubIdRef /*sublattice*/)>;
+    using Function = std::function<void(Eigen::Ref<ArrayX<bool>> state, CartesianArrayConstRef pos,
+                                        string_view sublattice)>;
     Function apply; ///< to be user-implemented
     int min_neighbors; ///< afterwards, remove sites with less than this number of neighbors
 
@@ -28,7 +28,7 @@ public:
  */
 class PositionModifier {
 public:
-    using Function = std::function<void(CartesianArray& /*position*/, SubIdRef /*sublattice*/)>;
+    using Function = std::function<void(CartesianArrayRef position, string_view sublattice)>;
     Function apply; ///< to be user-implemented
 
     PositionModifier(Function const& apply) : apply(apply) {}

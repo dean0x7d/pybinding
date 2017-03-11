@@ -139,20 +139,31 @@ template<class Derived> inline bool any_of(const DenseBase<Derived>& v) { return
 template<class Derived> inline bool all_of(const DenseBase<Derived>& v) { return v.all(); }
 template<class Derived> inline bool none_of(const DenseBase<Derived>& v) { return !v.any(); }
 
-class CartesianArrayConstRef {
+template<bool is_const>
+class BasicCartesianArrayRef {
 public:
-    using Reference = Eigen::Ref<ArrayXf const>;
+    using Reference = std14::conditional_t<!is_const, Eigen::Ref<ArrayXf>,
+                                           Eigen::Ref<ArrayXf const>>;
 
-    CartesianArrayConstRef(Reference x, Reference y,  Reference z)
+    BasicCartesianArrayRef(Reference x, Reference y,  Reference z)
         : x_ref(x), y_ref(y), z_ref(z) {}
+
+    BasicCartesianArrayRef(BasicCartesianArrayRef<false> const& o)
+        : x_ref(o.x()), y_ref(o.y()), z_ref(o.z()) {}
 
     Reference const& x() const { return x_ref; }
     Reference const& y() const { return y_ref; }
     Reference const& z() const { return z_ref; }
+    Reference& x() { return x_ref; }
+    Reference& y() { return y_ref; }
+    Reference& z() { return z_ref; }
 
 private:
     Reference x_ref, y_ref, z_ref;
 };
+
+using CartesianArrayConstRef = BasicCartesianArrayRef<true>;
+using CartesianArrayRef = BasicCartesianArrayRef<false>;
 
 class CartesianArray {
 private:
@@ -176,9 +187,20 @@ public:
         return {x.head(size), y.head(size), z.head(size)};
     }
 
+    CartesianArrayRef head(idx_t size) {
+        return {x.head(size), y.head(size), z.head(size)};
+    }
+
     CartesianArrayConstRef segment(idx_t start, idx_t size) const {
         return {x.segment(start, size), y.segment(start, size), z.segment(start, size)};
     }
+
+    CartesianArrayRef segment(idx_t start, idx_t size) {
+        return {x.segment(start, size), y.segment(start, size), z.segment(start, size)};
+    }
+
+    operator CartesianArrayConstRef() const { return {x, y, z}; }
+    operator CartesianArrayRef() { return {x, y, z}; }
 
     template<class Fn>
     void for_each(Fn lambda) {
@@ -258,7 +280,7 @@ ArrayConstRef arrayref(DenseBase<Derived> const& v) {
 };
 
 template<class Derived>
-ArrayRef arrayref(DenseBase<Derived>& v) {
+auto arrayref(DenseBase<Derived>& v) -> num::detail::MakeArrayRef<decltype(v.derived().data())> {
     auto& d = v.derived();
     return {v.derived().data(),
             Derived::IsVectorAtCompileTime ? 1 : 2,

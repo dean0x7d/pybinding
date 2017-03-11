@@ -33,6 +33,9 @@ template<class T>
 using remove_const_t = typename std::remove_const<T>::type;
 
 template<class T>
+using remove_pointer_t = typename std::remove_pointer<T>::type;
+
+template<class T>
 using decay_t = typename std::decay<T>::type;
 
 } // namespace std14

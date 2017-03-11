@@ -72,7 +72,7 @@ namespace detail {
     };
 
     template<class T>
-    using MakeArrayRef = BasicArrayRef<std::is_const<T>::value>;
+    using MakeArrayRef = BasicArrayRef<std::is_const<std14::remove_pointer_t<T>>::value>;
 
     template<class T>
     auto make_arrayref(T* data, std::int8_t ndim, bool is_row_major, idx_t x, idx_t y, idx_t z)

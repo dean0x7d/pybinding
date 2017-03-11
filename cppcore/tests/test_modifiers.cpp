@@ -7,8 +7,10 @@ TEST_CASE("SiteStateModifier") {
     auto model = Model(lattice::square_2atom(), Primitive(2));
     REQUIRE(model.system()->num_sites() == 4);
 
-    auto remove_site = [](ArrayX<bool>& state, CartesianArray const&, SubIdRef) {
-        state[0] = false;
+    auto remove_site = [](Eigen::Ref<ArrayX<bool>> state, CartesianArrayConstRef, string_view s) {
+        if (s == "A") {
+            state[0] = false;
+        }
     };
     model.add(SiteStateModifier(remove_site));
     REQUIRE(model.system()->num_sites() == 3);
@@ -22,8 +24,10 @@ TEST_CASE("SitePositionModifier") {
     auto model = Model(lattice::square_2atom());
     REQUIRE(model.system()->positions.y[1] == Approx(0.5));
 
-    model.add(PositionModifier([](CartesianArray& position, SubIdRef) {
-        position.y[1] = 1;
+    model.add(PositionModifier([](CartesianArrayRef position, string_view sublattice) {
+        if (sublattice == "B") {
+            position.y()[0] = 1;
+        }
     }));
     REQUIRE(model.system()->positions.y[1] == Approx(1));
 }

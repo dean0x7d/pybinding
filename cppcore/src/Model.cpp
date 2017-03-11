@@ -117,18 +117,22 @@ std::shared_ptr<System> Model::make_system() const {
         symmetry.apply(foundation);
 
     if (!system_modifiers.empty()) {
-        auto const sublattices = detail::make_sublattice_ids(foundation);
-
         for (auto const& site_state_modifier : system_modifiers.state) {
-            site_state_modifier.apply(foundation.get_states(), foundation.get_positions(),
-                                      {sublattices, lattice.sub_name_map()});
+            for (auto const& pair : lattice.get_sublattices()) {
+                auto slice = foundation[pair.second.unique_id];
+                site_state_modifier.apply(slice.get_states(), slice.get_positions(), pair.first);
+            }
+
             if (site_state_modifier.min_neighbors > 0) {
                 remove_dangling(foundation, site_state_modifier.min_neighbors);
             }
         }
+
         for (auto const& position_modifier : system_modifiers.position) {
-            position_modifier.apply(foundation.get_positions(),
-                                    {sublattices, lattice.sub_name_map()});
+            for (auto const& pair : lattice.get_sublattices()) {
+                auto slice = foundation[pair.second.unique_id];
+                position_modifier.apply(slice.get_positions(), pair.first);
+            }
         }
     }
 

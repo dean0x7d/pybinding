@@ -89,14 +89,6 @@ void clear_neighbors(Site& site, ArrayXi& neighbor_count, int min_neighbors) {
     neighbor_count[site.get_flat_idx()] = 0;
 }
 
-ArrayX<sub_id> make_sublattice_ids(Foundation const& foundation) {
-    ArrayX<sub_id> sublattice_ids(foundation.size());
-    for (auto const& site : foundation) {
-        sublattice_ids[site.get_flat_idx()] = static_cast<sub_id>(site.get_sub_idx());
-    }
-    return sublattice_ids;
-}
-
 } // namespace detail
 
 void remove_dangling(Foundation& foundation, int min_neighbors) {

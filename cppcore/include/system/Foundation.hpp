@@ -21,8 +21,6 @@ namespace detail {
     ArrayXi count_neighbors(Foundation const& foundation);
     /// Reduce this site's neighbor count to zero and inform its neighbors of the change
     void clear_neighbors(Site& site, ArrayXi& neighbor_count, int min_neighbors);
-    /// Make an array of sublattice ids for the entire foundation
-    ArrayX<sub_id> make_sublattice_ids(Foundation const& foundation);
 } // namespace detail
 
 /// Remove sites which have a neighbor count lower than `min_neighbors`
@@ -64,6 +62,10 @@ class Foundation {
     using ConstSpatialSlice = SpatialSlice<true>;
     using NonConstSpatialSlice = SpatialSlice<false>;
 
+    template<bool is_const> class SublatticeSlice;
+    using ConstSublatticeSlice = SublatticeSlice<true>;
+    using NonConstSublatticeSlice = SublatticeSlice<false>;
+
 public:
     Foundation(Lattice const& lattice, Primitive const& shape);
     Foundation(Lattice const& lattice, Shape const& shape);
@@ -75,6 +77,8 @@ public:
 
     ConstSpatialSlice operator[](SliceIndex3D const& index) const;
     NonConstSpatialSlice operator[](SliceIndex3D const& index);
+    ConstSublatticeSlice operator[](sub_id id) const;
+    NonConstSublatticeSlice operator[](sub_id id);
 
     /// Total number of sites: product of all sizes (3D space and sublattice)
     idx_t size() const { return spatial_size.prod() * sub_size; }
@@ -296,6 +300,54 @@ private:
     SliceIndex3D range;
 };
 
+/**
+ A single sublattice slice view of a foundation
+ */
+template<bool is_const>
+class Foundation::SublatticeSlice {
+    using Iterator = SpatialSliceIterator<is_const>;
+
+public:
+    SublatticeSlice(Foundation* foundation, sub_id unique_id) : foundation(foundation) {
+        using CellSite = OptimizedUnitCell::Site;
+        auto const& unit_cell = foundation->get_optimized_unit_cell();
+        auto const it = std::find_if(unit_cell.begin(), unit_cell.end(),
+                                     [&](CellSite const& s) { return s.unique_id == unique_id; });
+        if (it == unit_cell.end()) {
+            throw std::runtime_error("Foundation::SublatticeSlice: invalid sublattice unique_id");
+        }
+
+        slice_size = foundation->get_spatial_size().prod();
+        start_idx = (it - unit_cell.begin()) * slice_size;
+    }
+
+    idx_t size() const { return slice_size; }
+
+    Foundation::Iterator<is_const> begin() const { return {foundation, start_idx}; }
+    Foundation::Iterator<is_const> end() const { return {foundation, start_idx + slice_size}; }
+
+    Eigen::Ref<ArrayX<bool> const> get_states() const {
+        return foundation->is_valid.segment(start_idx, slice_size);
+    }
+
+    Eigen::Ref<ArrayX<bool>> get_states() {
+        return foundation->is_valid.segment(start_idx, slice_size);
+    }
+
+    CartesianArrayConstRef get_positions() const {
+        return foundation->positions.segment(start_idx, slice_size);
+    }
+
+    CartesianArrayRef get_positions() {
+        return foundation->positions.segment(start_idx, slice_size);
+    }
+
+private:
+    Foundation* foundation;
+    idx_t start_idx;
+    idx_t slice_size;
+};
+
 inline storage_idx_t FinalizedIndices::operator[](Site const& site) const {
     return indices[site.get_flat_idx()];
 }
@@ -322,6 +374,14 @@ inline Foundation::ConstSpatialSlice Foundation::operator[](SliceIndex3D const& 
 
 inline Foundation::NonConstSpatialSlice Foundation::operator[](SliceIndex3D const& index) {
     return {this, index};
+}
+
+inline Foundation::ConstSublatticeSlice Foundation::operator[](sub_id unique_id) const {
+    return {const_cast<Foundation*>(this), unique_id};
+}
+
+inline Foundation::NonConstSublatticeSlice Foundation::operator[](sub_id unique_id) {
+    return {this, unique_id};
 }
 
 } // namespace cpb

@@ -15,24 +15,6 @@ def build_model(*params):
     return model
 
 
-def assert_position(x, y, z):
-    assert np.allclose(x, [0, 0])
-    assert np.allclose(y, [-graphene.a_cc / 2, graphene.a_cc / 2])
-    assert np.allclose(z, [0, 0])
-
-
-def assert_sublattice(sub_id):
-    assert np.allclose(sub_id, [0, 1])
-
-    assert np.argwhere(sub_id == 'A') == 0
-    assert np.argwhere(sub_id != 'A') == 1
-    assert np.argwhere(sub_id == 'A') == 0
-    assert np.argwhere(sub_id != 'A') == 1
-
-    with pytest.raises(KeyError):
-        assert sub_id == 'invalid_sublattice_name'
-
-
 def test_modifier_function_signature():
     pb.onsite_energy_modifier(lambda energy: energy)
     with pytest.raises(RuntimeError) as excinfo:
@@ -138,30 +120,47 @@ def test_site_state():
     assert np.all(mod(zero))
     assert np.all(mod.apply(zero, one, one, one, one))
 
-    capture = []
+    capture = {}
 
     @pb.site_state_modifier
     def check_args(state, x, y, z, sub_id, sites):
-        capture[:] = (v.copy() for v in (state, x, y, z, sub_id))
-        capture.append(sites.argsort_nearest([0, graphene.a_cc / 2]))
+        capture[sub_id] = [v.copy() for v in (state, x, y, z)]
+        capture[sub_id].append(sites.argsort_nearest([0, graphene.a_cc / 2]))
         return state
 
-    model = build_model(check_args)
+    def assert_state(name, **kwargs):
+        state, x, y, z, nearest = capture[name]
+        assert state.shape == kwargs["shape"]
+        assert pytest.fuzzy_equal(state, kwargs["state"])
+        assert x.shape == kwargs["shape"]
+        assert pytest.fuzzy_equal(x, kwargs["x"])
+        assert pytest.fuzzy_equal(y, kwargs["y"])
+        assert pytest.fuzzy_equal(z, kwargs["z"])
+        assert np.all(nearest == kwargs["nearest"])
+
+    model = build_model(check_args, pb.primitive(1, 2))
     assert model.hamiltonian.dtype == np.float32
 
-    state, x, y, z, sub_id, nearest = capture
-    assert np.all(state == [True, True])
-    assert_position(x, y, z)
-    assert_sublattice(sub_id)
-    assert np.all(nearest == [1, 0])
+    assert_state("A", shape=(2,), state=[True] * 2, nearest=[1, 0],
+                 x=[-graphene.a / 2, 0], y=[-2 * graphene.a_cc, -graphene.a_cc / 2], z=[0, 0])
+    assert_state("B", shape=(2,), state=[True] * 2, nearest=[1, 0],
+                 x=[-graphene.a / 2, 0], y=[-graphene.a_cc, graphene.a_cc / 2], z=[0, 0])
 
-    @pb.site_state_modifier(min_neighbors=2)
-    def remove_dangling(state):
+    @pb.site_state_modifier
+    def remove_site(state):
         state[0] = False
         return state
 
+    model = build_model(remove_site, pb.primitive(2, 2))
+    assert model.system.num_sites == 6
+
+    @pb.site_state_modifier(min_neighbors=1)
+    def remove_dangling(state, sub_id):
+        state[sub_id == "A"] = False
+        return state
+
     with pytest.raises(RuntimeError) as excinfo:
-        build_model(remove_dangling)
+        build_model(remove_dangling, pb.primitive(3, 3))
     assert "0 sites" in str(excinfo.value)
 
 
@@ -172,21 +171,40 @@ def test_site_position():
     assert (one,) * 3 == mod(zero, zero, zero)
     assert (one,) * 3 == mod.apply(zero, zero, zero, one)
 
-    capture = []
+    capture = {}
 
     @pb.site_position_modifier
     def check_args(x, y, z, sub_id, sites):
-        capture[:] = (v.copy() for v in (x, y, z, sub_id))
-        capture.append(sites.argsort_nearest([0, graphene.a_cc / 2]))
+        capture[sub_id] = [v.copy() for v in (x, y, z)]
+        capture[sub_id].append(sites.argsort_nearest([0, graphene.a_cc / 2]))
         return x, y, z
 
-    model = build_model(check_args)
+    def assert_positions(name, **kwargs):
+        x, y, z, nearest = capture[name]
+        assert x.shape == kwargs["shape"]
+        assert y.shape == kwargs["shape"]
+        assert z.shape == kwargs["shape"]
+        assert pytest.fuzzy_equal(x, kwargs["x"])
+        assert pytest.fuzzy_equal(y, kwargs["y"])
+        assert pytest.fuzzy_equal(z, kwargs["z"])
+        assert np.all(nearest == kwargs["nearest"])
+
+    model = build_model(check_args, pb.primitive(1, 2))
     assert model.hamiltonian.dtype == np.float32
 
-    x, y, z, sub_id, nearest = capture
-    assert_position(x, y, z)
-    assert_sublattice(sub_id)
-    assert np.all(nearest == [1, 0])
+    assert_positions("A", shape=(2,), nearest=[1, 0],
+                     x=[-graphene.a / 2, 0], y=[-2 * graphene.a_cc, -graphene.a_cc / 2], z=[0, 0])
+    assert_positions("B", shape=(2,), nearest=[1, 0],
+                     x=[-graphene.a / 2, 0], y=[-graphene.a_cc, graphene.a_cc / 2], z=[0, 0])
+
+    @pb.site_position_modifier
+    def shift(x, y, z):
+        return x + 1, y + 1, z + 1
+
+    model = build_model(check_args, shift)
+    assert pytest.fuzzy_equal(model.system.x, [1, 1])
+    assert pytest.fuzzy_equal(model.system.y, [1 - graphene.a_cc / 2, 1 + graphene.a_cc / 2])
+    assert pytest.fuzzy_equal(model.system.z, [1, 1])
 
 
 def test_onsite():
