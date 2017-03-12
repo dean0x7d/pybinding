@@ -51,6 +51,7 @@ class HoppingBlocks {
 public:
     using Block = std::vector<COO>;
     using Blocks = std::vector<Block>;
+    using SerializedBlocks = std::vector<std::pair<ArrayXi, ArrayXi>>; // format for saving to file
 
     class Iterator {
     public:
@@ -80,11 +81,14 @@ public:
 
 public:
     HoppingBlocks() = default;
-    HoppingBlocks(Blocks data) : blocks(std::move(data)) {}
     HoppingBlocks(idx_t num_sites, idx_t num_families)
         : num_sites(num_sites), blocks(num_families) {}
+    /// Internal: construct from serialized data
+    HoppingBlocks(idx_t num_sites, SerializedBlocks const& data);
 
-    Blocks const& get_blocks() const { return blocks; }
+    /// Internal: return serialized data
+    idx_t get_num_sites() const { return num_sites; }
+    SerializedBlocks get_serialized_blocks() const;
 
     Iterator begin() const { return blocks.begin(); }
     Iterator end() const { return blocks.end(); }

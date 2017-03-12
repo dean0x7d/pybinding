@@ -26,20 +26,13 @@ void wrap_system(py::module& m) {
                                            d["orbital_counts"].cast<ArrayXi>());
         });
 
-    py::class_<COO>(m, "COO")
-        .def("__getstate__", [](COO const& coo) {
-            return py::make_tuple(coo.row, coo.col);
-        })
-        .def("__setstate__", [](COO& coo, py::tuple t) {
-            new (&coo) COO(t[0].cast<idx_t>(), t[1].cast<idx_t>());
-        });
-
     py::class_<HoppingBlocks>(m, "HoppingBlocks")
         .def("__getstate__", [](HoppingBlocks const& hb) {
-            return py::dict("data"_a= hb.get_blocks());
+            return py::dict("num_sites"_a=hb.get_num_sites(), "data"_a=hb.get_serialized_blocks());
         })
         .def("__setstate__", [](HoppingBlocks& hb, py::dict d) {
-            new (&hb) HoppingBlocks(d["data"].cast<HoppingBlocks::Blocks>());
+            new (&hb) HoppingBlocks(d["num_sites"].cast<idx_t>(),
+                                    d["data"].cast<HoppingBlocks::SerializedBlocks>());
         });
 
     using Boundary = System::Boundary;
