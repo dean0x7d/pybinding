@@ -95,46 +95,60 @@ class AliasCSRMatrix(csr_matrix):
 class AliasIndex:
     """An all-or-nothing array index based on equality with a specific value
 
-    The `==` and `!=` operators are overloaded to return a slice of the entire
-    array or an empty slice. See the examples below. This is useful for modifiers
+    The `==` and `!=` operators are overloaded to return a lazy array which is either
+    all `True` or all `False`. See the examples below. This is useful for modifiers
     where the each call gets arrays with the same sub_id/hop_id for all elements.
     Instead of passing an `AliasArray` with `.size` identical element, `AliasIndex`
     does the same all-or-nothing indexing.
 
     Examples
     --------
-    >>> l = [1, 2, 3]
-    >>> ai = AliasIndex("A")
-    >>> l[ai == "A"]
+    >>> l = np.array([1, 2, 3])
+    >>> ai = AliasIndex("A", len(l))
+    >>> list(l[ai == "A"])
     [1, 2, 3]
-    >>> l[ai == "B"]
+    >>> list(l[ai == "B"])
     []
-    >>> l[ai != "A"]
+    >>> list(l[ai != "A"])
     []
-    >>> l[ai != "B"]
+    >>> list(l[ai != "B"])
     [1, 2, 3]
+    >>> np.logical_and([True, False, True], ai == "A")
+    array([ True, False,  True], dtype=bool)
+    >>> np.logical_and([True, False, True], ai != "A")
+    array([False, False, False], dtype=bool)
+    >>> bool(ai == "A")
+    True
+    >>> bool(ai != "A")
+    False
     >>> str(ai)
     'A'
     >>> hash(ai) == hash("A")
     True
     """
-    def __init__(self, name):
+    class LazyArray:
+        def __init__(self, value, size):
+            self.value = value
+            self.size = size
+
+        def __bool__(self):
+            return bool(self.value)
+
+        def __array__(self):
+            return np.full(self.size, self.value)
+
+    def __init__(self, name, size):
         self.name = name
+        self.size = size
 
     def __str__(self):
         return self.name
 
     def __eq__(self, other):
-        if self.name == other:
-            return slice(None)
-        else:
-            return slice(0, 0)
+        return self.LazyArray(self.name == other, self.size)
 
     def __ne__(self, other):
-        if self.name != other:
-            return slice(None)
-        else:
-            return slice(0, 0)
+        return self.LazyArray(self.name != other, self.size)
 
     def __hash__(self):
         return hash(self.name)

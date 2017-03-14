@@ -19,11 +19,11 @@ __all__ = ['constant_potential', 'force_double_precision', 'hopping_energy_modif
            'site_state_modifier']
 
 
-def _make_alias_array(obj):
+def _make_alias_array(obj, size):
     if isinstance(obj, _cpp.SubIdRef):
         return AliasArray(obj.ids, obj.name_map)
     elif isinstance(obj, str):
-        return AliasIndex(obj)
+        return AliasIndex(obj, size)
     else:
         return obj
 
@@ -35,9 +35,9 @@ def _process_modifier_args(args, keywords, requested_argnames):
     """
     kwargs = dict(zip(keywords, args))
     if 'sub_id' in requested_argnames or 'sites' in requested_argnames:
-        kwargs['sub_id'] = _make_alias_array(kwargs['sub_id'])
+        kwargs['sub_id'] = _make_alias_array(kwargs['sub_id'], args[0].size)
     if 'hop_id' in requested_argnames:
-        kwargs['hop_id'] = AliasIndex(kwargs['hop_id'])
+        kwargs['hop_id'] = AliasIndex(kwargs['hop_id'], args[0].size)
 
     requested_kwargs = {name: value for name, value in kwargs.items()
                         if name in requested_argnames}
