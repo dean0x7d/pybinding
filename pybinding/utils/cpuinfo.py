@@ -4,12 +4,16 @@ from .. import _cpp
 _cached_info = None
 
 
-def get_cpu_info():
+def cpu_info():
     """Forwarded from `cpuinfo.get_cpu_info()`"""
     global _cached_info
     if not _cached_info:
-        import cpuinfo
-        _cached_info = cpuinfo.get_cpu_info()
+        try:
+            from cpuinfo import get_cpu_info
+        except ImportError:
+            def get_cpu_info():
+                return {}
+        _cached_info = get_cpu_info()
     return _cached_info
 
 
@@ -43,7 +47,11 @@ def summary():
     The returned SIMD instruction set is the one that the extension module was
     compiled with, not the highest one supported by the CPU.
     """
-    info = get_cpu_info().copy()
+    info = cpu_info()
+    if not info:
+        return "py-cpuinfo is not installed"
+
+    info = info.copy()
     hz_raw, scale = info['hz_advertised_raw']
     info['ghz'] = hz_raw * 10**(scale - 9)
     info['physical'] = physical_core_count()
