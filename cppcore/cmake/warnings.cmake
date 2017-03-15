@@ -3,7 +3,7 @@ function(enable_warnings TARGET)
         target_compile_options(${TARGET} PRIVATE /W3)
     else()
         target_compile_options(${TARGET} PRIVATE -Wall -Wextra -Wsign-compare
-                               -Wconversion -Wno-sign-conversion)
+                               -Wconversion -Wno-sign-conversion -Wno-parentheses)
     endif()
 
     if(PB_WERROR)

@@ -70,6 +70,8 @@ TEST_CASE("OptimizedHamiltonian reordering", "[kpm]") {
 
 struct TestGreensResult {
     ArrayXcd g_ii, g_ij;
+
+    TestGreensResult() = default;
 };
 
 template<template<class> class Strategy>
@@ -90,8 +92,8 @@ std::vector<TestGreensResult> test_kpm_strategy(std::vector<kpm::Config> const& 
             auto const cols = std::vector<idx_t>{i, j, j+1, j+2};
             auto const precision = Eigen::NumTraits<float>::dummy_precision();
 
-            auto unoptimized_result = TestGreensResult{};
-            for (auto opt_level = 0; opt_level < configs.size(); ++opt_level) {
+            auto unoptimized_result = TestGreensResult();
+            for (auto opt_level = size_t{0}; opt_level < configs.size(); ++opt_level) {
                 INFO("opt_level: " << opt_level);
                 auto strategy = make_kpm_strategy<Strategy>(model.hamiltonian(),
                                                             configs[opt_level]);

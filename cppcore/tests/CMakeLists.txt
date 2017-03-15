@@ -15,4 +15,5 @@ add_executable(catch
 target_include_directories(catch PRIVATE ${CATCH_INCLUDE_DIR})
 target_link_libraries(catch PRIVATE cppcore)
 
+enable_warnings(catch)
 add_custom_target(cpptest COMMAND $<TARGET_FILE:catch>)
