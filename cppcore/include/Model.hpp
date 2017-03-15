@@ -59,13 +59,17 @@ public: // get parameters
     std::vector<OnsiteModifier> onsite_modifiers() const { return hamiltonian_modifiers.onsite; }
     std::vector<HoppingModifier> hopping_modifiers() const { return hamiltonian_modifiers.hopping; }
 
-public: // get results
+public: // get properties
     std::shared_ptr<System const> const& system() const;
     Hamiltonian const& hamiltonian() const;
     /// Return all leads
     Leads const& leads() const;
     /// Return lead at index
     Lead lead(size_t i) const { return leads()[i]; }
+
+    /// The model properties listed above are usually evaluated lazily, only as needed.
+    /// Calling this function will evaluate the entire model ahead of time. Always returns itself.
+    Model const& eval() const;
 
 public: // get information
     /// Report of the last build operation: system and Hamiltonian

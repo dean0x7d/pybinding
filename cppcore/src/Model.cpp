@@ -101,6 +101,13 @@ Leads const& Model::leads() const {
     return _leads;
 }
 
+Model const& Model::eval() const {
+    system();
+    hamiltonian();
+    leads();
+    return *this;
+}
+
 std::string Model::report() {
     auto const num_sites = fmt::with_suffix(static_cast<double>(system()->num_sites()));
     auto const nnz = fmt::with_suffix(static_cast<double>(hamiltonian().non_zeros()));

@@ -120,6 +120,7 @@ void wrap_greens(py::module& m) {
         .def("deferred_ldos", [](py::object self, ArrayXd energy, double broadening,
                                  Cartesian position, std::string sublattice) {
             auto& kpm = self.cast<KPM&>();
+            kpm.get_model().eval();
             return Deferred<ArrayXd>{
                 self, [=, &kpm] { return kpm.calc_ldos(energy, broadening, position, sublattice); }
             };
