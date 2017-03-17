@@ -160,7 +160,7 @@ class Solver:
         probability = abs(self.eigenvectors[:, n]) ** 2
         if probability.ndim > 1:
             probability = np.sum(probability, axis=1)
-        return results.StructureMap.from_system(probability, self.system)
+        return self.system.with_data(probability)
 
     def calc_dos(self, energies, broadening):
         r"""Calculate the density of states as a function of energy
@@ -264,7 +264,7 @@ class Solver:
             psi2 = np.abs(self.eigenvectors)**2
             ldos = scale * np.sum(psi2 * gaussian, axis=1)
 
-        return results.StructureMap.from_system(ldos, self.system)
+        return self.system.with_data(ldos)
 
     def calc_bands(self, k0, k1, *ks, step=0.1):
         """Calculate the band structure on a path in reciprocal space

@@ -1,190 +1,35 @@
 """Structural information and utilities"""
 import functools
 import itertools
-from collections import namedtuple
 
 import numpy as np
 import matplotlib.pyplot as plt
-from numpy import ma
-from scipy.sparse import csr_matrix
 
 from . import _cpp
 from . import pltutils
 from .lattice import Lattice
 from .utils import with_defaults
-from .support.pickle import pickleable
 from .support.fuzzy_set import FuzzySet
-from .support.alias import AliasArray, AliasCSRMatrix
+from .support.structure import Sites
+from .results import Structure
 
 __all__ = ['Sites', 'System', 'plot_hoppings', 'plot_periodic_boundaries', 'plot_sites',
            'structure_plot_properties']
 
 
-Positions = namedtuple('Positions', 'x y z')
-# noinspection PyUnresolvedReferences
-Positions.__doc__ = """
-Named tuple of arrays
-
-Attributes
-----------
-x, y, z : array_like
-    1D arrays of Cartesian coordinates
-"""
-
-
-class Sites:
-    """Utility class which stores site positions and sublattice IDs
-
-    Attributes
-    ----------
-    x, y, z : np.ndarray
-    sublattices : np.ndarray
-    """
-    def __init__(self, positions, sublattices):
-        self.x, self.y, self.z = map(np.atleast_1d, positions)
-        self.sublattices = np.atleast_1d(sublattices)
-
-    @property
-    def positions(self):
-        """Named tuple of x, y, z positions"""
-        return Positions(self.x, self.y, self.z)
-
-    @property
-    def sub_id(self) -> np.ndarray:
-        """Alias for :attr:`sublattices`"""
-        return self.sublattices
-
-    def distances(self, target_position):
-        """Return the distances of all sites from the target position
-
-        Parameters
-        ----------
-        target_position : array_like
-
-        Examples
-        --------
-        >>> sites = Sites(([0, 1, 1.1], [0, 0, 0], [0, 0, 0]), [0, 1, 0])
-        >>> np.allclose(sites.distances([1, 0, 0]), [1, 0, 0.1])
-        True
-        """
-        target_position = np.atleast_1d(target_position)
-        ndim = len(target_position)
-        positions = np.stack(self.positions[:ndim], axis=1)
-        return np.linalg.norm(positions - target_position, axis=1)
-
-    def find_nearest(self, target_position, target_sublattice=None):
-        """Return the index of the position nearest the target
-
-        Parameters
-        ----------
-        target_position : array_like
-        target_sublattice : int
-            Look for a specific sublattice site. By default any will do.
-
-        Returns
-        -------
-        int
-
-        Examples
-        --------
-        >>> sites = Sites(([0, 1, 1.1], [0, 0, 0], [0, 0, 0]), [0, 1, 0])
-        >>> sites.find_nearest([1, 0, 0])
-        1
-        >>> sites.find_nearest([1, 0, 0], target_sublattice=0)
-        2
-        """
-        distances = self.distances(target_position)
-        if target_sublattice is None:
-            return np.argmin(distances)
-        else:
-            return ma.argmin(ma.array(distances, mask=(self.sublattices != target_sublattice)))
-
-    def argsort_nearest(self, target_position, target_sublattice=None):
-        """Return an ndarray of site indices, sorted by distance from the target
-
-        Parameters
-        ----------
-        target_position : array_like
-        target_sublattice : int
-            Look for a specific sublattice site. By default any will do.
-
-        Returns
-        -------
-        np.ndarray
-
-        Examples
-        --------
-        >>> sites = Sites(([0, 1, 1.1], [0, 0, 0], [0, 0, 0]), [0, 1, 0])
-        >>> np.all(sites.argsort_nearest([1, 0, 0]) == [1, 2, 0])
-        True
-        >>> np.all(sites.argsort_nearest([1, 0, 0], target_sublattice=0) == [2, 0, 1])
-        True
-        """
-        distances = self.distances(target_position)
-        if target_sublattice is None:
-            return np.argsort(distances)
-        else:
-            return ma.argsort(ma.array(distances, mask=(self.sublattices != target_sublattice)))
-
-
-@pickleable(version=1)
-class System:
+class System(Structure):
     """Structural data of a tight-binding model
 
     Stores positions, sublattice and hopping IDs for all lattice sites.
     """
     def __init__(self, impl: _cpp.System):
+        super().__init__(Sites(impl.positions, impl.sublattices), impl.hoppings, impl.boundaries)
         self.impl = impl
 
     @property
     def lattice(self) -> Lattice:
         """:class:`.Lattice` specification"""
         return Lattice.from_impl(self.impl.lattice)
-
-    @property
-    def num_sites(self) -> int:
-        """Total number of sites in the system"""
-        return self.x.size
-
-    @property
-    def x(self) -> np.ndarray:
-        """1D array of x coordinates"""
-        return self.impl.positions.x
-
-    @property
-    def y(self) -> np.ndarray:
-        """1D array of y coordinates"""
-        return self.impl.positions.y
-
-    @property
-    def z(self) -> np.ndarray:
-        """1D array of z coordinates"""
-        return self.impl.positions.z
-
-    @property
-    def xyz(self) -> np.ndarray:
-        """Return a new array with shape=(N, 3). Convenient, but slow for big systems."""
-        return np.array(self.positions).T
-
-    @property
-    def positions(self):
-        """Named tuple of x, y, z positions"""
-        return Positions(self.x, self.y, self.z)
-
-    @property
-    def sublattices(self) -> np.ndarray:
-        """1D array of sublattice IDs"""
-        return AliasArray(self.impl.sublattices, self.lattice.impl.sub_name_map)
-
-    @property
-    def hoppings(self) -> csr_matrix:
-        """Sparse matrix of hopping IDs"""
-        return AliasCSRMatrix(self.impl.hoppings, mapping=self.lattice.impl.hop_name_map)
-
-    @property
-    def boundaries(self) -> list:
-        """List of :class:`.Boundary`"""
-        return self.impl.boundaries
 
     def find_nearest(self, position, at_sublattice=""):
         """Find the index of the atom closest to the given position
@@ -200,14 +45,7 @@ class System:
         -------
         int
         """
-        if hasattr(self.impl, 'find_nearest'):
-            # use cpp implementation
-            return self.impl.find_nearest(position, at_sublattice)
-        else:
-            # fallback numpy implementation
-            at_sublattice = self.lattice[at_sublattice] if at_sublattice else None
-            sites = Sites(self.positions, self.sublattices)
-            return sites.find_nearest(position, at_sublattice)
+        return self.impl.find_nearest(position, at_sublattice)
 
     def plot(self, num_periods=1, **kwargs):
         """Plot the structure: sites, hoppings and periodic boundaries (if any)
@@ -219,15 +57,8 @@ class System:
         **kwargs
             Additional plot arguments as specified in :func:`.structure_plot_properties`.
         """
-        props = structure_plot_properties(**kwargs)
-        props['site'].setdefault('radius', self.lattice.site_radius_for_plot())
-
-        plot_hoppings(self.positions, self.hoppings, **props['hopping'])
-        plot_sites(self.positions, self.sublattices, **props['site'])
-        plot_periodic_boundaries(self.positions, self.hoppings, self.boundaries,
-                                 self.sublattices, num_periods, **props)
-
-        decorate_structure_plot(**props)
+        kwargs.setdefault("site", {}).setdefault("radius", self.lattice.site_radius_for_plot())
+        super().plot(num_periods, **kwargs)
 
 
 def structure_plot_properties(axes='xyz', site=None, hopping=None, boundary=None, **kwargs):
@@ -433,6 +264,7 @@ def plot_hoppings(positions, hoppings, width=1.0, offset=(0, 0, 0), blend=1.0, c
     -------
     :class:`matplotlib.collections.LineCollection`
     """
+    hoppings = hoppings.tocoo()
     if width == 0 or hoppings.data.size == 0:
         return
 
@@ -451,7 +283,6 @@ def plot_hoppings(positions, hoppings, width=1.0, offset=(0, 0, 0), blend=1.0, c
 
     rotate = functools.partial(_rotate, axes=axes)
     positions, offset = map(rotate, (positions, offset))
-    hoppings = hoppings.tocoo()
 
     # leave only the desired hoppings
     if draw_only:

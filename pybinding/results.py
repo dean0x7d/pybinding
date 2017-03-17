@@ -10,12 +10,21 @@ import matplotlib.pyplot as plt
 
 from . import pltutils
 from .utils import with_defaults, x_pi
-from .system import (Positions, plot_sites, plot_hoppings, plot_periodic_boundaries,
-                     structure_plot_properties)
 from .support.pickle import pickleable
+from .support.structure import Positions, AbstractSites, Sites, Hoppings, Boundary
 
 __all__ = ['Bands', 'DOS', 'Eigenvalues', 'LDOS', 'NDSweep', 'SpatialMap', 'StructureMap',
            'Sweep', 'make_path']
+
+
+def _make_crop_indices(obj, limits):
+    """Return the indices into `obj` which retain only the data within the given limits"""
+    idx = np.ones(obj.num_sites, dtype=np.bool)
+    for name, limit in limits.items():
+        v = getattr(obj, name)
+        idx = np.logical_and(idx, v >= limit[0])
+        idx = np.logical_and(idx, v < limit[1])
+    return idx
 
 
 class Path(np.ndarray):
@@ -205,57 +214,66 @@ class LDOS:
         pltutils.despine()
 
 
-@pickleable
 class SpatialMap:
-    """Represents some spatially dependent property: data mapped to site positions
+    """Represents some spatially dependent property: data mapped to site positions"""
 
-    Attributes
-    ----------
-    data : array_like
-        1D array of values which correspond to x, y, z coordinates.
-    positions : Tuple[array_like, array_like, array_like]
-        Lattice site positions. Named tuple with x, y, z fields, each a 1D array.
-    sublattices : Optional[array_like]
-        Sublattice ID for each position.
-    """
     def __init__(self, data, positions, sublattices=None):
-        self.data = np.atleast_1d(data)
-        self.positions = Positions(*positions)  # maybe convert from tuple
-        if sublattices is not None:
-            self.sublattices = np.atleast_1d(sublattices)
+        self._data = np.atleast_1d(data)
+        if sublattices is None and isinstance(positions, AbstractSites):
+            self._sites = positions
         else:
-            self.sublattices = np.zeros_like(self.data)
+            self._sites = Sites(positions, sublattices)
 
     @property
     def num_sites(self) -> int:
         """Total number of lattice sites"""
-        return self.data.size
+        return self._sites.size
+
+    @property
+    def data(self) -> np.ndarray:
+        """1D array of values for each site, i.e. maps directly to x, y, z site coordinates"""
+        return self._data
+
+    @property
+    def positions(self) -> Positions:
+        """Lattice site positions. Named tuple with x, y, z fields, each a 1D array."""
+        return self._sites.positions
+
+    @property
+    def xyz(self) -> np.ndarray:
+        """Return a new array with shape=(N, 3). Convenient, but slow for big systems."""
+        return np.array(self.positions).T
 
     @property
     def x(self) -> np.ndarray:
-        """1D array of x coordinates"""
-        return self.positions.x
+        """1D array of coordinates, short for :attr:`.positions.x <.SpatialMap.positions.x>`"""
+        return self._sites.x
 
     @property
     def y(self) -> np.ndarray:
-        """1D array of y coordinates"""
-        return self.positions.y
+        """1D array of coordinates, short for :attr:`.positions.y <.SpatialMap.positions.y>`"""
+        return self._sites.y
 
     @property
     def z(self) -> np.ndarray:
-        """1D array of z coordinates"""
-        return self.positions.z
+        """1D array of coordinates, short for :attr:`.positions.z <.SpatialMap.positions.z>`"""
+        return self._sites.z
 
-    @classmethod
-    def from_system(cls, data, system):
-        """Alternate constructor which takes `pos` and `sub` from `system`
+    @property
+    def sublattices(self) -> np.ndarray:
+        """1D array of sublattices IDs"""
+        return self._sites.ids
 
-        Parameters
-        ----------
-        data : np.ndarray
-        system : :class:`.System`
-        """
-        return cls(data, system.positions, system.sublattices)
+    @property
+    def sub(self) -> np.ndarray:
+        """1D array of sublattices IDs, short for :attr:`.sublattices <.SpatialMap.sublattices>`"""
+        return self._sites.ids
+
+    def with_data(self, data) -> "SpatialMap":
+        """Return a copy of this object with different data mapped to the sites"""
+        result = copy(self)
+        result._data = data
+        return result
 
     def save_txt(self, filename):
         with open(filename + '.dat', 'w') as file:
@@ -265,8 +283,7 @@ class SpatialMap:
 
     def __getitem__(self, idx):
         """Same rules as numpy indexing"""
-        return self.__class__(self.data[idx], (v[idx] for v in self.positions),
-                              self.sublattices[idx])
+        return self.__class__(self._data[idx], self._sites[idx])
 
     def cropped(self, **limits):
         """Return a copy which retains only the sites within the given limits
@@ -276,27 +293,17 @@ class SpatialMap:
         **limits
             Attribute names and corresponding limits. See example.
 
-        Returns
-        -------
-        StructureMap
-
         Examples
         --------
         Leave only the data where -10 <= x < 10 and 2 <= y < 4::
 
             new = original.cropped(x=[-10, 10], y=[2, 4])
         """
-        idx = np.ones(self.num_sites, dtype=np.bool)
-        for name, limit in limits.items():
-            v = getattr(self, name)
-            idx = np.logical_and(idx, v >= limit[0])
-            idx = np.logical_and(idx, v < limit[1])
-
-        return self[idx]
+        return self[_make_crop_indices(self, limits)]
 
     def clipped(self, v_min, v_max):
         """Clip (limit) the values in the `data` array, see :func:`~numpy.clip`"""
-        return self.__class__(np.clip(self.data, v_min, v_max), self.positions, self.sublattices)
+        return self.with_data(np.clip(self.data, v_min, v_max))
 
     def convolve(self, sigma=0.25):
         # TODO: slow and only works in the xy-plane
@@ -309,7 +316,7 @@ class SpatialMap:
             data[i] = np.sum(self.data[idx] * np.exp(-0.5 * ((r[i] - r[idx]) / sigma)**2))
             data[i] /= np.sum(np.exp(-0.5 * ((r[i] - r[idx]) / sigma)**2))
 
-        self.data = data
+        self._data = data
 
     @staticmethod
     def _decorate_plot():
@@ -364,53 +371,39 @@ class SpatialMap:
         return contour
 
 
-@pickleable
 class StructureMap(SpatialMap):
-    """A subclass of :class:`.SpatialMap` that also includes hoppings between sites
+    """A subclass of :class:`.SpatialMap` that also includes hoppings between sites"""
 
-    Attributes
-    ----------
-    hoppings : :class:`~scipy.sparse.csr_matrix`
-        Sparse matrix of hopping IDs. See :attr:`.System.hoppings`.
-    boundaries : List[:class:`~scipy.sparse.csr_matrix`]
-        Boundary hoppings. See :attr:`.System.boundaries`.
-    """
-    def __init__(self, data, positions, sublattices, hoppings, boundaries=()):
-        super().__init__(data, positions, sublattices)
-        self.hoppings = hoppings
-        self.boundaries = boundaries
-
-    @classmethod
-    def from_system(cls, data, system):
-        return cls(data, system.positions, system.sublattices,
-                   system.hoppings.tocsr(), system.boundaries)
+    def __init__(self, data, sites, hoppings, boundaries=()):
+        super().__init__(data, sites)
+        self._hoppings = Hoppings(hoppings)
+        self._boundaries = [Boundary(b.shift, Hoppings(b.hoppings)) for b in boundaries]
 
     @property
     def spatial_map(self) -> SpatialMap:
         """Just the :class:`SpatialMap` subset without hoppings"""
-        return SpatialMap(self.data, self.positions, self.sublattices)
+        return SpatialMap(self._data, self._sites)
 
-    @staticmethod
-    def _filter_csr_matrix(csr, idx):
-        """Indexing must preserve all data, even zeros"""
-        m = copy(csr)  # shallow copy
-        m.data = m.data.copy()
-        m.data += 1  # increment by 1 to preserve zeroes when slicing
-        m = m[idx][:, idx]
-        m.data -= 1
-        return m
+    @property
+    def hoppings(self) -> Hoppings:
+        """Sparse matrix of hopping IDs"""
+        return self._hoppings
 
-    @staticmethod
-    def _filter_boundary(boundary, idx):
-        b = copy(boundary)
-        b.hoppings = StructureMap._filter_csr_matrix(b.hoppings, idx)
-        return b
+    @property
+    def boundaries(self) -> list:
+        """Boundary hoppings between different translation units (only for infinite systems)"""
+        return self._boundaries
 
     def __getitem__(self, idx):
         """Same rules as numpy indexing"""
-        return self.__class__(self.data[idx], (v[idx] for v in self.positions),
-                              self.sublattices[idx], self._filter_csr_matrix(self.hoppings, idx),
-                              [self._filter_boundary(b, idx) for b in self.boundaries])
+        return self.__class__(self.data[idx], self._sites[idx], self._hoppings[idx],
+                              [b[idx] for b in self._boundaries])
+
+    def with_data(self, data) -> "StructureMap":
+        """Return a copy of this object with different data mapped to the sites"""
+        result = copy(self)
+        result._data = data
+        return result
 
     def plot(self, cmap='YlGnBu', site_radius=(0.03, 0.05), num_periods=1, **kwargs):
         """Plot the spatial structure with a colormap of :attr:`data` at the lattice sites
@@ -429,6 +422,9 @@ class StructureMap(SpatialMap):
         **kwargs
             Additional plot arguments as specified in :func:`.structure_plot_properties`.
         """
+        from .system import (plot_sites, plot_hoppings, plot_periodic_boundaries,
+                             structure_plot_properties)
+
         ax = plt.gca()
         ax.set_aspect('equal', 'datalim')
         ax.set_xlabel('x (nm)')
@@ -464,6 +460,115 @@ class StructureMap(SpatialMap):
         if collection:
             plt.sci(collection)
         return collection
+
+
+class Structure:
+    """Holds and plots the structure of a tight-binding system
+    
+    Similar to :class:`StructureMap`, but only holds the structure without 
+    mapping to any actual data.
+    """
+    def __init__(self, sites, hoppings, boundaries=()):
+        self._sites = sites
+        self._hoppings = Hoppings(hoppings)
+        self._boundaries = [Boundary(b.shift, Hoppings(b.hoppings)) for b in boundaries]
+
+    @property
+    def num_sites(self) -> int:
+        """Total number of lattice sites"""
+        return self._sites.size
+
+    @property
+    def positions(self) -> Positions:
+        """Lattice site positions. Named tuple with x, y, z fields, each a 1D array."""
+        return self._sites.positions
+
+    @property
+    def xyz(self) -> np.ndarray:
+        """Return a new array with shape=(N, 3). Convenient, but slow for big systems."""
+        return np.array(self.positions).T
+
+    @property
+    def x(self) -> np.ndarray:
+        """1D array of coordinates, short for :attr:`.positions.x <.SpatialMap.positions.x>`"""
+        return self._sites.x
+
+    @property
+    def y(self) -> np.ndarray:
+        """1D array of coordinates, short for :attr:`.positions.y <.SpatialMap.positions.y>`"""
+        return self._sites.y
+
+    @property
+    def z(self) -> np.ndarray:
+        """1D array of coordinates, short for :attr:`.positions.z <.SpatialMap.positions.z>`"""
+        return self._sites.z
+
+    @property
+    def sublattices(self) -> np.ndarray:
+        """1D array of sublattices IDs"""
+        return self._sites.ids
+
+    @property
+    def sub(self) -> np.ndarray:
+        """1D array of sublattices IDs, short for :attr:`.sublattices <.SpatialMap.sublattices>`"""
+        return self._sites.ids
+
+    @property
+    def hoppings(self) -> Hoppings:
+        """Sparse matrix of hopping IDs"""
+        return self._hoppings
+
+    @property
+    def boundaries(self) -> list:
+        """Boundary hoppings between different translation units (only for infinite systems)"""
+        return self._boundaries
+
+    def __getitem__(self, idx):
+        """Same rules as numpy indexing"""
+        return self.__class__(self._sites[idx], self._hoppings[idx],
+                              [b[idx] for b in self._boundaries])
+
+    def cropped(self, **limits):
+        """Return a copy which retains only the sites within the given limits
+
+        Parameters
+        ----------
+        **limits
+            Attribute names and corresponding limits. See example.
+
+        Examples
+        --------
+        Leave only the data where -10 <= x < 10 and 2 <= y < 4::
+
+            new = original.cropped(x=[-10, 10], y=[2, 4])
+        """
+        return self[_make_crop_indices(self, limits)]
+
+    def with_data(self, data) -> StructureMap:
+        """Map some data to this structure"""
+        return StructureMap(data, self._sites, self._hoppings, self._boundaries)
+
+    def plot(self, num_periods=1, **kwargs):
+        """Plot the structure: sites, hoppings and periodic boundaries (if any)
+
+        Parameters
+        ----------
+        num_periods : int
+            Number of times to repeat the periodic boundaries.
+        **kwargs
+            Additional plot arguments as specified in :func:`.structure_plot_properties`.
+        """
+        from .system import (plot_sites, plot_hoppings, plot_periodic_boundaries,
+                             structure_plot_properties, decorate_structure_plot)
+
+        props = structure_plot_properties(**kwargs)
+
+        plot_hoppings(self.positions, self._hoppings, **props['hopping'])
+        plot_sites(self.positions, self.sublattices, **props['site'])
+        plot_periodic_boundaries(self.positions, self._hoppings, self._boundaries,
+                                 self.sublattices, num_periods, **props)
+
+        decorate_structure_plot(**props)
 
 
 @pickleable

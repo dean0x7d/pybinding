@@ -62,7 +62,7 @@ def test_spatial_map(model):
     system = model.system
     zeros = np.linspace(-10, 10, system.num_sites)
 
-    spatial_map = pb.results.SpatialMap.from_system(zeros, system)
+    spatial_map = model.structure_map(zeros).spatial_map
 
     assert system.x.data == spatial_map.x.data
     assert system.y.data == spatial_map.y.data
@@ -83,15 +83,15 @@ def test_structure_map(model):
     system = model.system
     zeros = np.zeros_like(system.x)
 
-    spatial_map = pb.results.SpatialMap.from_system(zeros, system)
-    structure_map = pb.results.StructureMap.from_system(zeros, system)
+    spatial_map = pb.results.SpatialMap(zeros, system.positions, system.sublattices)
+    structure_map = system.with_data(zeros)
 
     assert pytest.fuzzy_equal(spatial_map, structure_map.spatial_map)
 
     tmp = structure_map[structure_map.x < 0.05]
     assert structure_map.hoppings.nnz == 41
     assert tmp.hoppings.nnz == 21
-    assert tmp.hoppings.data.mapping == model.lattice.impl.hop_name_map
+    assert tmp.hoppings.tocsr().data.mapping == model.lattice.impl.hop_name_map
 
 
 def test_structure_map_plot(compare_figure):

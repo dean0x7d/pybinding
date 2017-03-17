@@ -108,7 +108,7 @@ class FuzzyEqual:
     @_assertdispatch
     def _assert(self, actual, expected):
         if hasattr(actual, "__dict__"):
-            return self._assert(self.actual.__dict__, self.expected.__dict__)
+            return self._assert(actual.__dict__, expected.__dict__)
         else:
             try:
                 return np.testing.assert_almost_equal(actual, expected, self.decimal)

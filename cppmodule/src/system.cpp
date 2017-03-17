@@ -50,12 +50,18 @@ void wrap_system(py::module& m) {
     py::class_<System, std::shared_ptr<System>>(m, "System")
         .def("find_nearest", &System::find_nearest, "position"_a, "sublattice"_a="")
         .def_readonly("lattice", &System::lattice)
-        .def_readonly("positions", &System::positions)
+        .def_property_readonly("positions", [](System const& s) {
+            auto const& a = s.positions;
+            auto type = py::module::import("pybinding.support.structure").attr("Positions");
+            return type(arrayref(a.x), arrayref(a.y), arrayref(a.z));
+        })
         .def_property_readonly("sublattices", [](System const& s) {
-            return s.compressed_sublattices.decompress();
+            auto type = py::module::import("pybinding.support.alias").attr("AliasArray");
+            return type(s.compressed_sublattices.decompress(), s.lattice.sub_name_map());
         })
         .def_property_readonly("hoppings", [](System const& s) {
-            return s.hopping_blocks.to_csr();
+            auto type = py::module::import("pybinding.support.alias").attr("AliasCSRMatrix");
+            return type(s.hopping_blocks.to_csr(), "mapping"_a=s.lattice.hop_name_map());
         })
         .def_readonly("boundaries", &System::boundaries)
         .def("__getstate__", [](System const& s) {

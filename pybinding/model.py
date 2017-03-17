@@ -7,7 +7,6 @@ from . import results
 from .system import System, decorate_structure_plot
 from .lattice import Lattice
 from .leads import Leads
-from .results import StructureMap
 
 __all__ = ['Model']
 
@@ -79,20 +78,19 @@ class Model(_cpp.Model):
         """
         super().attach_lead(direction, contact)
 
-    def structure_map(self, data=None):
+    def structure_map(self, data):
         """Return a :class:`.StructureMap` of the model system mapped to the specified `data`
 
         Parameters
         ----------
         data : Optional[array_like]
-            Data array to map to site positions. Defaults to sublattice IDs if not specified.
+            Data array to map to site positions.
 
         Returns
         -------
         :class:`~pybinding.results.StructureMap`
         """
-        data = data if data is not None else self.system.sublattices
-        return StructureMap.from_system(data, self.system)
+        return self.system.with_data(data)
 
     def tokwant(self):
         """Convert this model into `kwant <http://kwant-project.org/>`_ format (finalized)
@@ -141,8 +139,7 @@ class Model(_cpp.Model):
     @property
     def onsite_map(self) -> results.StructureMap:
         """:class:`.StructureMap` of the onsite energy"""
-        onsite_energy = np.real(self.hamiltonian.tocsr().diagonal())
-        return results.StructureMap.from_system(onsite_energy, self.system)
+        return self.structure_map(np.real(self.hamiltonian.diagonal()))
 
     def plot(self, num_periods=1, lead_length=6, axes='xy', **kwargs):
         """Plot the structure of the model: sites, hoppings, boundaries and leads
