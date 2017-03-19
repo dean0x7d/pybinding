@@ -25,6 +25,19 @@ def model(request):
     return pb.Model(*request.param)
 
 
+def test_pickle_round_trip(model):
+    import pickle
+    unpickled = pickle.loads(pickle.dumps(model.system))
+    assert pytest.fuzzy_equal(model.system, unpickled)
+
+
+def test_expected(model, baseline, plot_if_fails):
+    system = model.system
+    expected = baseline(system)
+    plot_if_fails(system, expected, "plot")
+    assert pytest.fuzzy_equal(system, expected, 1.e-4, 1.e-6)
+
+
 def test_api():
     model = pb.Model(graphene.monolayer(), pb.primitive(2, 2))
     system = model.system
@@ -48,22 +61,6 @@ def test_sites():
     assert idx == sites.find_nearest(system.xyz[idx])
     assert idx == sites.find_nearest(system.xyz[idx], system.sublattices[idx])
     assert sites.find_nearest([0, 0], 'A') != sites.find_nearest([0, 0], 'B')
-
-
-def test_pickle_round_trip(model, tmpdir):
-    file_name = str(tmpdir.join('file.npz'))
-    pb.save(model.system, file_name)
-    from_file = pb.load(file_name)
-
-    assert pytest.fuzzy_equal(model.system, from_file)
-
-
-@pytest.mark.skip(reason="TODO: revise System binary format")
-def test_expected(model, baseline, plot_if_fails):
-    system = model.system
-    expected = baseline(system)
-    plot_if_fails(system, expected, 'plot')
-    assert pytest.fuzzy_equal(system, expected, 1.e-4, 1.e-6)
 
 
 def test_system_plot(compare_figure):

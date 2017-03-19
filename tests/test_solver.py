@@ -69,7 +69,6 @@ def test_ldos(solver, plot_if_fails):
     assert pytest.fuzzy_equal(result, expected)
 
 
-@pytest.mark.skip
 def test_spatial_ldos(solver, baseline, plot_if_fails):
     ldos_map = solver.calc_spatial_ldos(energy=0.05, broadening=0.01)
 
@@ -77,9 +76,8 @@ def test_spatial_ldos(solver, baseline, plot_if_fails):
     y_max = solver.system.y.max()
     ldos_map = ldos_map.cropped(x=(x_max - 1, x_max + 1), y=(y_max - 1, y_max + 1))
 
-    expected = ldos_map[:]
-    expected.data = baseline(ldos_map.data)
-    plot_if_fails(ldos_map, expected, 'plot')
+    expected = ldos_map.with_data(baseline(ldos_map.data))
+    plot_if_fails(ldos_map, expected, "plot")
 
     assert pytest.fuzzy_equal(ldos_map, expected, rtol=1e-2, atol=1e-5)
 

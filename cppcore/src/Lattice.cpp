@@ -315,16 +315,17 @@ SubID Lattice::make_unique_sublattice_id(string_view name) {
 }
 
 OptimizedUnitCell::OptimizedUnitCell(Lattice const& lattice) : sites(lattice.nsub()) {
-    using Pair = Lattice::Sublattices::value_type;
-    auto const& sublattices = lattice.get_sublattices();
-    std::transform(sublattices.begin(), sublattices.end(), sites.begin(), [](Pair const& pair) {
+    // Populate sites in ascending unique_id order
+    for (auto const& pair : lattice.get_sublattices()) {
         auto const& sub = pair.second;
-        return Site{sub.position, /*norb*/static_cast<storage_idx_t>(sub.energy.cols()),
-                    sub.unique_id, sub.alias_id, /*hoppings*/{}};
-    });
+        auto const idx = sub.unique_id.as<size_t>();
+        sites[idx] = {sub.position, /*norb*/static_cast<storage_idx_t>(sub.energy.cols()),
+                      sub.unique_id, sub.alias_id, /*hoppings*/{}};
+    }
 
-    // Sites with equal `alias_id` will be merged in the final system
-    std::sort(sites.begin(), sites.end(), [](Site const& a, Site const& b) {
+    // Sites with equal `alias_id` will be merged in the final system. Stable sort
+    // ensures that the ascending unique_id order is preserved within alias groups.
+    std::stable_sort(sites.begin(), sites.end(), [](Site const& a, Site const& b) {
         return a.alias_id < b.alias_id;
     });
 

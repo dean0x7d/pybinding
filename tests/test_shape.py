@@ -20,6 +20,14 @@ def polygon(request):
     return request.param
 
 
+def test_polygon_expected(polygon, baseline, plot_if_fails):
+    model = pb.Model(graphene.monolayer(), polygon)
+    expected = baseline(model.system)
+    plot_if_fails(model.system, expected, "plot")
+    plot_if_fails(polygon, polygon, "plot")
+    assert pytest.fuzzy_equal(model.system, expected, 1.e-4, 1.e-6)
+
+
 def test_polygon_api():
     with pytest.raises(RuntimeError) as excinfo:
         pb.Polygon([[0, 0], [0, 1]])
@@ -31,16 +39,6 @@ def test_polygon_simple(polygon):
     assert np.all(polygon.contains(x, y, z) == [True, False])
 
 
-@pytest.mark.skip(reason="TODO: revise System binary format")
-def test_polygon_baseline(polygon, baseline, plot_if_fails):
-    model = pb.Model(graphene.monolayer(), polygon)
-    expected = baseline(model.system)
-    plot_if_fails(model.system, expected, 'plot')
-    plot_if_fails(polygon, polygon, 'plot')
-    assert pytest.fuzzy_equal(model.system, expected, 1.e-4, 1.e-6)
-
-
-@pytest.mark.skip(reason="TODO: revise System binary format")
 def test_freeform(baseline, plot_if_fails):
     def donut(inner_radius, outer_radius):
         def contains(x, y, _):
