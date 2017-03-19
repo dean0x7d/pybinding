@@ -2,8 +2,8 @@
 
 namespace cpb {
 
-HoppingBlocks::HoppingBlocks(idx_t num_sites, SerializedBlocks const& data)
-    : num_sites(num_sites) {
+HoppingBlocks::HoppingBlocks(idx_t num_sites, SerializedBlocks const& data, NameMap name_map)
+    : num_sites(num_sites), name_map(std::move(name_map)) {
     blocks.reserve(data.size());
     for (auto const& pair : data) {
         auto const size = pair.first.size();
@@ -62,7 +62,7 @@ void HoppingBlocks::append(HopID family_id, ArrayXi&& rows, ArrayXi&& cols) {
     block.erase(std::unique(block.begin(), block.end()), block.end());
 }
 
-SparseMatrixX<storage_idx_t> HoppingBlocks::to_csr() const {
+SparseMatrixX<storage_idx_t> HoppingBlocks::tocsr() const {
     auto csr = SparseMatrixX<storage_idx_t>(num_sites, num_sites);
     csr.reserve(nnz());
     for (auto const& block : *this) {

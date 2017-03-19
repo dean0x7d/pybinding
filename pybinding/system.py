@@ -9,12 +9,40 @@ from . import _cpp
 from . import pltutils
 from .lattice import Lattice
 from .utils import with_defaults
+from .support.alias import AliasArray
 from .support.fuzzy_set import FuzzySet
-from .support.structure import Sites
+from .support.structure import AbstractSites, Sites
 from .results import Structure
 
 __all__ = ['Sites', 'System', 'plot_hoppings', 'plot_periodic_boundaries', 'plot_sites',
            'structure_plot_properties']
+
+
+class _CppSites(AbstractSites):
+    """Tailored to the internal C++ compressed sublattice representation"""
+    def __init__(self, impl: _cpp.System):
+        self._positions = impl.positions
+        self._cs = impl.compressed_sublattices
+        self._lattice = impl.lattice
+
+    @property
+    def x(self):
+        return self._positions.x
+
+    @property
+    def y(self):
+        return self._positions.y
+
+    @property
+    def z(self):
+        return self._positions.z
+
+    @property
+    def ids(self):
+        return AliasArray(self._cs.decompressed(), self._lattice.sub_name_map)
+
+    def __getitem__(self, item):
+        return Sites([v[item] for v in self.positions], self.ids[item])
 
 
 class System(Structure):
@@ -23,8 +51,14 @@ class System(Structure):
     Stores positions, sublattice and hopping IDs for all lattice sites.
     """
     def __init__(self, impl: _cpp.System):
-        super().__init__(Sites(impl.positions, impl.sublattices), impl.hoppings, impl.boundaries)
+        super().__init__(_CppSites(impl), impl.hopping_blocks, impl.boundaries)
         self.impl = impl
+
+    def __getstate__(self):
+        return self.impl
+
+    def __setstate__(self, impl):
+        self.__init__(impl)
 
     @property
     def lattice(self) -> Lattice:

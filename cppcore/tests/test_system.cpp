@@ -26,7 +26,7 @@ TEST_CASE("CompressedSublattices") {
     inject(cs, 3, SubAliasID{4}, 3);
     ds.segment(27, 3).setConstant(4);
 
-    REQUIRE(cs.decompress().matrix() == ds);
+    REQUIRE(cs.decompressed().matrix() == ds);
 
     REQUIRE_NOTHROW(cs.verify(size));
     REQUIRE(cs.alias_ids().size() == 4);

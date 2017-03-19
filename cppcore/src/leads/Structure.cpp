@@ -27,7 +27,7 @@ Structure::Structure(Foundation const& foundation, Spec const& lead)
     /*system*/ {
         auto const size = static_cast<int>(indices.size());
         system.positions.resize(size);
-        system.hopping_blocks = {size, lattice.nhop()};
+        system.hopping_blocks = {size, lattice.hop_name_map()};
 
         for (auto const& site : slice) {
             if (!junction.is_valid[site.get_slice_idx()]) {
@@ -50,7 +50,7 @@ Structure::Structure(Foundation const& foundation, Spec const& lead)
 
     system.boundaries.push_back([&]{
         auto const size = static_cast<int>(indices.size());
-        auto hopping_blocks = HoppingBlocks(size, lattice.nhop());
+        auto hopping_blocks = HoppingBlocks(size, lattice.hop_name_map());
 
         for (auto const& site : slice) {
             if (!junction.is_valid[site.get_slice_idx()]) {

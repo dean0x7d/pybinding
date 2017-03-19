@@ -11,7 +11,7 @@ import matplotlib.pyplot as plt
 from . import pltutils
 from .utils import with_defaults, x_pi
 from .support.pickle import pickleable
-from .support.structure import Positions, AbstractSites, Sites, Hoppings, Boundary
+from .support.structure import Positions, AbstractSites, Sites, Hoppings
 
 __all__ = ['Bands', 'DOS', 'Eigenvalues', 'LDOS', 'NDSweep', 'SpatialMap', 'StructureMap',
            'Sweep', 'make_path']
@@ -376,8 +376,8 @@ class StructureMap(SpatialMap):
 
     def __init__(self, data, sites, hoppings, boundaries=()):
         super().__init__(data, sites)
-        self._hoppings = Hoppings(hoppings)
-        self._boundaries = [Boundary(b.shift, Hoppings(b.hoppings)) for b in boundaries]
+        self._hoppings = hoppings
+        self._boundaries = boundaries
 
     @property
     def spatial_map(self) -> SpatialMap:
@@ -470,8 +470,8 @@ class Structure:
     """
     def __init__(self, sites, hoppings, boundaries=()):
         self._sites = sites
-        self._hoppings = Hoppings(hoppings)
-        self._boundaries = [Boundary(b.shift, Hoppings(b.hoppings)) for b in boundaries]
+        self._hoppings = hoppings
+        self._boundaries = boundaries
 
     @property
     def num_sites(self) -> int:

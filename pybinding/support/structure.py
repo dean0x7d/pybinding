@@ -5,6 +5,18 @@ import numpy as np
 from numpy import ma
 from scipy.sparse import csr_matrix, coo_matrix
 
+
+def _slice_csr_matrix(csr, idx):
+    """Return a slice of a CSR matrix matching the given indices (applied to both rows and cols"""
+    from copy import copy
+
+    m = copy(csr)  # shallow copy
+    m.data = m.data.copy()
+    m.data += 1  # increment by 1 to preserve zeroes when slicing to preserve all data, even zeros
+    m = m[idx][:, idx]
+    m.data -= 1
+    return m
+
 Positions = namedtuple("Positions", "x y z")
 Positions.__doc__ = """
 Named tuple of arrays
@@ -206,15 +218,7 @@ class Hoppings(AbstractHoppings):
         return self._csr.tocoo()
 
     def __getitem__(self, idx):
-        """Indexing must preserve all data, even zeros"""
-        from copy import copy
-
-        m = copy(self._csr)  # shallow copy
-        m.data = m.data.copy()
-        m.data += 1  # increment by 1 to preserve zeroes when slicing
-        m = m[idx][:, idx]
-        m.data -= 1
-        return self.__class__(m)
+        return self.__class__(_slice_csr_matrix(self._csr, idx))
 
 
 class Boundary:

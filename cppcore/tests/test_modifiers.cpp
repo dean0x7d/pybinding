@@ -103,7 +103,7 @@ TEST_CASE("HoppingGenerator") {
         auto const hopping_it = hop_names.find("t2");
         REQUIRE(hopping_it != hop_names.end());
         auto const hopping_id = hopping_it->second;
-        REQUIRE(model.system()->hopping_blocks.to_csr().coeff(0, 1) == hopping_id);
+        REQUIRE(model.system()->hopping_blocks.tocsr().coeff(0, 1) == hopping_id);
     }
 
     SECTION("Add complex generator") {
@@ -124,7 +124,7 @@ TEST_CASE("HoppingGenerator") {
         }));
 
         REQUIRE(model.system()->hopping_blocks.nnz() == 1);
-        auto const csr = model.system()->hopping_blocks.to_csr();
+        auto const csr = model.system()->hopping_blocks.tocsr();
         REQUIRE(csr.coeff(0, 1) == 1);
         REQUIRE(csr.coeff(1, 0) == 0);
     }

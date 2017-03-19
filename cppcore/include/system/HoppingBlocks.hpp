@@ -81,14 +81,15 @@ public:
 
 public:
     HoppingBlocks() = default;
-    HoppingBlocks(idx_t num_sites, idx_t num_families)
-        : num_sites(num_sites), blocks(num_families) {}
+    HoppingBlocks(idx_t num_sites, NameMap name_map)
+        : num_sites(num_sites), blocks(name_map.size()), name_map(std::move(name_map)) {}
     /// Internal: construct from serialized data
-    HoppingBlocks(idx_t num_sites, SerializedBlocks const& data);
+    HoppingBlocks(idx_t num_sites, SerializedBlocks const& data, NameMap name_map);
 
     /// Internal: return serialized data
     idx_t get_num_sites() const { return num_sites; }
     SerializedBlocks get_serialized_blocks() const;
+    NameMap const& get_name_map() const { return name_map; }
 
     Iterator begin() const { return blocks.begin(); }
     Iterator end() const { return blocks.end(); }
@@ -108,11 +109,12 @@ public:
     void append(HopID family_id, ArrayXi&& rows, ArrayXi&& cols);
 
     /// Return the matrix in the CSR sparse matrix format
-    SparseMatrixX<storage_idx_t> to_csr() const;
+    SparseMatrixX<storage_idx_t> tocsr() const;
 
 private:
     idx_t num_sites; ///< number of lattice sites, i.e. the size of the square matrix
     Blocks blocks; ///< the coordinate blocks indexed by hopping family ID
+    NameMap name_map; ///< map from friendly hopping family names to their numeric IDs
 };
 
 } // namespace cpb

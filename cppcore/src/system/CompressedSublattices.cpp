@@ -57,7 +57,7 @@ idx_t CompressedSublattices::decompressed_size() const {
     });
 }
 
-ArrayX<storage_idx_t> CompressedSublattices::decompress() const {
+ArrayX<storage_idx_t> CompressedSublattices::decompressed() const {
     auto sublattices = ArrayX<storage_idx_t>(decompressed_size());
     for (auto const& sub : *this) {
         sublattices.segment(sub.sys_start(), sub.num_sites())

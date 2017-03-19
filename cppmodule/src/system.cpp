@@ -16,6 +16,7 @@ void wrap_system(py::module& m) {
         });
 
     py::class_<CompressedSublattices>(m, "CompressedSublattices")
+        .def("decompressed", [](CompressedSublattices const& c) { return c.decompressed(); })
         .def("__getstate__", [](CompressedSublattices const& c) {
             return py::dict("alias_ids"_a=c.alias_ids(), "site_counts"_a=c.site_counts(),
                             "orbital_counts"_a=c.orbital_counts());
@@ -27,21 +28,39 @@ void wrap_system(py::module& m) {
         });
 
     py::class_<HoppingBlocks>(m, "HoppingBlocks")
+        .def_property_readonly("nnz", [](HoppingBlocks const& hb) { return hb.nnz(); })
+        .def("tocsr", [](HoppingBlocks const& hb) {
+            auto type = py::module::import("pybinding.support.alias").attr("AliasCSRMatrix");
+            return type(hb.tocsr(), "mapping"_a=hb.get_name_map());
+        })
+        .def("tocoo", [](py::object self) { return self.attr("tocsr")().attr("tocoo")(); })
+        .def("__getitem__", [](py::object self, py::object item) {
+            auto const structure = py::module::import("pybinding.support.structure");
+            return structure.attr("Hoppings")(
+                structure.attr("_slice_csr_matrix")(self.attr("tocsr")(), item)
+            );
+        })
         .def("__getstate__", [](HoppingBlocks const& hb) {
-            return py::dict("num_sites"_a=hb.get_num_sites(), "data"_a=hb.get_serialized_blocks());
+            return py::dict("num_sites"_a=hb.get_num_sites(), "data"_a=hb.get_serialized_blocks(),
+                            "name_map"_a=hb.get_name_map());
         })
         .def("__setstate__", [](HoppingBlocks& hb, py::dict d) {
             new (&hb) HoppingBlocks(d["num_sites"].cast<idx_t>(),
-                                    d["data"].cast<HoppingBlocks::SerializedBlocks>());
+                                    d["data"].cast<HoppingBlocks::SerializedBlocks>(),
+                                    d["name_map"].cast<NameMap>());
         });
 
     using Boundary = System::Boundary;
     py::class_<Boundary>(m, "Boundary")
-        .def_property_readonly("hoppings", [](Boundary const& b) {
-            return b.hopping_blocks.to_csr();
-        })
+        .def_readonly("hoppings", &Boundary::hopping_blocks)
         .def_readonly("shift", &Boundary::shift)
-        .def("__getstate__", [](Boundary const& b) { return py::make_tuple(b.hopping_blocks, b.shift); })
+        .def("__getitem__", [](py::object self, py::object item) {
+            auto type = py::module::import("pybinding.support.structure").attr("Boundary");
+            return type(self.attr("shift"), self.attr("hoppings")[item]);
+        })
+        .def("__getstate__", [](Boundary const& b) {
+            return py::make_tuple(b.hopping_blocks, b.shift);
+        })
         .def("__setstate__", [](Boundary& b, py::tuple t) {
             new (&b) Boundary{t[0].cast<decltype(b.hopping_blocks)>(),
                               t[1].cast<decltype(b.shift)>()};
@@ -50,19 +69,9 @@ void wrap_system(py::module& m) {
     py::class_<System, std::shared_ptr<System>>(m, "System")
         .def("find_nearest", &System::find_nearest, "position"_a, "sublattice"_a="")
         .def_readonly("lattice", &System::lattice)
-        .def_property_readonly("positions", [](System const& s) {
-            auto const& a = s.positions;
-            auto type = py::module::import("pybinding.support.structure").attr("Positions");
-            return type(arrayref(a.x), arrayref(a.y), arrayref(a.z));
-        })
-        .def_property_readonly("sublattices", [](System const& s) {
-            auto type = py::module::import("pybinding.support.alias").attr("AliasArray");
-            return type(s.compressed_sublattices.decompress(), s.lattice.sub_name_map());
-        })
-        .def_property_readonly("hoppings", [](System const& s) {
-            auto type = py::module::import("pybinding.support.alias").attr("AliasCSRMatrix");
-            return type(s.hopping_blocks.to_csr(), "mapping"_a=s.lattice.hop_name_map());
-        })
+        .def_readonly("positions", &System::positions)
+        .def_readonly("compressed_sublattices", &System::compressed_sublattices)
+        .def_readonly("hopping_blocks", &System::hopping_blocks)
         .def_readonly("boundaries", &System::boundaries)
         .def("__getstate__", [](System const& s) {
             return py::dict("lattice"_a=s.lattice, "positions"_a=s.positions,

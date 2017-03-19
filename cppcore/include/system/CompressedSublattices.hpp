@@ -80,7 +80,7 @@ public:
     /// Total size if decompressed (sum of the number of sites in all sublattices)
     idx_t decompressed_size() const;
     /// Return the full uncompressed array of IDs
-    ArrayX<storage_idx_t> decompress() const;
+    ArrayX<storage_idx_t> decompressed() const;
 
     It begin() const { return data.begin(); }
     It end() const { return data.end(); }

@@ -16,6 +16,9 @@ using SubID = detail::OpaqueIntegerAlias<class SubIDTag>;
 using SubAliasID = detail::OpaqueIntegerAlias<class SubAliasIDTag>;
 using HopID = detail::OpaqueIntegerAlias<class HopIDTag>;
 
+/// Map from friendly sublattice/hopping name to numeric ID
+using NameMap = std::unordered_map<std::string, storage_idx_t>;
+
 class OptimizedUnitCell;
 
 /**
@@ -54,7 +57,6 @@ public:
     using Vectors = std::vector<Cartesian>;
     using Sublattices = std::unordered_map<std::string, Sublattice>;
     using Hoppings = std::unordered_map<std::string, HoppingFamily>;
-    using NameMap = std::unordered_map<std::string, storage_idx_t>;
 
 public:
     Lattice(Cartesian a1, Cartesian a2 = {0, 0, 0}, Cartesian a3 = {0, 0, 0});

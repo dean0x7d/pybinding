@@ -288,7 +288,7 @@ OptimizedUnitCell Lattice::optimized_unit_cell() const {
     return OptimizedUnitCell(*this);
 }
 
-Lattice::NameMap Lattice::sub_name_map() const {
+NameMap Lattice::sub_name_map() const {
     auto map = NameMap();
     for (auto const& p : sublattices) {
         map[p.first] = p.second.unique_id.value();
@@ -296,7 +296,7 @@ Lattice::NameMap Lattice::sub_name_map() const {
     return map;
 }
 
-Lattice::NameMap Lattice::hop_name_map() const {
+NameMap Lattice::hop_name_map() const {
     auto map = NameMap();
     for (auto const& p : hoppings) {
         map[p.first] = p.second.family_id.value();

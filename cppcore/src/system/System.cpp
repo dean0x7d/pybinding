@@ -81,7 +81,7 @@ void populate_system(System& system, Foundation const& foundation) {
 
     auto const size = finalized_indices.size();
     system.positions.resize(size);
-    system.hopping_blocks = {size, lattice.nhop()};
+    system.hopping_blocks = {size, lattice.hop_name_map()};
     system.hopping_blocks.reserve(finalized_indices.max_hoppings_per_family());
 
     for (auto const& site : foundation) {
@@ -112,7 +112,7 @@ void populate_boundaries(System& system, Foundation const& foundation,
     for (const auto& translation : symmetry.translations(foundation)) {
         auto boundary = System::Boundary();
         boundary.shift = translation.shift_lenght;
-        boundary.hopping_blocks = {size, lattice.nhop()};
+        boundary.hopping_blocks = {size, lattice.hop_name_map()};
 
         for (auto const& site : foundation[translation.boundary_slice]) {
             auto const index = finalized_indices[site];
@@ -136,7 +136,7 @@ void populate_boundaries(System& system, Foundation const& foundation,
 
 void add_extra_hoppings(System& system, HoppingGenerator const& gen) {
     auto const& lattice = system.lattice;
-    auto const sublattices = system.compressed_sublattices.decompress();
+    auto const sublattices = system.compressed_sublattices.decompressed();
     auto const family_id = lattice.hopping_family(gen.name).family_id;
     auto pairs = gen.make(system.positions, {sublattices, lattice.sub_name_map()});
     system.hopping_blocks.append(family_id, std::move(pairs.from), std::move(pairs.to));

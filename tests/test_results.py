@@ -86,7 +86,9 @@ def test_structure_map(model):
     spatial_map = pb.results.SpatialMap(zeros, system.positions, system.sublattices)
     structure_map = system.with_data(zeros)
 
-    assert pytest.fuzzy_equal(spatial_map, structure_map.spatial_map)
+    assert pytest.fuzzy_equal(spatial_map.data, structure_map.spatial_map.data)
+    assert pytest.fuzzy_equal(spatial_map.positions, structure_map.spatial_map.positions)
+    assert pytest.fuzzy_equal(spatial_map.sublattices, structure_map.spatial_map.sublattices)
 
     tmp = structure_map[structure_map.x < 0.05]
     assert structure_map.hoppings.nnz == 41
