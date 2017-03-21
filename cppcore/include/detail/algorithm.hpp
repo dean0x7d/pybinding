@@ -5,41 +5,50 @@
 
 namespace cpb {
 
-/// Loop over each element of `Vector` and call:
-///     fill_buffer(reference element, idx_t buffer_position)
-/// After every `buffer_capacity` iterations, the `notify_filled` function is called:
-///     notify_filled(idx_t last_buffer_size)
-/// Following that `process_buffer` is called for each `last_buffer_size` elements:
-///     process_buffer(reference element, idx_t buffer_position)
-/// Requires `Vector` to be random-access-iterable.
-template<class Vector, class F1, class F2, class F3, class F4>
-void buffered_for_each(Vector const& v, idx_t buffer_capacity, F1 fill_buffer,
-                       F2 notify_filled, F3 process_buffer, F4 notify_processed) {
-    using std::begin; using std::end;
+/**
+ Slice a Vector into pieces of `slice_size`
+ */
+template<class Vector>
+class Sliced {
+    struct Iterator {
+        using Self = Iterator;
+        using iterator_category = std::input_iterator_tag;
+        using difference_type = std::ptrdiff_t;
+        using value_type = Self const;
+        using reference = value_type&;
+        using pointer = value_type*;
 
-    auto it = begin(v);
-    auto const stop = end(v);
-    auto previous_start = it;
-    auto buffer_level = idx_t{0};
+        using InnerIt = typename Vector::const_iterator;
+        InnerIt it, last;
+        idx_t step;
 
-    for (; it != stop; ++it) {
-        if (buffer_level == buffer_capacity) {
-            notify_filled(buffer_capacity);
-            for (auto rewound_it = previous_start; rewound_it != it; ++rewound_it) {
-                process_buffer(*rewound_it, rewound_it - previous_start);
-            }
-            previous_start = it;
-            buffer_level = 0;
-            notify_processed();
-        }
+        Iterator(InnerIt first, InnerIt last, idx_t step) : it(first), last(last), step(step) {}
+        Iterator(InnerIt last) : it(last) {}
 
-        fill_buffer(*it, buffer_level++);
-    }
+        InnerIt begin() const { return it; }
+        InnerIt end() const { return std::min(it + step, last); }
 
-    notify_filled(buffer_level);
-    for (auto rewound_it = previous_start; rewound_it != stop; ++rewound_it) {
-        process_buffer(*rewound_it, rewound_it - previous_start);
-    }
-}
+        reference operator*() { return *this; }
+        pointer operator->() { return this; }
+        Self& operator++() { it = end(); return *this; }
+
+        friend bool operator==(Self const& l, Self const& r) { return l.it == r.it; }
+        friend bool operator!=(Self const& l, Self const& r) { return !(l == r); }
+    };
+
+public:
+    Sliced(Vector const& vec, idx_t slice_size) : vec(vec), slice_size(slice_size) {}
+
+    Iterator begin() const { return {vec.begin(), vec.end(), slice_size}; }
+    Iterator end() const { return {vec.end()}; }
+
+private:
+    Vector const& vec;
+    idx_t slice_size;
+};
+
+/// Iterate over slices of a vector
+template<class Vector>
+Sliced<Vector> sliced(Vector const& vec, idx_t slice_size) { return {vec, slice_size}; }
 
 } // namespace cpb

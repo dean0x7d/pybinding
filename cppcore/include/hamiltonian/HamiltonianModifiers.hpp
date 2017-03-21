@@ -112,22 +112,27 @@ void HamiltonianModifiers::apply_to_onsite(System const& system, Fn lambda) cons
     }
 
     for (auto const& sub : system.compressed_sublattices) {
-        auto onsite_energy = ArrayX<scalar_t>::Zero(sub.ham_size() * sub.num_orbitals()).eval();
+        auto const nsites = sub.num_sites();
+        auto const norb = sub.num_orbitals();
+        auto onsite_energy = ArrayX<scalar_t>::Zero(nsites * norb * norb).eval();
 
         if (has_intrinsic_onsite) {
             // Intrinsic lattice onsite energy -- just replicate the value at each site
-            auto const energy = num::force_cast<scalar_t>(lattice[SubID(sub.alias_id())].energy);
-            auto const flat = Eigen::Map<ArrayX<scalar_t> const>(energy.data(), energy.size());
-            onsite_energy = flat.replicate(sub.num_sites(), 1);
+            auto const& site_family = lattice[SubID(sub.alias_id())];
+            auto const intrinsic_energy = num::force_cast<scalar_t>(site_family.energy);
+
+            auto start = idx_t{0};
+            for (auto const& value : intrinsic_energy) {
+                onsite_energy.segment(start, nsites).setConstant(value);
+                start += nsites;
+            }
         }
 
         if (!onsite.empty()) {
             // Apply all user-defined onsite modifier functions
-            auto onsite_ref = arrayref(onsite_energy.data(), sub.num_sites(),
-                                       sub.num_orbitals(), sub.num_orbitals());
-            if (sub.num_orbitals() == 1) { onsite_ref.ndim = 1; } // squeeze dimensions
-
-            auto const position_ref = system.positions.segment(sub.sys_start(), sub.num_sites());
+            auto onsite_ref = (norb == 1) ? arrayref(onsite_energy.data(), nsites)
+                                          : arrayref(onsite_energy.data(), norb, norb, nsites);
+            auto const position_ref = system.positions.segment(sub.sys_start(), nsites);
             auto const sub_name = lattice.sublattice_name(SubID(sub.alias_id()));
 
             for (auto const& modifier : onsite) {
@@ -135,26 +140,18 @@ void HamiltonianModifiers::apply_to_onsite(System const& system, Fn lambda) cons
             }
         }
 
+        // Pass along each onsite value at the correct Hamiltonian row and column indices
         auto const* data = onsite_energy.data();
-        if (sub.num_orbitals() == 1) {
-            // Fast path: `onsite_energy` corresponds directly with the diagonal of the Hamiltonian
-            for (auto idx = sub.ham_start(), end = sub.ham_end(); idx < end; ++idx) {
-                auto const value = *data++;
-                if (value != scalar_t{0}) { lambda(idx, idx, value); }
-            }
-        } else {
-            // Slow path: `onsite_energy` holds matrices: (norb x norb)
-            auto const norb = sub.num_orbitals();
-
-            for (auto start = sub.ham_start(), end = sub.ham_end(); start < end; start += norb) {
-                for (auto row = start; row < start + norb; ++row) {
-                    for (auto col = start; col < start + norb; ++col) {
-                        auto const value = *data++;
-                        if (value != scalar_t{0}) { lambda(row, col, value); }
+        for (auto i = idx_t{0}; i < norb; ++i) {
+            for (auto j = idx_t{0}; j < norb; ++j) {
+                for (auto idx = sub.ham_start(), end = sub.ham_end(); idx < end; idx += norb) {
+                    auto const value = *data++;
+                    if (value != scalar_t{0}) {
+                        lambda(i + idx, j + idx, value);
                     }
                 }
             }
-        } // if (sub.num_orbitals() == 1)
+        }
     } // for (auto const& sub : system.compressed_sublattices)
 }
 
@@ -171,18 +168,23 @@ public:
           ham_start(system.to_hamiltonian_index(sys_start.row),
                     system.to_hamiltonian_index(sys_start.col)) {}
 
-    /// Loop over all Hamiltonian indices matching the System indices given in `coo`:
+    /// Loop over all Hamiltonian indices matching the System indices given in `coordinates`:
     ///     lambda(idx_t row, idx_t col, scalar_t value)
-    /// where `row` and `col` are the Hamiltonian indices and `value` is an element
-    /// of the given `matrix` argument.
-    template<class Matrix, class F> CPB_ALWAYS_INLINE
-    void for_each(COO coo, Matrix const& matrix, F lambda) const {
-        auto const ham_row = ham_start.row + (coo.row - sys_start.row) * term_size.row;
-        auto const ham_col = ham_start.col + (coo.col - sys_start.col) * term_size.col;
+    /// where `row` and `col` are the Hamiltonian indices.
+    template<class C, class F, class V, class scalar_t = typename V::Scalar> CPB_ALWAYS_INLINE
+    void for_each(C const& coordinates, V const& hopping_buffer, F lambda) const {
+        auto const* data = hopping_buffer.data();
+        for (auto i = ham_start.row; i < ham_start.row + term_size.row; ++i) {
+            for (auto j = ham_start.col; j < ham_start.col + term_size.col; ++j) {
+                for (auto const& coo : coordinates) {
+                    auto const ham_row = i + (coo.row - sys_start.row) * term_size.row;
+                    auto const ham_col = j + (coo.col - sys_start.col) * term_size.col;
 
-        for (auto i = 0; i < term_size.row; ++i) {
-            for (auto j = 0; j < term_size.col; ++j) {
-                lambda(ham_row + i, ham_col + j, matrix(i, j));
+                    auto const value = *data++;
+                    if (value != scalar_t{0}) {
+                        lambda(ham_row, ham_col, value);
+                    }
+                }
             }
         }
     }
@@ -213,26 +215,24 @@ struct HoppingBuffer {
     HoppingBuffer(MatrixXcd const& unit_hopping, idx_t block_size)
         : size(std::min(max_buffer_size / unit_hopping.size(), block_size)),
           unit_hopping(num::force_cast<scalar_t>(unit_hopping)),
-          pos1(size), pos2(size) { reset_hoppings(); }
+          hoppings(size * unit_hopping.size()),
+          pos1(size), pos2(size) {}
 
-    /// Replicate the `unit_hopping` matrix `size` times
+    /// Replicate each value from the `unit_hopping` matrix `size` times
     void reset_hoppings() {
-        using FlatMap = Eigen::Map<ArrayX<scalar_t> const>; // map 2D matrix to 1D array
-        auto const flat_energy = FlatMap(unit_hopping.data(), unit_hopping.size());
-        hoppings = ArrayX<scalar_t>(flat_energy.replicate(size, 1));
+        auto start = idx_t{0};
+        for (auto const& value : unit_hopping) {
+            hoppings.segment(start, size).setConstant(value);
+            start += size;
+        }
     }
 
     /// Return an `arrayref` of the first `num` elements (each element is a hopping matrix)
     ComplexArrayRef hoppings_ref(idx_t num) {
-        auto ref = arrayref(hoppings.data(), num, unit_hopping.rows(), unit_hopping.cols());
-        if (unit_hopping.rows() == 1 && unit_hopping.cols() == 1) { ref.ndim = 1; } // squeeze
-        return ref;
-    }
-
-    /// Return a single hopping matrix from hoppings
-    Eigen::Map<MatrixX<scalar_t> const> hopping_matrix(idx_t n) {
-        return {hoppings.data() + n * unit_hopping.size(),
-                unit_hopping.rows(), unit_hopping.cols()};
+        auto const rows = unit_hopping.rows();
+        auto const cols = unit_hopping.cols();
+        return (rows == 1 && cols == 1) ? arrayref(hoppings.data(), num)
+                                        : arrayref(hoppings.data(), rows, cols, num);
     }
 };
 
@@ -240,57 +240,49 @@ template<class scalar_t, class SystemOrBoundary, class Fn>
 void HamiltonianModifiers::apply_to_hoppings_impl(System const& system,
                                                   SystemOrBoundary const& system_or_boundary,
                                                   Fn lambda) const {
-    if (hopping.empty()) {
-        // Fast path: modifiers don't need to be applied
+    auto const& lattice = system.lattice;
+
+    // Fast path: Modifiers don't need to be applied and the single-orbital model
+    // allows direct mapping between sites and Hamiltonian matrix elements.
+    if (hopping.empty() && !lattice.has_multiple_orbitals()) {
         for (auto const& block : system_or_boundary.hopping_blocks) {
-            auto const& hopping_family = system.lattice(block.family_id());
-            auto const index_translator = IndexTranslator(system, hopping_family.energy);
+            auto const& hopping_family = lattice(block.family_id());
             auto const energy = num::force_cast<scalar_t>(hopping_family.energy);
 
+            auto const value = energy(0, 0); // single orbital
             for (auto const& coo : block.coordinates()) {
-                index_translator.for_each(coo, energy, [&](idx_t row, idx_t col, scalar_t value) {
-                    if (value != scalar_t{0}) {
-                        lambda(row, col, value);
-                    }
-                });
+                lambda(coo.row, coo.col, value);
             }
         }
 
         return;
     }
 
-    // Slow path: apply modifiers
+    // Slow path: Apply modifiers and/or consider multiple orbitals which
+    // require translating between site and Hamiltonian matrix indices.
     for (auto const& block : system_or_boundary.hopping_blocks) {
-        auto const& hopping_family = system.lattice(block.family_id());
+        auto const& hopping_family = lattice(block.family_id());
+        auto const hopping_name = lattice.hopping_family_name(block.family_id());
         auto const index_translator = IndexTranslator(system, hopping_family.energy);
 
         auto buffer = HoppingBuffer<scalar_t>(hopping_family.energy, block.size());
+        for (auto const coo_slice : sliced(block.coordinates(), buffer.size)) {
+            buffer.reset_hoppings();
 
-        buffered_for_each(
-            block.coordinates(),
-            buffer.size,
-            /*fill buffer*/ [&](COO const& coo, idx_t n) {
-                buffer.pos1[n] = system.positions[coo.row];
-                buffer.pos2[n] = detail::shifted(system.positions[coo.col], system_or_boundary);
-            },
-            /*filled*/ [&](idx_t size) {
-                auto const hop_name = system.lattice.hopping_family_name(block.family_id());
+            auto size = idx_t{0};
+            for (auto const& coo : coo_slice) {
+                buffer.pos1[size] = system.positions[coo.row];
+                buffer.pos2[size] = detail::shifted(system.positions[coo.col], system_or_boundary);
+                ++size;
+            }
 
-                for (auto const& modifier : hopping) {
-                    modifier.apply(buffer.hoppings_ref(size), buffer.pos1.head(size),
-                                   buffer.pos2.head(size), hop_name);
-                }
-            },
-            /*process buffer*/ [&](COO const& coo, idx_t n) {
-                auto const energy = buffer.hopping_matrix(n);
-                index_translator.for_each(coo, energy, [&](idx_t row, idx_t col, scalar_t value) {
-                    if (value != scalar_t{0}) {
-                        lambda(row, col, value);
-                    }
-                });
-            },
-            /*processed*/ [&]() { buffer.reset_hoppings(); }
-        );
+            for (auto const& modifier : hopping) {
+                modifier.apply(buffer.hoppings_ref(size), buffer.pos1.head(size),
+                               buffer.pos2.head(size), hopping_name);
+            }
+
+            index_translator.for_each(coo_slice, buffer.hoppings, lambda);
+        }
     }
 }
 
