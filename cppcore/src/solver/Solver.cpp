@@ -45,7 +45,8 @@ struct CalcSpatialLDOS {
 } // namespace compute
 
 BaseSolver::BaseSolver(Model const& model, MakeStrategy const& make_strategy)
-    : model(model), make_strategy(make_strategy), strategy(make_strategy(model.hamiltonian())) {}
+    : model(model.eval()), make_strategy(make_strategy),
+      strategy(make_strategy(model.hamiltonian())) {}
 
 void BaseSolver::set_model(Model const& new_model) {
     is_solved = false;

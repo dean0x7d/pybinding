@@ -3,7 +3,8 @@
 namespace cpb {
 
 KPM::KPM(Model const& model, MakeStrategy const& make_strategy)
-    : model(model), make_strategy(make_strategy), strategy(make_strategy(model.hamiltonian())) {}
+    : model(model.eval()), make_strategy(make_strategy),
+      strategy(make_strategy(model.hamiltonian())) {}
 
 void KPM::set_model(Model const& new_model) {
     model = new_model;
