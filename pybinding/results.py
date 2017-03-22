@@ -680,6 +680,10 @@ class Bands:
             names.append(fmt.format(', '.join(values)))
         return names
 
+    @property
+    def num_bands(self):
+        return self.energy.shape[1]
+
     def plot(self, point_labels=None, **kwargs):
         """Line plot of the band structure
 
@@ -691,8 +695,11 @@ class Bands:
             Forwarded to `plt.plot()`.
         """
         default_color = pltutils.get_palette('Set1')[1]
+        default_linewidth = np.clip(5 / self.num_bands, 1.1, 1.6)
+        kwargs = with_defaults(kwargs, color=default_color, lw=default_linewidth)
+
         k_space = self.k_path.as_1d()
-        plt.plot(k_space, self.energy, **with_defaults(kwargs, color=default_color))
+        plt.plot(k_space, self.energy, **kwargs)
 
         plt.xlim(k_space.min(), k_space.max())
         plt.xlabel('k-space')

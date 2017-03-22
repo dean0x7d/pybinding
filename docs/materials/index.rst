@@ -21,3 +21,4 @@ Or::
 
     graphene
     phosphorene
+    group6_tmd
