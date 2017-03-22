@@ -70,7 +70,7 @@ with a potential barrier:
 
     def potential_barrier(v0, x0):
         """Barrier height `v0` in eV with spatial position `-x0 <= x <= x0`"""
-        @pb.onsite_energy_modifier(double=True)  # enable double-precision floating-point
+        @pb.onsite_energy_modifier(is_double=True)  # enable double-precision floating-point
         def function(energy, x):
             energy[np.logical_and(-x0 <= x, x <= x0)] = v0
             return energy
@@ -240,4 +240,4 @@ The reason for all of this is performance. Most solvers work faster with smaller
 consume less memory and bandwidth and SIMD vectorization becomes more efficient. This is assuming
 that single precision and/or real numbers are sufficient to describe the given model. In case of
 Kwant's solvers, it seems to require double precision in most cases. This is the reason for the
-`double=True` flag in the above example. Keep this in mind when exporting to Kwant.
+`is_double=True` flag in the above example. Keep this in mind when exporting to Kwant.

@@ -5,6 +5,7 @@ such as various fields, defects or geometric deformations.
 """
 import inspect
 import functools
+import warnings
 
 import numpy as np
 
@@ -14,9 +15,9 @@ from .support.inspect import get_call_signature
 from .support.alias import AliasArray, AliasIndex
 from .utils.misc import decorator_decorator
 
-__all__ = ['constant_potential', 'force_double_precision', 'hopping_energy_modifier',
-           'hopping_generator', 'onsite_energy_modifier', 'site_position_modifier',
-           'site_state_modifier']
+__all__ = ['constant_potential', 'force_double_precision', 'force_complex_numbers',
+           'hopping_energy_modifier', 'hopping_generator', 'onsite_energy_modifier',
+           'site_position_modifier', 'site_state_modifier']
 
 
 def _make_alias_array(obj, size):
@@ -250,12 +251,12 @@ def site_position_modifier(*_):
 
 
 @decorator_decorator
-def onsite_energy_modifier(double=False):
+def onsite_energy_modifier(is_double=False, **kwargs):
     """Modify the onsite energy, e.g.\  to apply an electric field
 
     Parameters
     ----------
-    double : bool
+    is_double : bool
         Requires the model to use double precision floating point values.
         Defaults to single precision otherwise.
 
@@ -294,20 +295,29 @@ def onsite_energy_modifier(double=False):
             wavy(a=0.6, b=0.9)
         )
     """
+    if "double" in kwargs:
+        warnings.warn("Use `is_double` parameter name instead of `double`", DeprecationWarning)
+        is_double = kwargs["double"]
     return functools.partial(_make_modifier, kind=_cpp.OnsiteModifier,
-                             init=dict(is_double=double), can_be_complex=True,
+                             init=dict(is_double=is_double), can_be_complex=True,
                              keywords="energy, x, y, z, sub_id")
 
 
 @decorator_decorator
-def hopping_energy_modifier(double=False):
+def hopping_energy_modifier(is_double=False, is_complex=False, **kwargs):
     """Modify the hopping energy, e.g.\  to apply a magnetic field
 
     Parameters
     ----------
-    double : bool
+    is_double : bool
         Requires the model to use double precision floating point values.
         Defaults to single precision otherwise.
+    is_complex : bool
+        Requires the model to use complex numbers. Even if this is set to `False`, 
+        the model will automatically switch to complex numbers if it finds that a
+        modifier has returned complex numbers for real input. Manually setting this
+        argument to `True` will speed up model build time slightly, but it's not
+        necessary for correct operation.
 
     Notes
     -----
@@ -344,8 +354,12 @@ def hopping_energy_modifier(double=False):
             constant_magnetic_field(B=10)
         )
     """
+    if "double" in kwargs:
+        warnings.warn("Use `is_double` parameter name instead of `double`", DeprecationWarning)
+        is_double = kwargs["double"]
     return functools.partial(_make_modifier, kind=_cpp.HoppingModifier,
-                             init=dict(is_double=double), can_be_complex=True, has_sites=False,
+                             init=dict(is_double=is_double, is_complex=is_complex),
+                             can_be_complex=True, has_sites=False,
                              keywords="energy, x1, y1, z1, x2, y2, z2, hop_id")
 
 
@@ -364,8 +378,16 @@ def constant_potential(magnitude):
 
 
 def force_double_precision():
-    """Forces the model to use double precision even if no other modifier requires it"""
-    @onsite_energy_modifier(double=True)
+    """Forces the model to use double precision even if that's not require by any modifier"""
+    @onsite_energy_modifier(is_double=True)
+    def f(energy):
+        return energy
+    return f
+
+
+def force_complex_numbers():
+    """Forces the model to use complex numbers even if that's not require by any modifier"""
+    @hopping_energy_modifier(is_complex=True)
     def f(energy):
         return energy
     return f

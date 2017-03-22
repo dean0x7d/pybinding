@@ -23,7 +23,7 @@ pb.pltutils.set_palette("Set1", start=3)
 
 def measure_pybinding(width, length, electron_energy, barrier_heights, plot=False):
     def potential_barrier(v0):
-        @pb.onsite_energy_modifier(double=True)
+        @pb.onsite_energy_modifier(is_double=True)
         def function(energy, x):
             energy[np.logical_and(-length / 4 <= x, x <= length / 4)] = v0
             return energy

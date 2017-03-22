@@ -239,7 +239,7 @@ def test_onsite():
     assert np.allclose(z, 0)
     assert np.all(nearest == [0])
 
-    @pb.onsite_energy_modifier(double=True)
+    @pb.onsite_energy_modifier(is_double=True)
     def make_double(energy):
         return energy
 
@@ -273,7 +273,7 @@ def test_hopping_energy():
     assert np.allclose(y2, graphene.a_cc / 2)
     assert np.allclose(z2, 0)
 
-    @pb.hopping_energy_modifier(double=True)
+    @pb.hopping_energy_modifier(is_double=True)
     def make_double(energy):
         return energy
 
@@ -287,7 +287,7 @@ def test_hopping_energy():
     model = build_model(make_complex)
     assert model.hamiltonian.dtype == np.complex64
 
-    @pb.hopping_energy_modifier(double=True)
+    @pb.hopping_energy_modifier(is_double=True)
     def make_complex_double(energy):
         return energy * 1j
 
