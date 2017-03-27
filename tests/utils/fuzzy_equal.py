@@ -61,8 +61,11 @@ def _assert_fuzzy_equal(actual, expected, rtol, atol):
 
     notclose = np.logical_not(isclose)
     num_failed = np.sum(notclose)
-    a = actual[notclose]
-    b = expected[notclose]
+    if len(notclose) > 10:
+        a = actual[notclose]
+        b = expected[notclose]
+    else:
+        a, b = actual, expected
     raise AssertionError("\n".join([
         "\nFailed on {} of {} values: {:.0%}".format(num_failed, actual.size,
                                                      num_failed / actual.size),

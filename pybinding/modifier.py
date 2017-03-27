@@ -20,33 +20,38 @@ __all__ = ['constant_potential', 'force_double_precision', 'force_complex_number
            'site_position_modifier', 'site_state_modifier']
 
 
-def _make_alias_array(obj, size):
-    if isinstance(obj, _cpp.SubIdRef):
-        return AliasArray(obj.ids, obj.name_map)
-    elif isinstance(obj, str):
-        return AliasIndex(obj, size)
-    else:
-        return obj
-
-
 def _process_modifier_args(args, keywords, requested_argnames):
     """Return only the requested modifier arguments
 
     Also process any special args like 'sub_id', 'hop_id' and 'sites'.
     """
-    kwargs = dict(zip(keywords, args))
-    if 'sub_id' in requested_argnames or 'sites' in requested_argnames:
-        kwargs['sub_id'] = _make_alias_array(kwargs['sub_id'], args[0].size)
-    if 'hop_id' in requested_argnames:
-        kwargs['hop_id'] = AliasIndex(kwargs['hop_id'], args[0].size)
+    prime_arg = args[0]
+    if prime_arg.ndim > 1:
+        # Move axis so that sites are first -- makes a nicer modifier interface
+        norb1, norb2, nsites = prime_arg.shape
+        prime_arg = np.moveaxis(prime_arg, 2, 0)
+        args = [prime_arg] + list(args[1:])
+        shape = nsites, 1, 1
+    else:
+        shape = prime_arg.shape
 
-    requested_kwargs = {name: value for name, value in kwargs.items()
-                        if name in requested_argnames}
+    def process(obj):
+        if isinstance(obj, _cpp.SubIdRef):
+            return AliasArray(obj.ids, obj.name_map)
+        elif isinstance(obj, str):
+            return AliasIndex(obj, shape)
+        elif obj.size == shape[0]:
+            obj.shape = shape
+            return obj
+        else:
+            return obj
 
-    if 'sites' in requested_argnames:
-        requested_kwargs['sites'] = Sites((kwargs[k] for k in ('x', 'y', 'z')), kwargs['sub_id'])
+    kwargs = {k: process(v) for k, v in zip(keywords, args) if k in requested_argnames}
 
-    return requested_kwargs
+    if "sites" in requested_argnames:
+        kwargs["sites"] = Sites((kwargs[k] for k in ("x", "y", "z")), kwargs["sub_id"])
+
+    return kwargs
 
 
 def _check_modifier_spec(func, keywords, has_sites=False):
@@ -82,8 +87,8 @@ def _sanitize_modifier_result(result, arg, expected_num_return, can_be_complex):
         raise TypeError("Modifier expected to return {} ndarray(s), "
                         "but got {}".format(expected_num_return, len(result)))
 
-    if any(r.shape != arg.shape for r in result):
-        raise TypeError("Modifier must return the same shape ndarray as the arguments")
+    if any(r.size != arg.size for r in result):
+        raise TypeError("Modifier must return the same size ndarray as the arguments")
 
     def cast(r):
         try:

@@ -127,28 +127,28 @@ class AliasIndex:
     True
     """
     class LazyArray:
-        def __init__(self, value, size):
+        def __init__(self, value, shape):
             self.value = value
-            self.size = size
+            self.shape = shape
 
         def __bool__(self):
             return bool(self.value)
 
         def __array__(self):
-            return np.full(self.size, self.value)
+            return np.full(self.shape, self.value)
 
-    def __init__(self, name, size):
+    def __init__(self, name, shape):
         self.name = name
-        self.size = size
+        self.shape = shape
 
     def __str__(self):
         return self.name
 
     def __eq__(self, other):
-        return self.LazyArray(self.name == other, self.size)
+        return self.LazyArray(self.name == other, self.shape)
 
     def __ne__(self, other):
-        return self.LazyArray(self.name != other, self.size)
+        return self.LazyArray(self.name != other, self.shape)
 
     def __hash__(self):
         return hash(self.name)

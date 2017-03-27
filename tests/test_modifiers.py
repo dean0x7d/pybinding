@@ -68,7 +68,7 @@ def test_type_errors():
 
     with pytest.raises(TypeError) as excinfo:
         build_model(pb.onsite_energy_modifier(lambda x: np.zeros(x.size // 2)))
-    assert "must return the same shape" in str(excinfo.value)
+    assert "must return the same size" in str(excinfo.value)
 
     def complex_ones(energy):
         return np.ones_like(energy, dtype=np.complex128)
@@ -397,34 +397,54 @@ def test_multiorbital_onsite():
         capture[sub_id] = [v.copy() for v in (energy, x, y, z)]
         return energy
 
+    def assert_positions(name, **expected):
+        _, x, y, z = capture[name]
+        assert pytest.fuzzy_equal(x.squeeze(), expected["x"])
+        assert pytest.fuzzy_equal(y.squeeze(), expected["y"])
+        assert pytest.fuzzy_equal(z.squeeze(), expected["z"])
+
     def assert_onsite(name, **expected):
-        energy, x, y, z = capture[name]
+        energy, *_ = capture[name]
         assert energy.shape == expected["shape"]
-
-        expected_energy = np.array(expected["energy"])
-        for index in np.ndindex(*expected_energy.shape):
-            expected_slice = np.full(energy.shape[-1], expected_energy[index])
-            assert pytest.fuzzy_equal(energy[index], expected_slice)
-
-        assert pytest.fuzzy_equal(x, expected["x"])
-        assert pytest.fuzzy_equal(y, expected["y"])
-        assert pytest.fuzzy_equal(z, expected["z"])
+        for i in range(energy.shape[0]):
+            assert pytest.fuzzy_equal(energy[i], expected["energy"])
 
     model = pb.Model(multi_orbital_lattice(), pb.rectangle(2, 1), onsite)
     assert model.system.num_sites == 6
     assert model.hamiltonian.shape[0] == 12
 
+    assert_positions("A", x=[0, 1], y=[0, 0], z=[0, 0])
+    assert_positions("B", x=[0, 1], y=[0.1, 0.1], z=[0, 0])
+    assert_positions("C", x=[0, 1], y=[0.2, 0.2], z=[0, 0])
+
     assert_onsite("A", shape=(2, 2, 2), energy=[[1, 2],
-                                                [2, -1]],
-                  x=[0, 1], y=[0, 0], z=[0, 0])
-
-    assert_onsite("B", shape=(2,), energy=[0.5],
-                  x=[0, 1], y=[0.1, 0.1], z=[0, 0])
-
-    assert_onsite("C", shape=(3, 3, 2), energy=[[1, 0, 0],
+                                                [2, -1]])
+    assert_onsite("B", shape=(2,), energy=[0.5])
+    assert_onsite("C", shape=(2, 3, 3), energy=[[1, 0, 0],
                                                 [0, 2, 0],
-                                                [0, 0, 3]],
-                  x=[0, 1], y=[0.2, 0.2], z=[0, 0])
+                                                [0, 0, 3]])
+
+    @pb.onsite_energy_modifier
+    def onsite_mod(energy, x, y, z, sub_id):
+        if sub_id == "A":
+            energy += np.eye(2) * (x > -1)
+        elif sub_id == "B":
+            energy *= 2
+        elif sub_id == "C":
+            energy += [[0, 1, 0]]
+        capture[sub_id] = [v.copy() for v in (energy, x, y, z)]
+        return energy
+
+    model = pb.Model(multi_orbital_lattice(), pb.rectangle(2, 1), onsite_mod)
+    assert model.system.num_sites == 6
+    assert model.hamiltonian.shape[0] == 12
+
+    assert_onsite("A", shape=(2, 2, 2), energy=[[2, 2],
+                                                [2, 0]])
+    assert_onsite("B", shape=(2,), energy=[1])
+    assert_onsite("C", shape=(2, 3, 3), energy=[[1, 1, 0],
+                                                [0, 3, 0],
+                                                [0, 1, 3]])
 
 
 def test_multiorbital_hoppings():
@@ -460,43 +480,71 @@ def test_multiorbital_hoppings():
         capture[hop_id] = [v.copy() for v in (energy, x1, y1, z1, x2, y2, z2)]
         return energy
 
+    def assert_positions(name, **expected):
+        _, x1, y1, z1, x2, y2, z2 = capture[name]
+
+        assert pytest.fuzzy_equal(x1.squeeze(), expected["x1"])
+        assert pytest.fuzzy_equal(y1.squeeze(), expected["y1"])
+        assert pytest.fuzzy_equal(z1.squeeze(), expected["z1"])
+        assert pytest.fuzzy_equal(x2.squeeze(), expected["x2"])
+        assert pytest.fuzzy_equal(y2.squeeze(), expected["y2"])
+        assert pytest.fuzzy_equal(z1.squeeze(), expected["z2"])
+
     def assert_hoppings(name, **expected):
-        energy, x1, y1, z1, x2, y2, z2 = capture[name]
+        energy, *_ = capture[name]
         assert energy.shape == expected["shape"]
-
-        expected_energy = np.array(expected["energy"])
-        for index in np.ndindex(*expected_energy.shape):
-            expected_slice = np.full(energy.shape[-1], expected_energy[index])
-            assert pytest.fuzzy_equal(energy[index], expected_slice)
-
-        assert pytest.fuzzy_equal(x1, expected["x1"])
-        assert pytest.fuzzy_equal(y1, expected["y1"])
-        assert pytest.fuzzy_equal(z1, expected["z1"])
-        assert pytest.fuzzy_equal(x2, expected["x2"])
-        assert pytest.fuzzy_equal(y2, expected["y2"])
-        assert pytest.fuzzy_equal(z1, expected["z2"])
+        for i in range(energy.shape[0]):
+            assert pytest.fuzzy_equal(energy[i], expected["energy"])
 
     model = pb.Model(multi_orbital_lattice(), pb.primitive(2, 2), hopping)
     assert model.system.num_sites == 12
     assert model.hamiltonian.shape[0] == 24
 
-    assert_hoppings("t11", shape=(4,), energy=[1, 1, 1, 1],
-                    x1=[-1, -1, 0, -1], y1=[-0.5, -0.5, -0.5, 0.5], z1=[0, 0, 0, 0],
-                    x2=[0, -1, 0, 0], y2=[-0.5, 0.5, 0.5, 0.5], z2=[0, 0, 0, 0])
+    assert_positions("t11",
+                     x1=[-1, -1, 0, -1], y1=[-0.5, -0.5, -0.5, 0.5], z1=[0, 0, 0, 0],
+                     x2=[0, -1, 0, 0], y2=[-0.5, 0.5, 0.5, 0.5], z2=[0, 0, 0, 0])
+    assert_positions("t22",
+                     x1=[-1.25, -0.25], y1=[-1, -1], z1=[0, 0],
+                     x2=[-1.25, -0.25], y2=[0, 0], z2=[0, 0])
+    assert_positions("t23",
+                     x1=[-1.25, -0.25, -1.25, -0.25], y1=[-1, -1, 0, 0], z1=[0, 0, 0, 0],
+                     x2=[-0.75, 0.25, -0.75, 0.25], y2=[-1, -1, 0, 0], z2=[0, 0, 0, 0])
+    assert_positions("t13",
+                     x1=[-1, 0, -1, 0], y1=[-0.5, -0.5, 0.5, 0.5], z1=[0, 0, 0, 0],
+                     x2=[-0.75, 0.25, -0.75, 0.25], y2=[-1, -1, 0, 0], z2=[0, 0, 0, 0])
 
+    assert_hoppings("t11", shape=(4,), energy=[1])
     assert_hoppings("t22", shape=(2, 2, 2), energy=[[3, 0],
-                                                    [0, -3]],
-                    x1=[-1.25, -0.25], y1=[-1, -1], z1=[0, 0],
-                    x2=[-1.25, -0.25], y2=[0, 0], z2=[0, 0])
+                                                    [0, -3]])
+    assert_hoppings("t23", shape=(4, 2, 3), energy=[[0, 1, 2],
+                                                    [3, 4, 5]])
+    assert_hoppings("t13", shape=(4, 1, 3), energy=[[11, 12, 13]])
 
-    assert_hoppings("t23", shape=(2, 3, 4), energy=[[0, 1, 2],
-                                                    [3, 4, 5]],
-                    x1=[-1.25, -0.25, -1.25, -0.25], y1=[-1, -1, 0, 0], z1=[0, 0, 0, 0],
-                    x2=[-0.75, 0.25, -0.75, 0.25], y2=[-1, -1, 0, 0], z2=[0, 0, 0, 0])
+    @pb.hopping_energy_modifier
+    def hopping_mod(energy, hop_id, x1, y1, z1, x2, y2, z2):
+        if hop_id == "t11":
+            energy *= x1 * 0
+        elif hop_id == "t22":
+            energy += [[0, 1],
+                       [1, 0]]
+        elif hop_id == "t23":
+            energy += [[1, 0, 0]]
+        elif hop_id == "t13":
+            energy *= 2
 
-    assert_hoppings("t13", shape=(1, 3, 4), energy=[[11, 12, 13]],
-                    x1=[-1, 0, -1, 0], y1=[-0.5, -0.5, 0.5, 0.5], z1=[0, 0, 0, 0],
-                    x2=[-0.75, 0.25, -0.75, 0.25], y2=[-1, -1, 0, 0], z2=[0, 0, 0, 0])
+        capture[hop_id] = [v.copy() for v in (energy, x1, y1, z1, x2, y2, z2)]
+        return energy
+
+    model = pb.Model(multi_orbital_lattice(), pb.primitive(2, 2), hopping_mod)
+    assert model.system.num_sites == 12
+    assert model.hamiltonian.shape[0] == 24
+
+    assert_hoppings("t11", shape=(4,), energy=[0])
+    assert_hoppings("t22", shape=(2, 2, 2), energy=[[3, 1],
+                                                    [1, -3]])
+    assert_hoppings("t23", shape=(4, 2, 3), energy=[[1, 1, 2],
+                                                    [4, 4, 5]])
+    assert_hoppings("t13", shape=(4, 1, 3), energy=[[22, 24, 26]])
 
 
 def test_hopping_buffer():
@@ -530,6 +578,6 @@ def test_hopping_buffer():
 
     energies = capture["t44"]
     assert len(energies) >= 2
-    assert energies[0].shape == (4, 4, 6250)
+    assert energies[0].shape == (6250, 4, 4)
     for energy in energies:
         assert np.argwhere(energy == 99).size == 0
