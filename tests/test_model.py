@@ -69,7 +69,8 @@ def test_multiorbital_hamiltonian():
                                         [0, 2]]))
         lat.register_hopping_energies({
             "t22": [[0, 1],
-                    [2, 3]]
+                    [2, 3]],
+            "t11": 1,  # incompatible hopping - it's never used so it shouldn't raise any errors
         })
         lat.add_hoppings(([1], "A", "A", "t22"))
         return lat

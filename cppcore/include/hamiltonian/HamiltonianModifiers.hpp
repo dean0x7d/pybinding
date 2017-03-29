@@ -261,6 +261,8 @@ void HamiltonianModifiers::apply_to_hoppings_impl(System const& system,
     // Slow path: Apply modifiers and/or consider multiple orbitals which
     // require translating between site and Hamiltonian matrix indices.
     for (auto const& block : system_or_boundary.hopping_blocks) {
+        if (block.size() == 0) { continue; }
+
         auto const& hopping_family = lattice(block.family_id());
         auto const hopping_name = lattice.hopping_family_name(block.family_id());
         auto const index_translator = IndexTranslator(system, hopping_family.energy);
