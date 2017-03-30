@@ -427,7 +427,7 @@ def test_multiorbital_onsite():
     @pb.onsite_energy_modifier
     def onsite_mod(energy, x, y, z, sub_id):
         if sub_id == "A":
-            energy += np.eye(2) * (x > -1)
+            energy += sub_id.eye * (x > -1)
         elif sub_id == "B":
             energy *= 2
         elif sub_id == "C":

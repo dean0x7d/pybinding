@@ -32,14 +32,16 @@ def _process_modifier_args(args, keywords, requested_argnames):
         prime_arg = np.moveaxis(prime_arg, 2, 0)
         args = [prime_arg] + list(args[1:])
         shape = nsites, 1, 1
+        orbs = norb1, norb2
     else:
         shape = prime_arg.shape
+        orbs = 1, 1
 
     def process(obj):
         if isinstance(obj, _cpp.SubIdRef):
             return AliasArray(obj.ids, obj.name_map)
         elif isinstance(obj, str):
-            return AliasIndex(obj, shape)
+            return AliasIndex(obj, shape, orbs)
         elif obj.size == shape[0]:
             obj.shape = shape
             return obj
@@ -377,8 +379,8 @@ def constant_potential(magnitude):
         In units of eV.
     """
     @onsite_energy_modifier
-    def f(energy):
-        return energy + magnitude
+    def f(energy, sub_id):
+        return energy + sub_id.eye * magnitude
     return f
 
 

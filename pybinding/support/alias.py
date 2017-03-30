@@ -125,6 +125,10 @@ class AliasIndex:
     'A'
     >>> hash(ai) == hash("A")
     True
+    >>> int(ai.eye)
+    1
+    >>> np.allclose(AliasIndex("A", 1, (2, 2)).eye, np.eye(2))
+    True
     """
     class LazyArray:
         def __init__(self, value, shape):
@@ -137,9 +141,10 @@ class AliasIndex:
         def __array__(self):
             return np.full(self.shape, self.value)
 
-    def __init__(self, name, shape):
+    def __init__(self, name, shape, orbs=(1, 1)):
         self.name = name
         self.shape = shape
+        self.orbs = orbs
 
     def __str__(self):
         return self.name
@@ -152,3 +157,7 @@ class AliasIndex:
 
     def __hash__(self):
         return hash(self.name)
+
+    @property
+    def eye(self):
+        return np.eye(*self.orbs)
