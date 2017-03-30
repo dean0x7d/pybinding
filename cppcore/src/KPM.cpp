@@ -51,14 +51,19 @@ std::vector<ArrayXcd> KPM::calc_greens_vector(idx_t row, std::vector<idx_t> cons
     return greens_functions;
 }
 
-ArrayXd KPM::calc_ldos(ArrayXd const& energy, double broadening,
-                       Cartesian position, std::string const& sublattice) const {
-    auto const index = model.system()->find_nearest(position, sublattice);
+ArrayXXdCM KPM::calc_ldos(ArrayXd const& energy, double broadening, Cartesian position,
+                          string_view sublattice, bool reduce) const {
+    auto const system_index = model.system()->find_nearest(position, sublattice);
+    auto const ham_idx = model.system()->to_hamiltonian_indices(system_index);
 
     calculation_timer.tic();
-    auto ldos = strategy->ldos(index, energy, broadening);
+    auto results = ArrayXXdCM(energy.size(), ham_idx.size());
+    for (auto i = 0; i < ham_idx.size(); ++i) {
+        results.col(i) = strategy->ldos(ham_idx[i], energy, broadening);
+    }
     calculation_timer.toc();
-    return ldos;
+
+    return (reduce && results.cols() > 1) ? results.rowwise().sum() : results;
 }
 
 ArrayXd KPM::calc_dos(ArrayXd const& energy, double broadening) const {

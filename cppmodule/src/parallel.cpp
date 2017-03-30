@@ -1,5 +1,6 @@
 #include "wrappers.hpp"
 #include "thread.hpp"
+#include "numeric/dense.hpp"
 using namespace cpb;
 
 void wrap_parallel(py::module& m) {
@@ -8,8 +9,8 @@ void wrap_parallel(py::module& m) {
         .def_property_readonly("solver", &DeferredBase::solver)
         .def_property_readonly("result", &DeferredBase::result);
 
-    using DeferredXd = Deferred<Eigen::ArrayXd>;
-    py::class_<DeferredXd, std::shared_ptr<DeferredXd>, DeferredBase>(m, "DeferredXd");
+    using DeferredXdCM = Deferred<ArrayXXdCM>;
+    py::class_<DeferredXdCM, std::shared_ptr<DeferredXdCM>, DeferredBase>(m, "DeferredXd");
 
     m.def("parallel_for", [](py::object sequence, py::object produce, py::object retire,
                              std::size_t num_threads, std::size_t queue_size) {

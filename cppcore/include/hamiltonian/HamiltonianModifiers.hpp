@@ -165,8 +165,8 @@ public:
         : term_size(hopping_matrix.rows(), hopping_matrix.cols()),
           sys_start(system.compressed_sublattices.start_index(term_size.row),
                     system.compressed_sublattices.start_index(term_size.col)),
-          ham_start(system.to_hamiltonian_index(sys_start.row),
-                    system.to_hamiltonian_index(sys_start.col)) {}
+          ham_start(system.to_hamiltonian_indices(sys_start.row)[0],
+                    system.to_hamiltonian_indices(sys_start.col)[0]) {}
 
     /// Loop over all Hamiltonian indices matching the System indices given in `coordinates`:
     ///     lambda(idx_t row, idx_t col, scalar_t value)

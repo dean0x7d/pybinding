@@ -73,7 +73,7 @@ class KernelPolynomialMethod:
         """
         return self.impl.calc_greens(i, j, energy, broadening)
 
-    def calc_ldos(self, energy, broadening, position, sublattice=""):
+    def calc_ldos(self, energy, broadening, position, sublattice="", reduce=True):
         """Calculate the local density of states as a function of energy
 
         Parameters
@@ -90,13 +90,19 @@ class KernelPolynomialMethod:
         sublattice : str
             Only look for sites of a specific sublattice, closest to `position`.
             The default value considers any sublattice.
+        reduce : bool
+            This option is only relevant for multi-orbital models. If true, the
+            resulting LDOS will summed over all the orbitals at the target site
+            and the result will be a 1D array. If false, the individual orbital
+            results will be preserved and the result will be a 2D array with
+            `shape == (energy.size, num_orbitals)`.
 
         Returns
         -------
         :class:`~pybinding.LDOS`
         """
-        ldos = self.impl.calc_ldos(energy, broadening, position, sublattice)
-        return results.LDOS(energy, ldos)
+        ldos = self.impl.calc_ldos(energy, broadening, position, sublattice, reduce)
+        return results.LDOS(energy, ldos.squeeze())
 
     def calc_dos(self, energy, broadening):
         """Calculate the density of states as a function of energy
@@ -332,11 +338,16 @@ class _PythonImpl:
             moments *= self.kernel.damping_coefficients(num_moments)
             return self._reconstruct_real(moments, energy, a, b)
 
-    def calc_ldos(self, energy, broadening, position, sublattice=""):
+    def calc_ldos(self, energy, broadening, position, sublattice="", reduce=True):
         """Calculate the LDOS at the given position/sublattice"""
         with timed() as self._stats["total_time"]:
-            index = self.model.system.find_nearest(position, sublattice)
-            return self._ldos(index, energy, broadening)
+            system_index = self.model.system.find_nearest(position, sublattice)
+            ham_idx = self.model.system.to_hamiltonian_indices(system_index)
+            result_data = np.array([self._ldos(i, energy, broadening) for i in ham_idx]).T
+            if reduce:
+                return np.sum(result_data, axis=1)
+            else:
+                return result_data
 
     def report(self, *_):
         from .utils import with_suffix, pretty_duration

@@ -213,6 +213,17 @@ class LDOS:
         plt.xlabel('E (eV)')
         pltutils.despine()
 
+        if self.ldos.ndim > 1:
+            labels = [str(i) for i in range(self.ldos.shape[-1])]
+            pltutils.legend(labels=labels, title="orbitals")
+
+    def reduced(self):
+        """Return a copy where the LDOS is summed over the orbitals
+        
+        Only applies to multi-orbital models. Returns itself if the results are 
+        single-orbital or have already been reduced."""
+        return self.__class__(self.energy, self.ldos.sum(axis=1))
+
 
 class SpatialMap:
     """Represents some spatially dependent property: data mapped to site positions"""

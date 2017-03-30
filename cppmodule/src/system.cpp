@@ -68,6 +68,7 @@ void wrap_system(py::module& m) {
 
     py::class_<System, std::shared_ptr<System>>(m, "System")
         .def("find_nearest", &System::find_nearest, "position"_a, "sublattice"_a="")
+        .def("to_hamiltonian_indices", &System::to_hamiltonian_indices)
         .def_readonly("lattice", &System::lattice)
         .def_readonly("positions", &System::positions)
         .def_readonly("compressed_sublattices", &System::compressed_sublattices)

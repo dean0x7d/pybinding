@@ -121,7 +121,7 @@ void wrap_greens(py::module& m) {
                                  Cartesian position, std::string sublattice) {
             auto& kpm = self.cast<KPM&>();
             kpm.get_model().eval();
-            return Deferred<ArrayXd>{
+            return Deferred<ArrayXXdCM>{
                 self, [=, &kpm] { return kpm.calc_ldos(energy, broadening, position, sublattice); }
             };
         })

@@ -65,21 +65,40 @@ class System(Structure):
         """:class:`.Lattice` specification"""
         return Lattice.from_impl(self.impl.lattice)
 
-    def find_nearest(self, position, at_sublattice=""):
+    def find_nearest(self, position, sublattice=""):
         """Find the index of the atom closest to the given position
 
         Parameters
         ----------
         position : array_like
             Where to look.
-        at_sublattice : Optional[int]
+        sublattice : Optional[int]
             Look for a specific sublattice site. By default any will do.
 
         Returns
         -------
         int
         """
-        return self.impl.find_nearest(position, at_sublattice)
+        return self.impl.find_nearest(position, sublattice)
+
+    def to_hamiltonian_indices(self, system_idx):
+        """Translate the given system index into its corresponding Hamiltonian indices
+        
+        System indices are always scalars and index a single (x, y, z) site position.
+        For single-orbital models there is a 1:1 correspondence between system and 
+        Hamiltonian indices. However, for multi-orbital models the Hamiltonian indices
+        are 1D arrays with a size corresponding to the number of orbitals on the target
+        site.
+
+        Parameters
+        ----------
+        system_idx : int
+
+        Returns
+        -------
+        array_like
+        """
+        return self.impl.to_hamiltonian_indices(system_idx)
 
     def plot(self, num_periods=1, **kwargs):
         """Plot the structure: sites, hoppings and periodic boundaries (if any)

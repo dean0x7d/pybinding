@@ -62,6 +62,8 @@ using ColMajorArrayXX = Eigen::Array<T, Eigen::Dynamic, Eigen::Dynamic, Eigen::C
 template<class T>
 using ColMajorMatrixX = Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic, Eigen::ColMajor>;
 
+using ArrayXXdCM = ColMajorArrayXX<double>;
+
 // array variants
 using num::arrayref;
 using num::ArrayConstRef;

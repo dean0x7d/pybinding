@@ -23,8 +23,8 @@ public:
     std::vector<ArrayXcd> calc_greens_vector(idx_t row, std::vector<idx_t> const& cols,
                                              ArrayXd const& energy, double broadening) const;
 
-    ArrayXd calc_ldos(ArrayXd const& energy, double broadening,
-                      Cartesian position, std::string const& sublattice = "") const;
+    ArrayXXdCM calc_ldos(ArrayXd const& energy, double broadening, Cartesian position,
+                         string_view sublattice = "", bool reduce = true) const;
 
     ArrayXd calc_dos(ArrayXd const& energy, double broadening) const;
 

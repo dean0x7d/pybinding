@@ -28,13 +28,21 @@ idx_t System::hamiltonian_size() const {
     return result;
 }
 
-idx_t System::to_hamiltonian_index(idx_t system_index) const {
+ArrayXi System::to_hamiltonian_indices(idx_t system_index) const {
     for (auto const& sub : compressed_sublattices) {
         if (sub.sys_start() <= system_index && system_index < sub.sys_end()) {
-            return sub.ham_start() + (system_index - sub.sys_start()) * sub.num_orbitals();
+            auto const norb = sub.num_orbitals();
+            auto const offset = (system_index - sub.sys_start()) * norb;
+            auto const idx = static_cast<storage_idx_t>(sub.ham_start() + offset);
+
+            auto ret = ArrayXi(norb);
+            for (auto i = 0; i < norb; ++i) {
+                ret[i] = idx + i;
+            }
+            return ret;
         }
     }
-    throw std::runtime_error("to_hamiltonian_index: this should never happen");
+    throw std::runtime_error("to_hamiltonian_indices: this should never happen");
 }
 
 idx_t System::find_nearest(Cartesian target_position, string_view sublattice_name) const {

@@ -191,7 +191,7 @@ class Solver:
             dos = scale * np.sum(np.exp(-0.5 * delta**2 / broadening**2), axis=0)
             return results.DOS(energies, dos)
 
-    def calc_ldos(self, energies, broadening, position, sublattice=""):
+    def calc_ldos(self, energies, broadening, position, sublattice="", reduce=True):
         r"""Calculate the local density of states as a function of energy at the given position
 
         .. math::
@@ -215,6 +215,12 @@ class Solver:
         sublattice : str
             Only look for sites of a specific sublattice, closest to `position`.
             The default value considers any sublattice.
+        reduce : bool
+            This option is only relevant for multi-orbital models. If true, the
+            resulting LDOS will summed over all the orbitals at the target site
+            and the result will be a 1D array. If false, the individual orbital
+            results will be preserved and the result will be a 2D array with
+            `shape == (energy.size, num_orbitals)`.
 
         Returns
         -------
@@ -226,12 +232,19 @@ class Solver:
         else:
             delta = self.eigenvalues[:, np.newaxis] - energies
             gaussian = np.exp(-0.5 * delta**2 / broadening**2)
-
-            index = self.system.find_nearest(position, sublattice)
-            psi2 = np.abs(self.eigenvectors[index])**2
-
             scale = 1 / (broadening * math.sqrt(2 * math.pi))
-            ldos = scale * np.sum(psi2[:, np.newaxis] * gaussian, axis=0)
+
+            sys_idx = self.system.find_nearest(position, sublattice)
+            ham_idx = self.system.to_hamiltonian_indices(sys_idx)
+
+            def calc_single(index):
+                psi2 = np.abs(self.eigenvectors[index])**2
+                return scale * np.sum(psi2[:, np.newaxis] * gaussian, axis=0)
+
+            ldos = np.array([calc_single(i) for i in ham_idx]).T
+            if reduce:
+                ldos = np.sum(ldos, axis=1)
+
             return results.LDOS(energies, ldos)
 
     def calc_spatial_ldos(self, energy, broadening):
