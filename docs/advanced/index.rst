@@ -9,4 +9,5 @@ It is assumed that you are already familiar with the :doc:`/tutorial/index`.
     :maxdepth: 1
 
     lattice
+    multiorbital
     kwant

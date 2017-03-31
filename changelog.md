@@ -2,6 +2,18 @@
 
 ### v0.9.0 | in development
 
+##### New features
+
+* Improved support for models with multiple orbitals, spins and any additional degrees of freedom.
+  These can now be specified simply by inputing a matrix as the onsite or hopping term, instead of
+  a scalar value. For more details, see the "Multi-orbital models" section of the documentation.
+
+* Lifted all limits on the number of sublattices and hoppings which can be defined in a `Lattice`
+  object. The previous version was limited to a maximum of 128 onsite and hopping terms per unit
+  cell (but those could be repeated an unlimited number of times to form a complete system). All
+  restrictions are now removed so that the unit cell size is only limited by available memory.
+  In addition, the memory usage of the internal system format has been reduced.
+
 * Added `Lattice.add_aliases()` method. The old `Lattice.add_sublattice(..., alias=name)` way of
   creating aliases is deprecated.
 
