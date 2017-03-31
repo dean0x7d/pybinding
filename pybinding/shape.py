@@ -267,7 +267,7 @@ def regular_polygon(num_sides, radius, angle=0):
     return Polygon([(radius * sin(a), radius * cos(a)) for a in angles])
 
 
-def circle(radius, center=(0, 0, 0)):
+def circle(radius, center=(0, 0)):
     """A circle in the xy plane
 
     Parameters
@@ -280,7 +280,8 @@ def circle(radius, center=(0, 0, 0)):
     :class:`~pybinding.FreeformShape`
     """
     def contains(x, y, z):
-        return np.sqrt(x**2 + y**2 + z**2) < radius
+        x0, y0 = center
+        return np.sqrt((x - x0)**2 + (y - y0)**2) < radius
 
     return FreeformShape(contains, [2 * radius] * 2, center)
 
