@@ -6,8 +6,60 @@ from . import _cpp
 from . import pltutils
 from .utils import with_defaults
 
-__all__ = ['FreeformShape', 'Polygon', 'circle', 'line', 'primitive', 'rectangle',
-           'regular_polygon', 'translational_symmetry']
+__all__ = ['FreeformShape', 'Polygon', 'CompositeShape',
+           'circle', 'line', 'primitive', 'rectangle', 'regular_polygon',
+           'translational_symmetry']
+
+
+def _plot_freeform_shape(vertices, contains, resolution=(1000, 1000), **kwargs):
+    """Plot the area where `contains(x, y, z)` is True within the polygon given by `vertices`
+
+    Parameters
+    ----------
+    resolution : Tuple[int, int]
+        The (x, y) pixel resolution of the generated image.
+    **kwargs
+        Forwarded to :func:`matplotlib.pyplot.imshow`.
+    """
+    if any(z != 0 for _, _, z in vertices):
+        raise RuntimeError("This method only works for 2D shapes.")
+
+    x, y, *_ = zip(*vertices)
+    xx, yy = np.meshgrid(np.linspace(min(x), max(x), resolution[0], dtype=np.float32),
+                         np.linspace(min(y), max(y), resolution[1], dtype=np.float32))
+    area = contains(xx.flat, yy.flat, np.zeros_like(xx.flat))
+    area.shape = xx.shape
+    area = np.ma.masked_array(area, np.logical_not(area))
+    area = np.flipud(area)
+
+    im = plt.imshow(area, extent=(min(x), max(x), min(y), max(y)),
+                    **with_defaults(kwargs, cmap="gray", alpha=0.15))
+
+    plt.axis("scaled")
+    plt.xlabel("x (nm)")
+    plt.ylabel("y (nm)")
+    pltutils.despine(trim=True)
+    pltutils.add_margin()
+
+    return im
+
+
+class _CompositionMixin:
+    """Provides logical and arithmetic operators to form composite shapes"""
+    def __and__(self, other):
+        return CompositeShape(self, other, np.logical_and)
+
+    def __or__(self, other):
+        return CompositeShape(self, other, np.logical_or)
+
+    def __xor__(self, other):
+        return CompositeShape(self, other, np.logical_xor)
+
+    def __add__(self, other):
+        return self.__or__(other)
+
+    def __sub__(self, other):
+        return CompositeShape(self, other, lambda a, b: np.logical_and(a, np.logical_not(b)))
 
 
 class Line(_cpp.Line):
@@ -39,7 +91,7 @@ class Line(_cpp.Line):
         plt.plot(*zip(self.a, self.b), **with_defaults(kwargs, color='black', lw=1.6))
 
 
-class Polygon(_cpp.Polygon):
+class Polygon(_cpp.Polygon, _CompositionMixin):
     """Shape defined by a list of vertices in a 2D plane
 
     Attributes
@@ -52,9 +104,9 @@ class Polygon(_cpp.Polygon):
             raise RuntimeError("A polygon must have at least 3 sides")
         super().__init__(vertices)
 
-    @property
-    def vertices(self):
-        return [(x, y) for x, y, _ in super().vertices]
+    def with_offset(self, x, y):
+        """Return a copy that's offset by the given distance"""
+        return Polygon([(x0 + x, y0 + y, z0) for x0, y0, z0 in self.vertices])
 
     def plot(self, **kwargs):
         """Line plot of the polygon
@@ -64,7 +116,7 @@ class Polygon(_cpp.Polygon):
         **kwargs
             Forwarded to :func:`matplotlib.pyplot.plot`.
         """
-        x, y = zip(*self.vertices)
+        x, y, _ = zip(*self.vertices)
         plt.plot(np.append(x, x[0]), np.append(y, y[0]), **with_defaults(kwargs, color='black'))
         plt.axis('scaled')
         plt.xlabel("x (nm)")
@@ -73,7 +125,7 @@ class Polygon(_cpp.Polygon):
         pltutils.add_margin()
 
 
-class FreeformShape(_cpp.FreeformShape):
+class FreeformShape(_cpp.FreeformShape, _CompositionMixin):
     """Shape in 1 to 3 dimensions, defined by a function and a bounding box
 
     Note that this class can describe 3D shapes, but the :meth:`.plot` method can currently
@@ -90,10 +142,9 @@ class FreeformShape(_cpp.FreeformShape):
     """
     def __init__(self, contains, width, center=(0, 0, 0)):
         super().__init__(contains, width, center)
-        self.contains = contains
 
     def plot(self, resolution=(1000, 1000), **kwargs):
-        """Plot an lightly shaded silhouette of the freeform shape
+        """Plot a lightly shaded silhouette of the freeform shape
 
         This method only works for 2D shapes.
 
@@ -104,22 +155,46 @@ class FreeformShape(_cpp.FreeformShape):
         **kwargs
             Forwarded to :func:`matplotlib.pyplot.imshow`.
         """
-        if any(z != 0 for _, _, z in self.vertices):
-            raise RuntimeError("This method only works for 2D shapes.")
+        return _plot_freeform_shape(self.vertices, self.contains, resolution, **kwargs)
 
-        x, y, *_ = zip(*self.vertices)
-        xx, yy = np.meshgrid(np.linspace(min(x), max(x), resolution[0]),
-                             np.linspace(min(y), max(y), resolution[1]))
-        img = self.contains(xx, yy, 0)
-        img = np.ma.masked_array(img, np.logical_not(img))
 
-        plt.imshow(img, extent=(min(x), max(x), min(y), max(y)),
-                   **with_defaults(kwargs, cmap='gray', alpha=0.15))
-        plt.axis('scaled')
-        plt.xlabel("x (nm)")
-        plt.ylabel("y (nm)")
-        pltutils.despine(trim=True)
-        pltutils.add_margin()
+class CompositeShape(_cpp.Shape, _CompositionMixin):
+    """A composition of 2 shapes using some operator (and, or, xor...)
+    
+    This shape is usually not created directly but present the result of 
+    applying logical or arithmetic operators on other shapes.
+    
+    Parameters
+    ----------
+    shape1, shape2 : _cpp.Shape
+        The shapes which shall be composed.
+    op : Callable
+        A logical operator (and, or, xor...) to use for the composition. 
+    """
+    def __init__(self, shape1, shape2, op):
+        from scipy.spatial import ConvexHull
+
+        # The bounding vertices are always taken as the convex hull of the combined vertices.
+        # This is a wasteful in some situations (e.g. intersections) but its always safe and
+        # quick to code using scipy's implementation. Performance isn't an issue here for now
+        # but revisit this if it becomes a concern.
+        hull = ConvexHull(np.array(shape1.vertices + shape2.vertices)[:, :2])
+        vertices = hull.points[hull.vertices]
+
+        super().__init__(vertices, lambda x, y, z: op(shape1.contains(x, y, z),
+                                                      shape2.contains(x, y, z)))
+
+    def plot(self, resolution=(1000, 1000), **kwargs):
+        """Plot a lightly shaded silhouette of the composite shape
+
+        Parameters
+        ----------
+        resolution : Tuple[int, int]
+            The (x, y) pixel resolution of the generated image.
+        **kwargs
+            Forwarded to :func:`matplotlib.pyplot.imshow`.
+        """
+        return _plot_freeform_shape(self.vertices, self.contains, resolution, **kwargs)
 
 
 def primitive(a1=1, a2=1, a3=1):
