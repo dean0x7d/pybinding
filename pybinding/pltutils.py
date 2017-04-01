@@ -72,6 +72,9 @@ def despine(trim=False):
     ax.yaxis.tick_left()
 
     if trim:
+        ax.xaxis.set_major_locator(plt.AutoLocator())
+        ax.yaxis.set_major_locator(plt.AutoLocator())
+
         for v, side in [('x', 'bottom'), ('y', 'left')]:
             ax.spines[side].set_smart_bounds(True)
             ticks = getattr(ax, "get_{}ticks".format(v))()

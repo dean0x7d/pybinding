@@ -10,9 +10,9 @@ void wrap_shape(py::module& m) {
 
     py::class_<Shape>(m, "Shape")
         .def("__init__", [](Shape& s, Shape::Vertices const& vertices, py::object f) {
-            auto contains = [f](CartesianArray const& p) {
+            auto contains = [f](CartesianArrayConstRef p) {
                 py::gil_scoped_acquire guard;
-                return f(arrayref(p.x), arrayref(p.y), arrayref(p.z)).cast<ArrayX<bool>>();
+                return f(p.x(), p.y(), p.z()).cast<ArrayX<bool>>();
             };
             new (&s) Shape(vertices, contains);
         })
@@ -30,9 +30,9 @@ void wrap_shape(py::module& m) {
 
     py::class_<FreeformShape, Shape>(m, "FreeformShape")
          .def("__init__", [](FreeformShape& s, py::object f, Cartesian width, Cartesian center) {
-             auto contains = [f](CartesianArray const& p) {
+             auto contains = [f](CartesianArrayConstRef p) {
                  py::gil_scoped_acquire guard;
-                 return f(arrayref(p.x), arrayref(p.y), arrayref(p.z)).cast<ArrayX<bool>>();
+                 return f(p.x(), p.y(), p.z()).cast<ArrayX<bool>>();
              };
              new (&s) FreeformShape(contains, width, center);
          });

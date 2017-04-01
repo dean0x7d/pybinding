@@ -160,6 +160,8 @@ public:
     Reference& y() { return y_ref; }
     Reference& z() { return z_ref; }
 
+    idx_t size() const { return x_ref.size(); }
+
 private:
     Reference x_ref, y_ref, z_ref;
 };

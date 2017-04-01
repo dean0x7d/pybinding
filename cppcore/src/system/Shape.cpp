@@ -15,7 +15,7 @@ Shape::Shape(Vertices const& vertices, Contains const& contains)
 }
 
 Line::Line(Cartesian a, Cartesian b) : Shape({a, b}) {
-    contains = [a, b](CartesianArray const& positions) -> ArrayX<bool> {
+    contains = [a, b](CartesianArrayConstRef positions) -> ArrayX<bool> {
         // Return `true` for all `positions` which are in the perpendicular space
         // between the two end points of the line
         return detail::is_acute_angle(a, b, positions)
@@ -25,12 +25,12 @@ Line::Line(Cartesian a, Cartesian b) : Shape({a, b}) {
 
 namespace detail {
 
-ArrayX<bool> is_acute_angle(Cartesian a, Cartesian b, CartesianArray const& c) {
+ArrayX<bool> is_acute_angle(Cartesian a, Cartesian b, CartesianArrayConstRef c) {
     // Vectors BA and BC which make the angle
     auto const ba = Cartesian{a - b};
-    auto const bc_x = ArrayXf{c.x - b.x()};
-    auto const bc_y = ArrayXf{c.y - b.y()};
-    auto const bc_z = ArrayXf{c.z - b.z()};
+    auto const bc_x = ArrayXf{c.x() - b.x()};
+    auto const bc_y = ArrayXf{c.y() - b.y()};
+    auto const bc_z = ArrayXf{c.z() - b.z()};
 
     // Compute the cosine between the two vectors based on the dot product
     auto const ba_dot_bc = ba.x() * bc_x + ba.y() * bc_y + ba.z() * bc_z;
@@ -49,7 +49,7 @@ WithinPolygon::WithinPolygon(Shape::Vertices const& vertices)
     }
 }
 
-ArrayX<bool> WithinPolygon::operator()(CartesianArray const& positions) const {
+ArrayX<bool> WithinPolygon::operator()(CartesianArrayConstRef positions) const {
     // Raycasting algorithm checks if `positions` are inside this polygon
     ArrayX<bool> is_within = ArrayX<bool>::Constant(positions.size(), false);
 
@@ -69,11 +69,11 @@ ArrayX<bool> WithinPolygon::operator()(CartesianArray const& positions) const {
         auto const k = (x2 - x1) / (y2 - y1);
 
         // Shoot the ray along the x direction and see if it passes between `y1` and `y2`
-        auto intersects_y = (y1 > positions.y) != (y2 > positions.y);
+        auto intersects_y = (y1 > positions.y()) != (y2 > positions.y());
 
         // The ray is moving from left to right and may cross a side of the polygon
-        auto x_side = k * (positions.y - y1) + x1;
-        auto intersects_x = positions.x > x_side;
+        auto x_side = k * (positions.y() - y1) + x1;
+        auto intersects_x = positions.x() > x_side;
 
         // Eigen doesn't support `operator!`, so this will have to do...
         auto negate = is_within.select(

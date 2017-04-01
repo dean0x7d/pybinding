@@ -27,7 +27,7 @@ public:
 class Shape {
 public:
     using Vertices = std::vector<Cartesian>;
-    using Contains = std::function<ArrayX<bool>(CartesianArray const&)>;
+    using Contains = std::function<ArrayX<bool>(CartesianArrayConstRef)>;
 
     Shape() = default;
     explicit Shape(Vertices const& vertices, Contains const& contains = {});
@@ -68,13 +68,13 @@ public:
 
 namespace detail {
     // Is the angle formed by three points acute? The vertex is `b`.
-    ArrayX<bool> is_acute_angle(Cartesian a, Cartesian b, CartesianArray const& c);
+    ArrayX<bool> is_acute_angle(Cartesian a, Cartesian b, CartesianArrayConstRef c);
 
     /// Function object which determines if a point is within a polygon
     class WithinPolygon {
     public:
         WithinPolygon(Shape::Vertices const& vertices);
-        ArrayX<bool> operator()(CartesianArray const& positions) const;
+        ArrayX<bool> operator()(CartesianArrayConstRef positions) const;
 
     private:
         ArrayX<float> x, y;

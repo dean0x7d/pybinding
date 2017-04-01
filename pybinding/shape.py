@@ -80,6 +80,10 @@ class Line(_cpp.Line):
         self.a = a
         self.b = b
 
+    def with_offset(self, vector):
+        """Return a copy that's offset by the given vector"""
+        return Line(self.a + vector[0], self.b + vector[1])
+
     def plot(self, **kwargs):
         """Show the line
 
@@ -104,9 +108,11 @@ class Polygon(_cpp.Polygon, _CompositionMixin):
             raise RuntimeError("A polygon must have at least 3 sides")
         super().__init__(vertices)
 
-    def with_offset(self, x, y):
-        """Return a copy that's offset by the given distance"""
-        return Polygon([(x0 + x, y0 + y, z0) for x0, y0, z0 in self.vertices])
+    def with_offset(self, vector):
+        """Return a copy that's offset by the given vector"""
+        v = np.zeros(3)
+        v[:len(vector)] = vector
+        return Polygon([v0 + v for v0 in self.vertices])
 
     def plot(self, **kwargs):
         """Line plot of the polygon
@@ -118,7 +124,7 @@ class Polygon(_cpp.Polygon, _CompositionMixin):
         """
         x, y, _ = zip(*self.vertices)
         plt.plot(np.append(x, x[0]), np.append(y, y[0]), **with_defaults(kwargs, color='black'))
-        plt.axis('scaled')
+        plt.axis("scaled")
         plt.xlabel("x (nm)")
         plt.ylabel("y (nm)")
         pltutils.despine(trim=True)
@@ -142,6 +148,16 @@ class FreeformShape(_cpp.FreeformShape, _CompositionMixin):
     """
     def __init__(self, contains, width, center=(0, 0, 0)):
         super().__init__(contains, width, center)
+        self.width = np.atleast_1d(width)
+        self.center = np.atleast_1d(center)
+
+    def with_offset(self, vector):
+        """Return a copy that's offset by the given vector"""
+        def contains(x, y, z):
+            r0 = [x, y, z]
+            r = [v0 - v for v0, v in zip(r0, vector)] + r0[len(vector):]
+            return self.contains(*r)
+        return FreeformShape(contains, self.width, self.center + vector)
 
     def plot(self, resolution=(1000, 1000), **kwargs):
         """Plot a lightly shaded silhouette of the freeform shape
@@ -183,6 +199,20 @@ class CompositeShape(_cpp.Shape, _CompositionMixin):
 
         super().__init__(vertices, lambda x, y, z: op(shape1.contains(x, y, z),
                                                       shape2.contains(x, y, z)))
+
+    def with_offset(self, vector):
+        """Return a copy that's offset by the given vector"""
+        def contains(x, y, z):
+            r0 = [x, y, z]
+            r = [v0 - v for v0, v in zip(r0, vector)] + r0[len(vector):]
+            return self.contains(*r)
+
+        shape = CompositeShape.__new__(CompositeShape)
+        v = np.zeros(3)
+        v[:len(vector)] = vector
+        vertices = [v0 + v for v0 in self.vertices]
+        super(CompositeShape, shape).__init__(vertices, contains)
+        return shape
 
     def plot(self, resolution=(1000, 1000), **kwargs):
         """Plot a lightly shaded silhouette of the composite shape

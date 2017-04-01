@@ -4,7 +4,7 @@
 using namespace cpb;
 
 TEST_CASE("FreeformShape", "[shape]") {
-    auto const contains = [](CartesianArray const& p) -> ArrayX<bool> { return p.x > 0.5f; };
+    auto const contains = [](CartesianArrayConstRef p) -> ArrayX<bool> { return p.x() > 0.5f; };
     auto const shape = FreeformShape(contains, {1, 1, 1}, {0.5f, 0.5f, 0.5f});
 
     SECTION("Bounding box") {
