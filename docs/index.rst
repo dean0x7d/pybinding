@@ -1,14 +1,16 @@
-Pybinding
-=========
-
 .. title:: Tight-binding package for Python
 .. meta::
    :description: Pybinding is a Python code package for tight-binding calculations in solid state
                  physics. It can be used to construct and solver large tight-binding models.
 
-Pybinding is a Python package for numerical tight-binding calculations in solid state physics.
-If you're just browsing, the :doc:`tutorial/index` section is a good place to start. It gives
-a good overview of the most important features with lots of code examples.
+.. container:: pbheader
+
+    .. image:: pb.png
+        :class: pblogo
+
+    Pybinding is a scientific Python package for numerical tight-binding calculations in solid
+    state physics. If you're just browsing, the :doc:`tutorial/index` section is a good place
+    to start. It gives a good overview of the most important features with lots of code examples.
 
 As a very quick example, the following code creates a triangular quantum dot of bilayer graphene
 and then applies a custom asymmetric strain function:
@@ -96,5 +98,18 @@ where you can also post any questions, comments or issues that you might have.
                 margin-left: 55%;
             }
             .rst-content p { clear: both; }
+
+            .pblogo {
+                margin: 0px 10px 8px 0px;
+                float: left;
+            }
+
+            .pbheader p {
+                margin-left: 220px;
+                padding-top: 9%;
+                clear: none;
+            }
         }
+
+        .pblogo { width: 220px; }
     </style>

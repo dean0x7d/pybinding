@@ -1,11 +1,11 @@
-# pybinding
+<img src="/docs/pb.png?raw=true" alt="pybinding" width=220px/>
 
-[![Build Status](https://travis-ci.org/dean0x7d/pybinding.svg?branch=master)](https://travis-ci.org/dean0x7d/pybinding)
-[![Build status](https://ci.appveyor.com/api/projects/status/vd84e6gxixsu9l81/branch/master?svg=true)](https://ci.appveyor.com/project/dean0x7d/pybinding)
-[![Documentation Status](https://readthedocs.org/projects/pybinding/badge/?version=stable)](http://docs.pybinding.site/)
-[![Gitter](https://img.shields.io/gitter/room/dean0x7d/pybinding.svg?maxAge=2592000)](https://gitter.im/dean0x7d/pybinding)
-[![License](https://img.shields.io/badge/license-BSD-blue.svg?maxAge=2592000)](license.md)
 [![DOI](https://zenodo.org/badge/20541/dean0x7d/pybinding.svg)](https://zenodo.org/badge/latestdoi/20541/dean0x7d/pybinding)
+[![License](https://img.shields.io/badge/license-BSD-blue.svg?maxAge=2592000)](license.md)
+[![Gitter](https://img.shields.io/gitter/room/dean0x7d/pybinding.svg?maxAge=2592000)](https://gitter.im/dean0x7d/pybinding)
+[![Documentation Status](https://readthedocs.org/projects/pybinding/badge/?version=stable)](http://docs.pybinding.site/)
+[![Travis Build Status](https://travis-ci.org/dean0x7d/pybinding.svg?branch=master)](https://travis-ci.org/dean0x7d/pybinding)
+[![AppVeyor Build status](https://ci.appveyor.com/api/projects/status/vd84e6gxixsu9l81/branch/master?svg=true)](https://ci.appveyor.com/project/dean0x7d/pybinding)
 
 Pybinding is a Python package for numerical tight-binding calculations in solid state physics.
 The main features include:
