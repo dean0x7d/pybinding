@@ -16,6 +16,7 @@ The model builds the Hamiltonian matrix by applying fields and other modifier pa
     Lattice
     Model
 
+.. _shapes_api:
 
 Shapes
 ------
@@ -32,6 +33,7 @@ a shape class object.
 
     Polygon
     FreeformShape
+    CompositeShape
 
 .. rubric:: Predefined shapes
 

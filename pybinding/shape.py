@@ -32,8 +32,11 @@ def _plot_freeform_shape(vertices, contains, resolution=(1000, 1000), **kwargs):
     area = np.ma.masked_array(area, np.logical_not(area))
     area = np.flipud(area)
 
+    if "color" in kwargs:
+        kwargs["cmap"], kwargs["norm"] = pltutils.direct_cmap_norm([1], [kwargs.pop("color")])
+
     im = plt.imshow(area, extent=(min(x), max(x), min(y), max(y)),
-                    **with_defaults(kwargs, cmap="gray", alpha=0.15))
+                    **with_defaults(kwargs, cmap="gray", alpha=0.15, interpolation="bicubic"))
 
     plt.axis("scaled")
     plt.xlabel("x (nm)")
@@ -157,7 +160,7 @@ class FreeformShape(_cpp.FreeformShape, _CompositionMixin):
             r0 = [x, y, z]
             r = [v0 - v for v0, v in zip(r0, vector)] + r0[len(vector):]
             return self.contains(*r)
-        return FreeformShape(contains, self.width, self.center + vector)
+        return FreeformShape(contains, self.width, self.center[:len(vector)] + vector)
 
     def plot(self, resolution=(1000, 1000), **kwargs):
         """Plot a lightly shaded silhouette of the freeform shape
