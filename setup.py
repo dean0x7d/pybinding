@@ -41,7 +41,7 @@ class CMakeBuild(build_ext):
                           '-DPB_NATIVE_SIMD=' + os.environ.get("PB_NATIVE_SIMD", "ON"),
                           '-DPB_MKL=' + os.environ.get("PB_MKL", "OFF"),
                           '-DPB_CUDA=' + os.environ.get("PB_CUDA", "OFF")]
-            build_args = ['--config', 'Release']
+            build_args = ['--config', os.environ.get("PB_BUILD_TYPE", "Release")]
 
             if platform.system() == "Windows":
                 cmake_args += ['-DCMAKE_LIBRARY_OUTPUT_DIRECTORY_RELEASE=' + extfulldir]
@@ -49,6 +49,7 @@ class CMakeBuild(build_ext):
                     cmake_args += ['-A', 'x64']
                 build_args += ['--', '/v:m', '/m']
             else:
+                cmake_args += ['-DCMAKE_BUILD_TYPE=' + os.environ.get("PB_BUILD_TYPE", "Release")]
                 parallel_jobs = 2 if not os.environ.get("READTHEDOCS") else 1
                 build_args += ['--', '-j{}'.format(parallel_jobs)]
 

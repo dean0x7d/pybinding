@@ -22,11 +22,11 @@ install:
     $env:AppVeyorLogger = "C:\Program Files\AppVeyor\BuildAgent\Appveyor.MSBuildLogger.dll"
     $env:PATH = "C:\Miniconda$env:CONDA\;C:\Miniconda$env:CONDA\Scripts\;$env:PATH"
     conda config --set always_yes yes --set changeps1 no
+    conda config --add channels conda-forge
     conda update -q conda
-    conda create -q -n test-env python=$env:PYTHON numpy scipy matplotlib
+    conda create -q -n test-env python=$env:PYTHON numpy scipy matplotlib pytest
+    conda info -a
 - activate test-env
-- pip install --disable-pip-version-check pytest py-cpuinfo
-- conda info -a
 build_script:
 - mkdir build && cd build && cmake -A "%CMAKE_ARCH%" -DPB_WERROR=ON -DPB_NATIVE_SIMD=OFF ..
 - cmake --build . --config Release -- /m /v:m /logger:"%AppVeyorLogger%"
