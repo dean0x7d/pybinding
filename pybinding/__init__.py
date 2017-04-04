@@ -24,7 +24,6 @@ from .shape import *
 from .modifier import *
 from .results import *
 
-from .support.pickle import save, load
 from .parallel import parallel_for, parallelize
 
 from . import (chebyshev, constants, greens, parallel, pltutils, results, solver, system, utils)

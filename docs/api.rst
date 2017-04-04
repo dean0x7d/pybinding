@@ -114,6 +114,7 @@ as some approximative compute methods. Follow the links below for details.
 
     parallel
 
+.. _results_api:
 
 Results
 -------
@@ -122,9 +123,16 @@ Result objects are usually produced by compute functions, but they are also used
 model properties. They hold data and offer postprocessing and plotting methods specifically adapted
 to the nature of the physical properties (i.e. the stored data).
 
+The utility functions :func:`pb.save() <.save>` and :func:`pb.load() <.load>` can be used to
+efficiently store entire result objects into files. The information about the kind of physical
+property is saved along with the raw data, i.e. executing `result = pb.load("data_file.pbz")`
+followed by `result.plot()` will work and present the appropriate figure.
+
 .. autosummary::
     :toctree: _api
 
+    save
+    load
     make_path
     Bands
     Eigenvalues

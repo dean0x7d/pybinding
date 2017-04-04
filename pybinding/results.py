@@ -10,11 +10,11 @@ import matplotlib.pyplot as plt
 
 from . import pltutils
 from .utils import with_defaults, x_pi
-from .support.pickle import pickleable
+from .support.pickle import pickleable, save, load
 from .support.structure import Positions, AbstractSites, Sites, Hoppings
 
 __all__ = ['Bands', 'DOS', 'Eigenvalues', 'LDOS', 'NDSweep', 'SpatialMap', 'StructureMap',
-           'Sweep', 'make_path']
+           'Sweep', 'make_path', 'save', 'load']
 
 
 def _make_crop_indices(obj, limits):
@@ -225,6 +225,7 @@ class LDOS:
         return self.__class__(self.energy, self.ldos.sum(axis=1))
 
 
+@pickleable
 class SpatialMap:
     """Represents some spatially dependent property: data mapped to site positions"""
 
@@ -382,6 +383,7 @@ class SpatialMap:
         return contour
 
 
+@pickleable
 class StructureMap(SpatialMap):
     """A subclass of :class:`.SpatialMap` that also includes hoppings between sites"""
 
@@ -473,6 +475,7 @@ class StructureMap(SpatialMap):
         return collection
 
 
+@pickleable
 class Structure:
     """Holds and plots the structure of a tight-binding system
     
@@ -679,7 +682,7 @@ class Bands:
     """
     def __init__(self, k_path, energy):
         self.k_path = np.atleast_1d(k_path).view(Path)
-        self.energy = energy
+        self.energy = np.atleast_1d(energy)
 
     @staticmethod
     def _point_names(k_points):

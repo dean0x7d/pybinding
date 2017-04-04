@@ -23,6 +23,11 @@
   restrictions are now removed so that the unit cell size is only limited by available memory.
   In addition, the memory usage of the internal system format has been reduced.
 
+* Added the `pb.save()` and `pb.load()` convenience functions for getting result objects into/out
+  of files. The data is saved in a compressed binary format (Python's builtin `pickle` format set
+  to protocol 4 + gzip). Loaded files can be immediately plotted: `result = pb.load("file.pbz")`
+  and then `result.plot()` to see the data.
+
 * Added `Lattice.add_aliases()` method. The old `Lattice.add_sublattice(..., alias=name)` way of
   creating aliases is deprecated.
 

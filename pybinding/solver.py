@@ -21,12 +21,10 @@ from . import _cpp
 from . import results
 from .model import Model
 from .system import System
-from .support.pickle import pickleable
 
 __all__ = ['Solver', 'arpack', 'feast', 'lapack']
 
 
-@pickleable(impl='system. eigenvalues eigenvectors')
 class Solver:
     """Computes the eigenvalues and eigenvectors of a Hamiltonian matrix
 

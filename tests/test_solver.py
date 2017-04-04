@@ -30,14 +30,6 @@ def solver(request, model_ex):
     return solver
 
 
-def test_pickle_round_trip(solver, tmpdir):
-    file_name = str(tmpdir.join('file.npz'))
-    pb.save(solver, file_name)
-    from_file = pb.load(file_name)
-
-    assert pytest.fuzzy_equal(solver, from_file)
-
-
 def test_eigenvalues(solver, baseline, plot_if_fails):
     eig = solver.calc_eigenvalues(map_probability_at=(0, 0))
     expected = baseline(eig)

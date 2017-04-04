@@ -319,7 +319,7 @@ def test_hopping_generator():
 
 
 def test_wrapper_return():
-    """Make sure the boost python wrapper return type conversion is working"""
+    """Make sure the wrapper return type conversion is working"""
     @pb.hopping_energy_modifier
     def mul(energy):
         """Returning a non-contiguous view will force the wrapper to create a copy"""
