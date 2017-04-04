@@ -72,8 +72,8 @@ def despine(trim=False):
     ax.yaxis.tick_left()
 
     if trim:
-        ax.xaxis.set_major_locator(plt.AutoLocator())
-        ax.yaxis.set_major_locator(plt.AutoLocator())
+        ax.xaxis.set_major_locator(plt.MaxNLocator(nbins="auto", steps=[1, 2, 5, 10]))
+        ax.yaxis.set_major_locator(plt.MaxNLocator(nbins="auto", steps=[1, 2, 5, 10]))
 
         for v, side in [('x', 'bottom'), ('y', 'left')]:
             ax.spines[side].set_smart_bounds(True)
@@ -419,40 +419,41 @@ def _make_style():
     palette = list(get_palette('Set1'))
     palette[5] = list(get_palette('Set2'))[5]
 
-    defaults = mpl_style.library['classic']
     style = {
+        'lines.linewidth': 1.2,  # [1.5]
         'lines.solid_capstyle': 'round',  # [projecting] butt|round|projecting
-        'font.size': 7.0,  # [12.0]
+        'font.size': 7.0,  # [10.0]
         'text.color': nearly_black,  # [black]
         'mathtext.default': 'regular',  # [it] the default font to use for math.
         'axes.edgecolor': nearly_black,  # [black] axes edge color
-        'axes.linewidth': linewidth,  # [1.0] edge linewidth
+        'axes.linewidth': linewidth,  # [0.8] edge linewidth
         'axes.labelcolor': nearly_black,  # [black]
         'axes.unicode_minus': False,  # [True] use unicode for the minus symbol
         'axes.prop_cycle': plt.cycler('color', palette),  # ['bgrcmyk']
+        'axes.autolimit_mode': 'round_numbers',  # ['data']
+        'axes.xmargin': 0,  # [0.05]
+        'axes.ymargin': 0,  # [0.05]
         'patch.facecolor': palette[1],  # [b]
-        'xtick.major.size': 2.5,  # [4] major tick size in points
+        'xtick.major.size': 2.5,  # [3.5] major tick size in points
         'xtick.minor.size': 1.0,  # [2] minor tick size in points
-        'xtick.major.width': linewidth,  # [0.5] major tick width in points
+        'xtick.major.width': linewidth,  # [0.8] major tick width in points
         'xtick.color': nearly_black,  # [black] color of the tick labels
-        'ytick.major.size': 2.5,  # [4] major tick size in points
+        'xtick.direction': "in",  # [out] in, out, or inout
+        'ytick.major.size': 2.5,  # [3.5] major tick size in points
         'ytick.minor.size': 1.0,  # [2] minor tick size in points
-        'ytick.major.width': linewidth,  # [0.5] major tick width in points
+        'ytick.major.width': linewidth,  # [0.8] major tick width in points
         'ytick.color': nearly_black,  # [black] color of the tick labels
-        'legend.fancybox': True,  # [False] Use a rounded box for the legend
-        'legend.numpoints': 1,  # [2] the number of points in the legend line
-        'legend.fontsize': 'medium',  # ['large']
-        'legend.framealpha': 0.9,  # [None] opacity of of legend frame
-        'figure.figsize': (3.4, 2.8),  # [(8, 6) inch] (3.4, 2.8) inch == (8.6, 7.1) cm
-        'figure.dpi': dpi,  # [80] figure dots per inch
-        'figure.facecolor': 'white',  # [0.75] figure facecolor
-        'image.cmap': 'viridis',  # [jet...]
-        'savefig.dpi': dpi,  # [100] figure dots per inch
+        'ytick.direction': "in",  # [out] in, out, or inout
+        'grid.linestyle': ":",  # [-]
+        'grid.linewidth': 0.5,  # [0.8]
+        'grid.alpha': 0.6,  # [1.0]
+        'figure.figsize': (3.4, 2.92),  # [(6.4, 4.8) inch] (3.4, 2.92) inch == (8.6, 7.4) cm
+        'figure.dpi': dpi,  # [100] figure dots per inch
         'savefig.bbox': 'tight',  # ['standard']
         'savefig.pad_inches': 0.04,  # [0.1] padding to be used when bbox is set to 'tight'
     }
 
-    return with_defaults(style, defaults)
+    return style
 
 
 pb_style = _make_style()

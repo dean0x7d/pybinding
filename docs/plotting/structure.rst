@@ -51,7 +51,7 @@ as a list of hopping names. For example, if we only want the first-nearest neigh
 
     from pybinding.repository import graphene
 
-    plt.figure(figsize=(8, 3))
+    plt.figure(figsize=(7, 3))
     model = pb.Model(graphene.monolayer(nearest_neighbors=3), graphene.hexagon_ac(1))
 
     plt.subplot(121, title="Unfiltered: all 3 hoppings")
@@ -65,7 +65,7 @@ We can also select hoppings in any combination:
 .. plot::
     :context: close-figs
 
-    plt.figure(figsize=(8, 3))
+    plt.figure(figsize=(7, 3))
 
     plt.subplot(121, title="$t$ and $t_{nn}$")
     model.plot(hopping={'draw_only': ['t', 't_nn']})
@@ -83,7 +83,7 @@ of colors or a matplotlib colormap.
 .. plot::
     :context: close-figs
 
-    plt.figure(figsize=(8, 3))
+    plt.figure(figsize=(7, 3))
     model = pb.Model(graphene.monolayer(), graphene.hexagon_ac(0.5))
 
     plt.subplot(121, title="Default")
@@ -102,7 +102,7 @@ but they can be colorized using the `cmap` parameter.
 .. plot::
     :context: close-figs
 
-    plt.figure(figsize=(8, 3))
+    plt.figure(figsize=(7, 3))
     model = pb.Model(graphene.monolayer(nearest_neighbors=3), pb.rectangle(0.6))
 
     plt.subplot(121, title="Default")

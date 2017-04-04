@@ -23,7 +23,7 @@ returned by :meth:`.Solver.calc_probability`.
 
     from pybinding.repository import graphene
 
-    plt.figure(figsize=(8, 3))
+    plt.figure(figsize=(7, 3))
 
     plt.subplot(121, title="The model")
     model = pb.Model(graphene.monolayer(nearest_neighbors=3), graphene.hexagon_ac(1))
@@ -44,7 +44,7 @@ This follows a syntax similar to numpy fancy indexing where we can give a condit
 .. plot::
     :context: close-figs
 
-    plt.figure(figsize=(8, 3))
+    plt.figure(figsize=(7, 3))
 
     plt.subplot(121, title="Original")
     smap.plot(hopping={'draw_only': ['t']})
@@ -57,7 +57,7 @@ This follows a syntax similar to numpy fancy indexing where we can give a condit
 .. plot::
     :context: close-figs
 
-    plt.figure(figsize=(8, 3))
+    plt.figure(figsize=(7, 3))
 
     plt.subplot(121, title="Original: A and B")
     smap.plot(hopping={'draw_only': ['t', 't_nn']})
@@ -77,14 +77,14 @@ a 1D array with the same size as the total number of sites in the system.
 .. plot::
     :context: close-figs
 
-    plt.figure(figsize=(8, 3))
+    plt.figure(figsize=(6.8, 3))
 
     plt.subplot(121, title="The model")
     model = pb.Model(graphene.monolayer(), graphene.hexagon_ac(1))
     model.plot()
 
-    plt.subplot(122, title="Custom color data")
-    custom_data = np.linspace(0, 2, num=model.system.num_sites)
+    plt.subplot(122, title="Custom color data: 2x * (y + 1)")
+    custom_data = 2 * model.system.x * (model.system.y + 1)
     smap = model.structure_map(custom_data)
     smap.plot()
     pb.pltutils.colorbar()
@@ -93,7 +93,7 @@ a 1D array with the same size as the total number of sites in the system.
 .. plot::
     :context: close-figs
 
-    plt.figure(figsize=(8, 3))
+    plt.figure(figsize=(6.8, 3))
 
     plt.subplot(121, title="sin(10x)")
     smap = model.structure_map(np.sin(10 * model.system.x))
@@ -115,7 +115,7 @@ hoppings would be too small to see. Contour plots look much better in this case.
 .. plot::
     :context: close-figs
 
-    plt.figure(figsize=(8, 3))
+    plt.figure(figsize=(6.8, 3))
     model = pb.Model(graphene.monolayer(), graphene.hexagon_ac(10))
 
     plt.subplot(121, title="sin(x)")

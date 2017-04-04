@@ -98,9 +98,7 @@ def test_structure_map(model):
 
 def test_structure_map_plot(compare_figure):
     model = pb.Model(graphene.monolayer(), pb.rectangle(0.8))
-    data = [3, 11, 19, 26, 5, 13, 21, 0, 7, 15, 23, 2, 9, 17,
-            10, 18, 25, 4, 12, 20, 27, 6, 14, 22, 1, 8, 16, 24]
-    structure_map = model.structure_map(data)
+    structure_map = model.structure_map(model.system.x * model.system.y)
 
     with compare_figure() as chk:
         structure_map.plot(site_radius=(0.03, 0.05))

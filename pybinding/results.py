@@ -602,7 +602,7 @@ class Eigenvalues:
     def indices(self):
         return np.arange(0, self.values.size)
 
-    def _decorate_plot(self, mark_degenerate, number_states):
+    def _decorate_plot(self, mark_degenerate, number_states, margin=0.1):
         """Common elements for the two eigenvalue plots"""
         if mark_degenerate:
             # draw lines between degenerate states
@@ -617,11 +617,13 @@ class Eigenvalues:
             for index, energy in enumerate(self.values):
                 pltutils.annotate_box(index, (index, energy), fontsize='x-small',
                                       xytext=(0, -10), textcoords='offset points')
+            margin = 0.25
 
         plt.xlabel('state')
         plt.ylabel('E (eV)')
         plt.xlim(-1, len(self.values))
         pltutils.despine(trim=True)
+        pltutils.add_margin(margin, axis="y")
 
     def plot(self, mark_degenerate=True, show_indices=False, **kwargs):
         """Standard eigenvalues scatter plot
@@ -662,7 +664,8 @@ class Eigenvalues:
 
         scatter_point_sizes = size[0] + size[1] * probability / probability.max()
         plt.scatter(indices, energy, **with_defaults(kwargs, cmap='YlOrRd', lw=0.2, alpha=0.85,
-                                                     c=probability, s=scatter_point_sizes))
+                                                     c=probability, s=scatter_point_sizes,
+                                                     edgecolor="k"))
 
         self._decorate_plot(mark_degenerate, show_indices)
         return self.probability.max()
@@ -728,7 +731,7 @@ class Bands:
         # this must be the done last, after all other plot elements are positioned.
         for idx in self.k_path.point_indices:
             ymax = plt.gca().transLimits.transform([0, max(self.energy[idx])])[1]
-            plt.axvline(k_space[idx], ymax=ymax, color='0.4', ls=':', zorder=-1)
+            plt.axvline(k_space[idx], ymax=ymax, color="0.4", lw=0.8, ls=":", zorder=-1)
 
     def plot_kpath(self, point_labels=None, **kwargs):
         """Quiver plot of the k-path along which the bands were computed

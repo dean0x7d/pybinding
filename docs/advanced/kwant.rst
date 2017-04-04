@@ -200,7 +200,7 @@ required to calculate the transmission:
     pb.pltutils.set_palette("Set1", start=3)
     plt.plot(sizes, pb_times, label="pybinding", marker='o', markersize=5, lw=2, zorder=20)
     plt.plot(sizes, kwant_times, label="kwant", marker='o', markersize=5, lw=2, zorder=10)
-    plt.grid(True, which='major', color='gray', ls=':', alpha=0.5)
+    plt.grid(True, which='major')
     plt.title("transmission calculation time")
     plt.xlabel("system size (nm)")
     plt.ylabel("time (seconds)")

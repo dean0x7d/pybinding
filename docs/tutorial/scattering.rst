@@ -40,7 +40,7 @@ To attach a lead to this system, we call the :meth:`.Model.attach_lead` method:
 
     model.attach_lead(direction=-1, contact=pb.line([-2, -1], [-2, 1]))
 
-    plt.figure(figsize=(8, 3))  # make the figure wider
+    plt.figure(figsize=(6, 3))  # make the figure wider
     model.plot()
 
 The lead is semi-infinite, but to be practical for the figure, only a few repetitions of the lead's
@@ -53,7 +53,7 @@ the meaning of these parameters, we'll draw them using the :meth:`.Lead.plot_con
 .. plot::
     :context: close-figs
 
-    plt.figure(figsize=(8, 3))  # make the figure wider
+    plt.figure(figsize=(6, 3))  # make the figure wider
     model.plot()
     model.leads[0].plot_contact()  # red shaded area and arrow
     model.lattice.plot_vectors(position=[-2.5, 1.5], scale=3)
@@ -80,7 +80,7 @@ We can now proceed to attach a few more leads:
     model.attach_lead(direction=+1, contact=pb.line([ 2, -1  ], [2,  1  ]))
     model.attach_lead(direction=-2, contact=pb.line([-1, -1.8], [1, -1.8]))
 
-    plt.figure(figsize=(8, 8))
+    plt.figure(figsize=(6.9, 6))
     model.plot()
     model.leads[1].plot_contact()
     model.leads[2].plot_contact()
@@ -119,7 +119,7 @@ figure above, the band plots of the leads are:
 .. plot::
     :context: close-figs
 
-    plt.figure(figsize=(8, 3))
+    plt.figure(figsize=(6.7, 3))
     plt.subplot('121')
     model.leads[0].plot_bands()
     plt.subplot('122')
@@ -169,7 +169,7 @@ or right of the PN junction. We can quickly check this by plotting the band stru
 .. plot::
     :context: close-figs
 
-    plt.figure(figsize=(8, 3))
+    plt.figure(figsize=(6.7, 3))
     plt.subplot('121')
     model.leads[0].plot_bands()
     plt.ylim(-10, 10)
