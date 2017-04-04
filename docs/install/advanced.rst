@@ -30,9 +30,10 @@ installing some dependencies.
 
 Building Pybinding from source is the only option on Linux.
 
-#. Make sure you have gcc and g++ v4.8 or newer. To check, run `g++ --version` in your terminal.
-   Refer to instruction from your Linux distribution in case you need to upgrade.
-#. Install `CMake`_ >= v3.0 from their website or your package manager,
+#. Make sure you have gcc and g++ v5.0 or newer. To check, run `g++ --version` in your terminal.
+   Refer to instruction from your Linux distribution in case you need to upgrade. Alternatively,
+   you can use clang v3.5 or newer for compilation instead of gcc.
+#. Install `CMake`_ >= v3.1 from their website or your package manager,
    e.g. `apt-get install cmake`.
 #. Install numpy, scipy and matplotlib with the minimal versions as
    :doc:`stated previously </install/index>`. The easiest way is to use your package manager,
@@ -73,8 +74,8 @@ Once you have everything, follow the steps below to compile and install Pybindin
 
 .. rubric:: Linux
 
-You'll need gcc/g++ >= v4.8 and CMake >= v3.0. See the previous section for details. If you have
-everything, Pybinding can be installed from the latest source code using pip::
+You'll need gcc/g++ >= v5.0 (or clang >= v3.5) and CMake >= v3.1. See the previous section for
+details. If you have everything, Pybinding can be installed from the latest source code using pip::
 
     pip3 install git+https://github.com/dean0x7d/pybinding.git
 

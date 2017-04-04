@@ -2,6 +2,15 @@
 
 ### v0.9.0 | in development
 
+##### Updated requirements
+
+* This version includes extensive internal improvements and raises the minimum requirements for
+  installation. Starting with this release, only Python >= 3.5 is supported. Newer versions of the
+  scientific Python packages are also required: numpy >= 1.12, scipy >= 0.19 and matplotlib >= 2.0.
+
+* On Linux, the minimum compiler requirements have also been increased to get access to C++14 for
+  the core of the library. To compile from source, you'll need GCC >= 5.0 or clang >= 3.5.
+
 ##### New features
 
 * Improved support for models with multiple orbitals, spins and any additional degrees of freedom.

@@ -45,12 +45,12 @@ get started. To run a script file, e.g. `example1.py`, enter the following comma
 Linux
 -----
 
-You will need gcc and g++ 4.8 or newer. To check, enter the following in terminal::
+You will need gcc and g++ 5.0 or newer. To check, enter the following in terminal::
 
     g++ --version
 
 If your version is outdated, check with your Linux distribution on how to upgrade.
-If you have version 4.8 or newer, proceed with the installation.
+If you have version 5.8 or newer, proceed with the installation.
 
 #. Download the Miniconda Python 3.x installer: `Miniconda3-latest-Linux-x86_64.sh`_. Run it
    in your terminal window::
@@ -118,4 +118,3 @@ Troubleshooting
 
 If you already had Python installed, having multiple distributions may cause trouble in some cases.
 Check the `PATH` environment variable and make sure the Miniconda has priority.
-
