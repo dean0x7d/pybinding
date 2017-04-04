@@ -24,8 +24,8 @@ void wrap_lattice(py::module& m) {
     py::class_<HT>(m, "HoppingTerm")
         .def_readonly("relative_index", &HT::relative_index,
                       "Relative index between two unit cells - note that it may be [0, 0, 0]")
-        .def_readonly("from", &HT::from, "Sublattice ID of the source")
-        .def_readonly("to", &HT::to, "Sublattice ID of the destination")
+        .def_readonly("from_id", &HT::from, "Sublattice ID of the source")
+        .def_readonly("to_id", &HT::to, "Sublattice ID of the destination")
         .def("__getstate__", [](HT const& h) {
             return py::dict("relative_index"_a=h.relative_index, "from"_a=h.from, "to"_a=h.to);
         })
