@@ -20,7 +20,7 @@ Phosphorene
         :include-source: False
         :alt: Phosphorene unit cell
 
-        plt.figure(figsize=(8, 4))
+        plt.figure(figsize=(7, 4))
         monolayer_4band(2).plot()
         plt.title("monolayer_4band(num_hoppings=2)")
 
@@ -29,6 +29,6 @@ Phosphorene
         :include-source: False
         :alt: Phosphorene unit cell
 
-        plt.figure(figsize=(8, 4))
+        plt.figure(figsize=(7, 4))
         monolayer_4band(5).plot()
         plt.title("monolayer_4band(num_hoppings=5)")

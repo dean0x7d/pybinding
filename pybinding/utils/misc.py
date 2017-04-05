@@ -129,3 +129,22 @@ def with_suffix(number, base=1000):
         if number > 0.999 * bucket:
             return "{:.3g}{}".format(number / bucket, suffix)
     return "{:.3g}".format(number)
+
+
+def rotate_axes(position, axes):
+    """Rotate axes in position
+
+    Examples
+    --------
+    >>> rotate_axes([1, 2, 3], "xy")
+    (1, 2, 3)
+    >>> rotate_axes([1, 2, 3], "yz")
+    (2, 3, 1)
+    """
+    missing_axes = set('xyz') - set(axes)
+    for a in missing_axes:
+        axes += a
+    assert len(axes) == 3
+
+    mapping = dict(x=0, y=1, z=2)
+    return tuple(position[mapping[a]] for a in axes)

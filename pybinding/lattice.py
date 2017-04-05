@@ -9,7 +9,7 @@ import matplotlib.pyplot as plt
 
 from . import _cpp
 from . import pltutils
-from .utils import x_pi, with_defaults
+from .utils import x_pi, with_defaults, rotate_axes
 
 __all__ = ['Lattice']
 
@@ -366,6 +366,22 @@ class Lattice:
         """
         self._plot_vectors(self.vectors, position, scale=scale)
 
+    def _visible_sublattices(self, axes):
+        """Return the sublattices which are visible when viewed top-down in the `axes` plane"""
+        idx = list(rotate_axes([0, 1, 2], axes))
+        xy_idx, z_idx = idx[:2], idx[2]
+
+        sorted_subs = sorted(self.sublattices.items(), reverse=True,
+                             key=lambda pair: pair[1].position[z_idx])
+        result = dict()
+        seen_positions = set()
+        for name, sub in sorted_subs:
+            p = tuple(sub.position[xy_idx])
+            if p not in seen_positions:
+                seen_positions.add(p)
+                result[name] = sub
+        return result
+
     def site_radius_for_plot(self, max_fraction=0.33):
         """Return a good estimate for the lattice site radius for plotting
 
@@ -393,10 +409,14 @@ class Lattice:
                 v1, v2 = lattice.vectors
                 unit_cell_area = np.linalg.norm(np.cross(v1, v2))
 
-                num_layers = len(np.unique([s.position[2] for s in lattice.sublattices.values()]))
-                site_area = unit_cell_area * num_layers / lattice.nsub
+                num_visible = len(self._visible_sublattices("xy"))
+                site_area = unit_cell_area / num_visible
 
-                magic = 0.33
+                if (lattice.ndim / num_visible).is_integer():
+                    magic = 0.35  # single layer or nicely stacked layers
+                else:
+                    magic = 0.42  # staggered layers
+
                 return magic * sqrt(site_area / pi)
             else:
                 raise RuntimeError("Not implemented for 3D lattices")
@@ -417,30 +437,38 @@ class Lattice:
         r2 = max_fraction * shortest_site_spacing(self)
         return min(r1, r2)
 
-    def plot(self, vector_position='center', **kwargs):
+    def plot(self, axes="xy", vector_position="center", **kwargs):
         """Illustrate the lattice by plotting the primitive cell and its nearest neighbors
 
         Parameters
         ----------
+        axes : str
+            The spatial axes to plot. E.g. 'xy', 'yz', etc.
         vector_position : array_like or 'center'
             Cartesian position to be used as the origin for the lattice vectors.
             By default the origin is placed in the center of the primitive cell.
         **kwargs
             Forwarded to `System.plot()`.
         """
-        import pybinding as pb
+        from .model import Model
+        from .shape import translational_symmetry
+
         # reuse model plotting code (kind of meta)
-        model = pb.Model(self, pb.translational_symmetry())
-        model.system.plot(**with_defaults(kwargs, hopping=dict(color='#777777', width=1)))
+        model = Model(self, translational_symmetry())
+        model.system.plot(**with_defaults(kwargs, hopping=dict(color='#777777', width=1),
+                                          axes=axes))
 
         # by default, plot the lattice vectors from the center of the unit cell
+        vectors = [np.array(rotate_axes(v, axes)) for v in self.vectors]
         sub_center = sum(s.position for s in self.sublattices.values()) / self.nsub
+        sub_center = rotate_axes(sub_center, axes)
         if vector_position is not None:
-            self.plot_vectors(sub_center if vector_position == 'center' else vector_position)
+            vector_position = sub_center if vector_position == "center" else vector_position
+            self._plot_vectors(vectors, vector_position)
 
         # annotate sublattice names
-        for name, sub in self.sublattices.items():
-            pltutils.annotate_box(name, xy=sub.position[:2],
+        for name, sub in self._visible_sublattices(axes).items():
+            pltutils.annotate_box(name, xy=rotate_axes(sub.position, axes)[:2],
                                   bbox=dict(boxstyle="circle,pad=0.3", alpha=0.2, lw=0))
 
         # collect relative indices where annotations should be drawn
@@ -454,6 +482,7 @@ class Lattice:
 
         # 3D distance (in length units) of the neighboring cell from the original
         offsets = [sum(r * v for r, v in zip(ri, self.vectors)) for ri in relative_indices]
+        offsets = [np.array(rotate_axes(p, axes)) for p in offsets]
 
         # annotate neighboring cell indices
         for relative_index, offset in zip(relative_indices, offsets):
@@ -466,10 +495,11 @@ class Lattice:
 
         # ensure there is some padding around the lattice
         offsets += [(0, 0, 0)]
-        points = [n * v + o for n in (-0.5, 0.5) for v in self.vectors for o in offsets]
+        points = [n * v + o for n in (-0.5, 0.5) for v in vectors for o in offsets]
         x, y, _ = zip(*points)
         pltutils.set_min_axis_length(abs(max(x) - min(x)), 'x')
         pltutils.set_min_axis_length(abs(max(y) - min(y)), 'y')
+        pltutils.add_margin()
 
     def plot_brillouin_zone(self, decorate=True, **kwargs):
         """Plot the Brillouin zone and reciprocal lattice vectors

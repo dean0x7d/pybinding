@@ -8,7 +8,7 @@ import matplotlib.pyplot as plt
 from . import _cpp
 from . import pltutils
 from .lattice import Lattice
-from .utils import with_defaults
+from .utils import with_defaults, rotate_axes
 from .support.alias import AliasArray
 from .support.fuzzy_set import FuzzySet
 from .support.structure import AbstractSites, Sites
@@ -159,17 +159,6 @@ def decorate_structure_plot(axes='xy', add_margin=True, **_):
         pltutils.despine()
 
 
-def _rotate(position, axes):
-    """Rotate axes in position"""
-    missing_axes = set('xyz') - set(axes)
-    for a in missing_axes:
-        axes += a
-    assert len(axes) == 3
-
-    mapping = dict(x=0, y=1, z=2)
-    return tuple(position[mapping[a]] for a in axes)
-
-
 def _data_units_to_points(ax, value):
     """Convert a value from data units to points"""
     fig = ax.get_figure()
@@ -232,7 +221,7 @@ def plot_sites(positions, data, radius=0.025, offset=(0, 0, 0), blend=1.0,
     else:
         kwargs['cmap'] = cmap
 
-    rotate = functools.partial(_rotate, axes=axes)
+    rotate = functools.partial(rotate_axes, axes=axes)
     positions, offset = map(rotate, (positions, offset))
 
     # create array of (x, y) points
@@ -334,7 +323,7 @@ def plot_hoppings(positions, hoppings, width=1.0, offset=(0, 0, 0), blend=1.0, c
     else:
         kwargs['cmap'] = cmap
 
-    rotate = functools.partial(_rotate, axes=axes)
+    rotate = functools.partial(rotate_axes, axes=axes)
     positions, offset = map(rotate, (positions, offset))
 
     # leave only the desired hoppings
