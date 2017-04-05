@@ -166,8 +166,8 @@ def kpm(model, energy_range=None, kernel="default", num_random=1, **kwargs):
     kernel : Kernel
         The kernel in the *Kernel* Polynomial Method. Used to improve the quality of
         the function reconstructed from the Chebyshev series. Possible values are
-        :func:`jackson_kernel` or :func:`lorentz_kernel`. The Lorentz kernel is used
-        by default with `lambda = 4`.
+        :func:`jackson_kernel` or :func:`lorentz_kernel`. The Jackson kernel is used
+        by default.
     num_random : int
         The number of random vectors to use for stochastic KPM calculations (e.g. DOS).
 
@@ -176,7 +176,7 @@ def kpm(model, energy_range=None, kernel="default", num_random=1, **kwargs):
     :class:`~pybinding.chebyshev.KernelPolynomialMethod`
     """
     if kernel == "default":
-        kernel = lorentz_kernel()
+        kernel = jackson_kernel()
     return KernelPolynomialMethod(_cpp.kpm(model, energy_range or (0, 0), kernel,
                                            num_random=num_random, **kwargs))
 
@@ -199,7 +199,7 @@ def kpm_cuda(model, energy_range=None, kernel="default", **kwargs):
     """
     try:
         if kernel == "default":
-            kernel = lorentz_kernel()
+            kernel = jackson_kernel()
         # noinspection PyUnresolvedReferences
         return KernelPolynomialMethod(_cpp.kpm_cuda(model, energy_range or (0, 0),
                                                     kernel, **kwargs))
@@ -369,5 +369,5 @@ class _PythonImpl:
 def kpm_python(model, energy_range=None, kernel="default", **kwargs):
     """Basic Python/SciPy implementation of KPM"""
     if kernel == "default":
-        kernel = lorentz_kernel()
+        kernel = jackson_kernel()
     return KernelPolynomialMethod(_PythonImpl(model, energy_range or (0, 0), kernel, **kwargs))

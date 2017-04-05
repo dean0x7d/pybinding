@@ -28,10 +28,11 @@ def model(request):
 
 @pytest.fixture(scope='module')
 def kpm(model):
-    strategies = [pb.chebyshev.kpm(model, **c) for c in configurations]
-    strategies += [pb.chebyshev.kpm_python(model)]
+    kernel = pb.chebyshev.lorentz_kernel()
+    strategies = [pb.chebyshev.kpm(model, kernel=kernel, **c) for c in configurations]
+    strategies += [pb.chebyshev.kpm_python(model, kernel=kernel)]
     if hasattr(pb._cpp, 'kpm_cuda'):
-        strategies += [pb.chebyshev.kpm_cuda(model)]
+        strategies += [pb.chebyshev.kpm_cuda(model, kernel=kernel)]
     return strategies
 
 
@@ -113,7 +114,9 @@ def test_dos(params, baseline, plot_if_fails):
         {'matrix_format': "ELL", 'optimal_size': True, 'interleaved': True},
     ]
     model = pb.Model(*params)
-    strategies = [pb.chebyshev.kpm(model, num_random=1, **c) for c in configurations]
+
+    kernel = pb.chebyshev.lorentz_kernel()
+    strategies = [pb.chebyshev.kpm(model, num_random=1, kernel=kernel, **c) for c in configurations]
 
     energy = np.linspace(0, 2, 25)
     results = [kpm.calc_dos(energy, broadening=0.15) for kpm in strategies]

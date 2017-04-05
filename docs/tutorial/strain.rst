@@ -276,7 +276,7 @@ A and B.
     for sub_name in ['A', 'B']:
         ldos = greens.calc_ldos(energy=np.linspace(-1, 1, 500), broadening=0.03,
                                 position=[0, 0], sublattice=sub_name)
-        ldos.plot(label=sub_name)
+        ldos.plot(label=sub_name, ls="--" if sub_name == "B" else "-")
     pb.pltutils.legend()
 
 Strain in graphene has an effect similar to a magnetic field. That's why we see Landau-level-like

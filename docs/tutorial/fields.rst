@@ -393,17 +393,17 @@ is explained in detail in the :doc:`greens` section of the tutorial.
 
     model = pb.Model(
         graphene.monolayer(),
-        pb.rectangle(20),
+        pb.rectangle(30),
         constant_magnetic_field(B=200)  # Tesla
     )
     greens = pb.greens.kpm(model)
 
-    ldos = greens.calc_ldos(energy=np.linspace(-1, 1, 500), broadening=0.02, position=[0, 0])
+    ldos = greens.calc_ldos(energy=np.linspace(-1, 1, 500), broadening=0.015, position=[0, 0])
     ldos.plot()
     plt.show()
 
 The values of the magnetic field is exaggerated here (200 Tesla), but that is done to keep the
-computation time low for the tutorial (under 1 second for this LDOS calculation).
+computation time low for the tutorial (less than 0.5 seconds for this LDOS calculation).
 
 
 Further reading
