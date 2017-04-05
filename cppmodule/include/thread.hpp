@@ -118,6 +118,8 @@ private:
 
 class DeferredBase {
 public:
+    virtual ~DeferredBase() = default;
+
     virtual py::object solver() const = 0;
     virtual void compute() = 0;
     virtual py::object result() = 0;
@@ -127,7 +129,7 @@ template<class Result>
 class Deferred : public DeferredBase {
 public:
     Deferred(py::object solver, std::function<Result()> compute)
-        : _solver(solver), _compute(std::move(compute)) {}
+        : _solver(std::move(solver)), _compute(std::move(compute)) {}
 
     py::object solver() const final { return _solver; }
 

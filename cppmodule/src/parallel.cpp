@@ -4,7 +4,7 @@
 using namespace cpb;
 
 void wrap_parallel(py::module& m) {
-    py::class_<DeferredBase, std::shared_ptr<DeferredBase>>(m, "DeferredBase", py::dynamic_attr())
+    py::class_<DeferredBase, std::shared_ptr<DeferredBase>>(m, "DeferredBase")
         .def("compute", &DeferredBase::compute)
         .def_property_readonly("solver", &DeferredBase::solver)
         .def_property_readonly("result", &DeferredBase::result);
@@ -38,7 +38,8 @@ void wrap_parallel(py::module& m) {
             [&retire](Job job, size_t id) {
                 py::gil_scoped_acquire gil_acquire;
                 retire(job.py, id);
-                job.py.release();
+                job.py.release().dec_ref();
+                job.cpp.reset();
             }
         );
     }, "sequence"_a, "produce"_a, "retire"_a, "num_threads"_a, "queue_size"_a);
