@@ -461,16 +461,20 @@ def test_multiorbital_hoppings():
                             ("C", [0.25, 0.0], [1, 2, 3]))
         lat.register_hopping_energies({
             "t11": 1,
+            "t1|2": 2,
+            "t1|3": 3,
             "t22": 3 * tau_z,
             "t23": [[0, 1, 2],
                     [3, 4, 5]],
             "t13": [[11, 12, 13]],
         })
-        lat.add_hoppings(([1, 0], "B", "B", "t11"),
-                         ([0, 1], "B", "B", "t11"),
-                         ([0, 1], "A", "A", "t22"),
-                         ([0, 0], "A", "C", "t23"),
-                         ([0, 0], "B", "C", "t13"))
+        lat.add_hoppings(([1,  0], "B", "B", "t11"),
+                         ([0,  1], "B", "B", "t11"),
+                         ([1,  1], "B", "B", "t1|2"),
+                         ([1, -1], "B", "B", "t1|3"),
+                         ([0,  1], "A", "A", "t22"),
+                         ([0,  0], "A", "C", "t23"),
+                         ([0,  0], "B", "C", "t13"))
         return lat
 
     capture = {}
@@ -524,6 +528,8 @@ def test_multiorbital_hoppings():
     def hopping_mod(energy, hop_id, x1, y1, z1, x2, y2, z2):
         if hop_id == "t11":
             energy *= x1 * 0
+        elif hop_id == "t1":
+            energy *= 3
         elif hop_id == "t22":
             energy += [[0, 1],
                        [1, 0]]
@@ -540,6 +546,8 @@ def test_multiorbital_hoppings():
     assert model.hamiltonian.shape[0] == 24
 
     assert_hoppings("t11", shape=(4,), energy=[0])
+    assert_hoppings("t1|2", shape=(1,), energy=[6])
+    assert_hoppings("t1|3", shape=(1,), energy=[9])
     assert_hoppings("t22", shape=(2, 2, 2), energy=[[3, 1],
                                                     [1, -3]])
     assert_hoppings("t23", shape=(4, 2, 3), energy=[[1, 1, 2],
