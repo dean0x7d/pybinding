@@ -24,9 +24,10 @@ from .shape import *
 from .modifier import *
 from .results import *
 
+from .chebyshev import *
 from .parallel import parallel_for, parallelize
 
-from . import (chebyshev, constants, greens, parallel, pltutils, results, solver, system, utils)
+from . import (constants, greens, parallel, pltutils, results, solver, system, utils)
 
 
 def tests(options=None, plugins=None):

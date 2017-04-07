@@ -271,11 +271,11 @@ A and B.
         pb.regular_polygon(num_sides=3, radius=40, angle=pi),
         triaxial_strain(c=0.0025)
     )
-    greens = pb.greens.kpm(model)
+    kpm = pb.kpm(model)
 
     for sub_name in ['A', 'B']:
-        ldos = greens.calc_ldos(energy=np.linspace(-1, 1, 500), broadening=0.03,
-                                position=[0, 0], sublattice=sub_name)
+        ldos = kpm.calc_ldos(energy=np.linspace(-1, 1, 500), broadening=0.03,
+                             position=[0, 0], sublattice=sub_name)
         ldos.plot(label=sub_name, ls="--" if sub_name == "B" else "-")
     pb.pltutils.legend()
 

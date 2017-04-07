@@ -28,11 +28,11 @@ def model(request):
 
 @pytest.fixture(scope='module')
 def kpm(model):
-    kernel = pb.chebyshev.lorentz_kernel()
-    strategies = [pb.chebyshev.kpm(model, kernel=kernel, **c) for c in configurations]
-    strategies += [pb.chebyshev.kpm_python(model, kernel=kernel)]
+    kernel = pb.lorentz_kernel()
+    strategies = [pb.kpm(model, kernel=kernel, **c) for c in configurations]
+    strategies += [pb.kpm_python(model, kernel=kernel)]
     if hasattr(pb._cpp, 'kpm_cuda'):
-        strategies += [pb.chebyshev.kpm_cuda(model, kernel=kernel)]
+        strategies += [pb.kpm_cuda(model, kernel=kernel)]
     return strategies
 
 
@@ -50,7 +50,7 @@ def test_ldos(kpm, baseline, plot_if_fails):
 
 def test_kpm_multiple_indices(model):
     """KPM can take a vector of column indices and return the Green's function for all of them"""
-    kpm = pb.chebyshev.kpm(model)
+    kpm = pb.kpm(model)
 
     num_sites = model.system.num_sites
     i, j = num_sites // 2, num_sites // 4
@@ -68,20 +68,20 @@ def test_kpm_multiple_indices(model):
 def test_kpm_reuse():
     """KPM should return the same result when a single object is used for multiple calculations"""
     model = pb.Model(graphene.monolayer(), graphene.hexagon_ac(10))
-    kpm = pb.chebyshev.kpm(model)
+    kpm = pb.kpm(model)
     energy = np.linspace(-5, 5, 50)
     broadening = 0.1
 
     for position in [0, 0], [6, 0]:
         actual = kpm.calc_ldos(energy, broadening, position)
-        expected = pb.chebyshev.kpm(model).calc_ldos(energy, broadening, position)
+        expected = pb.kpm(model).calc_ldos(energy, broadening, position)
         assert pytest.fuzzy_equal(actual, expected, rtol=1e-3, atol=1e-6)
 
 
 def test_ldos_sublattice():
     """LDOS for A and B sublattices should be antisymmetric for graphene with a mass term"""
     model = pb.Model(graphene.monolayer(), graphene.hexagon_ac(10), graphene.mass_term(1))
-    kpm = pb.chebyshev.kpm(model)
+    kpm = pb.kpm(model)
 
     a, b = (kpm.calc_ldos(np.linspace(-5, 5, 50), 0.1, [0, 0], sub) for sub in ('A', 'B'))
     assert pytest.fuzzy_equal(a.ldos, b.ldos[::-1], rtol=1e-3, atol=1e-6)
@@ -115,8 +115,8 @@ def test_dos(params, baseline, plot_if_fails):
     ]
     model = pb.Model(*params)
 
-    kernel = pb.chebyshev.lorentz_kernel()
-    strategies = [pb.chebyshev.kpm(model, num_random=1, kernel=kernel, **c) for c in configurations]
+    kernel = pb.lorentz_kernel()
+    strategies = [pb.kpm(model, num_random=1, kernel=kernel, **c) for c in configurations]
 
     energy = np.linspace(0, 2, 25)
     results = [kpm.calc_dos(energy, broadening=0.15) for kpm in strategies]

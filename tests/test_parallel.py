@@ -20,7 +20,7 @@ def test_sweep(baseline, plot_if_fails):
             pb.constant_potential(v)
         )
 
-        kpm = pb.greens.kpm(model, kernel=pb.chebyshev.lorentz_kernel())
+        kpm = pb.kpm(model, kernel=pb.lorentz_kernel())
         return kpm.deferred_ldos(energy, broadening=0.15, position=[0, 0], sublattice="B")
 
     silence_parallel_output(factory)
@@ -42,7 +42,7 @@ def test_ndsweep(baseline):
             pb.constant_potential(v2)
         )
 
-        kpm = pb.greens.kpm(model, kernel=pb.chebyshev.lorentz_kernel())
+        kpm = pb.kpm(model, kernel=pb.lorentz_kernel())
         return kpm.deferred_ldos(energy, broadening=0.15, position=[0, 0])
 
     silence_parallel_output(factory)

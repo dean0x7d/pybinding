@@ -10,6 +10,7 @@ import matplotlib.pyplot as plt
 from . import _cpp
 from . import pltutils
 from .utils import x_pi, with_defaults, rotate_axes
+from .support.deprecated import LoudDeprecationWarning
 
 __all__ = ['Lattice']
 
@@ -95,13 +96,13 @@ class Lattice:
         self.impl.min_neighbors = value
 
     def __getitem__(self, name):
-        """Deprecated: Use the sublattice name directly instead"""
-        warnings.warn("Use the sublattice name directly instead", DeprecationWarning, stacklevel=2)
+        warnings.warn("Use the sublattice name directly instead",
+                      LoudDeprecationWarning, stacklevel=2)
         return name
 
     def __call__(self, name):
-        """Deprecated: Use the hopping name directly instead"""
-        warnings.warn("Use the hopping name directly instead", DeprecationWarning, stacklevel=2)
+        warnings.warn("Use the hopping name directly instead",
+                      LoudDeprecationWarning, stacklevel=2)
         return name
 
     def register_hopping_energies(self, mapping):
@@ -132,7 +133,8 @@ class Lattice:
             Deprecated: Use :meth:`add_one_alias` instead.
         """
         if alias:
-            warnings.warn("Use Lattice.add_aliases() instead", DeprecationWarning, stacklevel=2)
+            warnings.warn("Use Lattice.add_aliases() instead",
+                          LoudDeprecationWarning, stacklevel=2)
             self.add_one_alias(name, alias, position)
         else:
             self.impl.add_sublattice(name, position, onsite_energy)

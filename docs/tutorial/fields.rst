@@ -396,9 +396,9 @@ is explained in detail in the :doc:`greens` section of the tutorial.
         pb.rectangle(30),
         constant_magnetic_field(B=200)  # Tesla
     )
-    greens = pb.greens.kpm(model)
+    kpm = pb.kpm(model)
 
-    ldos = greens.calc_ldos(energy=np.linspace(-1, 1, 500), broadening=0.015, position=[0, 0])
+    ldos = kpm.calc_ldos(energy=np.linspace(-1, 1, 500), broadening=0.015, position=[0, 0])
     ldos.plot()
     plt.show()
 

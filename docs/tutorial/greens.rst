@@ -40,7 +40,7 @@ implementation:
     :emphasize-lines: 0
 
     model = pb.Model(graphene.monolayer())
-    greens = pb.greens.kpm(model)
+    greens = pb.kpm(model)
 
 It can then be used to calculate the Green's function corresponding to Hamiltonian matrix element
 `i,j` for the desired energy range and broadening:
@@ -64,8 +64,8 @@ density of states (LDOS). In the next example we'll use a large square sheet of 
         graphene.monolayer(),
         pb.rectangle(60)
     )
-    greens = pb.greens.kpm(model)
-    ldos = greens.calc_ldos(energy=np.linspace(-9, 9, 200), broadening=0.05, position=[0, 0])
+    kpm = pb.kpm(model)
+    ldos = kpm.calc_ldos(energy=np.linspace(-9, 9, 200), broadening=0.05, position=[0, 0])
     ldos.plot()
 
 The LDOS is calculated for energies between -9 and 9 eV with a Lorentzian broadening of 50 meV.
@@ -82,8 +82,8 @@ position. We can optionally also choose a specific sublattice:
 .. code-block:: python
     :emphasize-lines: 0
 
-    ldos = greens.calc_ldos(energy=np.linspace(-9, 9, 200), broadening=0.05,
-                            position=[0, 0], sublattice='B')
+    ldos = kpm.calc_ldos(energy=np.linspace(-9, 9, 200), broadening=0.05,
+                         position=[0, 0], sublattice='B')
 
 In this case we would calculate the LDOS at a site of sublattice B closest to the center of the
 system. We can try that on a graphene system with a mass term:
@@ -97,11 +97,11 @@ system. We can try that on a graphene system with a mass term:
         graphene.mass_term(1),
         pb.rectangle(60)
     )
-    greens = pb.greens.kpm(model)
+    kpm = pb.kpm(model)
 
     for sub_name in ['A', 'B']:
-        ldos = greens.calc_ldos(energy=np.linspace(-9, 9, 500), broadening=0.05,
-                                position=[0, 0], sublattice=sub_name)
+        ldos = kpm.calc_ldos(energy=np.linspace(-9, 9, 500), broadening=0.05,
+                             position=[0, 0], sublattice=sub_name)
         ldos.plot(label=sub_name)
     pb.pltutils.legend()
 

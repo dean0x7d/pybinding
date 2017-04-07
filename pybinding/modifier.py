@@ -13,6 +13,7 @@ from . import _cpp
 from .system import Sites
 from .support.inspect import get_call_signature
 from .support.alias import AliasArray, AliasIndex
+from .support.deprecated import LoudDeprecationWarning
 from .utils.misc import decorator_decorator
 
 __all__ = ['constant_potential', 'force_double_precision', 'force_complex_numbers',
@@ -303,7 +304,7 @@ def onsite_energy_modifier(is_double=False, **kwargs):
         )
     """
     if "double" in kwargs:
-        warnings.warn("Use `is_double` parameter name instead of `double`", DeprecationWarning)
+        warnings.warn("Use `is_double` parameter name instead of `double`", LoudDeprecationWarning)
         is_double = kwargs["double"]
     return functools.partial(_make_modifier, kind=_cpp.OnsiteModifier,
                              init=dict(is_double=is_double), can_be_complex=True,
@@ -362,7 +363,7 @@ def hopping_energy_modifier(is_double=False, is_complex=False, **kwargs):
         )
     """
     if "double" in kwargs:
-        warnings.warn("Use `is_double` parameter name instead of `double`", DeprecationWarning)
+        warnings.warn("Use `is_double` parameter name instead of `double`", LoudDeprecationWarning)
         is_double = kwargs["double"]
     return functools.partial(_make_modifier, kind=_cpp.HoppingModifier,
                              init=dict(is_double=is_double, is_complex=is_complex),

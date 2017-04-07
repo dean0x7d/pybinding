@@ -7,8 +7,8 @@ parallelism. Pybinding features experimental support for CUDA. It's used for ker
 method (KPM) calculations -- see the Green's function :doc:`tutorial page</tutorial/greens>` and
 :mod:`API reference <.greens>`.
 
-The CUDA-base KPM implementation is available via the :func:`.greens.kpm_cuda` function. It mirrors
-the API of the regular CPU-based :func:`.greens.kpm`. The only difference between them is where the
+The CUDA-base KPM implementation is available via the :func:`.kpm_cuda` function. It mirrors
+the API of the regular CPU-based :func:`.kpm`. The only difference between them is where the
 calculation will take place. Note that the CUDA implementation is still experimental and that only
 diagonal Green's function elements will be computed on the GPU, while off-diagonal falls back to
 regular CPU code. This will be addressed in a future version.

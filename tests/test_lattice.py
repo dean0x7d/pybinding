@@ -3,6 +3,7 @@ import pytest
 import numpy as np
 import pybinding as pb
 from pybinding.repository import graphene
+from pybinding.support.deprecated import LoudDeprecationWarning
 
 lattices = {
     "graphene-monolayer": graphene.monolayer(),
@@ -49,7 +50,7 @@ def test_init():
     assert pytest.fuzzy_equal(lat3d.vectors[2], [0, 0, 1])
 
 
-def test_add_sublattice():
+def test_add_sublattice(capsys):
     lat = pb.Lattice(1)
     assert lat.nsub == 0
 
@@ -87,7 +88,9 @@ def test_add_sublattice():
         lat.add_one_sublattice("A", 0)
     assert "Sublattice 'A' already exists" in str(excinfo.value)
 
-    pytest.deprecated_call(lat.__getitem__, "A")
+    with pytest.warns(LoudDeprecationWarning):
+        assert lat["A"] == "A"
+    capsys.readouterr()
 
 
 def test_add_multiorbital_sublattice():
@@ -148,7 +151,7 @@ def test_add_multiorbital_sublattice():
     assert "The onsite hopping matrix must be upper triangular or Hermitian" in str(excinfo.value)
 
 
-def test_add_sublattice_alias():
+def test_add_sublattice_alias(capsys):
     lat = pb.Lattice([1, 0], [0, 1])
     lat.add_sublattices(("A", [0.0, 0.5]),
                         ("B", [0.5, 0.0]))
@@ -167,10 +170,12 @@ def test_add_sublattice_alias():
         lat.add_one_alias("D", "bad_name", [0, 0])
     assert "There is no sublattice named 'bad_name'" in str(excinfo.value)
 
-    pytest.deprecated_call(lat.add_one_sublattice, "Z", c_position, alias="A")
+    with pytest.warns(LoudDeprecationWarning):
+        lat.add_one_sublattice("Z", c_position, alias="A")
+    capsys.readouterr()
 
 
-def test_add_hopping():
+def test_add_hopping(capsys):
     lat = pb.Lattice([1, 0], [0, 1])
     lat.add_sublattices(("A", [0.0, 0.5]),
                         ("B", [0.5, 0.0]))
@@ -225,7 +230,9 @@ def test_add_hopping():
         lat.add_one_hopping((0, 1), "A", "A", "tt")
     assert "There is no hopping named 'tt'" in str(excinfo.value)
 
-    pytest.deprecated_call(lat.__call__, "t_nn")
+    with pytest.warns(LoudDeprecationWarning):
+        assert lat("t_nn") == "t_nn"
+    capsys.readouterr()
 
 
 def test_add_matrix_hopping():

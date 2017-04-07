@@ -246,7 +246,7 @@ sum of all orbitals but this is optional as shown in the following example:
     model = pb.Model(group6_tmd.monolayer_3band("MoS2"),
                      pb.regular_polygon(6, 20))
 
-    kpm = pb.chebyshev.kpm(model)
+    kpm = pb.kpm(model)
     energy = np.linspace(-1, 3.8, 500)
     broadening = 0.05
     position = [0, 0]

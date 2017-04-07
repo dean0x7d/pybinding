@@ -3,6 +3,8 @@
 The kernel polynomial method (KPM) can be used to approximate various functions by expanding them
 in a series of Chebyshev polynomials.
 """
+import warnings
+
 import numpy as np
 import scipy
 
@@ -11,8 +13,11 @@ from . import results
 from .model import Model
 from .system import System
 from .utils.time import timed
+from .support.deprecated import LoudDeprecationWarning
 
-__all__ = ['KernelPolynomialMethod', 'kpm', 'kpm_cuda', 'jackson_kernel', 'lorentz_kernel']
+__all__ = ['KernelPolynomialMethod',
+           'kpm', 'kpm_cuda', 'kpm_python',
+           'jackson_kernel', 'lorentz_kernel']
 
 
 class KernelPolynomialMethod:
@@ -50,7 +55,7 @@ class KernelPolynomialMethod:
         return self.impl.report(shortform)
 
     def __call__(self, *args, **kwargs):
-        """Deprecated"""  # TODO: remove
+        warnings.warn("Use .calc_greens() instead", LoudDeprecationWarning)
         return self.calc_greens(*args, **kwargs)
 
     def calc_greens(self, i, j, energy, broadening):
