@@ -20,9 +20,9 @@ inline idx_t round_num_moments(idx_t n) {
  */
 struct Kernel {
     /// Produce the KPM damping coefficients which depend on the number of expansion moments
-    std::function<ArrayXd(int num_moments)> damping_coefficients;
+    std::function<ArrayXd(idx_t num_moments)> damping_coefficients;
     /// The number of moments required to reconstruct a function at the specified scaled broadening
-    std::function<int(double scaled_broadening)> required_num_moments;
+    std::function<idx_t(double scaled_broadening)> required_num_moments;
 
     /// Apply the kernel damping to an array of moments
     template<class scalar_t>
@@ -62,5 +62,17 @@ Kernel jackson_kernel();
  smoothness of the convergence. The Lorentzian broadening is given by `lambda / N`.
  */
 Kernel lorentz_kernel(double lambda = 4.0);
+
+/**
+ The Dirichlet kernel
+
+ This kernel doesn't modify the moments at all. The resulting moments represent just
+ a truncated series which results in lots of oscillation in the reconstructed function.
+ Therefore, this kernel should almost never be used. It's only here in case the raw
+ moment values are needed for some other purpose. Note that `required_num_moments()`
+ returns `N = pi / sigma` for compatibility with the Jackson kernel, but there is no
+ actual broadening associated with the Dirichlet kernel.
+ */
+Kernel dirichlet_kernel();
 
 }} // namespace cpb::kpm

@@ -17,7 +17,7 @@ from .support.deprecated import LoudDeprecationWarning
 
 __all__ = ['KernelPolynomialMethod',
            'kpm', 'kpm_cuda', 'kpm_python',
-           'jackson_kernel', 'lorentz_kernel']
+           'jackson_kernel', 'lorentz_kernel', 'dirichlet_kernel']
 
 
 class KernelPolynomialMethod:
@@ -324,6 +324,19 @@ def lorentz_kernel(lambda_value=4.0):
         accuracy. If in doubt, leave it at the default value of 4.
     """
     return _cpp.lorentz_kernel(lambda_value)
+
+
+def dirichlet_kernel():
+    """The Dirichlet kernel -- returns raw moments, least favorable choice
+
+    This kernel doesn't modify the moments at all. The resulting moments represent just
+    a truncated series which results in lots of oscillation in the reconstructed function.
+    Therefore, this kernel should almost never be used. It's only here in case the raw
+    moment values are needed for some other purpose. Note that `required_num_moments()`
+    returns `N = pi / sigma` for compatibility with the Jackson kernel, but there is 
+    no actual broadening associated with the Dirichlet kernel.
+    """
+    return _cpp.dirichlet_kernel()
 
 
 class _PythonImpl:

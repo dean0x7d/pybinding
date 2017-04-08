@@ -108,6 +108,7 @@ void wrap_greens(py::module& m) {
 
     m.def("lorentz_kernel", &kpm::lorentz_kernel);
     m.def("jackson_kernel", &kpm::jackson_kernel);
+    m.def("dirichlet_kernel", &kpm::dirichlet_kernel);
 
     py::class_<KPM>(m, "KPM")
         .def("moments", &KPM::moments)
