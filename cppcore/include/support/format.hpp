@@ -25,4 +25,6 @@ inline std::string with_suffix(double number) {
     return fmt::format("{:.3g}{}", result.value, result.suffix);
 }
 
+inline std::string with_suffix(std::ptrdiff_t n) { return with_suffix(static_cast<double>(n)); }
+
 } // namespace fmt

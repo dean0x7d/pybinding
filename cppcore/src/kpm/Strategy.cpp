@@ -47,15 +47,11 @@ ArrayXd StrategyTemplate<scalar_t>::ldos(idx_t index, ArrayXd const& energy, dou
     auto const scale = bounds.scaling_factors();
     auto const num_moments = config.kernel.required_num_moments(broadening / scale.a);
 
-    auto& oh = optimized_hamiltonian;
-    oh.optimize_for({index, index}, scale);
-    oh.populate_stats(stats, num_moments, config.algorithm);
+    optimized_hamiltonian.optimize_for({index, index}, scale);
+    stats.reset(num_moments, optimized_hamiltonian, config.algorithm);
 
     auto moments = DiagonalMoments<scalar_t>(num_moments);
-
-    stats.moments_timer.tic();
-    compute(moments, unit_starter(oh), oh, config.algorithm);
-    stats.moments_timer.toc();
+    compute(moments, unit_starter(optimized_hamiltonian), config.algorithm);
 
     config.kernel.apply(moments.get());
     return reconstruct<real_t>(moments.get().real(), energy, scale);
@@ -77,23 +73,17 @@ StrategyTemplate<scalar_t>::greens_vector(idx_t row, std::vector<idx_t> const& c
 
     auto& oh = optimized_hamiltonian;
     oh.optimize_for({row, cols}, scale);
-    oh.populate_stats(stats, num_moments, config.algorithm);
+    stats.reset(num_moments, oh, config.algorithm);
 
     if (oh.idx().is_diagonal()) {
         auto moments = DiagonalMoments<scalar_t>(num_moments);
-
-        stats.moments_timer.tic();
-        compute(moments, unit_starter(oh), oh, config.algorithm);
-        stats.moments_timer.toc();
+        compute(moments, unit_starter(oh), config.algorithm);
 
         config.kernel.apply(moments.get());
         return {reconstruct_greens(moments.get(), energy, scale)};
     } else {
         auto moments_vector = MultiUnitCollector<scalar_t>(num_moments, oh.idx());
-
-        stats.moments_timer.tic();
-        compute(moments_vector, unit_starter(oh), oh, config.algorithm);
-        stats.moments_timer.toc();
+        compute(moments_vector, unit_starter(oh), config.algorithm);
 
         for (auto& moments : moments_vector.get()) {
             config.kernel.apply(moments);
@@ -114,22 +104,18 @@ ArrayXd StrategyTemplate<scalar_t>::dos(ArrayXd const& energy, double broadening
     auto specialized_algorithm = config.algorithm;
     specialized_algorithm.optimal_size = false; // not applicable for this calculation
 
-    auto& oh = optimized_hamiltonian;
-    oh.optimize_for({0, 0}, scale);
-    oh.populate_stats(stats, num_moments, specialized_algorithm);
+    optimized_hamiltonian.optimize_for({0, 0}, scale);
+    stats.reset(num_moments, optimized_hamiltonian, config.algorithm, num_random);
 
     auto moments = DiagonalMoments<scalar_t>(num_moments);
     auto total_mu = ArrayX<scalar_t>::Zero(num_moments).eval();
 
-    stats.multiplier = static_cast<double>(num_random);
-    stats.moments_timer.tic();
     std::mt19937 generator;
     for (auto j = 0; j < num_random; ++j) {
-        compute(moments, random_starter(oh, generator), oh, specialized_algorithm);
+        compute(moments, random_starter(optimized_hamiltonian, generator), specialized_algorithm);
         total_mu += moments.get();
     }
     total_mu /= static_cast<real_t>(num_random);
-    stats.moments_timer.toc();
 
     config.kernel.apply(total_mu);
     return reconstruct<real_t>(total_mu.real(), energy, scale);
@@ -146,32 +132,28 @@ ArrayXcd StrategyTemplate<scalar_t>::conductivity(
     auto specialized_algorithm = config.algorithm;
     specialized_algorithm.optimal_size = false; // not applicable for this calculation
 
-    auto& oh = optimized_hamiltonian;
-    oh.optimize_for({0, 0}, scale);
-    oh.populate_stats(stats, num_moments, specialized_algorithm);
+    optimized_hamiltonian.optimize_for({0, 0}, scale);
+    stats.reset(num_moments, optimized_hamiltonian, config.algorithm, num_random);
 
     auto velocity_l = velocity(*hamiltonian, left_coords);
     auto velocity_r = velocity(*hamiltonian, right_coords);
-    oh.reorder(velocity_l);
-    oh.reorder(velocity_r);
+    optimized_hamiltonian.reorder(velocity_l);
+    optimized_hamiltonian.reorder(velocity_r);
 
     auto moments_l = DenseMatrixCollector<scalar_t>(num_moments, hamiltonian->rows());
     auto moments_r = DenseMatrixCollector<scalar_t>(num_moments, hamiltonian->rows(), velocity_r);
     auto total_mu = MatrixX<scalar_t>::Zero(num_moments, num_moments).eval();
 
-    stats.multiplier = static_cast<double>(2 * num_random);
-    stats.moments_timer.tic();
     std::mt19937 generator;
     for (auto j = 0; j < num_random; ++j) {
-        auto r0 = random_starter(oh, generator);
+        auto r0 = random_starter(optimized_hamiltonian, generator);
         auto l0 = (velocity_l * r0).eval();
-        compute(moments_l, std::move(l0), oh, specialized_algorithm);
-        compute(moments_r, std::move(r0), oh, specialized_algorithm);
+        compute(moments_l, std::move(l0), specialized_algorithm);
+        compute(moments_r, std::move(r0), specialized_algorithm);
 
         total_mu += moments_l.matrix() * moments_r.matrix().adjoint();
     }
     total_mu /= static_cast<real_t>(num_random);
-    stats.moments_timer.toc();
 
     config.kernel.apply(total_mu);
 	return reconstruct_kubo_bastin(total_mu, chemical_potential, bounds.linspaced(num_points),
@@ -183,6 +165,22 @@ std::string StrategyTemplate<scalar_t>::report(bool shortform) const {
     return bounds.report(shortform)
            + stats.report(shortform)
            + (shortform ? "|" : "Total time:");
+}
+
+template<class scalar_t>
+void StrategyTemplate<scalar_t>::compute(DiagonalMoments<scalar_t>& m, VectorX<scalar_t>&& r0,
+                                         AlgorithmConfig const& ac) {
+    stats.moments_timer.tic();
+    compute(m, std::move(r0), ac, optimized_hamiltonian);
+    stats.moments_timer.toc_accumulate();
+}
+
+template<class scalar_t>
+void StrategyTemplate<scalar_t>::compute(OffDiagonalMoments<scalar_t>& m, VectorX<scalar_t>&& r0,
+                                         AlgorithmConfig const& ac) {
+    stats.moments_timer.tic();
+    compute(m, std::move(r0), ac, optimized_hamiltonian);
+    stats.moments_timer.toc_accumulate();
 }
 
 CPB_INSTANTIATE_TEMPLATE_CLASS(StrategyTemplate)

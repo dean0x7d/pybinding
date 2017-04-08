@@ -21,6 +21,11 @@ public:
         return *this;
     }
 
+    Chrono& toc_accumulate() {
+        elapsed += std::chrono::high_resolution_clock::now() - tic_time;
+        return *this;
+    }
+
     template<class Fn>
     Chrono& timeit(Fn lambda) {
         tic(); lambda(); toc();

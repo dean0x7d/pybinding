@@ -1,7 +1,6 @@
 #pragma once
 #include "kpm/Bounds.hpp"
 #include "kpm/Config.hpp"
-#include "kpm/Stats.hpp"
 
 #include "numeric/sparse.hpp"
 #include "numeric/ellmatrix.hpp"
@@ -145,8 +144,6 @@ public:
     SliceMap const& map() const { return slice_map; }
     OptMatrix const& matrix() const { return optimized_matrix; }
 
-    void populate_stats(Stats& s, int num_moments, AlgorithmConfig const& c) const;
-
 private:
     /// Just scale the Hamiltonian: H2 = (H - I*b) * (2/a)
     void create_scaled(Indices const& idx, Scale<real_t> scale);
@@ -159,9 +156,15 @@ private:
                                    std::vector<storage_idx_t> const& reorder_map);
 
     /// Total non-zeros processed when computing `num_moments` with or without size optimizations
-    size_t num_nonzeros(int num_moments, bool optimal_size) const;
+    size_t num_nonzeros(idx_t num_moments, bool optimal_size) const;
     /// Same as above but with vector elements instead of sparse matrix non-zeros
-    size_t num_vec_elements(int num_moments, bool optimal_size) const;
+    size_t num_vec_elements(idx_t num_moments, bool optimal_size) const;
+    /// The amount of memory (in bytes) used by the Hamiltonian matrix
+    size_t matrix_memory() const;
+    /// Memory used by a single KPM vector
+    size_t vector_memory() const;
+
+    friend struct Stats;
 };
 
 CPB_EXTERN_TEMPLATE_CLASS(OptimizedHamiltonian)

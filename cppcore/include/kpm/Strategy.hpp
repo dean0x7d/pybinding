@@ -79,10 +79,15 @@ public:
     Stats const& get_stats() const final { return stats; }
 
 protected:
+    /// KPM moment computation which must be implemented by derived classes
     virtual void compute(DiagonalMoments<scalar_t>&, VectorX<scalar_t>&& r0,
-                         OptimizedHamiltonian<scalar_t> const&, AlgorithmConfig const&) const = 0;
+                         AlgorithmConfig const&, OptimizedHamiltonian<scalar_t> const&) const = 0;
     virtual void compute(OffDiagonalMoments<scalar_t>&, VectorX<scalar_t>&& r0,
-                         OptimizedHamiltonian<scalar_t> const&, AlgorithmConfig const&) const = 0;
+                         AlgorithmConfig const&, OptimizedHamiltonian<scalar_t> const&) const = 0;
+
+private:
+    void compute(DiagonalMoments<scalar_t>&, VectorX<scalar_t>&& r0, AlgorithmConfig const&);
+    void compute(OffDiagonalMoments<scalar_t>&, VectorX<scalar_t>&& r0, AlgorithmConfig const&);
 
 private:
     SparseMatrixRC<scalar_t> hamiltonian;

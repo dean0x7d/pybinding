@@ -59,16 +59,18 @@ struct ComputeOffDiagonal {
 } // anonymous namespace
 
 template<class scalar_t>
-void DefaultStrategy<scalar_t>
-::compute(DiagonalMoments<scalar_t>& m, VectorX<scalar_t>&& r0,
-        OptimizedHamiltonian<scalar_t> const& oh, AlgorithmConfig const& ac) const {
+void DefaultStrategy<scalar_t>::compute(
+    DiagonalMoments<scalar_t>& m, VectorX<scalar_t>&& r0,
+    AlgorithmConfig const& ac, OptimizedHamiltonian<scalar_t> const& oh
+) const {
     oh.matrix().match(ComputeDiagonal<scalar_t>{m, r0, oh.map(), ac});
 }
 
 template<class scalar_t>
-void DefaultStrategy<scalar_t>
-::compute(OffDiagonalMoments<scalar_t>& m, VectorX<scalar_t>&& r0,
-          OptimizedHamiltonian<scalar_t> const& oh, AlgorithmConfig const& ac) const {
+void DefaultStrategy<scalar_t>::compute(
+    OffDiagonalMoments<scalar_t>& m, VectorX<scalar_t>&& r0,
+    AlgorithmConfig const& ac, OptimizedHamiltonian<scalar_t> const& oh
+) const {
     oh.matrix().match(ComputeOffDiagonal<scalar_t>{m, r0, oh.map(), ac});
 }
 

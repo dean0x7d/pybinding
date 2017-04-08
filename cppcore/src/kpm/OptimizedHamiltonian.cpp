@@ -196,7 +196,7 @@ namespace {
 }
 
 template<class scalar_t>
-size_t OptimizedHamiltonian<scalar_t>::num_nonzeros(int num_moments, bool optimal_size) const {
+size_t OptimizedHamiltonian<scalar_t>::num_nonzeros(idx_t num_moments, bool optimal_size) const {
     auto result = size_t{0};
     if (!optimal_size) {
         result = num_moments * var::apply_visitor(NonZeros{size()}, optimized_matrix);
@@ -214,7 +214,8 @@ size_t OptimizedHamiltonian<scalar_t>::num_nonzeros(int num_moments, bool optima
 }
 
 template<class scalar_t>
-size_t OptimizedHamiltonian<scalar_t>::num_vec_elements(int num_moments, bool optimal_size) const {
+size_t OptimizedHamiltonian<scalar_t>::num_vec_elements(idx_t num_moments,
+                                                        bool optimal_size) const {
     auto result = size_t{0};
     if (!optimal_size) {
         result = num_moments * size();
@@ -231,7 +232,7 @@ size_t OptimizedHamiltonian<scalar_t>::num_vec_elements(int num_moments, bool op
 
 namespace {
     /// Return the data size in bytes
-    struct matrix_memory {
+    struct MatrixMemory {
         template<class scalar_t>
         size_t operator()(SparseMatrixX<scalar_t> const& csr) const {
             using index_t = typename SparseMatrixX<scalar_t>::StorageIndex;
@@ -250,17 +251,13 @@ namespace {
 }
 
 template<class scalar_t>
-void OptimizedHamiltonian<scalar_t>::populate_stats(Stats& s, int num_moments,
-                                                    AlgorithmConfig const& ac) const {
-    s.num_moments = num_moments;
-    s.uses_full_system = slice_map.uses_full_system(num_moments);
-    s.nnz = num_nonzeros(num_moments, /*optimal_size*/false);
-    s.opt_nnz = num_nonzeros(num_moments, ac.optimal_size);
-    s.vec = num_vec_elements(num_moments, /*optimal_size*/false);
-    s.opt_vec = num_vec_elements(num_moments, ac.optimal_size);
-    s.matrix_memory = var::apply_visitor(matrix_memory{}, optimized_matrix);
-    s.vector_memory = size() * sizeof(scalar_t);
-    s.hamiltonian_timer = timer;
+size_t OptimizedHamiltonian<scalar_t>::matrix_memory() const {
+    return var::apply_visitor(MatrixMemory{}, optimized_matrix);
+}
+
+template<class scalar_t>
+size_t OptimizedHamiltonian<scalar_t>::vector_memory() const {
+    return size() * sizeof(scalar_t);
 }
 
 CPB_INSTANTIATE_TEMPLATE_CLASS(OptimizedHamiltonian)
