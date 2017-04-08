@@ -46,6 +46,9 @@ struct System {
 
     /// Find the index of the site nearest to the given position. Optional: filter by sublattice.
     idx_t find_nearest(Cartesian position, string_view sublattice_name = "") const;
+
+    /// Expand `positions` to `hamiltonian_size` by replicating site positions for each orbital
+    CartesianArray expanded_positions() const;
 };
 
 /**

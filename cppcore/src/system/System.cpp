@@ -81,6 +81,21 @@ idx_t System::find_nearest(Cartesian target_position, string_view sublattice_nam
     return nearest_index;
 }
 
+CartesianArray System::expanded_positions() const {
+    auto ep = CartesianArray(hamiltonian_size());
+    for (auto const& sub : compressed_sublattices) {
+        auto const norb = sub.num_orbitals();
+        auto n = sub.ham_start();
+        for (auto i = sub.sys_start(); i < sub.sys_end(); ++i) {
+            ep.x.segment(n, norb).setConstant(positions.x[i]);
+            ep.y.segment(n, norb).setConstant(positions.y[i]);
+            ep.z.segment(n, norb).setConstant(positions.z[i]);
+            n += norb;
+        }
+    }
+    return ep;
+}
+
 namespace detail {
 
 void populate_system(System& system, Foundation const& foundation) {

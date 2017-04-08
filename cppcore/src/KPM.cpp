@@ -119,7 +119,8 @@ ArrayXd KPM::calc_conductivity(ArrayXd const& chemical_potential, double broaden
         throw std::logic_error("Invalid direction: must be 'xx', 'xy', 'zz', or similar.");
     }
 
-    auto const& p = system()->positions;
+    auto const is_multiorbital = model.get_lattice().has_multiple_orbitals();
+    auto const& p = is_multiorbital ? system()->expanded_positions() : system()->positions;
     auto map = std::unordered_map<char, ArrayXf const*>{{'x', &p.x}, {'y', &p.y}, {'z', &p.z}};
 
     calculation_timer.tic();

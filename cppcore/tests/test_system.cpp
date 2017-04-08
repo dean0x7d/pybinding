@@ -71,3 +71,25 @@ TEST_CASE("to_hamiltonian_indices") {
         REQUIRE(system.to_hamiltonian_indices(7).matrix() == vec({13, 14, 15}));
     }
 }
+
+TEST_CASE("expanded_positions") {
+    auto const model = Model(lattice::square_multiorbital());
+    auto const& sys = *model.system();
+    auto const& pos = sys.positions;
+    auto const& ep = sys.expanded_positions();
+
+    REQUIRE(pos.size() == 4);
+    REQUIRE(ep.size() == 8);
+
+    REQUIRE(ep[0] == pos[0]);
+    REQUIRE(ep[1] == pos[0]);
+
+    REQUIRE(ep[2] == pos[1]);
+
+    REQUIRE(ep[3] == pos[2]);
+    REQUIRE(ep[4] == pos[2]);
+
+    REQUIRE(ep[5] == pos[3]);
+    REQUIRE(ep[6] == pos[3]);
+    REQUIRE(ep[7] == pos[3]);
+}
