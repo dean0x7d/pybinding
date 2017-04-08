@@ -45,11 +45,11 @@ bool StrategyTemplate<scalar_t>::change_hamiltonian(Hamiltonian const& h) {
 template<class scalar_t>
 ArrayXcd StrategyTemplate<scalar_t>::moments(idx_t num_moments, VectorXcd const& alpha,
                                              VectorXcd const& beta, SparseMatrixXcd const& op) {
-    optimized_hamiltonian.optimize_for({0, 0}, bounds.scaling_factors());
-    stats.reset(num_moments, optimized_hamiltonian, config.algorithm);
-
     auto specialized_algorithm = config.algorithm;
     specialized_algorithm.optimal_size = false; // not applicable for this calculation
+
+    optimized_hamiltonian.optimize_for({0, 0}, bounds.scaling_factors());
+    stats.reset(num_moments, optimized_hamiltonian, specialized_algorithm);
 
     auto left_vec = num::force_cast<scalar_t>(alpha);
     optimized_hamiltonian.reorder(left_vec);
@@ -140,7 +140,7 @@ ArrayXd StrategyTemplate<scalar_t>::dos(ArrayXd const& energy, double broadening
     specialized_algorithm.optimal_size = false; // not applicable for this calculation
 
     optimized_hamiltonian.optimize_for({0, 0}, scale);
-    stats.reset(num_moments, optimized_hamiltonian, config.algorithm, num_random);
+    stats.reset(num_moments, optimized_hamiltonian, specialized_algorithm, num_random);
 
     auto moments = DiagonalMoments<scalar_t>(num_moments);
     auto total_mu = ArrayX<scalar_t>::Zero(num_moments).eval();
@@ -168,7 +168,7 @@ ArrayXcd StrategyTemplate<scalar_t>::conductivity(
     specialized_algorithm.optimal_size = false; // not applicable for this calculation
 
     optimized_hamiltonian.optimize_for({0, 0}, scale);
-    stats.reset(num_moments, optimized_hamiltonian, config.algorithm, num_random);
+    stats.reset(num_moments, optimized_hamiltonian, specialized_algorithm, num_random);
 
     auto velocity_l = velocity(*hamiltonian, left_coords);
     auto velocity_r = velocity(*hamiltonian, right_coords);

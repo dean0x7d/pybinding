@@ -26,6 +26,7 @@ namespace cpb { namespace kpm {
 class Strategy {
 public:
     virtual ~Strategy() = default;
+    virtual Config const& get_config() const = 0;
 
     /// Returns false if the given Hamiltonian is the wrong type for this GreensStrategy
     virtual bool change_hamiltonian(Hamiltonian const& h) = 0;
@@ -70,6 +71,7 @@ class StrategyTemplate : public Strategy {
 public:
     using Config = kpm::Config;
     explicit StrategyTemplate(SparseMatrixRC<scalar_t> hamiltonian, Config const& config = {});
+    Config const& get_config() const override { return config; }
 
     bool change_hamiltonian(Hamiltonian const& h) final;
 

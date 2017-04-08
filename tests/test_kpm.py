@@ -62,13 +62,14 @@ def test_moments(model, plot_if_fails):
         alpha[idx] = 1
 
         a, b = kpm.scaling_factors
-        num_moments = pb.jackson_kernel().required_num_moments(broadening / a)
+        num_moments = kpm.kernel.required_num_moments(broadening / a)
         moments = kpm.moments(num_moments, alpha)
 
         ns = np.arange(num_moments)
         scaled_energy = (energy - b) / a
         k = 2 / (a * np.pi * np.sqrt(1 - scaled_energy**2))
-        return k * np.sum(moments * np.cos(ns * np.arccos(scaled_energy[:, np.newaxis])), axis=1)
+        chebyshev = np.cos(ns * np.arccos(scaled_energy[:, np.newaxis]))
+        return k * np.sum(moments.real * chebyshev, axis=1)
 
     ldos = expected_ldos.with_data(manual_ldos())
     plot_if_fails(ldos, expected_ldos, "plot")

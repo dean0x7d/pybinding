@@ -132,6 +132,9 @@ void wrap_greens(py::module& m) {
             auto const s = kpm.get_strategy().scaling_factors();
             return py::make_tuple(s.a, s.b);
         })
+        .def_property_readonly("kernel", [](KPM& kpm) {
+            return kpm.get_strategy().get_config().kernel;
+        })
         .def_property_readonly("stats", &KPM::get_stats);
 
     wrap_kpm_strategy<kpm::DefaultStrategy>(m, "kpm");

@@ -22,9 +22,11 @@ __all__ = ['KernelPolynomialMethod',
 
 class KernelPolynomialMethod:
     """The common interface for various KPM implementations
-
+    
     It should not be created directly but via specific functions
     like :func:`kpm` or :func:`kpm_cuda`.
+    
+    All implementations are based on: https://doi.org/10.1103/RevModPhys.78.275
     """
 
     def __init__(self, impl):
@@ -48,6 +50,11 @@ class KernelPolynomialMethod:
     def scaling_factors(self) -> tuple:
         """A tuple of KPM scaling factors `a` and `b`"""
         return self.impl.scaling_factors
+
+    @property
+    def kernel(self):
+        """The damping kernel"""
+        return self.impl.kernel
 
     def report(self, shortform=False):
         """Return a report of the last computation
