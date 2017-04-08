@@ -43,6 +43,41 @@ bool StrategyTemplate<scalar_t>::change_hamiltonian(Hamiltonian const& h) {
 }
 
 template<class scalar_t>
+ArrayXcd StrategyTemplate<scalar_t>::moments(idx_t num_moments, VectorXcd const& alpha,
+                                             VectorXcd const& beta, SparseMatrixXcd const& op) {
+    optimized_hamiltonian.optimize_for({0, 0}, bounds.scaling_factors());
+    stats.reset(num_moments, optimized_hamiltonian, config.algorithm);
+
+    auto specialized_algorithm = config.algorithm;
+    specialized_algorithm.optimal_size = false; // not applicable for this calculation
+
+    auto left_vec = num::force_cast<scalar_t>(alpha);
+    optimized_hamiltonian.reorder(left_vec);
+
+    auto moments = [&] {
+        if (beta.size() == 0 && op.size() == 0) {
+            auto diagonal_moments = DiagonalMoments<scalar_t>(round_num_moments(num_moments));
+            compute(diagonal_moments, std::move(left_vec), specialized_algorithm);
+            return diagonal_moments.get();
+        } else {
+            auto right_vec = num::force_cast<scalar_t>(beta.size() != 0 ? beta : alpha);
+            auto matrix = num::force_cast<scalar_t>(op);
+            optimized_hamiltonian.reorder(right_vec);
+            optimized_hamiltonian.reorder(matrix);
+
+            auto generic_moments = GenericMoments<scalar_t>(
+                round_num_moments(num_moments), std::move(right_vec), matrix.markAsRValue()
+            );
+            compute(generic_moments, std::move(left_vec), specialized_algorithm);
+            return generic_moments.get();
+        }
+    }();
+
+    config.kernel.apply(moments);
+    return moments.head(num_moments).template cast<std::complex<double>>();
+}
+
+template<class scalar_t>
 ArrayXd StrategyTemplate<scalar_t>::ldos(idx_t index, ArrayXd const& energy, double broadening) {
     auto const scale = bounds.scaling_factors();
     auto const num_moments = config.kernel.required_num_moments(broadening / scale.a);

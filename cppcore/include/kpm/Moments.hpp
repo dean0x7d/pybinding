@@ -58,6 +58,31 @@ public:
 };
 
 /**
+ Collects moments in the form of expectation values with an optional operator:
+ `mu_n = <beta|op Tn(H)|alpha>` where `beta != alpha`. The `op` can be empty,
+ in which case it is not applied.
+ */
+template<class scalar_t>
+class GenericMoments : public OffDiagonalMoments<scalar_t> {
+    using VectorRef = typename OffDiagonalMoments<scalar_t>::VectorRef;
+
+public:
+    GenericMoments(idx_t num_moments, VectorX<scalar_t> beta, SparseMatrixX<scalar_t> op = {})
+        : moments(num_moments), beta(std::move(beta)), op(op.markAsRValue()) {}
+
+    ArrayX<scalar_t>& get() { return moments; }
+
+    idx_t size() const override { return moments.size(); }
+    void collect_initial(VectorRef r0, VectorRef r1) override;
+    void collect(idx_t n, VectorRef r1) override;
+
+private:
+    ArrayX<scalar_t> moments;
+    VectorX<scalar_t> beta;
+    SparseMatrixX<scalar_t> op;
+};
+
+/**
   Collects the computed moments in the form `mu_n = <l|Tn(H)|r>`
   where `l` is a unit vector with `l[i] = 1` and `i` is some
   Hamiltonian index. Multiple `l` vectors can be defined simply
@@ -112,6 +137,7 @@ private:
 };
 
 CPB_EXTERN_TEMPLATE_CLASS(DiagonalMoments)
+CPB_EXTERN_TEMPLATE_CLASS(GenericMoments)
 CPB_EXTERN_TEMPLATE_CLASS(MultiUnitCollector)
 CPB_EXTERN_TEMPLATE_CLASS(DenseMatrixCollector)
 

@@ -30,6 +30,13 @@ public:
     /// Returns false if the given Hamiltonian is the wrong type for this GreensStrategy
     virtual bool change_hamiltonian(Hamiltonian const& h) = 0;
 
+    /// The KPM scaling factors `a` and `b`
+    virtual Scale<> scaling_factors() = 0;
+
+    /// Return KPM moments in the form `mu_n = <beta|op Tn(H)|alpha>`
+    virtual ArrayXcd moments(idx_t num_moments, VectorXcd const& alpha, VectorXcd const& beta,
+                             SparseMatrixXcd const& op) = 0;
+
     /// Return the LDOS at the given Hamiltonian index for the energy range and broadening
     virtual ArrayXd ldos(idx_t index, ArrayXd const& energy, double broadening) = 0;
     /// Return the Green's function matrix element (row, col) for the given energy range
@@ -65,6 +72,11 @@ public:
     explicit StrategyTemplate(SparseMatrixRC<scalar_t> hamiltonian, Config const& config = {});
 
     bool change_hamiltonian(Hamiltonian const& h) final;
+
+    Scale<> scaling_factors() override { return bounds.scaling_factors(); }
+
+    ArrayXcd moments(idx_t num_moments, VectorXcd const& alpha, VectorXcd const& beta,
+                     SparseMatrixXcd const& op) final;
 
     ArrayXd ldos(idx_t index, ArrayXd const& energy, double broadening) final;
     ArrayXcd greens(idx_t row, idx_t col, ArrayXd const& energy, double broadening) final;

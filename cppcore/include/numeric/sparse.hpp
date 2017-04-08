@@ -80,6 +80,19 @@ inline auto sparse_row(const SparseMatrix& mat, Index outer_index)
     return {mat, outer_index};
 }
 
+namespace num {
+
+template<class scalar_t>
+SparseMatrixX<scalar_t> force_cast(SparseMatrixXcd const& m) { return m.cast<scalar_t>(); }
+template<>
+inline SparseMatrixX<double> force_cast<double>(SparseMatrixXcd const& m) { return m.real(); }
+template<>
+inline SparseMatrixX<float> force_cast<float>(SparseMatrixXcd const& m) {
+    return m.real().cast<float>();
+}
+
+} // namespace num
+
 namespace sparse {
 
 /// SparseMatrix wrapper with several functions for efficient CSR matrix element access

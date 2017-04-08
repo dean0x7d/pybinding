@@ -1,5 +1,7 @@
 #include "KPM.hpp"
 
+using namespace fmt::literals;
+
 namespace cpb {
 
 KPM::KPM(Model const& model, MakeStrategy const& make_strategy)
@@ -19,6 +21,42 @@ void KPM::set_model(Model const& new_model) {
     if (!strategy) { // create a new strategy with a scalar type suited to the Hamiltonian
         strategy = make_strategy(model.hamiltonian());
     }
+}
+
+ArrayXcd KPM::moments(idx_t num_moments, VectorXcd const& alpha, VectorXcd const& beta,
+                      SparseMatrixXcd const& op) const {
+    auto const ham_size =  model.system()->hamiltonian_size();
+    auto const check_size = std::unordered_map<char const*, bool>{
+        {"alpha", alpha.size() == model.system()->hamiltonian_size()},
+        {"beta", beta.size() == 0 || beta.size() == model.system()->hamiltonian_size()},
+        {"operator", op.size() == 0 || (op.rows() == ham_size && op.cols() == ham_size)}
+    };
+    for (auto const& pair : check_size) {
+        if (!pair.second) {
+            throw std::runtime_error("Size mismatch between the model Hamiltonian and the given "
+                                     "argument '{}'"_format(pair.first));
+        }
+    }
+
+    if (!model.is_complex()) {
+        auto const check_scalar_type = std::unordered_map<char const*, bool>{
+            {"alpha", alpha.imag().isZero()},
+            {"beta", beta.imag().isZero()},
+            {"operator", Eigen::Map<ArrayXcd const>(op.valuePtr(), op.nonZeros()).imag().isZero()}
+        };
+
+        for (auto const& pair : check_scalar_type) {
+            if (!pair.second) {
+                throw std::runtime_error("The model Hamiltonian is real, but the given argument "
+                                         "'{}' is complex"_format(pair.first));
+            }
+        }
+    }
+
+    calculation_timer.tic();
+    auto moments = strategy->moments(num_moments, alpha, beta, op);
+    calculation_timer.toc();
+    return moments;
 }
 
 ArrayXcd KPM::calc_greens(int row, int col, ArrayXd const& energy,

@@ -110,6 +110,7 @@ void wrap_greens(py::module& m) {
     m.def("jackson_kernel", &kpm::jackson_kernel);
 
     py::class_<KPM>(m, "KPM")
+        .def("moments", &KPM::moments)
         .def("calc_greens", &KPM::calc_greens)
         .def("calc_greens", &KPM::calc_greens_vector)
         .def("calc_dos", &KPM::calc_dos)
@@ -126,6 +127,10 @@ void wrap_greens(py::module& m) {
         .def("report", &KPM::report, "shortform"_a=false)
         .def_property("model", &KPM::get_model, &KPM::set_model)
         .def_property_readonly("system", &KPM::system)
+        .def_property_readonly("scaling_factors", [](KPM& kpm) {
+            auto const s = kpm.get_strategy().scaling_factors();
+            return py::make_tuple(s.a, s.b);
+        })
         .def_property_readonly("stats", &KPM::get_stats);
 
     wrap_kpm_strategy<kpm::DefaultStrategy>(m, "kpm");

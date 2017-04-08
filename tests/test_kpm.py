@@ -48,6 +48,42 @@ def test_ldos(kpm, baseline, plot_if_fails):
         assert pytest.fuzzy_equal(result, expected, rtol=1e-3, atol=1e-6)
 
 
+def test_moments(model, plot_if_fails):
+    energy = np.linspace(0, 2, 25)
+    broadening = 0.15
+    position = dict(position=[0, 0], sublattice="A")
+
+    kpm = pb.kpm(model)
+    expected_ldos = kpm.calc_ldos(energy, broadening, **position)
+
+    def manual_ldos():
+        idx = model.system.find_nearest(**position)
+        alpha = np.zeros(model.hamiltonian.shape[0])
+        alpha[idx] = 1
+
+        a, b = kpm.scaling_factors
+        num_moments = pb.jackson_kernel().required_num_moments(broadening / a)
+        moments = kpm.moments(num_moments, alpha)
+
+        ns = np.arange(num_moments)
+        scaled_energy = (energy - b) / a
+        k = 2 / (a * np.pi * np.sqrt(1 - scaled_energy**2))
+        return k * np.sum(moments * np.cos(ns * np.arccos(scaled_energy[:, np.newaxis])), axis=1)
+
+    ldos = expected_ldos.with_data(manual_ldos())
+    plot_if_fails(ldos, expected_ldos, "plot")
+    assert pytest.fuzzy_equal(ldos, expected_ldos, rtol=1e-4, atol=1e-6)
+
+    with pytest.raises(RuntimeError) as excinfo:
+        kpm.moments(10, [1, 2, 3])
+    assert "Size mismatch" in str(excinfo.value)
+
+    with pytest.raises(RuntimeError) as excinfo:
+        kpm = pb.kpm(pb.Model(graphene.monolayer()))
+        kpm.moments(10, [1j, 2j])
+    assert "Hamiltonian is real, but the given argument 'alpha' is complex" in str(excinfo.value)
+
+
 def test_kpm_multiple_indices(model):
     """KPM can take a vector of column indices and return the Green's function for all of them"""
     kpm = pb.kpm(model)

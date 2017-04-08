@@ -44,6 +44,11 @@ class KernelPolynomialMethod:
         """The tight-binding system (shortcut for `KernelPolynomialMethod.model.system`)"""
         return System(self.impl.system)
 
+    @property
+    def scaling_factors(self) -> tuple:
+        """A tuple of KPM scaling factors `a` and `b`"""
+        return self.impl.scaling_factors
+
     def report(self, shortform=False):
         """Return a report of the last computation
 
@@ -57,6 +62,40 @@ class KernelPolynomialMethod:
     def __call__(self, *args, **kwargs):
         warnings.warn("Use .calc_greens() instead", LoudDeprecationWarning)
         return self.calc_greens(*args, **kwargs)
+
+    def moments(self, num_moments, alpha, beta=None, op=None):
+        r"""Calculate KPM moments in the form of expectation values
+
+        The result is an array of moments where each value is equal to:
+
+        .. math::
+            \mu_n = <\beta|op \cdot T_n(H)|\alpha>
+
+        Parameters
+        ----------
+        num_moments : int
+            The number of moments to calculate.
+        alpha : array_like
+            The starting state vector of the KPM iteration. 
+        beta : Optional[array_like]
+            If not given, defaults to :math:`\beta = \alpha`. 
+        op : Optional[csr_matrix]
+            Operator in the form of a sparse matrix. If omitted, an identity matrix
+            is assumed: :math:`\mu_n = <\beta|T_n(H)|\alpha>`.
+
+        Returns
+        -------
+        ndarray
+        """
+        from scipy.sparse import csr_matrix
+
+        if beta is None:
+            beta = []
+        if op is None:
+            op = csr_matrix([])
+        else:
+            op = op.tocsr()
+        return self.impl.moments(num_moments, alpha, beta, op)
 
     def calc_greens(self, i, j, energy, broadening):
         """Calculate Green's function of a single Hamiltonian element

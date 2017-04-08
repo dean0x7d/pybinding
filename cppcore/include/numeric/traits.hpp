@@ -67,15 +67,15 @@ inline std::complex<scalar_t> conjugate(std::complex<scalar_t> value) { return s
  The conversion loses precision and/or the imaginary part, as intended.
  */
 template<class scalar_t>
-inline scalar_t complex_cast(std::complex<double> v) { return v; }
+inline scalar_t force_cast(std::complex<double> v) { return v; }
 template<>
-inline std::complex<float> complex_cast<std::complex<float>>(std::complex<double> v) {
+inline std::complex<float> force_cast<std::complex<float>>(std::complex<double> v) {
     return {static_cast<float>(v.real()), static_cast<float>(v.imag())};
 }
 template<>
-inline double complex_cast<double>(std::complex<double> v) { return v.real(); }
+inline double force_cast<double>(std::complex<double> v) { return v.real(); }
 template<>
-inline float complex_cast<float>(std::complex<double> v) { return static_cast<float>(v.real()); }
+inline float force_cast<float>(std::complex<double> v) { return static_cast<float>(v.real()); }
 
 /**
  Return a human readable name of the scalar type

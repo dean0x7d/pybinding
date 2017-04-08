@@ -18,6 +18,10 @@ public:
     void set_model(Model const&);
     Model const& get_model() const { return model; }
     std::shared_ptr<System const> system() const { return model.system(); }
+    kpm::Strategy& get_strategy() { return *strategy; }
+
+    ArrayXcd moments(idx_t num_moments, VectorXcd const& alpha, VectorXcd const& beta = {},
+                     SparseMatrixXcd const& op = {}) const;
 
     ArrayXcd calc_greens(int row, int col, ArrayXd const& energy, double broadening) const;
     std::vector<ArrayXcd> calc_greens_vector(idx_t row, std::vector<idx_t> const& cols,

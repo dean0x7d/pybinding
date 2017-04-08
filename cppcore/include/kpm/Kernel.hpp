@@ -3,6 +3,15 @@
 
 namespace cpb { namespace kpm {
 
+/// Moment calculations at higher optimization levels require specific rounding.
+/// `n - 2` considers only moments in the main KPM loop. Divisible by 4 because
+/// that is the strictest requirement imposed by `opt_size_and_interleaved`.
+inline idx_t round_num_moments(idx_t n) {
+    if (n < 2) { return 2; }
+    while ((n - 2) % 4 != 0) { ++n; }
+    return n;
+}
+
 /**
  Put the kernel in *Kernel* Polynomial Method
 

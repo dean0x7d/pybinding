@@ -68,7 +68,7 @@ void build_periodic(SparseMatrixX<scalar_t>& matrix, System const& system,
     for (auto n = size_t{0}, size = system.boundaries.size(); n < size; ++n) {
         using constant::i1;
         auto const& d = system.boundaries[n].shift;
-        auto const phase = num::complex_cast<scalar_t>(exp(i1 * k_vector.dot(d)));
+        auto const phase = num::force_cast<scalar_t>(exp(i1 * k_vector.dot(d)));
 
         modifiers.apply_to_hoppings<scalar_t>(system, n, [&](idx_t i, idx_t j, scalar_t hopping) {
             matrix.coeffRef(i, j) += hopping * phase;

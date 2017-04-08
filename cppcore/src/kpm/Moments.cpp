@@ -21,6 +21,24 @@ void DiagonalMoments<scalar_t>::collect(idx_t n, scalar_t a, scalar_t b) {
 }
 
 template<class scalar_t>
+void GenericMoments<scalar_t>::collect_initial(VectorRef r0, VectorRef r1) {
+    if (op.size() != 0) {
+        moments[0] = beta.dot(op * r0);
+        moments[1] = beta.dot(op * r1);
+    } else {
+        moments[0] = beta.dot(r0);;
+        moments[1] = beta.dot(r1);
+    }
+    moments[0] *= 0.5f;
+}
+
+template<class scalar_t>
+void GenericMoments<scalar_t>::collect(idx_t n, VectorRef r1) {
+    moments[n] = (op.size() != 0) ? beta.dot(op * r1)
+                                  : beta.dot(r1);
+}
+
+template<class scalar_t>
 void MultiUnitCollector<scalar_t>::collect_initial(VectorRef r0, VectorRef r1) {
     using real_t = num::get_real_t<scalar_t>;
 
@@ -63,6 +81,7 @@ void DenseMatrixCollector<scalar_t>::collect(idx_t n, VectorRef r1) {
 }
 
 CPB_INSTANTIATE_TEMPLATE_CLASS(DiagonalMoments)
+CPB_INSTANTIATE_TEMPLATE_CLASS(GenericMoments)
 CPB_INSTANTIATE_TEMPLATE_CLASS(MultiUnitCollector)
 CPB_INSTANTIATE_TEMPLATE_CLASS(DenseMatrixCollector)
 

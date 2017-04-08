@@ -10,7 +10,7 @@ namespace cpb { namespace kpm {
 /**
  The KPM scaling factors `a` and `b`
 */
-template<class real_t>
+template<class real_t = double>
 struct Scale {
     static constexpr auto tolerance = 0.01f; ///< needed because the energy bounds are not precise
 
@@ -25,6 +25,8 @@ struct Scale {
             b = 0; // rounding to zero saves space in the sparse matrix
         }
     }
+    template<class T>
+    Scale(Scale<T> const& other) : a(static_cast<T>(other.a)), b(static_cast<T>(other.b)) {}
 
     explicit operator bool() { return a != 0; }
 

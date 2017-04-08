@@ -3,16 +3,6 @@
 
 namespace cpb { namespace kpm {
 
-namespace {
-    // Moment calculations at higher optimization levels require specific rounding.
-    // `n - 2` considers only moments in the main KPM loop. Divisible by 4 because
-    // that is the strictest requirement imposed by `opt_size_and_interleaved`.
-    inline int round_num_moments(int n) {
-        while ((n - 2) % 4 != 0) { ++n; }
-        return n;
-    }
-} // anonymous namespace
-
 Kernel jackson_kernel() {
     return {
         [](int N) -> ArrayXd {
