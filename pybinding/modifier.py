@@ -12,48 +12,13 @@ import numpy as np
 from . import _cpp
 from .system import Sites
 from .support.inspect import get_call_signature
-from .support.alias import AliasArray, AliasIndex
+from .support.alias import AliasArray, AliasIndex, SplitName
 from .support.deprecated import LoudDeprecationWarning
 from .utils.misc import decorator_decorator
 
 __all__ = ['constant_potential', 'force_double_precision', 'force_complex_numbers',
            'hopping_energy_modifier', 'hopping_generator', 'onsite_energy_modifier',
            'site_position_modifier', 'site_state_modifier']
-
-
-class _SplitName(str):
-    """String subclass with special support for strings of the form "first|second"
-
-    Operators `==` and `!=` are overloaded to return `True` even if only the first part matches.
-
-    Examples
-    --------
-    >>> s = _SplitName("first|second")
-    >>> s == "first|second"
-    True
-    >>> s != "first|second"
-    False
-    >>> s == "first"
-    True
-    >>> s != "first"
-    False
-    >>> s == "second"
-    False
-    >>> s != "second"
-    True
-    """
-    @property
-    def first(self):
-        return self.split("|")[0]
-
-    def __eq__(self, other):
-        return super().__eq__(other) or self.first == other
-
-    def __ne__(self, other):
-        return super().__ne__(other) and self.first != other
-
-    def __hash__(self):
-        return super().__hash__()
 
 
 def _process_modifier_args(args, keywords, requested_argnames):
@@ -77,7 +42,7 @@ def _process_modifier_args(args, keywords, requested_argnames):
         if isinstance(obj, _cpp.SubIdRef):
             return AliasArray(obj.ids, obj.name_map)
         elif isinstance(obj, str):
-            return AliasIndex(_SplitName(obj), shape, orbs)
+            return AliasIndex(SplitName(obj), shape, orbs)
         elif obj.size == shape[0]:
             obj.shape = shape
             return obj

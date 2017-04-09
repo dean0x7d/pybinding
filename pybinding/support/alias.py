@@ -13,35 +13,50 @@ class AliasArray(np.ndarray):
 
     Examples
     --------
-    >>> a = AliasArray([0, 1, 0], mapping={'A': 0, 'B': 1})
+    >>> a = AliasArray([0, 1, 0], mapping={"A": 0, "B": 1})
     >>> list(a == 0)
     [True, False, True]
-    >>> list(a == 'A')
+    >>> list(a == "A")
     [True, False, True]
-    >>> list(a != 'A')
+    >>> list(a != "A")
     [False, True, False]
+    >>> a = AliasArray([0, 1, 0, 2], mapping={"A|1": 0, "B": 1, "A|2": 2})
+    >>> list(a == "A")
+    [True, False, True, True]
+    >>> list(a != "A")
+    [False, True, False, False]
     """
     def __new__(cls, array, mapping):
         obj = np.asarray(array).view(cls)
-        obj.mapping = mapping
+        obj.mapping = {SplitName(k): v for k, v in mapping.items()}
         return obj
 
     def __array_finalize__(self, obj):
         if obj is None:
             return
-        self.mapping = getattr(obj, 'mapping', None)
+        self.mapping = getattr(obj, "mapping", None)
 
-    def _alias(self, key):
-        if isinstance(key, str):
-            return self.mapping[key]
+    def _mapped_eq(self, other):
+        if other in self.mapping:
+            return super().__eq__(self.mapping[other])
         else:
-            return key
+            result = np.zeros(len(self), dtype=np.bool)
+            for k, v in self.mapping.items():
+                if k == other:
+                    result = np.logical_or(result, super().__eq__(v))
+            return result
 
     def __eq__(self, other):
-        return super().__eq__(self._alias(other))
+        if isinstance(other, str):
+            return self._mapped_eq(other)
+        else:
+            return super().__eq__(other)
 
     def __ne__(self, other):
-        return super().__ne__(self._alias(other))
+        if isinstance(other, str):
+            return np.logical_not(self._mapped_eq(other))
+        else:
+            return super().__ne__(other)
 
 
 # noinspection PyAbstractClass
@@ -161,3 +176,38 @@ class AliasIndex:
     @property
     def eye(self):
         return np.eye(*self.orbs)
+
+
+class SplitName(str):
+    """String subclass with special support for strings of the form "first|second"
+
+    Operators `==` and `!=` are overloaded to return `True` even if only the first part matches.
+
+    Examples
+    --------
+    >>> s = SplitName("first|second")
+    >>> s == "first|second"
+    True
+    >>> s != "first|second"
+    False
+    >>> s == "first"
+    True
+    >>> s != "first"
+    False
+    >>> s == "second"
+    False
+    >>> s != "second"
+    True
+    """
+    @property
+    def first(self):
+        return self.split("|")[0]
+
+    def __eq__(self, other):
+        return super().__eq__(other) or self.first == other
+
+    def __ne__(self, other):
+        return super().__ne__(other) and self.first != other
+
+    def __hash__(self):
+        return super().__hash__()
