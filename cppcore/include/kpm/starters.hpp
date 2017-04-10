@@ -20,7 +20,7 @@ VectorX<scalar_t> exval_starter(OptimizedHamiltonian<scalar_t> const& oh) {
 template<class real_t>
 VectorX<real_t> random_starter(OptimizedHamiltonian<real_t> const& oh, std::mt19937& generator) {
     auto r0 = num::make_random<VectorX<real_t>>(oh.size(), generator);
-    r0 = oh.reorder_vector(r0); // needed to maintain consistent results for all optimizations
+    oh.reorder(r0); // needed to maintain consistent results for all optimizations
     return transform<VectorX>(r0, [](real_t x) -> real_t { return (x < 0.5f) ? -1.f : 1.f; });
 }
 
@@ -28,7 +28,7 @@ template<class real_t, class complex_t = std::complex<real_t>>
 VectorX<complex_t> random_starter(OptimizedHamiltonian<std::complex<real_t>> const& oh,
                                   std::mt19937& generator) {
     auto phase = num::make_random<ArrayX<real_t>>(oh.size(), generator);
-    phase = oh.reorder_vector(phase);
+    oh.reorder(phase);
     return exp(complex_t{2 * constant::pi * constant::i1} * phase);
 }
 

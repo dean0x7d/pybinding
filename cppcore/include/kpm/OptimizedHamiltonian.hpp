@@ -115,28 +115,30 @@ class OptimizedHamiltonian {
     Indices original_idx; ///< original target indices for which the optimization was done
 
     MatrixFormat matrix_format;
-    bool reorder;
+    bool is_reordered;
     Chrono timer;
 
 public:
     OptimizedHamiltonian(SparseMatrixX<scalar_t> const* m, MatrixFormat const& mf, bool reorder)
-        : slice_map(m->rows()), original_matrix(m), matrix_format(mf), reorder(reorder) {}
+        : slice_map(m->rows()), original_matrix(m), matrix_format(mf), is_reordered(reorder) {}
 
     /// Create the optimized Hamiltonian targeting specific indices and scale factors
     void optimize_for(Indices const& idx, Scale<real_t> scale);
 
-    /// Apply new Hamiltonian index ordering to a vector
+    /// Apply new Hamiltonian index ordering to a container
     template<class Vector>
-    Vector reorder_vector(Vector const& v) const {
-        if (reorder_map.empty()) { return v; }
+    void reorder(Vector& v) const {
+        if (reorder_map.empty()) { return; }
         assert(reorder_map.size() == static_cast<size_t>(v.size()));
 
-        auto result = Vector(v.size());
-        for (auto i = 0; i < result.size(); ++i) {
-            result[reorder_map[i]] = v[i];
+        auto reordered_v = Vector(v.size());
+        for (auto i = idx_t{0}; i < reordered_v.size(); ++i) {
+            reordered_v[reorder_map[i]] = v[i];
         }
-        return result;
+        v.swap(reordered_v);
     }
+
+    void reorder(SparseMatrixX<scalar_t>& matrix) const;
 
     idx_t size() const { return original_matrix->rows(); }
     Indices const& idx() const { return optimized_idx; }

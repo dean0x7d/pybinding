@@ -19,7 +19,7 @@ void OptimizedHamiltonian<scalar_t>::optimize_for(Indices const& idx, Scale<real
     }
 
     timer.tic();
-    if (reorder) {
+    if (is_reordered) {
         create_reordered(idx, scale);
     } else {
         create_scaled(idx, scale);
@@ -32,6 +32,22 @@ void OptimizedHamiltonian<scalar_t>::optimize_for(Indices const& idx, Scale<real
     timer.toc();
 
     original_idx = idx;
+}
+
+template<class scalar_t>
+void OptimizedHamiltonian<scalar_t>::reorder(SparseMatrixX<scalar_t>& matrix) const {
+    if (reorder_map.empty()) { return; }
+
+    auto reordered_matrix = SparseMatrixX<scalar_t>(matrix.rows(), matrix.cols());
+    auto const reserve_per_row = static_cast<int>(sparse::max_nnz_per_row(matrix));
+    reordered_matrix.reserve(ArrayXi::Constant(matrix.rows(), reserve_per_row));
+
+    sparse::make_loop(matrix).for_each([&](idx_t row, idx_t col, scalar_t value) {
+        reordered_matrix.insert(reorder_map[row], reorder_map[col]) = value;
+    });
+
+    reordered_matrix.makeCompressed();
+    matrix.swap(reordered_matrix);
 }
 
 template<class scalar_t>
