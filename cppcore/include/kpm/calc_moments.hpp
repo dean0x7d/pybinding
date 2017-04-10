@@ -3,7 +3,8 @@
 namespace cpb { namespace kpm { namespace calc_moments {
 
 /**
- Diagonal KPM implementation: the left and right vectors are identical
+ Diagonal KPM implementation: the left and right vectors are identical,
+ i.e. `mu_n = <r|Tn(H)|r>` where `bra == ket == r`.
  */
 namespace diagonal {
 
@@ -134,7 +135,9 @@ void opt_size_and_interleaved(Moments& moments, Vector r0, Matrix const& h2, Sli
 } // namespace diagonal
 
 /**
- Off-diagonal KPM implementation: different left and right vectors
+ Off-diagonal KPM implementation: different left and right vectors,
+ i.e. `mu_n = <l|Tn(H)|r>` where `l != r`. The `Moments` collector
+ contains the left vector.
  */
 namespace off_diagonal {
 

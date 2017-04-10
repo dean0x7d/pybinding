@@ -54,7 +54,7 @@ ArrayXd StrategyTemplate<scalar_t>::ldos(idx_t index, ArrayXd const& energy, dou
     auto moments = DiagonalMoments<scalar_t>(num_moments);
 
     stats.moments_timer.tic();
-    compute(moments, exval_starter(oh), oh, config.algorithm);
+    compute(moments, unit_starter(oh), oh, config.algorithm);
     stats.moments_timer.toc();
 
     config.kernel.apply(moments.get());
@@ -83,16 +83,16 @@ StrategyTemplate<scalar_t>::greens_vector(idx_t row, std::vector<idx_t> const& c
         auto moments = DiagonalMoments<scalar_t>(num_moments);
 
         stats.moments_timer.tic();
-        compute(moments, exval_starter(oh), oh, config.algorithm);
+        compute(moments, unit_starter(oh), oh, config.algorithm);
         stats.moments_timer.toc();
 
         config.kernel.apply(moments.get());
         return {reconstruct_greens(moments.get(), energy, scale)};
     } else {
-        auto moments_vector = OffDiagonalMoments<scalar_t>(num_moments, oh.idx());
+        auto moments_vector = MultiUnitCollector<scalar_t>(num_moments, oh.idx());
 
         stats.moments_timer.tic();
-        compute(moments_vector, exval_starter(oh), oh, config.algorithm);
+        compute(moments_vector, unit_starter(oh), oh, config.algorithm);
         stats.moments_timer.toc();
 
         for (auto& moments : moments_vector.get()) {
@@ -118,20 +118,20 @@ ArrayXd StrategyTemplate<scalar_t>::dos(ArrayXd const& energy, double broadening
     oh.populate_stats(stats, num_moments, specialized_algorithm);
 
     auto moments = DiagonalMoments<scalar_t>(num_moments);
-    auto total = moments.get();
+    auto total_mu = ArrayX<scalar_t>::Zero(num_moments).eval();
 
     stats.multiplier = config.num_random;
     stats.moments_timer.tic();
     std::mt19937 generator;
     for (auto j = 0; j < config.num_random; ++j) {
         compute(moments, random_starter(oh, generator), oh, specialized_algorithm);
-        total += moments.get();
+        total_mu += moments.get();
     }
-    total /= static_cast<real_t>(config.num_random);
+    total_mu /= static_cast<real_t>(config.num_random);
     stats.moments_timer.toc();
 
-    config.kernel.apply(total);
-    return reconstruct<real_t>(total.real(), energy, scale);
+    config.kernel.apply(total_mu);
+    return reconstruct<real_t>(total_mu.real(), energy, scale);
 }
 
 template<class scalar_t>

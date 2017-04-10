@@ -21,7 +21,7 @@ void DiagonalMoments<scalar_t>::collect(idx_t n, scalar_t a, scalar_t b) {
 }
 
 template<class scalar_t>
-void OffDiagonalMoments<scalar_t>::collect_initial(VectorRef r0, VectorRef r1) {
+void MultiUnitCollector<scalar_t>::collect_initial(VectorRef r0, VectorRef r1) {
     using real_t = num::get_real_t<scalar_t>;
 
     for (auto i = 0; i < idx.cols.size(); ++i) {
@@ -32,7 +32,7 @@ void OffDiagonalMoments<scalar_t>::collect_initial(VectorRef r0, VectorRef r1) {
 }
 
 template<class scalar_t>
-void OffDiagonalMoments<scalar_t>::collect(idx_t n, VectorRef r1) {
+void MultiUnitCollector<scalar_t>::collect(idx_t n, VectorRef r1) {
     assert(n >= 2 && n < data[0].size());
     for (auto i = 0; i < idx.cols.size(); ++i) {
         auto const col = idx.cols[i];
@@ -40,7 +40,30 @@ void OffDiagonalMoments<scalar_t>::collect(idx_t n, VectorRef r1) {
     }
 }
 
+template<class scalar_t>
+void DenseMatrixCollector<scalar_t>::collect_initial(VectorRef r0, VectorRef r1) {
+    using real_t = num::get_real_t<scalar_t>;
+    if (op.size() != 0){
+        data.row(0) = op * r0 * real_t{0.5}; // 0.5 is special for the moment zero
+        data.row(1) = op * r1;
+    } else {
+        data.row(0) = r0 * real_t{0.5}; // 0.5 is special for the moment zero
+        data.row(1) = r1;
+    }
+}
+
+template<class scalar_t>
+void DenseMatrixCollector<scalar_t>::collect(idx_t n, VectorRef r1) {
+    assert(n >= 2 && n < data.rows());
+    if (op.size() != 0) {
+        data.row(n) = op * r1;
+    } else {
+        data.row(n) = r1;
+    }
+}
+
 CPB_INSTANTIATE_TEMPLATE_CLASS(DiagonalMoments)
-CPB_INSTANTIATE_TEMPLATE_CLASS(OffDiagonalMoments)
+CPB_INSTANTIATE_TEMPLATE_CLASS(MultiUnitCollector)
+CPB_INSTANTIATE_TEMPLATE_CLASS(DenseMatrixCollector)
 
 }} // namespace cpb::kpm

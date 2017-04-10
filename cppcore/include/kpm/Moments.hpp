@@ -6,25 +6,28 @@
 namespace cpb { namespace kpm {
 
 /**
- Collects the computed KPM moments for a single index on the diagonal
+ Collects moments in the form of simple expectation values:
+ `mu_n = <r|Tn(H)|r>` where `bra == ket == r`. It's only
+ compatible with the diagonal `calc_moments` algorithms.
  */
 template<class scalar_t>
 class DiagonalMoments {
 public:
     using VectorRef = Ref<VectorX<scalar_t>>;
 
-    DiagonalMoments(idx_t num_moments) : moments(ArrayX<scalar_t>::Zero(num_moments)) {}
-    virtual ~DiagonalMoments() = default;
+    DiagonalMoments(idx_t num_moments) : moments(num_moments) {}
 
-    idx_t size() const { return moments.size(); }
     ArrayX<scalar_t>& get() { return moments; }
 
+    /// Number of moments
+    idx_t size() const { return moments.size(); }
+
     /// Collect the first 2 moments which are computer outside the main KPM loop
-    virtual void collect_initial(VectorRef r0, VectorRef r1);
+    void collect_initial(VectorRef r0, VectorRef r1);
 
     /// Collect moments `n` and `n + 1` from the result vectors. Expects `n >= 2`.
-    virtual void collect(idx_t n, VectorRef r0, VectorRef r1);
-    virtual void collect(idx_t n, scalar_t a, scalar_t b);
+    void collect(idx_t n, VectorRef r0, VectorRef r1);
+    void collect(idx_t n, scalar_t a, scalar_t b);
 
 private:
     ArrayX<scalar_t> moments;
@@ -33,38 +36,83 @@ private:
 };
 
 /**
-  Like `DiagonalMoments` but collects the computed moments for several indices
-*/
+  Moments collector interface for the off-diagonal algorithm.
+  Concrete implementations define what part of the KPM vectors
+  should be collected and/or apply operators.
+ */
 template<class scalar_t>
 class OffDiagonalMoments {
-    using VectorRef = Ref<VectorX<scalar_t>>;
-    using MomentsVector = ArrayX<scalar_t>;
-    using Data = std::vector<MomentsVector>;
-
 public:
-    OffDiagonalMoments(idx_t num_moments, Indices const& idx)
-        : idx(idx), data(idx.cols.size()) {
-        for (auto& moments : data) {
-            moments.resize(num_moments);
-        }
-    }
+    using VectorRef = Ref<VectorX<scalar_t>>;
+
     virtual ~OffDiagonalMoments() = default;
 
-    idx_t size() const { return data[0].size(); }
-    Data& get() { return data; }
+    /// Number of moments
+    virtual idx_t size() const = 0;
 
     /// Collect the first 2 moments which are computer outside the main KPM loop
-    virtual void collect_initial(VectorRef r0, VectorRef r1);
+    virtual void collect_initial(VectorRef r0, VectorRef r1) = 0;
 
     /// Collect moment `n` from the result vector `r1`. Expects `n >= 2`.
-    virtual void collect(idx_t n, VectorRef r1);
+    virtual void collect(idx_t n, VectorRef r1) = 0;
+};
+
+/**
+  Collects the computed moments in the form `mu_n = <l|Tn(H)|r>`
+  where `l` is a unit vector with `l[i] = 1` and `i` is some
+  Hamiltonian index. Multiple `l` vectors can be defined simply
+  by defining a vector of Hamiltonian indices `idx` where each
+  index is used to form an `l` vector and collect a moment.
+
+  The resulting `data` is a vector of vectors where each outer
+  index corresponds to an index from `idx`.
+ */
+template<class scalar_t>
+class MultiUnitCollector : public OffDiagonalMoments<scalar_t> {
+    using VectorRef = typename OffDiagonalMoments<scalar_t>::VectorRef;
+    using Data = std::vector<ArrayX<scalar_t>>;
+
+public:
+    MultiUnitCollector(idx_t num_moments, Indices const& idx)
+        : idx(idx), data(idx.cols.size(), ArrayX<scalar_t>(num_moments)) {}
+
+    Data& get() { return data; }
+
+    idx_t size() const override { return data[0].size(); }
+    void collect_initial(VectorRef r0, VectorRef r1) override;
+    void collect(idx_t n, VectorRef r1) override;
 
 private:
     Indices idx;
     Data data;
 };
 
+/**
+  Collects vectors of the form `vec_n = op * Tn(H)|r>` into a matrix
+  of shape `num_moments * ham_size`. The sparse matrix operator `op`
+  is optional.
+ */
+template<class scalar_t>
+class DenseMatrixCollector : public OffDiagonalMoments<scalar_t> {
+    using VectorRef = typename OffDiagonalMoments<scalar_t>::VectorRef;
+
+public:
+    DenseMatrixCollector(idx_t num_moments, idx_t ham_size, SparseMatrixX<scalar_t> const& op = {})
+        : data(num_moments, ham_size), op(op) {}
+
+    MatrixX<scalar_t>& matrix() { return data; }
+
+    idx_t size() const override { return data.rows(); }
+    void collect_initial(VectorRef r0, VectorRef r1) override;
+    void collect(idx_t n, VectorRef r1) override;
+
+private:
+    MatrixX<scalar_t> data;
+    SparseMatrixX<scalar_t> op;
+};
+
 CPB_EXTERN_TEMPLATE_CLASS(DiagonalMoments)
-CPB_EXTERN_TEMPLATE_CLASS(OffDiagonalMoments)
+CPB_EXTERN_TEMPLATE_CLASS(MultiUnitCollector)
+CPB_EXTERN_TEMPLATE_CLASS(DenseMatrixCollector)
 
 }} // namespace cpb::kpm

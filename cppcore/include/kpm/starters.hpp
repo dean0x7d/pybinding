@@ -8,9 +8,9 @@
 
 namespace cpb { namespace kpm {
 
-/// Return the starter vector r0 for the expectation value KPM procedure
+/// Return the unit vector starter r0 for the KPM procedure (`oh` encodes the unit index)
 template<class scalar_t>
-VectorX<scalar_t> exval_starter(OptimizedHamiltonian<scalar_t> const& oh) {
+VectorX<scalar_t> unit_starter(OptimizedHamiltonian<scalar_t> const& oh) {
     auto r0 = VectorX<scalar_t>::Zero(oh.size()).eval();
     r0[oh.idx().row] = 1;
     return r0;
