@@ -104,10 +104,11 @@ class KernelPolynomialMethod:
 
         Returns
         -------
-        :class:`~pybinding.LDOS`
+        :class:`~pybinding.Series`
         """
         ldos = self.impl.calc_ldos(energy, broadening, position, sublattice, reduce)
-        return results.LDOS(energy, ldos.squeeze())
+        return results.Series(energy, ldos.squeeze(), labels=dict(variable="E (eV)", data="LDOS",
+                                                                  columns="orbitals"))
 
     def calc_dos(self, energy, broadening, num_random=1):
         """Calculate the density of states as a function of energy
@@ -128,10 +129,10 @@ class KernelPolynomialMethod:
 
         Returns
         -------
-        :class:`~pybinding.DOS`
+        :class:`~pybinding.Series`
         """
         dos = self.impl.calc_dos(energy, broadening, num_random)
-        return results.DOS(energy, dos)
+        return results.Series(energy, dos, labels=dict(variable="E (eV)", data="DOS"))
 
     def deferred_ldos(self, energy, broadening, position, sublattice=""):
         """Same as :meth:`calc_ldos` but for parallel computation: see the :mod:`.parallel` module

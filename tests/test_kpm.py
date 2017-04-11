@@ -40,7 +40,7 @@ def test_ldos(kpm, baseline, plot_if_fails):
     energy = np.linspace(0, 2, 25)
     results = [k.calc_ldos(energy, broadening=0.15, position=(0, 0), sublattice='B') for k in kpm]
 
-    expected = pb.results.LDOS(energy, baseline(results[0].ldos.astype(np.float32)))
+    expected = results[0].with_data(baseline(results[0].data.astype(np.float32)))
     for i in range(len(results)):
         plot_if_fails(results[i], expected, 'plot', label=i)
 
@@ -84,7 +84,7 @@ def test_ldos_sublattice():
     kpm = pb.kpm(model)
 
     a, b = (kpm.calc_ldos(np.linspace(-5, 5, 50), 0.1, [0, 0], sub) for sub in ('A', 'B'))
-    assert pytest.fuzzy_equal(a.ldos, b.ldos[::-1], rtol=1e-3, atol=1e-6)
+    assert pytest.fuzzy_equal(a.data, b.data[::-1], rtol=1e-3, atol=1e-6)
 
 
 def test_optimized_hamiltonian():
@@ -121,7 +121,7 @@ def test_dos(params, baseline, plot_if_fails):
     energy = np.linspace(0, 2, 25)
     results = [kpm.calc_dos(energy, broadening=0.15) for kpm in strategies]
 
-    expected = pb.results.DOS(energy, baseline(results[0].dos.astype(np.float32)))
+    expected = results[0].with_data(baseline(results[0].data.astype(np.float32)))
     for i in range(len(results)):
         plot_if_fails(results[i], expected, 'plot', label=i)
 

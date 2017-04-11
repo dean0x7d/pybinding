@@ -13,7 +13,7 @@ from .utils import with_defaults, x_pi
 from .support.pickle import pickleable, save, load
 from .support.structure import Positions, AbstractSites, Sites, Hoppings
 
-__all__ = ['Bands', 'DOS', 'Eigenvalues', 'LDOS', 'NDSweep', 'SpatialMap', 'StructureMap',
+__all__ = ['Bands', 'Eigenvalues', 'NDSweep', 'Series', 'SpatialMap', 'StructureMap',
            'Sweep', 'make_path', 'save', 'load']
 
 
@@ -159,70 +159,58 @@ def make_path(k0, k1, *ks, step=0.1):
 
 
 @pickleable
-class DOS:
-    """Density of states as a function of energy
+class Series:
+    """A series of data points determined by a common relation, i.e. :math:`y = f(x)`
 
     Attributes
     ----------
-    energy : array_like
-    dos : array_like
+    variable : array_like
+        Independent variable for which the data was computed.
+    data : array_like
+        An array of values which were computed as a function of `variable`.
+        It can be 1D or 2D. In the latter case each column represents the result
+        of a different function applied to the same `variable` input.
+    labels : dict
+        Plot labels: 'variable', 'data', 'title' and 'columns'.
     """
-    def __init__(self, energy, dos):
-        self.energy = np.atleast_1d(energy)
-        self.dos = np.atleast_1d(dos)
+    def __init__(self, variable, data, labels=None):
+        self.variable = np.atleast_1d(variable)
+        self.data = np.atleast_1d(data)
+        self.labels = with_defaults(labels, variable="x", data="y", columns="")
 
-    def plot(self, **kwargs):
-        """Labeled line plot
-
-        Parameters
-        ----------
-        **kwargs
-            Forwarded to `plt.plot()`.
-        """
-        plt.plot(self.energy, self.dos, **kwargs)
-        plt.xlim(self.energy.min(), self.energy.max())
-        plt.ylabel('DOS')
-        plt.xlabel('E (eV)')
-        pltutils.despine()
-
-
-@pickleable
-class LDOS:
-    """Local density of states as a function of energy
-
-    Attributes
-    ----------
-    energy : array_like
-    ldos : array_like
-    """
-    def __init__(self, energy, ldos):
-        self.energy = np.atleast_1d(energy)
-        self.ldos = np.atleast_1d(ldos)
-
-    def plot(self, **kwargs):
-        """Labeled line plot
-
-        Parameters
-        ----------
-        **kwargs
-            Forwarded to `plt.plot()`.
-        """
-        plt.plot(self.energy, self.ldos, **kwargs)
-        plt.xlim(self.energy.min(), self.energy.max())
-        plt.ylabel('LDOS')
-        plt.xlabel('E (eV)')
-        pltutils.despine()
-
-        if self.ldos.ndim > 1:
-            labels = [str(i) for i in range(self.ldos.shape[-1])]
-            pltutils.legend(labels=labels, title="orbitals")
+    def with_data(self, data):
+        """Return a copy of this result object with different data"""
+        result = copy(self)
+        result.data = data
+        return result
 
     def reduced(self):
-        """Return a copy where the LDOS is summed over the orbitals
-        
-        Only applies to multi-orbital models. Returns itself if the results are 
-        single-orbital or have already been reduced."""
-        return self.__class__(self.energy, self.ldos.sum(axis=1))
+        """Return a copy where the data is summed over the columns
+
+        Only applies to results which may have multiple columns of data, e.g.
+        results for multiple orbitals for LDOS calculation.
+        """
+        return self.with_data(self.data.sum(axis=1))
+
+    def plot(self, **kwargs):
+        """Labeled line plot
+
+        Parameters
+        ----------
+        **kwargs
+            Forwarded to `plt.plot()`.
+        """
+        plt.plot(self.variable, self.data, **kwargs)
+        plt.xlim(self.variable.min(), self.variable.max())
+        plt.ylabel(self.labels["variable"])
+        plt.xlabel(self.labels["data"])
+        if "title" in self.labels:
+            plt.title(self.labels["title"])
+        pltutils.despine()
+
+        if self.data.ndim > 1:
+            labels = [str(i) for i in range(self.data.shape[-1])]
+            pltutils.legend(labels=labels, title=self.labels["columns"])
 
 
 @pickleable

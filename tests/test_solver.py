@@ -41,7 +41,7 @@ def test_dos(solver, baseline, plot_if_fails):
     energy = np.linspace(0, 0.075, 15)
     result = solver.calc_dos(energy, 0.01)
 
-    expected = pb.results.DOS(energy, baseline(result.dos))
+    expected = result.with_data(baseline(result.data))
     plot_if_fails(result, expected, 'plot')
 
     assert pytest.fuzzy_equal(result, expected, rtol=2e-2, atol=1e-5)
@@ -53,9 +53,9 @@ def test_ldos(solver, plot_if_fails):
     broadening = 0.01
     expected = solver.calc_dos(energy, broadening)
 
-    ldos = np.stack([solver.calc_ldos(energy, broadening, position).ldos
+    ldos = np.stack([solver.calc_ldos(energy, broadening, position).data
                      for position in zip(*solver.system.positions)])
-    result = pb.results.DOS(energy, np.sum(ldos, axis=0))
+    result = expected.with_data(np.sum(ldos, axis=0))
 
     plot_if_fails(result, expected, 'plot')
     assert pytest.fuzzy_equal(result, expected)

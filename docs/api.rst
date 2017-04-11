@@ -136,8 +136,7 @@ followed by `result.plot()` will work and present the appropriate figure.
     make_path
     Bands
     Eigenvalues
-    DOS
-    LDOS
+    Series
     SpatialMap
     StructureMap
     Sweep

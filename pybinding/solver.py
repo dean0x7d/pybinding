@@ -179,15 +179,15 @@ class Solver:
 
         Returns
         -------
-        :class:`~pybinding.DOS`
+        :class:`~pybinding.Series`
         """
         if hasattr(self.impl, 'calc_dos'):
-            return results.DOS(energies, self.impl.calc_dos(energies, broadening))
+            dos = self.impl.calc_dos(energies, broadening)
         else:
             scale = 1 / (broadening * math.sqrt(2 * math.pi))
             delta = self.eigenvalues[:, np.newaxis] - energies
             dos = scale * np.sum(np.exp(-0.5 * delta**2 / broadening**2), axis=0)
-            return results.DOS(energies, dos)
+        return results.Series(energies, dos, labels=dict(variable="E (eV)", data="DOS"))
 
     def calc_ldos(self, energies, broadening, position, sublattice="", reduce=True):
         r"""Calculate the local density of states as a function of energy at the given position
@@ -222,11 +222,10 @@ class Solver:
 
         Returns
         -------
-        :class:`~pybinding.LDOS`
+        :class:`~pybinding.Series`
         """
         if hasattr(self.impl, 'calc_ldos'):
-            return results.LDOS(energies, self.impl.calc_ldos(energies, broadening,
-                                                              position, sublattice))
+            ldos = self.impl.calc_ldos(energies, broadening, position, sublattice)
         else:
             delta = self.eigenvalues[:, np.newaxis] - energies
             gaussian = np.exp(-0.5 * delta**2 / broadening**2)
@@ -243,7 +242,8 @@ class Solver:
             if reduce:
                 ldos = np.sum(ldos, axis=1)
 
-            return results.LDOS(energies, ldos)
+        return results.Series(energies, ldos.squeeze(), labels=dict(variable="E (eV)", data="LDOS",
+                                                                    columns="orbitals"))
 
     def calc_spatial_ldos(self, energy, broadening):
         r"""Calculate the spatial local density of states at the given energy
