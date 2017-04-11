@@ -116,7 +116,7 @@ def test_dos(params, baseline, plot_if_fails):
     model = pb.Model(*params)
 
     kernel = pb.lorentz_kernel()
-    strategies = [pb.kpm(model, num_random=1, kernel=kernel, **c) for c in configurations]
+    strategies = [pb.kpm(model, kernel=kernel, **c) for c in configurations]
 
     energy = np.linspace(0, 2, 25)
     results = [kpm.calc_dos(energy, broadening=0.15) for kpm in strategies]

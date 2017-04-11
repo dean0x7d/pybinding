@@ -26,7 +26,7 @@ public:
     ArrayXXdCM calc_ldos(ArrayXd const& energy, double broadening, Cartesian position,
                          string_view sublattice = "", bool reduce = true) const;
 
-    ArrayXd calc_dos(ArrayXd const& energy, double broadening) const;
+    ArrayXd calc_dos(ArrayXd const& energy, double broadening, idx_t num_random) const;
 
     /// Get some information about what happened during the last calculation
     std::string report(bool shortform) const;

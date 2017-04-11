@@ -109,7 +109,7 @@ class KernelPolynomialMethod:
         ldos = self.impl.calc_ldos(energy, broadening, position, sublattice, reduce)
         return results.LDOS(energy, ldos.squeeze())
 
-    def calc_dos(self, energy, broadening):
+    def calc_dos(self, energy, broadening, num_random=1):
         """Calculate the density of states as a function of energy
 
         Parameters
@@ -119,12 +119,18 @@ class KernelPolynomialMethod:
         broadening : float
             Width, in energy, of the smallest detail which can be resolved.
             Lower values result in longer calculation time.
+        num_random : int
+            The number of random vectors to use for the stochastic calculation of KPM moments. 
+            Larger numbers improve the quality of the result but also increase calculation time
+            linearly. Fortunately, result quality also improves with system size, so the DOS of
+            very large systems can be calculated accurately with only a small number of random
+            vectors.
 
         Returns
         -------
         :class:`~pybinding.DOS`
         """
-        dos = self.impl.calc_dos(energy, broadening)
+        dos = self.impl.calc_dos(energy, broadening, num_random)
         return results.DOS(energy, dos)
 
     def deferred_ldos(self, energy, broadening, position, sublattice=""):
@@ -152,7 +158,7 @@ class KernelPolynomialMethod:
         return self.impl.deferred_ldos(energy, broadening, position, sublattice)
 
 
-def kpm(model, energy_range=None, kernel="default", num_random=1, **kwargs):
+def kpm(model, energy_range=None, kernel="default", **kwargs):
     """The default CPU implementation of the Kernel Polynomial Method
 
     This implementation works on any system and is well optimized.
@@ -173,8 +179,6 @@ def kpm(model, energy_range=None, kernel="default", num_random=1, **kwargs):
         the function reconstructed from the Chebyshev series. Possible values are
         :func:`jackson_kernel` or :func:`lorentz_kernel`. The Jackson kernel is used
         by default.
-    num_random : int
-        The number of random vectors to use for stochastic KPM calculations (e.g. DOS).
 
     Returns
     -------
@@ -182,8 +186,7 @@ def kpm(model, energy_range=None, kernel="default", num_random=1, **kwargs):
     """
     if kernel == "default":
         kernel = jackson_kernel()
-    return KernelPolynomialMethod(_cpp.kpm(model, energy_range or (0, 0), kernel,
-                                           num_random=num_random, **kwargs))
+    return KernelPolynomialMethod(_cpp.kpm(model, energy_range or (0, 0), kernel, **kwargs))
 
 
 def kpm_cuda(model, energy_range=None, kernel="default", **kwargs):

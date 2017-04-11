@@ -66,9 +66,9 @@ ArrayXXdCM KPM::calc_ldos(ArrayXd const& energy, double broadening, Cartesian po
     return (reduce && results.cols() > 1) ? results.rowwise().sum() : results;
 }
 
-ArrayXd KPM::calc_dos(ArrayXd const& energy, double broadening) const {
+ArrayXd KPM::calc_dos(ArrayXd const& energy, double broadening, idx_t num_random) const {
     calculation_timer.tic();
-    auto dos = strategy->dos(energy, broadening);
+    auto dos = strategy->dos(energy, broadening, num_random);
     calculation_timer.toc();
     return dos;
 }

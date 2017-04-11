@@ -38,7 +38,7 @@ public:
     virtual std::vector<ArrayXcd> greens_vector(idx_t row, std::vector<idx_t> const& cols,
                                                 ArrayXd const& energy, double broadening) = 0;
     /// Return the total DOS for the given energy range and broadening
-    virtual ArrayXd dos(ArrayXd const& energy, double broadening) = 0;
+    virtual ArrayXd dos(ArrayXd const& energy, double broadening, idx_t num_random) = 0;
 
     /// Get some information about what happened during the last calculation
     virtual std::string report(bool shortform = false) const = 0;
@@ -66,7 +66,7 @@ public:
     ArrayXcd greens(idx_t row, idx_t col, ArrayXd const& energy, double broadening) final;
     std::vector<ArrayXcd> greens_vector(idx_t row, std::vector<idx_t> const& cols,
                                         ArrayXd const& energy, double broadening) final;
-    ArrayXd dos(ArrayXd const& energy, double broadening) final;
+    ArrayXd dos(ArrayXd const& energy, double broadening, idx_t num_random) final;
 
     std::string report(bool shortform) const final;
     Stats const& get_stats() const final { return stats; }

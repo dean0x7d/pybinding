@@ -106,7 +106,8 @@ StrategyTemplate<scalar_t>::greens_vector(idx_t row, std::vector<idx_t> const& c
 }
 
 template<class scalar_t>
-ArrayXd StrategyTemplate<scalar_t>::dos(ArrayXd const& energy, double broadening) {
+ArrayXd StrategyTemplate<scalar_t>::dos(ArrayXd const& energy, double broadening,
+                                        idx_t num_random) {
     auto const scale = bounds.scaling_factors();
     auto const num_moments = config.kernel.required_num_moments(broadening / scale.a);
 
@@ -120,14 +121,14 @@ ArrayXd StrategyTemplate<scalar_t>::dos(ArrayXd const& energy, double broadening
     auto moments = DiagonalMoments<scalar_t>(num_moments);
     auto total_mu = ArrayX<scalar_t>::Zero(num_moments).eval();
 
-    stats.multiplier = config.num_random;
+    stats.multiplier = static_cast<double>(num_random);
     stats.moments_timer.tic();
     std::mt19937 generator;
-    for (auto j = 0; j < config.num_random; ++j) {
+    for (auto j = 0; j < num_random; ++j) {
         compute(moments, random_starter(oh, generator), oh, specialized_algorithm);
         total_mu += moments.get();
     }
-    total_mu /= static_cast<real_t>(config.num_random);
+    total_mu /= static_cast<real_t>(num_random);
     stats.moments_timer.toc();
 
     config.kernel.apply(total_mu);

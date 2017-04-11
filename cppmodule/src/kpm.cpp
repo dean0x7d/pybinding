@@ -11,8 +11,7 @@ void wrap_kpm_strategy(py::module& m, char const* name) {
     m.def(
         name,
         [](Model const& model, std::pair<float, float> energy, kpm::Kernel const& kernel,
-           std::string matrix_format, bool optimal_size, bool interleaved, float lanczos,
-           int num_random) {
+           std::string matrix_format, bool optimal_size, bool interleaved, float lanczos) {
             kpm::Config config;
             config.min_energy = energy.first;
             config.max_energy = energy.second;
@@ -22,7 +21,6 @@ void wrap_kpm_strategy(py::module& m, char const* name) {
             config.algorithm.optimal_size = optimal_size;
             config.algorithm.interleaved = interleaved;
             config.lanczos_precision = lanczos;
-            config.num_random = num_random;
 
             return make_kpm<Strategy>(model, config);
         },
@@ -32,8 +30,7 @@ void wrap_kpm_strategy(py::module& m, char const* name) {
         "matrix_format"_a="ELL",
         "optimal_size"_a=true,
         "interleaved"_a=true,
-        "lanczos_precision"_a=kpm_defaults.lanczos_precision,
-        "num_random"_a=kpm_defaults.num_random
+        "lanczos_precision"_a=kpm_defaults.lanczos_precision
     );
 }
 
