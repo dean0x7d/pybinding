@@ -202,8 +202,8 @@ class Series:
         """
         plt.plot(self.variable, self.data, **kwargs)
         plt.xlim(self.variable.min(), self.variable.max())
-        plt.ylabel(self.labels["variable"])
-        plt.xlabel(self.labels["data"])
+        plt.xlabel(self.labels["variable"])
+        plt.ylabel(self.labels["data"])
         if "title" in self.labels:
             plt.title(self.labels["title"])
         pltutils.despine()

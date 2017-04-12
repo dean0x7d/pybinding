@@ -198,7 +198,7 @@ class KernelPolynomialMethod:
         if volume != 1.0:
             data /= volume
         return results.Series(chemical_potential, data,
-                              labels=dict(variable=r"$\mu$ (eV)", data="$\sigma$"))
+                              labels=dict(variable=r"$\mu$ (eV)", data="$\sigma (e^2/h)$"))
 
 
 def kpm(model, energy_range=None, kernel="default", **kwargs):
