@@ -281,13 +281,14 @@ def legend(*args, reverse=False, facecolor='0.98', lw=0, **kwargs):
     *args, **kwargs
         Forwarded to :func:`matplotlib.pyplot.legend`.
     """
-    if not reverse:
+    handles, labels = plt.gca().get_legend_handles_labels()
+    if not any([handles, args, kwargs]):
+        return None
+
+    if not reverse or not handles:
         ret = plt.legend(*args, **kwargs)
     else:
-        h, l = plt.gca().get_legend_handles_labels()
-        if h:
-            return None
-        ret = plt.legend(h[::-1], l[::-1], *args, **kwargs)
+        ret = plt.legend(handles[::-1], labels[::-1], *args, **kwargs)
 
     frame = ret.get_frame()
     frame.set_facecolor(facecolor)
