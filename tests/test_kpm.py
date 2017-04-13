@@ -30,7 +30,7 @@ def model(request):
 def kpm(model):
     kernel = pb.lorentz_kernel()
     strategies = [pb.kpm(model, kernel=kernel, **c) for c in configurations]
-    strategies += [pb.kpm_python(model, kernel=kernel)]
+    strategies += [pb.chebyshev._kpm_python(model, kernel=kernel)]
     if hasattr(pb._cpp, 'kpm_cuda'):
         strategies += [pb.kpm_cuda(model, kernel=kernel)]
     return strategies

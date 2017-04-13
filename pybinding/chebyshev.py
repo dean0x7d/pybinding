@@ -15,8 +15,7 @@ from .system import System
 from .utils.time import timed
 from .support.deprecated import LoudDeprecationWarning
 
-__all__ = ['KernelPolynomialMethod',
-           'kpm', 'kpm_cuda', 'kpm_python',
+__all__ = ['KernelPolynomialMethod', 'kpm', 'kpm_cuda',
            'jackson_kernel', 'lorentz_kernel', 'dirichlet_kernel']
 
 
@@ -476,7 +475,7 @@ class _PythonImpl:
         return fmt.format_map(stats)
 
 
-def kpm_python(model, energy_range=None, kernel="default", **kwargs):
+def _kpm_python(model, energy_range=None, kernel="default", **kwargs):
     """Basic Python/SciPy implementation of KPM"""
     if kernel == "default":
         kernel = jackson_kernel()
