@@ -2,7 +2,7 @@ Finite size
 ===========
 
 .. meta::
-   :description: Construction of finite size tight-binding systems using Pybinding code
+   :description: Construction of finite size tight-binding systems using pybinding code
 
 See the :doc:`tutorial page </tutorial/finite>` for a detailed walkthrough of system construction.
 These are just a few quick examples.

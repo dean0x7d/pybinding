@@ -36,7 +36,7 @@ and then applies a custom asymmetric strain function:
     )
     model.plot()
 
-Within the Pybinding framework, tight-binding models are assembled from logical parts which
+Within the pybinding framework, tight-binding models are assembled from logical parts which
 can be mixed and matched in various ways. The package comes with a few predefined components:
 crystal lattices, shapes, symmetries, defects, fields and more (like the
 :func:`graphene.bilayer() <.graphene.lattice.bilayer>` lattice and the :func:`.regular_polygon`

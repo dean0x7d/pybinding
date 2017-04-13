@@ -16,9 +16,9 @@ The main features include:
   model.
 
 * **Fast compute** - Pybinding's implementation of the kernel polynomial method allows for very
-  fast calculation of the Green's function of the Hamiltonian. Exact diagonalization is also
-  available through the use of scipy's eigensolvers. The framework is very flexible and allows
-  the addition of user-defined computation routines.
+  fast calculation of various physical properties of tight-binding systems. Exact diagonalization
+  is also available through the use of scipy's eigenvalue solvers. The framework is very flexible
+  and allows the addition of user-defined computation routines.
 
 * **Result analysis and visualization** - The package contains utility functions for post-processing
   the raw result data. The included plotting functions are tailored for tight-binding problems to
@@ -63,7 +63,7 @@ See the [documentation] for more details and a guide to get started.
 * Green's function: fast kernel polynomial method implementation
 * Eigensolvers: standard dense and sparse solvers (always available)
   and the [FEAST] solver (only available when compiled with Intel's MKL)
-* Transport: scattering systems with semi-infinite leads can be constructed in Pybinding and then
+* Transport: scattering systems with semi-infinite leads can be constructed in pybinding and then
   solved using the [Kwant compatibility] layer
 * Model and result objects have builtin plotting functions for easy visualization
 
@@ -75,10 +75,10 @@ See the [documentation] for more details and a guide to get started.
 
 ## Benchmarks
 
-One of the main features of Pybinding is an easy-to-use and fast model builder. This can be a
+One of the main features of pybinding is an easy-to-use and fast model builder. This can be a
 demanding task for large or complicated systems. Great care was taken to make this process fast.
 
-The following figures compare the performance of Pybinding with the [Kwant] package. They present
+The following figures compare the performance of pybinding with the [Kwant] package. They present
 the time and memory required to build a Hamiltonian matrix which describes a tight-binding system.
 Pybinding features good performance and a low memory footprint by using contiguous data structures
 and vectorized operations.

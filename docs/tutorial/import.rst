@@ -17,5 +17,5 @@ The `pb` alias is always used for importing pybinding. This is similar to the co
 package aliases: `np` and `plt`. These import conventions are used consistently in the tutorial.
 
 The function :func:`pb.pltutils.use_style() <.pltutils.use_style()>` applies pybinding's default
-style settings for matplotlib. This is completely optional and only affects the esthetics of the
+style settings for matplotlib. This is completely optional and only affects the aesthetics of the
 generated figures.

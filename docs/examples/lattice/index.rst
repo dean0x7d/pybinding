@@ -2,7 +2,7 @@ Lattice specification and bands
 ===============================
 
 .. meta::
-   :description: Lattice specification and band structure calculations in Pybinding
+   :description: Lattice specification and band structure calculations in pybinding
 
 Checkerboard
 ------------

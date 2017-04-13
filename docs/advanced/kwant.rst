@@ -2,11 +2,11 @@ Kwant compatibility
 ===================
 
 `Kwant <http://kwant-project.org/>`_ is a Python package for numerical tight-binding similar to
-Pybinding, but it's specialized for transport calculations. Since the two packages work with the
-same kind of Hamiltonian matrices, it's possible to build a model in Pybinding and use Kwant to
-compute the transport properties. The advantage for Pybinding users is access to Kwant's transport
-solvers in addition to Pybinding's builtin :ref:`computational routines <compute_api>`. The
-advantage for Kwant users is the much faster system build times made possible by Pybinding's model
+pybinding, but it's specialized for transport calculations. Since the two packages work with the
+same kind of Hamiltonian matrices, it's possible to build a model in pybinding and use Kwant to
+compute the transport properties. The advantage for pybinding users is access to Kwant's transport
+solvers in addition to pybinding's builtin :ref:`computational routines <compute_api>`. The
+advantage for Kwant users is the much faster system build times made possible by pybinding's model
 builder -- see the :doc:`/benchmarks/index`.
 
 .. only:: html
@@ -18,7 +18,7 @@ builder -- see the :doc:`/benchmarks/index`.
     Pybinding has builtin computational routines for large finite-sized systems as well as
     periodic systems in 1 to 3 dimensions. At the time of writing, Kwant v1.2.2 cannot model
     periodic systems with more than 1 dimension in a straightforward way. To find out more
-    about Pybinding's handling of periodic systems, take a look at the :doc:`/tutorial/index`.
+    about pybinding's handling of periodic systems, take a look at the :doc:`/tutorial/index`.
 
 
 Exporting a model
@@ -39,7 +39,7 @@ the following lines of pseudo-code:
     smatrix = kwant.smatrix(system)
     ...  # call smatrix methods
 
-Now if we want to use Pybinding, we can just replace the first part:
+Now if we want to use pybinding, we can just replace the first part:
 
 .. code-block:: python
     :emphasize-lines: 0
@@ -52,14 +52,14 @@ Now if we want to use Pybinding, we can just replace the first part:
     smatrix = kwant.smatrix(kwant_system)
     ...  # call smatrix methods
 
-A Pybinding :class:`.Model` is defined as usual and then converted to the Kwant-compatible format
+A pybinding :class:`.Model` is defined as usual and then converted to the Kwant-compatible format
 by calling the :meth:`.Model.tokwant` method. The resulting `kwant_system` can be used as expected.
 
 
 Complete example
 ----------------
 
-A detailed overview of scattering model construction in Pybinding is available in the
+A detailed overview of scattering model construction in pybinding is available in the
 :doc:`tutorial </tutorial/scattering>`. Here, we present a simple example of a graphene wire
 with a potential barrier:
 
@@ -166,7 +166,7 @@ loops over some parameter `x`:
         smatrix = kwant.smatrix(system, args=[x])  # apply fields
         ...  # call smatrix methods
 
-This separation is not required with Pybinding. As pointed out in the :doc:`/benchmarks/index`,
+This separation is not required with pybinding. As pointed out in the :doc:`/benchmarks/index`,
 the fast builder makes it possible to fully reconstruct the model in every loop iteration at no
 extra performance cost. This simplifies the code since all the parameters can be applied in a
 single place:
@@ -209,17 +209,17 @@ required to calculate the transmission:
     pb.pltutils.legend(loc='upper left', reverse=True)
 
 For each system size, the transmission is calculated as a function of barrier height for 100
-values. Even though Pybinding reconstruct the entire model every time the barrier is changed, the
+values. Even though pybinding reconstruct the entire model every time the barrier is changed, the
 system build time is so fast that it doesn't affect the total calculation time. In fact, the
-extremely fast build actually enables Pybinding to outperform Kwant in the overall
+extremely fast build actually enables pybinding to outperform Kwant in the overall
 calculation. Even though Kwant only repopulates field data at each loop iteration, this still
-takes more time than it does for Pybinding to fully reconstruct the system.
+takes more time than it does for pybinding to fully reconstruct the system.
 
 Note that this example presents a relatively simple system with a square barrier. This is done
-to keep the run time to only a few minutes, for convenience. Here, Pybinding speeds up the
+to keep the run time to only a few minutes, for convenience. Here, pybinding speeds up the
 overall calculation by about 40%. For more realistic examples with larger scattering regions and
 complicated field functions with multiple parameters, a speedup of 3-4 times can be achieved by
-using Pybinding's model builder.
+using pybinding's model builder.
 
 
 Floating-point precision

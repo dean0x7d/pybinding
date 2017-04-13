@@ -183,9 +183,9 @@ The leads are identical, except for a :math:`\pm1` eV shift due to the PN juncti
 Solving a scattering problem
 ----------------------------
 
-At this time, Pybinding doesn't have a builtin solver for scattering problems. However, they can
+At this time, pybinding doesn't have a builtin solver for scattering problems. However, they can
 be solved using `Kwant <http://kwant-project.org/>`_. An arbitrary model can be constructed in
-Pybinding and then exported using the :meth:`.Model.tokwant` method. See the :doc:`/advanced/kwant`
+pybinding and then exported using the :meth:`.Model.tokwant` method. See the :doc:`/advanced/kwant`
 page for details.
 
 Alternatively, any user-defined solver and/or computation routine can be used. Pybinding generates

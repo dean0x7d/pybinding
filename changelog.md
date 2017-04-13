@@ -67,9 +67,9 @@
   Tutorial", for details on how to construct such models.
 
 * Added compatibility with [Kwant](http://kwant-project.org/) for transport calculations. A model
-  can be constructed in Pybinding and then exported using the `Model.tokwant()` method. This makes
+  can be constructed in pybinding and then exported using the `Model.tokwant()` method. This makes
   it possible to use Kwant's excellent solver for transport problems. While Kwant does have its
-  own model builder, Pybinding is much faster in this regard: by two orders of magnitude, see the
+  own model builder, pybinding is much faster in this regard: by two orders of magnitude, see the
   "Benchmarks" page in the documentation for a performance comparison.
 
 * *Experimental:* Initial CUDA implementation of KPM Green's function (only for diagonal elements

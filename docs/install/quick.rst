@@ -3,7 +3,7 @@ Quick Install
 
 The easiest way to install Python and SciPy is with `Anaconda`_, a free scientific Python
 distribution for Windows, Linux and Mac. The following install guide will show you how to
-install the minimal version of Anaconda, `Miniconda`_, and then install Pybinding.
+install the minimal version of Anaconda, `Miniconda`_, and then install pybinding.
 
 .. note::
    If you run into any problems during the install process,
@@ -32,7 +32,7 @@ Windows
 
     conda install numpy scipy matplotlib
 
-3. The next command will download and install Pybinding::
+3. The next command will download and install pybinding::
 
     pip install pybinding
 
@@ -70,7 +70,7 @@ If you have version 5.8 or newer, proceed with the installation.
 
     conda install cmake numpy scipy matplotlib
 
-3. The next command will download and install Pybinding::
+3. The next command will download and install pybinding::
 
     pip install pybinding
 
@@ -101,7 +101,7 @@ Mac OS X
 
     conda install cmake numpy scipy matplotlib
 
-3. The next command will download and install Pybinding::
+3. The next command will download and install pybinding::
 
     pip install pybinding
 

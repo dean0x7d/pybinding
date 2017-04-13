@@ -14,9 +14,9 @@ The main features include:
   model.
 
 * **Fast compute** - Pybinding's implementation of the kernel polynomial method allows for very
-  fast calculation of the Green's function of the Hamiltonian. Exact diagonalization is also
-  available through the use of scipy's eigensolvers. The framework is very flexible and allows
-  the addition of user-defined computation routines.
+  fast calculation of various physical properties of tight-binding systems. Exact diagonalization
+  is also available through the use of scipy's eigenvalue solvers. The framework is very flexible
+  and allows the addition of user-defined computation routines.
 
 * **Result analysis and visualization** - The package contains utility functions for post-processing
   the raw result data. The included plotting functions are tailored for tight-binding problems to
@@ -39,7 +39,7 @@ of atoms.
 
 Python is a programming language which is easy to learn and a joy to use. It has deep roots in
 the scientific community as evidenced by the rich scientific Python library collection: `SciPy
-<http://www.scipy.org/>`_. As such, Python is the ideal choice as the main interface for Pybinding.
+<http://www.scipy.org/>`_. As such, Python is the ideal choice as the main interface for pybinding.
 In the core of the package, C++11 is used to accelerate model construction and the most demanding
 calculations. This is done silently in the background.
 
@@ -63,13 +63,13 @@ tight-binding model:
   to simulate external fields or various effects. These functions are be defined independently
   of any lattice or specific structure which makes them easily reusable and mutually composable.
 
-Once the model description is complete, Pybinding will build the tight-binding Hamiltonian matrix.
+Once the model description is complete, pybinding will build the tight-binding Hamiltonian matrix.
 The next step is to apply computations to the matrix to obtain the values of the desired quantum
 properties. To that end, there are the following possibilities:
 
-* **Green's function** - Pybinding implements a fast Chebyshev polynomial routine for calculating
-  the Green's function of the Hamiltonian. This can be applied to quickly compute the local density
-  of states or the transport characteristics of the system.
+* **Kernel polynomial method** - Pybinding implements a fast Chebyshev polynomial expansion routine
+  which can be used to calculate various physical properties. For example, it's possible to
+  quickly compute the local density of states or the transport characteristics of the system.
 
 * **Exact diagonalization** - Eigensolvers may be used to calculate the eigenvalues and
   eigenvectors of the model system. Common dense and sparse matrix eigensolvers are available

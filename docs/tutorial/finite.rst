@@ -179,6 +179,29 @@ The `and` keyword can only operate on scalar values, but `np.logical_and` can co
 Likewise, `math.sqrt` does not work with arrays, but `np.sqrt` does.
 
 
+Composite shape
+---------------
+
+Complicated system geometry can also be produced by composing multiple simple shapes. The
+following example gives a quick taste of how it works. For a full overview of this functionality,
+see the :doc:`/advanced/shapes` section.
+
+.. plot::
+    :context: close-figs
+
+    # Simple shapes
+    rectangle = pb.rectangle(x=6, y=1)
+    hexagon = pb.regular_polygon(num_sides=6, radius=1.92, angle=np.pi/6)
+    circle = pb.circle(radius=0.6)
+
+    # Compose them naturally
+    shape = rectangle + hexagon - circle
+
+    model = pb.Model(graphene.monolayer(), shape)
+    model.shape.plot()
+    model.plot()
+
+
 Spatial LDOS
 ------------
 

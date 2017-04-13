@@ -15,7 +15,7 @@ regular CPU code. This will be addressed in a future version.
 
 By default, CUDA support is disabled. You will need to turn it on manually by recompiling the
 package. First, ensure that you have `CUDA Toolkit <https://developer.nvidia.com/cuda-toolkit>`_
-7.5 or newer installed. Next, remove any existing Pybinding installation by executing the following
+7.5 or newer installed. Next, remove any existing pybinding installation by executing the following
 command in terminal::
 
     pip3 uninstall pybinding

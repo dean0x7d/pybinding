@@ -135,7 +135,7 @@ trivial to create rings as the difference of any two shapes:
     model.shape.plot()
     model.plot()
 
-Of course, we can could also go a bit wild:
+Of course, we can also go a bit wild:
 
 .. plot::
     :context: close-figs

@@ -1,5 +1,5 @@
-Eigensolvers
-============
+Eigenvalue solvers
+==================
 
 .. meta::
    :description: Computing the eigenvalues and eigenvectors of a tight-binding Hamiltonian matrix
@@ -17,7 +17,7 @@ look at the concrete :func:`.lapack` and :func:`.arpack` eigenvalue solvers and 
 LAPACK
 ------
 
-The :class:`.Solver` class establishes the interface of a solver within Pybinding, but it does not
+The :class:`.Solver` class establishes the interface of a solver within pybinding, but it does not
 contain a concrete diagonalization routine. For this reason we never instantiate the plain solver,
 only its implementations such as :func:`.solver.lapack`.
 
@@ -39,11 +39,11 @@ calculated. This tutorial already contains a few examples where the ARPACK solve
 one more is presented below.
 
 Internally, the :func:`scipy.sparse.linalg.eigsh` function is used to solve large sparse Hermitian
-matrices. The first argument to :func:`.solver.arpack` must be the Pybinding :class:`.Model`, but
+matrices. The first argument to :func:`.solver.arpack` must be the pybinding :class:`.Model`, but
 the following arguments are the same as :func:`~scipy.sparse.linalg.eigsh`, so the solver routine
 can be tweaked as desired. Rather than reproduce the full list of options here, we refer you to
 the scipy :func:`~scipy.sparse.linalg.eigsh` reference documentation. Here, we will focus on the
-specific features of solvers within Pybinding.
+specific features of solvers within pybinding.
 
 
 Solver interface

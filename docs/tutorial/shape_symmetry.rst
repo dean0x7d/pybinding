@@ -85,7 +85,11 @@ atoms.
     model.plot()
     model.lattice.plot_vectors(position=[-0.13, -0.13])
 
-Note that the lattice vectors :math:`a_1` and :math:`a_2` are at a right angle, unlike the sharp
+.. note::
+
+    To learn how to create this 4-atom unit cell, see :ref:`construct_a_supercell`.
+
+Notice that the lattice vectors :math:`a_1` and :math:`a_2` are at a right angle, unlike the sharp
 angle of the base 2-atom cell. The lattice properties are identical for the 2 and 4 atom cells,
 but the new geometry helps to create armchair edges.
 

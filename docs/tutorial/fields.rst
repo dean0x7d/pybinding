@@ -30,10 +30,10 @@ We can define a simple potential function like the following:
 Here `potential` is just a regular Python function, but we attached a pretty `@` decorator to it.
 The :func:`@onsite_energy_modifier <.onsite_energy_modifier>` decorator gives an ordinary function
 a few extra properties which we'll talk about later. For now, just keep in mind that this is
-required to mark a function as a *modifier* for use with Pybinding models. The `x` and `y`
+required to mark a function as a *modifier* for use with pybinding models. The `x` and `y`
 arguments are lattice site positions and the return value is the desired potential. Note the use
 of `np.sin` instead of `math.sin`. The `x` and `y` coordinates are `numpy` arrays, not individual
-numbers. This is true for all modifier arguments in Pybinding. When you write modifier functions,
+numbers. This is true for all modifier arguments in pybinding. When you write modifier functions,
 make sure to always use `numpy` operations which work with arrays, unlike regular `math`.
 
 .. note::
@@ -150,7 +150,7 @@ belongs to. Its usage will be explained below.
 
 As we have seen before, we don't actually need to define a function to take all the arguments.
 They are optional. The `@` decorator will recognize a function which takes any of these arguments
-and it will adapt it for use in a Pybinding model. Previously, the `linear` function accepted only
+and it will adapt it for use in a pybinding model. Previously, the `linear` function accepted only
 the `energy` and `x` arguments, but `wavy` also included the `y` argument. The order of arguments
 is not important, only their names are. Therefore, this is also a valid modifier:
 

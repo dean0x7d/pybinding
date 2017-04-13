@@ -27,9 +27,9 @@ material repository.
     model = pb.Model(graphene.monolayer())
     model.plot()
 
-The result is not very exciting: just a single graphene unit cell, with 2 atoms and a single
+The result is not very exciting: just a single graphene unit cell with 2 atoms and a single
 hopping between them. The model does not assume translational symmetry or any other physical
-property. Given a lattice it will just create a single unit cell. The model has a :class:`.System`
+property. Given a lattice, it will just create a single unit cell. The model has a :class:`.System`
 attribute which keeps track of structural properties like the positions of lattice sites and the
 way they are connected, as seen in the figure above. The raw data can be accessed directly::
 

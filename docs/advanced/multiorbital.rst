@@ -2,9 +2,9 @@ Multi-orbital models
 ====================
 
 .. meta::
-   :description: Defining and solving multi-orbital tight-binding models in Pybinding
+   :description: Defining and solving multi-orbital tight-binding models in pybinding
 
-In Pybinding, if an onsite or hopping energy term is defined as a matrix (instead of a scalar),
+In pybinding, if an onsite or hopping energy term is defined as a matrix (instead of a scalar),
 we refer to the resulting model as *multi-orbital*. The elements of the matrix term may correspond
 to different spins, electrons and holes, or any other degrees of freedom. These can have different
 physical meaning depending on the intend of the model. Because we're talking in generic terms here,

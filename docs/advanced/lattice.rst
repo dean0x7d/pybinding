@@ -77,6 +77,7 @@ the final (x, y, z) coordinates. Conversely, when the onsite energy is specified
 :class:`.Lattice` object, it models an intrinsic part of the lattice and cannot depend on position.
 If both the intrinsic energy and the modifier are specified, the values are added up.
 
+.. _construct_a_supercell:
 
 Constructing a supercell
 ------------------------

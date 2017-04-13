@@ -2,7 +2,7 @@ Graphene
 ========
 
 .. meta::
-   :description: Collection of graphene lattices, constants and fields for Pybinding
+   :description: Collection of graphene lattices, constants and fields for pybinding
 
 .. module:: pybinding.repository.graphene
 

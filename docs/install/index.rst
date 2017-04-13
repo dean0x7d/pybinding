@@ -21,7 +21,7 @@ You can install all of this in two ways:
     advanced
 
 If you are new to Python/SciPy or if you're just not sure how to proceed, go with the :doc:`quick`
-option. It will show you how to easily setup a new Python environment and install everything.
+option. It will show you how to easily set up a new Python environment and install everything.
 That quick guide will be everything you need in most cases. However, If you would like a custom
 setup within your existing Python environment and you have experience compiling binary packages,
 you can check out the :doc:`advanced` option.

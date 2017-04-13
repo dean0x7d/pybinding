@@ -2,7 +2,7 @@ Phosphorene
 ===========
 
 .. meta::
-   :description: Collection of phosphorene lattices, constants and fields for Pybinding
+   :description: Collection of phosphorene lattices, constants and fields for pybinding
 
 .. module:: pybinding.repository.phosphorene
 

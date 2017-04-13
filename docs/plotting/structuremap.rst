@@ -1,7 +1,7 @@
 Structure-mapped data
 =====================
 
-As shown in the previous section, many classes in Pybinding use structure plots in a similar way.
+As shown in the previous section, many classes in pybinding use structure plots in a similar way.
 One class stands out here: :class:`.StructureMap` can be used to map any arbitrary data onto the
 spatial structure of a model. :class:`.StructureMap` objects are produced in two cases: as the
 results of various computation functions (e.g. :meth:`.Solver.calc_spatial_ldos`) or returned

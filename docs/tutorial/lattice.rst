@@ -2,7 +2,7 @@ Lattice
 =======
 
 .. meta::
-   :description: Crystal lattice definition in Pybinding
+   :description: Crystal lattice definition in pybinding
 
 A :class:`.Lattice` object describes the unit cell of a crystal lattice. This includes the
 primitive vectors, positions of sublattice sites and hopping parameters which connect those sites.

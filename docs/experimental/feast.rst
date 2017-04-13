@@ -13,7 +13,7 @@ Pybinding has experimental support for this solver. It can be accessed via :func
 However, it is disabled by default and you will need to recompile the package in order to install
 it. Since FEAST requires Intel PARDISO, you will need to have
 `Intel MKL <https://software.intel.com/en-us/intel-mkl>`_ installed before you continue. Next,
-remove any existing Pybinding installation by executing the following command in terminal::
+remove any existing pybinding installation by executing the following command in terminal::
 
     pip3 uninstall pybinding
 

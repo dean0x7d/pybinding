@@ -16,7 +16,7 @@ be explained here.
 Structure plot classes
 ----------------------
 
-A few different classes in Pybinding use structure plots. These are :class:`.Lattice`,
+A few different classes in pybinding use structure plots. These are :class:`.Lattice`,
 :class:`.Model`, :class:`.System`, :class:`.Lead` and :class:`.StructureMap`. They all represent
 some kind of spatial structure with sites and hoppings. Note that most of these classes are
 components of the main :class:`.Model`. Calling their plot methods will draw the structure which

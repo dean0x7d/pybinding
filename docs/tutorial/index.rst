@@ -1,5 +1,5 @@
-Basic Tutorial
-==============
+Tutorial
+========
 
 This section will present the essential features of pybinding with example code to get you started
 quickly. The tutorial assumes that you already have a basic understanding of tight-binding theory,
