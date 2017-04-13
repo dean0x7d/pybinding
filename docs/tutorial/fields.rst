@@ -385,7 +385,7 @@ need.
 
 To test out our `constant_magnetic_field`, we'll calculate the local density of states (LDOS),
 where we expect to see peaks corresponding to Landau levels. The computation method used here
-is explained in detail in the :doc:`greens` section of the tutorial.
+is explained in detail in the :doc:`kpm` section of the tutorial.
 
 .. plot::
     :context: close-figs

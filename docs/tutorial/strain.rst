@@ -258,7 +258,7 @@ Instead, we can package them together in one function which is going to return b
 
 The `triaxial_strain` function now has everything we need. We'll apply it to a slightly larger
 system so that we can clearly calculate the local density of states (LDOS). For more information
-about this computation method see the :doc:`greens` section. Right now, it's enough to know that
+about this computation method see the :doc:`kpm` section. Right now, it's enough to know that
 we will calculate the LDOS at the center of the strained system, separately for sublattices
 A and B.
 

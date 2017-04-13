@@ -4,8 +4,8 @@ CUDA-based KPM
 `CUDA <https://developer.nvidia.com/about-cuda>`_ enables the execution of general purpose code
 on Nvidia GPUs. It can be used to accelerate computational algorithms which feature natural
 parallelism. Pybinding features experimental support for CUDA. It's used for kernel polynomial
-method (KPM) calculations -- see the Green's function :doc:`tutorial page</tutorial/greens>` and
-:mod:`API reference <.greens>`.
+method (KPM) calculations -- see :doc:`tutorial page</tutorial/kpm>` and
+:mod:`API reference <.chebyshev>`.
 
 The CUDA-base KPM implementation is available via the :func:`.kpm_cuda` function. It mirrors
 the API of the regular CPU-based :func:`.kpm`. The only difference between them is where the
