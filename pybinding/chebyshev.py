@@ -205,7 +205,7 @@ class KernelPolynomialMethod:
 
     def calc_conductivity(self, chemical_potential, broadening, temperature,
                           direction="xx", volume=1.0, num_random=1, num_points=1000):
-        """Calculate Kubo-Bastin DC conductivity as a function of chemical potential
+        """Calculate Kubo-Bastin electrical conductivity as a function of chemical potential
  
         The return value is in units of the conductance quantum (e^2 / hbar) not taking into
         account spin or any other degeneracy.

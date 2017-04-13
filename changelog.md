@@ -11,11 +11,11 @@
 * On Linux, the minimum compiler requirements have also been increased to get access to C++14 for
   the core of the library. To compile from source, you'll need GCC >= 5.0 or clang >= 3.5.
 
-##### New features
+##### Multi-orbital models
 
 * Improved support for models with multiple orbitals, spins and any additional degrees of freedom.
-  These can now be specified simply by inputing a matrix as the onsite or hopping term, instead of
-  a scalar value. For more details, see the "Multi-orbital models" section of the documentation.
+  These can now be specified simply by inputing a matrix as the onsite or hopping term (instead of
+  a scalar value). For more details, see the "Multi-orbital models" section of the documentation.
 
 * Lifted all limits on the number of sublattices and hoppings which can be defined in a `Lattice`
   object. The previous version was limited to a maximum of 128 onsite and hopping terms per unit
@@ -23,13 +23,53 @@
   restrictions are now removed so that the unit cell size is only limited by available memory.
   In addition, the memory usage of the internal system format has been reduced.
 
+* Added a 3-band model of group 6 transition metal dichalcogenides to the Material Repository.
+  The available TMDs include: MoS2, WS2, MoSe2, WSe2, MoTe2, WTe2. These are all monolayers.
+
+##### Composite shapes
+
+* Complicated system geometries can now be created easily by composing multiple simple shapes.
+  This is done using set operations, e.g. unions, intersections, etc. A complete guide for this
+  functionality is available in the "Composite shapes" section of the documentation.
+
+##### Kernel polynomial method
+
+* The KPM implementation has been revised and significantly expanded. A guide and several examples
+  are available in the "Kernel polynomial method" section of the documentation (part 9 of the
+  Tutorial). For a complete overview of the available methods and kernels, see the `chebyshev`
+  section of the API reference.
+
+* New builtin computation methods include the stochastically-evaluated density of states (DOS)
+  and electrical conductivity (using the Kubo-Bastin approach).
+
+* The new low-level interface produces KPM expansion moments which allows users to create their
+  own KPM-based computation routines.
+
+* The performance of various KPM computations has been significantly improved for CPUs with AVX
+  support (~1.5x speedup on average, but also up to 2x in some cases with complex numbers).
+
+##### Miscellaneous
+
 * Added the `pb.save()` and `pb.load()` convenience functions for getting result objects into/out
-  of files. The data is saved in a compressed binary format (Python's builtin `pickle` format set
-  to protocol 4 + gzip). Loaded files can be immediately plotted: `result = pb.load("file.pbz")`
+  of files. The data is saved in a compressed binary format (Python's builtin `pickle` format with
+  protocol 4 and gzip). Loaded files can be immediately plotted: `result = pb.load("file.pbz")`
   and then `result.plot()` to see the data.
+
+* The eigenvalue solvers now have a `calc_ldos` method for computing the local density of states
+  as a function of energy (in addition to the existing `calc_spatial_ldos`).
+
+* Improved plotting of `Lattice` objects. The view can now be rotated by passing the `axis="xz"`
+  argument, or any other combination of x, y and z to define the plotting plane.
+
+##### Deprecations and breaking changes
 
 * Added `Lattice.add_aliases()` method. The old `Lattice.add_sublattice(..., alias=name)` way of
   creating aliases is deprecated.
+
+* The `greens` module has been deprecated. This functionality is now covered by the KPM methods.
+
+* The internal storage format of the `Lattice` and `System` classes has been revised. This
+  shouldn't affect most users who don't need access to the low-level data.
 
 
 ### v0.8.2 | 2017-01-26

@@ -47,30 +47,24 @@ prerequisites, it's just a simple case of using `pip`, Python's usual package ma
     pip install pybinding
 
 
-## Current status
+## Features
 
-Work in progress. The goal of the project is to develop a tight-binding code framework which is
-fast, flexible and easy to use.
-See the [documentation] for more details and a guide to get started.
-
-#### Implemented features
+The goal of the project is to develop a tight-binding code framework which is fast, flexible and
+easy to use. This is just a quick overview of some of the features. See the [documentation] for
+more details and a guide to get started.
 
 * Construction of arbitrary tight-binding lattices and geometries: 1 to 3 dimensions
   (including multilayer 2D systems), periodic or finite size (with fine control of edges)
 * Easy polygon shape definition for 2D systems and freeform shapes for n-dimensional systems
 * Geometric deformations and defects: defined via displacement and state functions
 * Fields and arbitrary effects: defined via hopping and onsite energy functions
-* Green's function: fast kernel polynomial method implementation
-* Eigensolvers: standard dense and sparse solvers (always available)
+* Kernel polynomial method: a fast way to compute Green's function, spectral densities of
+  arbitrary operators, electrical conductivity, or various other user-defined KPM methods
+* Exact diagonalization: standard dense and sparse eigenvalues solvers (always available)
   and the [FEAST] solver (only available when compiled with Intel's MKL)
 * Transport: scattering systems with semi-infinite leads can be constructed in pybinding and then
   solved using the [Kwant compatibility] layer
 * Model and result objects have builtin plotting functions for easy visualization
-
-#### Planned work
-
-* Improvements for 3D systems (mostly related to plotting functions)
-* Multiple orbitals and spins are already supported, but could use a nicer interface
 
 
 ## Benchmarks
