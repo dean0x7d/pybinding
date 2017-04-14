@@ -1,6 +1,6 @@
 # Changelog
 
-### v0.9.0 | in development
+### v0.9.0 | 2017-04-14
 
 ##### Updated requirements
 
