@@ -20,14 +20,17 @@ struct ComputeDiagonal {
         using namespace calc_moments;
         simd::scope_disable_denormals guard;
 
+        auto r1 = make_r1(h2, r0);
+        moments.collect_initial(r0, r1);
+
         if (config.optimal_size && config.interleaved) {
-            diagonal::opt_size_and_interleaved(moments, std::move(r0), h2, map);
+            diagonal::opt_size_and_interleaved(moments, std::move(r0), std::move(r1), h2, map);
         } else if (config.interleaved) {
-            diagonal::interleaved(moments, std::move(r0), h2, map);
+            diagonal::interleaved(moments, std::move(r0), std::move(r1), h2, map);
         } else if (config.optimal_size) {
-            diagonal::opt_size(moments, std::move(r0), h2, map);
+            diagonal::opt_size(moments, std::move(r0), std::move(r1), h2, map);
         } else {
-            diagonal::basic(moments, std::move(r0), h2);
+            diagonal::basic(moments, std::move(r0), std::move(r1), h2);
         }
     }
 };
@@ -44,14 +47,17 @@ struct ComputeOffDiagonal {
         using namespace calc_moments;
         simd::scope_disable_denormals guard;
 
+        auto r1 = make_r1(h2, r0);
+        moments.collect_initial(r0, r1);
+
         if (config.optimal_size && config.interleaved) {
-            off_diagonal::opt_size_and_interleaved(moments, std::move(r0), h2, map);
+            off_diagonal::opt_size_and_interleaved(moments, std::move(r0), std::move(r1), h2, map);
         } else if (config.interleaved) {
-            off_diagonal::interleaved(moments, std::move(r0), h2, map);
+            off_diagonal::interleaved(moments, std::move(r0), std::move(r1), h2, map);
         } else if (config.optimal_size) {
-            off_diagonal::opt_size(moments, std::move(r0), h2, map);
+            off_diagonal::opt_size(moments, std::move(r0), std::move(r1), h2, map);
         } else {
-            off_diagonal::basic(moments, std::move(r0), h2);
+            off_diagonal::basic(moments, std::move(r0), std::move(r1), h2);
         }
     }
 };

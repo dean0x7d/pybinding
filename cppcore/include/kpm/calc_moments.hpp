@@ -19,24 +19,16 @@ namespace diagonal {
  stochastic trace variant.
  */
 template<class Moments, class Vector, class Matrix>
-void basic(Moments& moments, Vector r0, Matrix const& h2) {
-    auto r1 = make_r1(h2, r0);
-    moments.collect_initial(r0, r1);
-
-    // The diagonal KPM algorithm computes 2 moments per iteration
+void basic(Moments& moments, Vector r0, Vector r1, Matrix const& h2) {
     auto const num_moments = moments.size();
     assert(num_moments % 2 == 0);
 
+    static constexpr auto zero = Moments::zero();
     for (auto n = 2; n <= num_moments / 2; ++n) {
-        // Generalized SpMV: `r0 = h2 * r1 - r0` <- the most expensive part of the algorithm
-        compute::kpm_spmv(0, h2.rows(), h2, r1, r0);
-
-        // r1 gets the primary result of this iteration
-        // r0 gets the value old value of r1 (it will be needed in the next iteration)
+        auto m2 = zero, m3 = zero;
+        compute::kpm_spmv_diagonal(0, h2.rows(), h2, r1, r0, m2, m3);
+        moments.collect(n, m2, m3);
         r1.swap(r0);
-
-        // Pick out the result of this iteration relevant for the given `Moments` class
-        moments.collect(n, r0, r1);
     }
 }
 
@@ -48,21 +40,16 @@ void basic(Moments& moments, Vector r0, Matrix const& h2) {
  of removed work.
  */
 template<class Moments, class Vector, class Matrix>
-void opt_size(Moments& moments, Vector r0, Matrix const& h2, SliceMap const& map) {
-    auto r1 = make_r1(h2, r0);
-    moments.collect_initial(r0, r1);
-
+void opt_size(Moments& moments, Vector r0, Vector r1, Matrix const& h2, SliceMap const& map) {
     auto const num_moments = moments.size();
     assert(num_moments % 2 == 0);
 
+    static constexpr auto zero = Moments::zero();
     for (auto n = 2; n <= num_moments / 2; ++n) {
-        // Only compute up to optimal size for each iteration
-        auto const opt_size = map.optimal_size(n, num_moments);
-
-        compute::kpm_spmv(0, opt_size, h2, r1, r0);
-
+        auto m2 = zero, m3 = zero;
+        compute::kpm_spmv_diagonal(0, map.optimal_size(n, num_moments), h2, r1, r0, m2, m3);
+        moments.collect(n, m2, m3);
         r1.swap(r0);
-        moments.collect(n, r0.head(opt_size), r1.head(opt_size));
     }
 }
 
@@ -72,18 +59,16 @@ void opt_size(Moments& moments, Vector r0, Matrix const& h2, SliceMap const& map
  The two concurrent operations share some of the same data, thus promoting cache
  usage and reducing main memory bandwidth.
  */
-template<class Moments, class Vector, class Matrix, class scalar_t = typename Matrix::Scalar>
-void interleaved(Moments& moments, Vector r0, Matrix const& h2, SliceMap const& map) {
-    auto r1 = make_r1(h2, r0);
-    moments.collect_initial(r0, r1);
-
+template<class Moments, class Vector, class Matrix>
+void interleaved(Moments& moments, Vector r0, Vector r1, Matrix const& h2, SliceMap const& map) {
     auto const num_moments = moments.size();
     assert((num_moments - 2) % 4 == 0);
 
     // Interleave moments `n` and `n + 1` for better data locality
     // Diagonal + interleaved computes 4 moments per iteration
+    static constexpr auto zero = Moments::zero();
     for (auto n = idx_t{2}; n <= num_moments / 2; n += 2) {
-        auto m2 = scalar_t{0}, m3 = scalar_t{0}, m4 = scalar_t{0}, m5 = scalar_t{0};
+        auto m2 = zero, m3 = zero, m4 = zero, m5 = zero;
 
         auto const max = map.last_index();
         for (auto k = idx_t{0}, p0 = idx_t{0}, p1 = idx_t{0}; k <= max; ++k) {
@@ -104,16 +89,15 @@ void interleaved(Moments& moments, Vector r0, Matrix const& h2, SliceMap const& 
 /**
  Optimal size + interleaved
  */
-template<class Moments, class Vector, class Matrix, class scalar_t = typename Matrix::Scalar>
-void opt_size_and_interleaved(Moments& moments, Vector r0, Matrix const& h2, SliceMap const& map) {
-    auto r1 = make_r1(h2, r0);
-    moments.collect_initial(r0, r1);
-
+template<class Moments, class Vector, class Matrix>
+void opt_size_and_interleaved(Moments& moments, Vector r0, Vector r1, Matrix const& h2,
+                              SliceMap const& map) {
     auto const num_moments = moments.size();
     assert((num_moments - 2) % 4 == 0);
 
+    static constexpr auto zero = Moments::zero();
     for (auto n = idx_t{2}; n <= num_moments / 2; n += 2) {
-        auto m2 = scalar_t{0}, m3 = scalar_t{0}, m4 = scalar_t{0}, m5 = scalar_t{0};
+        auto m2 = zero, m3 = zero, m4 = zero, m5 = zero;
 
         auto const max1 = map.index(n, num_moments);
         for (auto k = idx_t{0}, p0 = idx_t{0}, p1 = idx_t{0}; k <= max1; ++k) {
@@ -150,10 +134,7 @@ namespace off_diagonal {
  for that special case.
  */
 template<class Moments, class Vector, class Matrix>
-void basic(Moments& moments, Vector r0, Matrix const& h2) {
-    auto r1 = make_r1(h2, r0);
-    moments.collect_initial(r0, r1);
-
+void basic(Moments& moments, Vector r0, Vector r1, Matrix const& h2) {
     auto const num_moments = moments.size();
     for (auto n = idx_t{2}; n < num_moments; ++n) {
         compute::kpm_spmv(0, h2.rows(), h2, r1, r0);
@@ -169,10 +150,7 @@ void basic(Moments& moments, Vector r0, Matrix const& h2) {
  See the diagonal version of this function for more information.
  */
 template<class Moments, class Vector, class Matrix>
-void opt_size(Moments& moments, Vector r0, Matrix const& h2, SliceMap const& map) {
-    auto r1 = make_r1(h2, r0);
-    moments.collect_initial(r0, r1);
-
+void opt_size(Moments& moments, Vector r0, Vector r1, Matrix const& h2, SliceMap const& map) {
     auto const num_moments = moments.size();
     for (auto n = idx_t{2}; n < num_moments; ++n) {
         auto const opt_size = map.optimal_size(n, num_moments);
@@ -189,11 +167,8 @@ void opt_size(Moments& moments, Vector r0, Matrix const& h2, SliceMap const& map
 
  See the diagonal version of this function for more information.
  */
-template<class Moments, class Vector, class Matrix, class scalar_t = typename Matrix::Scalar>
-void interleaved(Moments& moments, Vector r0, Matrix const& h2, SliceMap const& map) {
-    auto r1 = make_r1(h2, r0);
-    moments.collect_initial(r0, r1);
-
+template<class Moments, class Vector, class Matrix>
+void interleaved(Moments& moments, Vector r0, Vector r1, Matrix const& h2, SliceMap const& map) {
     auto const num_moments = moments.size();
     assert(num_moments % 2 == 0);
 
@@ -218,11 +193,9 @@ void interleaved(Moments& moments, Vector r0, Matrix const& h2, SliceMap const& 
 /**
  Optimal size + interleaved
  */
-template<class Moments, class Vector, class Matrix, class scalar_t = typename Matrix::Scalar>
-void opt_size_and_interleaved(Moments& moments, Vector r0, Matrix const& h2, SliceMap const& map) {
-    auto r1 = make_r1(h2, r0);
-    moments.collect_initial(r0, r1);
-
+template<class Moments, class Vector, class Matrix>
+void opt_size_and_interleaved(Moments& moments, Vector r0, Vector r1, Matrix const& h2,
+                              SliceMap const& map) {
     auto const num_moments = moments.size();
     assert(num_moments % 2 == 0);
 

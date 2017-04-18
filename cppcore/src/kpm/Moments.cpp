@@ -9,15 +9,10 @@ void DiagonalMoments<scalar_t>::collect_initial(VectorRef r0, VectorRef r1) {
 }
 
 template<class scalar_t>
-void DiagonalMoments<scalar_t>::collect(idx_t n, VectorRef r0, VectorRef r1) {
-    collect(n, r0.squaredNorm(), r1.dot(r0));
-}
-
-template<class scalar_t>
-void DiagonalMoments<scalar_t>::collect(idx_t n, scalar_t a, scalar_t b) {
+void DiagonalMoments<scalar_t>::collect(idx_t n, scalar_t m2, scalar_t m3) {
     assert(n >= 2 && n <= size() / 2);
-    moments[2 * (n - 1)] = scalar_t{2} * (a - m0);
-    moments[2 * (n - 1) + 1] = scalar_t{2} * b - m1;
+    moments[2 * (n - 1)] = scalar_t{2} * (m2 - m0);
+    moments[2 * (n - 1) + 1] = scalar_t{2} * m3 - m1;
 }
 
 template<class scalar_t>

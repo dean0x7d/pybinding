@@ -22,12 +22,14 @@ public:
     /// Number of moments
     idx_t size() const { return moments.size(); }
 
+    /// Zero of the same scalar type as the moments
+    constexpr static scalar_t zero() { return scalar_t{0}; }
+
     /// Collect the first 2 moments which are computer outside the main KPM loop
     void collect_initial(VectorRef r0, VectorRef r1);
 
     /// Collect moments `n` and `n + 1` from the result vectors. Expects `n >= 2`.
-    void collect(idx_t n, VectorRef r0, VectorRef r1);
-    void collect(idx_t n, scalar_t a, scalar_t b);
+    void collect(idx_t n, scalar_t m2, scalar_t m3);
 
 private:
     ArrayX<scalar_t> moments;
