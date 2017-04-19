@@ -15,7 +15,12 @@ struct ComputeDiagonal {
     SliceMap const& map;
     AlgorithmConfig const& config;
 
-    template<class Matrix>
+    template<class T> using matches = std::is_same<scalar_t, typename T::Scalar>;
+
+    template<class Matrix, std14::enable_if_t<!matches<Matrix>::value, int> = 0>
+    void operator()(Matrix const&) {}
+
+    template<class Matrix, std14::enable_if_t<matches<Matrix>::value, int> = 0>
     void operator()(Matrix const& h2) {
         using namespace calc_moments;
         simd::scope_disable_denormals guard;
@@ -42,7 +47,12 @@ struct ComputeOffDiagonal {
     SliceMap const& map;
     AlgorithmConfig const& config;
 
-    template<class Matrix>
+    template<class T> using matches = std::is_same<scalar_t, typename T::Scalar>;
+
+    template<class Matrix, std14::enable_if_t<!matches<Matrix>::value, int> = 0>
+    void operator()(Matrix const&) {}
+
+    template<class Matrix, std14::enable_if_t<matches<Matrix>::value, int> = 0>
     void operator()(Matrix const& h2) {
         using namespace calc_moments;
         simd::scope_disable_denormals guard;
@@ -67,7 +77,7 @@ struct ComputeOffDiagonal {
 template<class scalar_t>
 void DefaultStrategy<scalar_t>::compute(
     DiagonalMoments<scalar_t>& m, VectorX<scalar_t>&& r0,
-    AlgorithmConfig const& ac, OptimizedHamiltonian<scalar_t> const& oh
+    AlgorithmConfig const& ac, OptimizedHamiltonian const& oh
 ) const {
     oh.matrix().match(ComputeDiagonal<scalar_t>{m, r0, oh.map(), ac});
 }
@@ -75,7 +85,7 @@ void DefaultStrategy<scalar_t>::compute(
 template<class scalar_t>
 void DefaultStrategy<scalar_t>::compute(
     OffDiagonalMoments<scalar_t>& m, VectorX<scalar_t>&& r0,
-    AlgorithmConfig const& ac, OptimizedHamiltonian<scalar_t> const& oh
+    AlgorithmConfig const& ac, OptimizedHamiltonian const& oh
 ) const {
     oh.matrix().match(ComputeOffDiagonal<scalar_t>{m, r0, oh.map(), ac});
 }

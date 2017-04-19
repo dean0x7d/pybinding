@@ -34,51 +34,12 @@ void wrap_kpm_strategy(py::module& m, char const* name) {
     );
 }
 
-// This will be a lot simpler with C++14 generic lambdas
-struct PyOptHam {
-    template<class T> using OH = kpm::OptimizedHamiltonian<T>;
-    using OptHamVariant = var::variant<
-        OH<float>, OH<double>, OH<std::complex<float>>, OH<std::complex<double>>
-    >;
+struct ReturnMatrix {
+    template<class T>
+    ComplexCsrConstRef operator()(T) const { throw std::runtime_error("This will never happen"); }
 
-    Hamiltonian h;
-    OptHamVariant oh;
-
-    struct MakeOH {
-        idx_t i;
-
-        template<class scalar_t>
-        OptHamVariant operator()(SparseMatrixRC<scalar_t> const& m) const {
-            auto ret = OH<scalar_t>(m.get(), kpm::MatrixFormat::CSR, true);
-            auto indices = std::vector<idx_t>(m->rows());
-            std::iota(indices.begin(), indices.end(), 0);
-            auto bounds = kpm::Bounds<scalar_t>(m.get(), kpm::Config{}.lanczos_precision);
-            ret.optimize_for({i, indices}, bounds.scaling_factors());
-            return ret;
-        }
-    };
-
-    struct ReturnMatrix {
-        template<class scalar_t>
-        ComplexCsrConstRef operator()(OH<scalar_t> const& oh) const {
-            assert(oh.matrix().template is<SparseMatrixX<scalar_t>>());
-            return csrref(oh.matrix().template get<SparseMatrixX<scalar_t>>());
-        }
-    };
-
-    struct ReturnSizes {
-        template<class scalar_t>
-        std::vector<storage_idx_t> const& operator()(OH<scalar_t> const& oh) const {
-            return oh.map().get_data();
-        }
-    };
-
-    struct ReturnIndices {
-        template<class scalar_t>
-        ArrayX<storage_idx_t> const& operator()(OH<scalar_t> const& oh) const {
-            return oh.idx().cols;
-        }
-    };
+    template<class scalar_t>
+    ComplexCsrConstRef operator()(SparseMatrixX<scalar_t> const& h2) const { return csrref(h2); }
 };
 
 } // anonymously namespace
@@ -143,17 +104,22 @@ void wrap_greens(py::module& m) {
     wrap_kpm_strategy<kpm::CudaStrategy>(m, "kpm_cuda");
 #endif
 
-    py::class_<PyOptHam>(m, "OptimizedHamiltonian")
-        .def("__init__", [](PyOptHam& self, Hamiltonian const& h, int index) {
-            new (&self) PyOptHam{h, var::apply_visitor(PyOptHam::MakeOH{index}, h.get_variant())};
+    py::class_<kpm::OptimizedHamiltonian>(m, "OptimizedHamiltonian")
+        .def("__init__", [](kpm::OptimizedHamiltonian& self, Hamiltonian const& h, int index) {
+            new (&self) kpm::OptimizedHamiltonian(h, kpm::MatrixFormat::CSR, true);
+
+            auto indices = std::vector<idx_t>(h.rows());
+            std::iota(indices.begin(), indices.end(), 0);
+            auto bounds = kpm::Bounds(h, kpm::Config{}.lanczos_precision);
+            self.optimize_for({index, indices}, bounds.scaling_factors());
         })
-        .def_property_readonly("matrix", [](PyOptHam const& self) {
-            return var::apply_visitor(PyOptHam::ReturnMatrix{}, self.oh);
+        .def_property_readonly("matrix", [](kpm::OptimizedHamiltonian const& self) {
+            return var::apply_visitor(ReturnMatrix{}, self.matrix());
         })
-        .def_property_readonly("sizes", [](PyOptHam const& self) {
-            return arrayref(var::apply_visitor(PyOptHam::ReturnSizes{}, self.oh));
+        .def_property_readonly("sizes", [](kpm::OptimizedHamiltonian const& self) {
+            return self.map().get_data();
         })
-        .def_property_readonly("indices", [](PyOptHam const& self) {
-            return arrayref(var::apply_visitor(PyOptHam::ReturnIndices{}, self.oh));
+        .def_property_readonly("indices", [](kpm::OptimizedHamiltonian const& self) {
+            return self.idx().cols;
         });
 }

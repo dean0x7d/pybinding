@@ -18,10 +18,6 @@ using SparseMatrixRC = std::shared_ptr<SparseMatrixX<scalar_t> const>;
  with real or complex scalar type and single or double precision.
  */
 class Hamiltonian {
-    using Variant = var::variant<SparseMatrixRC<float>, SparseMatrixRC<std::complex<float>>,
-                                 SparseMatrixRC<double>, SparseMatrixRC<std::complex<double>>>;
-    Variant variant_matrix;
-
 public:
     Hamiltonian() = default;
     template<class scalar_t>
@@ -29,7 +25,7 @@ public:
     template<class scalar_t>
     Hamiltonian(std::shared_ptr<SparseMatrixX<scalar_t> const> p) : variant_matrix(std::move(p)) {}
 
-    Variant const& get_variant() const { return variant_matrix; }
+    var::Complex<SparseMatrixRC> const& get_variant() const { return variant_matrix; }
 
     explicit operator bool() const;
     void reset();
@@ -38,6 +34,9 @@ public:
     idx_t non_zeros() const;
     idx_t rows() const;
     idx_t cols() const;
+
+private:
+    var::Complex<SparseMatrixRC> variant_matrix;
 };
 
 namespace detail {

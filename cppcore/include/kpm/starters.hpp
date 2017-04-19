@@ -10,7 +10,7 @@ namespace cpb { namespace kpm {
 
 /// Return the unit vector starter r0 for the KPM procedure (`oh` encodes the unit index)
 template<class scalar_t>
-VectorX<scalar_t> unit_starter(OptimizedHamiltonian<scalar_t> const& oh) {
+VectorX<scalar_t> unit_starter(OptimizedHamiltonian const& oh, var::tag<scalar_t>) {
     auto r0 = VectorX<scalar_t>::Zero(oh.size()).eval();
     r0[oh.idx().row] = 1;
     return r0;
@@ -18,15 +18,16 @@ VectorX<scalar_t> unit_starter(OptimizedHamiltonian<scalar_t> const& oh) {
 
 /// Return the starter vector r0 for the stochastic KPM procedure
 template<class real_t>
-VectorX<real_t> random_starter(OptimizedHamiltonian<real_t> const& oh, std::mt19937& generator) {
+VectorX<real_t> random_starter(OptimizedHamiltonian const& oh, std::mt19937& generator,
+                               var::tag<real_t>) {
     auto r0 = num::make_random<VectorX<real_t>>(oh.size(), generator);
     oh.reorder(r0); // needed to maintain consistent results for all optimizations
     return transform<VectorX>(r0, [](real_t x) -> real_t { return (x < 0.5f) ? -1.f : 1.f; });
 }
 
 template<class real_t, class complex_t = std::complex<real_t>>
-VectorX<complex_t> random_starter(OptimizedHamiltonian<std::complex<real_t>> const& oh,
-                                  std::mt19937& generator) {
+VectorX<complex_t> random_starter(OptimizedHamiltonian const& oh, std::mt19937& generator,
+                                  var::tag<std::complex<real_t>>) {
     auto phase = num::make_random<ArrayX<real_t>>(oh.size(), generator);
     oh.reorder(phase);
     return exp(complex_t{2 * constant::pi * constant::i1} * phase);

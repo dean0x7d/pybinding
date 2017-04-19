@@ -12,9 +12,9 @@ public:
     using StrategyTemplate<scalar_t>::StrategyTemplate;
 
     void compute(DiagonalMoments<scalar_t>& m, VectorX<scalar_t>&& r0,
-                 AlgorithmConfig const& ac, OptimizedHamiltonian<scalar_t> const& oh) const final;
+                 AlgorithmConfig const& ac, OptimizedHamiltonian const& oh) const final;
     void compute(OffDiagonalMoments<scalar_t>& m, VectorX<scalar_t>&& r0,
-                 AlgorithmConfig const& ac, OptimizedHamiltonian<scalar_t> const& oh) const final;
+                 AlgorithmConfig const& ac, OptimizedHamiltonian const& oh) const final;
 };
 
 CPB_EXTERN_TEMPLATE_CLASS(DefaultStrategy)

@@ -1,4 +1,6 @@
 #pragma once
+#include "hamiltonian/Hamiltonian.hpp"
+
 #include "kpm/Bounds.hpp"
 #include "kpm/Config.hpp"
 
@@ -100,29 +102,15 @@ public:
     multiplication algorithm for this format is much easier to vectorize compared
     to the classic CSR format.
  */
-template<class scalar_t>
 class OptimizedHamiltonian {
-    using real_t = num::get_real_t<scalar_t>;
-    using OptMatrix = var::variant<SparseMatrixX<scalar_t>, num::EllMatrix<scalar_t>>;
-
-    OptMatrix optimized_matrix; ///< reordered for faster compute
-    Indices optimized_idx; ///< reordered target indices in the optimized matrix
-    SliceMap slice_map; ///< slice border indices
-    std::vector<storage_idx_t> reorder_map; ///< mapping from original matrix indices to reordered indices
-
-    SparseMatrixX<scalar_t> const* original_matrix;
-    Indices original_idx; ///< original target indices for which the optimization was done
-
-    MatrixFormat matrix_format;
-    bool is_reordered;
-    Chrono timer;
-
 public:
-    OptimizedHamiltonian(SparseMatrixX<scalar_t> const* m, MatrixFormat const& mf, bool reorder)
-        : slice_map(m->rows()), original_matrix(m), matrix_format(mf), is_reordered(reorder) {}
+    using VariantMatrix = var::Complex<SparseMatrixX, num::EllMatrix>;
+
+    OptimizedHamiltonian(Hamiltonian const& h, MatrixFormat const& mf, bool reorder)
+        : original_h(h), slice_map(h.rows()), matrix_format(mf), is_reordered(reorder) {}
 
     /// Create the optimized Hamiltonian targeting specific indices and scale factors
-    void optimize_for(Indices const& idx, Scale<real_t> scale);
+    void optimize_for(Indices const& idx, Scale<> scale);
 
     /// Apply new Hamiltonian index ordering to a container
     template<class Vector>
@@ -137,19 +125,36 @@ public:
         v.swap(reordered_v);
     }
 
-    void reorder(SparseMatrixX<scalar_t>& matrix) const;
+    template<class scalar_t>
+    void reorder(SparseMatrixX<scalar_t>& matrix) const {
+        if (reorder_map.empty()) { return; }
 
-    idx_t size() const { return original_matrix->rows(); }
+        auto reordered_matrix = SparseMatrixX<scalar_t>(matrix.rows(), matrix.cols());
+        auto const reserve_per_row = static_cast<int>(sparse::max_nnz_per_row(matrix));
+        reordered_matrix.reserve(ArrayXi::Constant(matrix.rows(), reserve_per_row));
+
+        sparse::make_loop(matrix).for_each([&](idx_t row, idx_t col, scalar_t value) {
+            reordered_matrix.insert(reorder_map[row], reorder_map[col]) = value;
+        });
+
+        reordered_matrix.makeCompressed();
+        matrix.swap(reordered_matrix);
+    }
+
+    idx_t size() const { return original_h.rows(); }
     Indices const& idx() const { return optimized_idx; }
     SliceMap const& map() const { return slice_map; }
-    OptMatrix const& matrix() const { return optimized_matrix; }
+    VariantMatrix const& matrix() const { return optimized_matrix; }
 
 private:
     /// Just scale the Hamiltonian: H2 = (H - I*b) * (2/a)
-    void create_scaled(Indices const& idx, Scale<real_t> scale);
+    template<class scalar_t>
+    void create_scaled(Indices const& idx, Scale<> scale);
     /// Scale and reorder the Hamiltonian so that idx is at the start of the optimized matrix
-    void create_reordered(Indices const& idx, Scale<real_t> scale);
+    template<class scalar_t>
+    void create_reordered(Indices const& idx, Scale<> scale);
     /// Convert CSR matrix into ELLPACK format
+    template<class scalar_t>
     static num::EllMatrix<scalar_t> convert_to_ellpack(SparseMatrixX<scalar_t> const& csr);
     /// Get optimized indices which map to the given originals
     static Indices reorder_indices(Indices const& original_idx,
@@ -164,9 +169,21 @@ private:
     /// Memory used by a single KPM vector
     size_t vector_memory() const;
 
-    friend struct Stats;
-};
+private:
+    Hamiltonian original_h; ///< original unoptimized Hamiltonian
+    Indices original_idx; ///< original target indices for which the optimization was done
 
-CPB_EXTERN_TEMPLATE_CLASS(OptimizedHamiltonian)
+    VariantMatrix optimized_matrix; ///< reordered for faster compute
+    Indices optimized_idx; ///< reordered target indices in the optimized matrix
+    SliceMap slice_map; ///< slice border indices
+    std::vector<storage_idx_t> reorder_map; ///< mapping from original matrix indices to reordered indices
+
+    MatrixFormat matrix_format;
+    bool is_reordered;
+    Chrono timer;
+
+    friend struct Stats;
+    friend struct Optimize;
+};
 
 }} // namespace cpb::kpm

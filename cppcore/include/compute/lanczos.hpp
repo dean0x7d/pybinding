@@ -90,17 +90,16 @@ real_t lanczos_axpy(real_t a, VectorX<scalar_t> const& v1, VectorX<scalar_t>& v0
 }
 #endif // SIMDPP_USE_NULL
 
-template<class real_t>
 struct LanczosBounds {
-    real_t min; ///< the lowest eigenvalue
-    real_t max; ///< the highest eigenvalue
+    double min; ///< the lowest eigenvalue
+    double max; ///< the highest eigenvalue
     int loops;  ///< number of iterations needed to converge
 };
 
 /// Use the Lanczos algorithm to find the min and max eigenvalues at given precision (%)
-template<class scalar_t, class real_t = num::get_real_t<scalar_t>>
-LanczosBounds<real_t> minmax_eigenvalues(SparseMatrixX<scalar_t> const& matrix,
-                                         double precision_percent) {
+template<class scalar_t>
+LanczosBounds minmax_eigenvalues(SparseMatrixX<scalar_t> const& matrix, double precision_percent) {
+    using real_t = num::get_real_t<scalar_t>;
     simd::scope_disable_denormals guard;
 
     auto v0 = VectorX<scalar_t>::Zero(matrix.rows()).eval();

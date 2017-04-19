@@ -1,9 +1,6 @@
 #pragma once
-#include "numeric/dense.hpp"
-#include "numeric/sparse.hpp"
-
+#include "hamiltonian/Hamiltonian.hpp"
 #include "utils/Chrono.hpp"
-#include "detail/macros.hpp"
 
 namespace cpb { namespace kpm {
 
@@ -26,7 +23,8 @@ struct Scale {
         }
     }
     template<class T>
-    Scale(Scale<T> const& other) : a(static_cast<T>(other.a)), b(static_cast<T>(other.b)) {}
+    Scale(Scale<T> const& other)
+        : a(static_cast<real_t>(other.a)), b(static_cast<real_t>(other.b)) {}
 
     explicit operator bool() { return a != 0; }
 
@@ -40,47 +38,39 @@ struct Scale {
  The bounds can be determined automatically using the Lanczos procedure,
  or set manually by the user. Also computes the KPM scaling factors a and b.
 */
-template<class scalar_t>
 class Bounds {
-    using real_t = num::get_real_t<scalar_t>;
-
-    real_t min; ///< the lowest eigenvalue
-    real_t max; ///< the highest eigenvalue
-    Scale<real_t> factors;
-
-    SparseMatrixX<scalar_t> const* matrix;
-    real_t precision_percent;
-
-    int lanczos_loops = 0;  ///< number of iterations needed to converge the Lanczos procedure
-    Chrono timer;
-
 public:
-    Bounds(SparseMatrixX<scalar_t> const* matrix, real_t precision_percent)
-        : matrix(matrix), precision_percent(precision_percent) {}
+    Bounds(Hamiltonian const& hamiltonian, double precision_percent)
+        : hamiltonian(hamiltonian), precision_percent(precision_percent) {}
     /// Set the energy bounds manually, therefore skipping the Lanczos computation
-    Bounds(real_t min_energy, real_t max_energy)
-        : min(min_energy), max(max_energy), factors(min_energy, max_energy) {}
+    Bounds(double min_energy, double max_energy) : min(min_energy), max(max_energy) {}
 
+    double min_energy() { compute_bounds(); return min; }
+    double max_energy() { compute_bounds(); return max; }
     /// The KPM scaling factors a and b
-    Scale<real_t> scaling_factors() {
-        if (!factors) {
-            compute_factors();
-        }
-        return factors;
-    }
+    Scale<> scaling_factors() { compute_bounds(); return {min, max}; }
 
     /// Return an array with `size` linearly spaced values within the bounds
-    ArrayX<real_t> linspaced(idx_t size) const {
-        return ArrayX<real_t>::LinSpaced(size, min, max);
+    template<class scalar_t>
+    ArrayX<scalar_t> linspaced(idx_t size) {
+        return ArrayX<scalar_t>::LinSpaced(size, static_cast<scalar_t>(min_energy()),
+                                           static_cast<scalar_t>(max_energy()));
     }
 
     std::string report(bool shortform = false) const;
 
 private:
     /// Compute the scaling factors using the Lanczos procedure
-    void compute_factors();
-};
+    void compute_bounds();
 
-CPB_EXTERN_TEMPLATE_CLASS(Bounds)
+private:
+    double min = .0; ///< the lowest eigenvalue
+    double max = .0; ///< the highest eigenvalue
+    int lanczos_loops = 0;  ///< number of iterations needed to converge the Lanczos procedure
+
+    Hamiltonian hamiltonian;
+    double precision_percent;
+    Chrono timer;
+};
 
 }} // namespace cpb::kpm

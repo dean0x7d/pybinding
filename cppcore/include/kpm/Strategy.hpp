@@ -95,9 +95,9 @@ public:
 protected:
     /// KPM moment computation which must be implemented by derived classes
     virtual void compute(DiagonalMoments<scalar_t>&, VectorX<scalar_t>&& r0,
-                         AlgorithmConfig const&, OptimizedHamiltonian<scalar_t> const&) const = 0;
+                         AlgorithmConfig const&, OptimizedHamiltonian const&) const = 0;
     virtual void compute(OffDiagonalMoments<scalar_t>&, VectorX<scalar_t>&& r0,
-                         AlgorithmConfig const&, OptimizedHamiltonian<scalar_t> const&) const = 0;
+                         AlgorithmConfig const&, OptimizedHamiltonian const&) const = 0;
 
 private:
     void compute(DiagonalMoments<scalar_t>&, VectorX<scalar_t>&& r0, AlgorithmConfig const&);
@@ -107,8 +107,8 @@ private:
     SparseMatrixRC<scalar_t> hamiltonian;
     Config config;
 
-    Bounds<scalar_t> bounds;
-    OptimizedHamiltonian<scalar_t> optimized_hamiltonian;
+    Bounds bounds;
+    OptimizedHamiltonian optimized_hamiltonian;
     Stats stats;
 };
 

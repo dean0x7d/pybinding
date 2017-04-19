@@ -19,12 +19,9 @@ Model make_test_model(bool is_double = false, bool is_complex = false) {
 TEST_CASE("OptimizedHamiltonian reordering", "[kpm]") {
     auto const model = make_test_model();
     auto const num_sites = model.system()->num_sites();
+    auto bounds = kpm::Bounds(model.hamiltonian(), kpm::Config{}.lanczos_precision);
 
-    using scalat_t = float;
-    auto const matrix = ham::get_reference<scalat_t>(model.hamiltonian());
-    auto bounds = kpm::Bounds<scalat_t>(&matrix, kpm::Config{}.lanczos_precision);
-
-    auto size_indices = [](kpm::OptimizedHamiltonian<scalat_t> const& oh, int num_moments) {
+    auto size_indices = [](kpm::OptimizedHamiltonian const& oh, int num_moments) {
         auto v = std::vector<idx_t>(num_moments);
         for (auto n = 0; n < num_moments; ++n) {
             v[n] = oh.map().index(n, num_moments);
@@ -34,7 +31,7 @@ TEST_CASE("OptimizedHamiltonian reordering", "[kpm]") {
     auto equals = [](std::vector<idx_t> const& v) { return Catch::Equals(v); };
 
     SECTION("Diagonal") {
-        auto oh = kpm::OptimizedHamiltonian<scalat_t>(&matrix, kpm::MatrixFormat::CSR, true);
+        auto oh = kpm::OptimizedHamiltonian(model.hamiltonian(), kpm::MatrixFormat::CSR, true);
         auto const i = model.system()->find_nearest({0, 0.07f, 0}, "B");
         oh.optimize_for({i, i}, bounds.scaling_factors());
 
@@ -50,7 +47,7 @@ TEST_CASE("OptimizedHamiltonian reordering", "[kpm]") {
     }
 
     SECTION("Off-diagonal") {
-        auto oh = kpm::OptimizedHamiltonian<scalat_t>(&matrix, kpm::MatrixFormat::CSR, true);
+        auto oh = kpm::OptimizedHamiltonian(model.hamiltonian(), kpm::MatrixFormat::CSR, true);
         auto const i = model.system()->find_nearest({0, 0.35f, 0}, "A");
         auto const j1 = model.system()->find_nearest({0, 0.07f, 0}, "B");
         auto const j2 = model.system()->find_nearest({0.12f, 0.14f, 0}, "A");

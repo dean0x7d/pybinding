@@ -1,5 +1,8 @@
 #include "kpm/Stats.hpp"
 
+#include "kpm/Config.hpp"
+#include "kpm/OptimizedHamiltonian.hpp"
+
 namespace cpb { namespace kpm {
 
 namespace {
@@ -23,6 +26,28 @@ namespace {
                                      fmt::with_suffix(s.eps()));
         return format_report(msg, s.moments_timer, shortform);
     }
+}
+
+void Stats::reset(idx_t num_moments, OptimizedHamiltonian const& oh,
+                  AlgorithmConfig const& ac, idx_t multiplier) {
+    this->num_moments = num_moments;
+    uses_full_system = oh.map().uses_full_system(num_moments);
+
+    nnz = oh.num_nonzeros(num_moments, /*optimal_size*/false);
+    opt_nnz = oh.num_nonzeros(num_moments, ac.optimal_size);
+    vec = oh.num_vec_elements(num_moments, /*optimal_size*/false);
+    opt_vec = oh.num_vec_elements(num_moments, ac.optimal_size);
+    this->multiplier = static_cast<double>(multiplier);
+
+    matrix_memory = oh.matrix_memory();
+    vector_memory = oh.vector_memory();
+
+    hamiltonian_timer = oh.timer;
+    moments_timer = {};
+}
+
+double Stats::eps() const {
+    return multiplier * static_cast<double>(opt_nnz) / moments_timer.elapsed_seconds();
 }
 
 double Stats::ops(bool is_diagonal, bool non_unit_vector) const {

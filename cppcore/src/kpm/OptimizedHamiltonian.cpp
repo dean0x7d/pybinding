@@ -12,49 +12,44 @@ SliceMap::SliceMap(std::vector<storage_idx_t> indices, Indices const& optimized_
     offset = static_cast<idx_t>(it - data.begin());
 }
 
-template<class scalar_t>
-void OptimizedHamiltonian<scalar_t>::optimize_for(Indices const& idx, Scale<real_t> scale) {
+struct Optimize {
+    OptimizedHamiltonian& oh;
+    Indices const& idx;
+    Scale<> scale;
+
+    template<class scalar_t>
+    void operator()(SparseMatrixRC<scalar_t> const&) {
+        if (oh.is_reordered) {
+            oh.create_reordered<scalar_t>(idx, scale);
+        } else {
+            oh.create_scaled<scalar_t>(idx, scale);
+        }
+
+        if (oh.matrix_format == MatrixFormat::ELL) {
+            auto const& csr = oh.optimized_matrix.template get<SparseMatrixX<scalar_t>>();
+            oh.optimized_matrix = oh.convert_to_ellpack(csr);
+        }
+    }
+};
+
+void OptimizedHamiltonian::optimize_for(Indices const& idx, Scale<> scale) {
     if (original_idx == idx) {
         return; // already optimized for this idx
     }
 
     timer.tic();
-    if (is_reordered) {
-        create_reordered(idx, scale);
-    } else {
-        create_scaled(idx, scale);
-    }
-
-    if (matrix_format == MatrixFormat::ELL) {
-        auto const& csr = optimized_matrix.template get<SparseMatrixX<scalar_t>>();
-        optimized_matrix = convert_to_ellpack(csr);
-    }
+    original_h.get_variant().match(Optimize{*this, idx, scale});
     timer.toc();
 
     original_idx = idx;
 }
 
 template<class scalar_t>
-void OptimizedHamiltonian<scalar_t>::reorder(SparseMatrixX<scalar_t>& matrix) const {
-    if (reorder_map.empty()) { return; }
+void OptimizedHamiltonian::create_scaled(Indices const& idx, Scale<> s) {
+    using real_t = num::get_real_t<scalar_t>;
+    auto const scale = Scale<real_t>(s);
 
-    auto reordered_matrix = SparseMatrixX<scalar_t>(matrix.rows(), matrix.cols());
-    auto const reserve_per_row = static_cast<int>(sparse::max_nnz_per_row(matrix));
-    reordered_matrix.reserve(ArrayXi::Constant(matrix.rows(), reserve_per_row));
-
-    sparse::make_loop(matrix).for_each([&](idx_t row, idx_t col, scalar_t value) {
-        reordered_matrix.insert(reorder_map[row], reorder_map[col]) = value;
-    });
-
-    reordered_matrix.makeCompressed();
-    matrix.swap(reordered_matrix);
-}
-
-template<class scalar_t>
-void OptimizedHamiltonian<scalar_t>::create_scaled(Indices const& idx, Scale<real_t> scale) {
-    optimized_idx = idx;
-
-    auto const& h = *original_matrix;
+    auto const& h = ham::get_reference<scalar_t>(original_h);
     auto h2 = SparseMatrixX<scalar_t>();
     if (scale.b == 0) { // just scale, no b offset
         h2 = h * (2 / scale.a);
@@ -64,12 +59,17 @@ void OptimizedHamiltonian<scalar_t>::create_scaled(Indices const& idx, Scale<rea
         h2 = (h - I * scale.b) * (2 / scale.a);
     }
     h2.makeCompressed();
+
     optimized_matrix = h2.markAsRValue();
+    optimized_idx = idx;
 }
 
 template<class scalar_t>
-void OptimizedHamiltonian<scalar_t>::create_reordered(Indices const& idx, Scale<real_t> scale) {
-    auto const& h = *original_matrix;
+void OptimizedHamiltonian::create_reordered(Indices const& idx, Scale<> s) {
+    using real_t = num::get_real_t<scalar_t>;
+    auto scale = Scale<real_t>(s);
+
+    auto const& h = ham::get_reference<scalar_t>(original_h);
     auto const system_size = h.rows();
     auto const inverted_a = real_t{2 / scale.a};
 
@@ -147,7 +147,7 @@ void OptimizedHamiltonian<scalar_t>::create_reordered(Indices const& idx, Scale<
 
 template<class scalar_t>
 num::EllMatrix<scalar_t>
-OptimizedHamiltonian<scalar_t>::convert_to_ellpack(SparseMatrixX<scalar_t> const& h2_csr) {
+OptimizedHamiltonian::convert_to_ellpack(SparseMatrixX<scalar_t> const& h2_csr) {
     auto h2_ell = num::EllMatrix<scalar_t>(h2_csr.rows(), h2_csr.cols(),
                                            sparse::max_nnz_per_row(h2_csr));
     auto const h2_csr_loop = sparse::make_loop(h2_csr);
@@ -166,9 +166,8 @@ OptimizedHamiltonian<scalar_t>::convert_to_ellpack(SparseMatrixX<scalar_t> const
     return h2_ell;
 }
 
-template<class scalar_t>
-Indices OptimizedHamiltonian<scalar_t>::reorder_indices(Indices const& original_idx,
-                                                        std::vector<storage_idx_t> const& map) {
+Indices OptimizedHamiltonian::reorder_indices(Indices const& original_idx,
+                                              std::vector<storage_idx_t> const& map) {
     auto const size = original_idx.cols.size();
     ArrayX<storage_idx_t> cols(size);
     for (auto i = 0; i < size; ++i) {
@@ -195,8 +194,7 @@ namespace {
     };
 }
 
-template<class scalar_t>
-size_t OptimizedHamiltonian<scalar_t>::num_nonzeros(idx_t num_moments, bool optimal_size) const {
+size_t OptimizedHamiltonian::num_nonzeros(idx_t num_moments, bool optimal_size) const {
     auto result = size_t{0};
     if (!optimal_size) {
         result = num_moments * var::apply_visitor(NonZeros{size()}, optimized_matrix);
@@ -213,9 +211,7 @@ size_t OptimizedHamiltonian<scalar_t>::num_nonzeros(idx_t num_moments, bool opti
     return result;
 }
 
-template<class scalar_t>
-size_t OptimizedHamiltonian<scalar_t>::num_vec_elements(idx_t num_moments,
-                                                        bool optimal_size) const {
+size_t OptimizedHamiltonian::num_vec_elements(idx_t num_moments, bool optimal_size) const {
     auto result = size_t{0};
     if (!optimal_size) {
         result = num_moments * size();
@@ -248,18 +244,19 @@ namespace {
             return nnz * sizeof(scalar_t) + nnz * sizeof(index_t);
         }
     };
+
+    struct VectorMemory {
+        template<class scalar_t>
+        size_t operator()(SparseMatrixRC<scalar_t> const&) const { return sizeof(scalar_t); }
+    };
 }
 
-template<class scalar_t>
-size_t OptimizedHamiltonian<scalar_t>::matrix_memory() const {
+size_t OptimizedHamiltonian::matrix_memory() const {
     return var::apply_visitor(MatrixMemory{}, optimized_matrix);
 }
 
-template<class scalar_t>
-size_t OptimizedHamiltonian<scalar_t>::vector_memory() const {
-    return size() * sizeof(scalar_t);
+size_t OptimizedHamiltonian::vector_memory() const {
+    return size() * original_h.get_variant().match(VectorMemory{});
 }
-
-CPB_INSTANTIATE_TEMPLATE_CLASS(OptimizedHamiltonian)
 
 }} // namespace cpb::kpm

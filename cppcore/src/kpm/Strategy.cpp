@@ -9,9 +9,7 @@
 namespace cpb { namespace kpm {
 
 namespace {
-    template<class scalar_t>
-    Bounds<scalar_t> reset_bounds(SparseMatrixX<scalar_t> const* hamiltonian,
-                                  Config const& config) {
+    Bounds reset_bounds(Hamiltonian const& hamiltonian, Config const& config) {
         if (config.min_energy == config.max_energy) {
             return {hamiltonian, config.lanczos_precision}; // will be automatically computed
         } else {
@@ -22,8 +20,8 @@ namespace {
 
 template<class scalar_t>
 StrategyTemplate<scalar_t>::StrategyTemplate(SparseMatrixRC<scalar_t> h, Config const& config)
-    : hamiltonian(std::move(h)), config(config), bounds(reset_bounds(hamiltonian.get(), config)),
-      optimized_hamiltonian(hamiltonian.get(), config.matrix_format, config.algorithm.reorder()) {
+    : hamiltonian(std::move(h)), config(config), bounds(reset_bounds(hamiltonian, config)),
+      optimized_hamiltonian(hamiltonian, config.matrix_format, config.algorithm.reorder()) {
     if (config.min_energy > config.max_energy) {
         throw std::invalid_argument("KPM: Invalid energy range specified (min > max).");
     }
@@ -36,8 +34,8 @@ bool StrategyTemplate<scalar_t>::change_hamiltonian(Hamiltonian const& h) {
     }
 
     hamiltonian = ham::get_shared_ptr<scalar_t>(h);
-    optimized_hamiltonian = {hamiltonian.get(), config.matrix_format, config.algorithm.reorder()};
-    bounds = reset_bounds(hamiltonian.get(), config);
+    optimized_hamiltonian = {hamiltonian, config.matrix_format, config.algorithm.reorder()};
+    bounds = reset_bounds(hamiltonian, config);
 
     return true;
 }
@@ -86,10 +84,10 @@ ArrayXd StrategyTemplate<scalar_t>::ldos(idx_t index, ArrayXd const& energy, dou
     stats.reset(num_moments, optimized_hamiltonian, config.algorithm);
 
     auto moments = DiagonalMoments<scalar_t>(num_moments);
-    compute(moments, unit_starter(optimized_hamiltonian), config.algorithm);
+    compute(moments, unit_starter(optimized_hamiltonian, var::tag<scalar_t>{}), config.algorithm);
 
     config.kernel.apply(moments.get());
-    return reconstruct<real_t>(moments.get().real(), energy, scale);
+    return reconstruct<real_t>(moments.get().real(), energy, Scale<real_t>(scale));
 }
 
 template<class scalar_t>
@@ -112,20 +110,20 @@ StrategyTemplate<scalar_t>::greens_vector(idx_t row, std::vector<idx_t> const& c
 
     if (oh.idx().is_diagonal()) {
         auto moments = DiagonalMoments<scalar_t>(num_moments);
-        compute(moments, unit_starter(oh), config.algorithm);
+        compute(moments, unit_starter(oh, var::tag<scalar_t>{}), config.algorithm);
 
         config.kernel.apply(moments.get());
-        return {reconstruct_greens(moments.get(), energy, scale)};
+        return {reconstruct_greens(moments.get(), energy, Scale<real_t>(scale))};
     } else {
         auto moments_vector = MultiUnitCollector<scalar_t>(num_moments, oh.idx());
-        compute(moments_vector, unit_starter(oh), config.algorithm);
+        compute(moments_vector, unit_starter(oh, var::tag<scalar_t>{}), config.algorithm);
 
         for (auto& moments : moments_vector.get()) {
             config.kernel.apply(moments);
         }
 
         return transform<std::vector>(moments_vector.get(), [&](ArrayX<scalar_t> const& moments) {
-            return reconstruct_greens(moments, energy, scale);
+            return reconstruct_greens(moments, energy, Scale<real_t>(scale));
         });
     }
 }
@@ -147,13 +145,14 @@ ArrayXd StrategyTemplate<scalar_t>::dos(ArrayXd const& energy, double broadening
 
     std::mt19937 generator;
     for (auto j = 0; j < num_random; ++j) {
-        compute(moments, random_starter(optimized_hamiltonian, generator), specialized_algorithm);
+        compute(moments, random_starter(optimized_hamiltonian, generator, var::tag<scalar_t>{}),
+                specialized_algorithm);
         total_mu += moments.get();
     }
     total_mu /= static_cast<real_t>(num_random);
 
     config.kernel.apply(total_mu);
-    return reconstruct<real_t>(total_mu.real(), energy, scale);
+    return reconstruct<real_t>(total_mu.real(), energy, Scale<real_t>(scale));
 }
 
 template<class scalar_t>
@@ -181,7 +180,7 @@ ArrayXcd StrategyTemplate<scalar_t>::conductivity(
 
     std::mt19937 generator;
     for (auto j = 0; j < num_random; ++j) {
-        auto r0 = random_starter(optimized_hamiltonian, generator);
+        auto r0 = random_starter(optimized_hamiltonian, generator, var::tag<scalar_t>{});
         auto l0 = (velocity_l * r0).eval();
         compute(moments_l, std::move(l0), specialized_algorithm);
         compute(moments_r, std::move(r0), specialized_algorithm);
@@ -191,8 +190,9 @@ ArrayXcd StrategyTemplate<scalar_t>::conductivity(
     total_mu /= static_cast<real_t>(num_random);
 
     config.kernel.apply(total_mu);
-	return reconstruct_kubo_bastin(total_mu, chemical_potential, bounds.linspaced(num_points),
-                                   temperature, scale);
+	return reconstruct_kubo_bastin(total_mu, chemical_potential,
+                                   bounds.linspaced<real_t>(num_points),
+                                   temperature, Scale<real_t>(scale));
 }
 
 template<class scalar_t>
