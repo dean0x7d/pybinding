@@ -2,35 +2,26 @@
 #include "kpm/OptimizedHamiltonian.hpp"
 
 #include "numeric/dense.hpp"
-#include "numeric/constant.hpp"
-#include "numeric/random.hpp"
 #include "compute/detail.hpp"
 
 namespace cpb { namespace kpm {
 
-/// Return the unit vector starter r0 for the KPM procedure (`oh` encodes the unit index)
+/// Produce the r0 starter vector for the KPM procedure
+using Starter = std::function<var::Complex<VectorX> (var::scalar_tag)>;
+
+/// Starter vector equal to the constant `alpha` (`oh` is needed for reordering)
+Starter constant_starter(OptimizedHamiltonian const& oh, VectorXcd const& alpha);
+
+/// Unit vector starter (`oh` encodes the unit index)
+Starter unit_starter(OptimizedHamiltonian const& oh);
+
+/// Starter vector for the stochastic KPM procedure (`oh` is needed for size and reordering)
+Starter random_starter(OptimizedHamiltonian const& oh, VariantCSR const& op = {});
+
+/// Construct a concrete scalar type r0 vector based on a `Starter`
 template<class scalar_t>
-VectorX<scalar_t> unit_starter(OptimizedHamiltonian const& oh, var::tag<scalar_t>) {
-    auto r0 = VectorX<scalar_t>::Zero(oh.size()).eval();
-    r0[oh.idx().row] = 1;
-    return r0;
-}
-
-/// Return the starter vector r0 for the stochastic KPM procedure
-template<class real_t>
-VectorX<real_t> random_starter(OptimizedHamiltonian const& oh, std::mt19937& generator,
-                               var::tag<real_t>) {
-    auto r0 = num::make_random<VectorX<real_t>>(oh.size(), generator);
-    oh.reorder(r0); // needed to maintain consistent results for all optimizations
-    return transform<VectorX>(r0, [](real_t x) -> real_t { return (x < 0.5f) ? -1.f : 1.f; });
-}
-
-template<class real_t, class complex_t = std::complex<real_t>>
-VectorX<complex_t> random_starter(OptimizedHamiltonian const& oh, std::mt19937& generator,
-                                  var::tag<std::complex<real_t>>) {
-    auto phase = num::make_random<ArrayX<real_t>>(oh.size(), generator);
-    oh.reorder(phase);
-    return exp(complex_t{2 * constant::pi * constant::i1} * phase);
+VectorX<scalar_t> make_r0(Starter const& starter) {
+    return starter(var::tag<scalar_t>{}).template get<VectorX<scalar_t>>();
 }
 
 /// Return the vector following the starter: r1 = h2 * r0 * 0.5

@@ -19,4 +19,6 @@ using Complex = var::variant<C<float>..., C<std::complex<float>>...,
 
 template<class T> struct tag {};
 
+using scalar_tag = var::Complex<tag>;
+
 }} // namespace cpb::var

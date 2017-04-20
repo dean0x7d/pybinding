@@ -29,6 +29,8 @@ struct Optimize {
             auto const& csr = oh.optimized_matrix.template get<SparseMatrixX<scalar_t>>();
             oh.optimized_matrix = oh.convert_to_ellpack(csr);
         }
+
+        oh.tag = var::tag<scalar_t>{};
     }
 };
 

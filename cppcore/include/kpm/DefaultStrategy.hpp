@@ -11,9 +11,9 @@ class DefaultStrategy final : public StrategyTemplate<scalar_t> {
 public:
     using StrategyTemplate<scalar_t>::StrategyTemplate;
 
-    void compute(DiagonalMoments<scalar_t>& m, VectorX<scalar_t>&& r0,
+    void compute(DiagonalMoments<scalar_t>& m, Starter const&,
                  AlgorithmConfig const& ac, OptimizedHamiltonian const& oh) const final;
-    void compute(OffDiagonalMoments<scalar_t>& m, VectorX<scalar_t>&& r0,
+    void compute(OffDiagonalMoments<scalar_t>& m, Starter const&,
                  AlgorithmConfig const& ac, OptimizedHamiltonian const& oh) const final;
 };
 

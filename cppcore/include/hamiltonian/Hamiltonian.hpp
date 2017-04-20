@@ -10,6 +10,36 @@
 
 namespace cpb {
 
+/**
+ Stores a CSR matrix variant of various scalar types: real or complex, single or double precision.
+ The internal storage is reference counted which makes instances of this class relatively cheap
+ to copy. The matrix itself is immutable (for safety with the reference counting).
+ */
+class VariantCSR {
+    using Variant = var::Complex<SparseMatrixX>;
+    std::shared_ptr<Variant const> ptr;
+
+public:
+    VariantCSR() = default;
+    template<class scalar_t>
+    VariantCSR(SparseMatrixX<scalar_t> const& m) : ptr(std::make_shared<Variant>(m)) {}
+    template<class scalar_t>
+    VariantCSR(SparseMatrixX<scalar_t>&& m) : ptr(std::make_shared<Variant>(m.markAsRValue())) {}
+
+    explicit operator bool() const { return static_cast<bool>(ptr); }
+    void reset() { ptr.reset(); }
+
+    template<class scalar_t>
+    auto get() const -> decltype(ptr->template get<SparseMatrixX<scalar_t>>()) {
+        return ptr->template get<SparseMatrixX<scalar_t>>();
+    }
+
+    template<class... Args>
+    auto match(Args&&... args) -> decltype(ptr->match(std::forward<Args>(args)...)) {
+        return ptr->match(std::forward<Args>(args)...);
+    }
+};
+
 template<class scalar_t>
 using SparseMatrixRC = std::shared_ptr<SparseMatrixX<scalar_t> const>;
 

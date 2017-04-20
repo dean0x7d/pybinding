@@ -1,6 +1,5 @@
 #include "kpm/Strategy.hpp"
 
-#include "kpm/starters.hpp"
 #ifdef CPB_USE_CUDA
 # include "cuda/kpm/calc_moments.hpp"
 #endif
@@ -49,13 +48,12 @@ ArrayXcd StrategyTemplate<scalar_t>::moments(idx_t num_moments, VectorXcd const&
     optimized_hamiltonian.optimize_for({0, 0}, bounds.scaling_factors());
     stats.reset(num_moments, optimized_hamiltonian, specialized_algorithm);
 
-    auto left_vec = num::force_cast<scalar_t>(alpha);
-    optimized_hamiltonian.reorder(left_vec);
+    auto const starter = constant_starter(optimized_hamiltonian, alpha);
 
     auto moments = [&] {
         if (beta.size() == 0 && op.size() == 0) {
             auto diagonal_moments = DiagonalMoments<scalar_t>(round_num_moments(num_moments));
-            compute(diagonal_moments, std::move(left_vec), specialized_algorithm);
+            compute(diagonal_moments, starter, specialized_algorithm);
             return diagonal_moments.get();
         } else {
             auto right_vec = num::force_cast<scalar_t>(beta.size() != 0 ? beta : alpha);
@@ -66,7 +64,7 @@ ArrayXcd StrategyTemplate<scalar_t>::moments(idx_t num_moments, VectorXcd const&
             auto generic_moments = GenericMoments<scalar_t>(
                 round_num_moments(num_moments), std::move(right_vec), matrix.markAsRValue()
             );
-            compute(generic_moments, std::move(left_vec), specialized_algorithm);
+            compute(generic_moments, starter, specialized_algorithm);
             return generic_moments.get();
         }
     }();
@@ -84,7 +82,7 @@ ArrayXd StrategyTemplate<scalar_t>::ldos(idx_t index, ArrayXd const& energy, dou
     stats.reset(num_moments, optimized_hamiltonian, config.algorithm);
 
     auto moments = DiagonalMoments<scalar_t>(num_moments);
-    compute(moments, unit_starter(optimized_hamiltonian, var::tag<scalar_t>{}), config.algorithm);
+    compute(moments, unit_starter(optimized_hamiltonian), config.algorithm);
 
     config.kernel.apply(moments.get());
     return reconstruct<real_t>(moments.get().real(), energy, Scale<real_t>(scale));
@@ -110,13 +108,13 @@ StrategyTemplate<scalar_t>::greens_vector(idx_t row, std::vector<idx_t> const& c
 
     if (oh.idx().is_diagonal()) {
         auto moments = DiagonalMoments<scalar_t>(num_moments);
-        compute(moments, unit_starter(oh, var::tag<scalar_t>{}), config.algorithm);
+        compute(moments, unit_starter(oh), config.algorithm);
 
         config.kernel.apply(moments.get());
         return {reconstruct_greens(moments.get(), energy, Scale<real_t>(scale))};
     } else {
         auto moments_vector = MultiUnitCollector<scalar_t>(num_moments, oh.idx());
-        compute(moments_vector, unit_starter(oh, var::tag<scalar_t>{}), config.algorithm);
+        compute(moments_vector, unit_starter(oh), config.algorithm);
 
         for (auto& moments : moments_vector.get()) {
             config.kernel.apply(moments);
@@ -143,10 +141,9 @@ ArrayXd StrategyTemplate<scalar_t>::dos(ArrayXd const& energy, double broadening
     auto moments = DiagonalMoments<scalar_t>(num_moments);
     auto total_mu = ArrayX<scalar_t>::Zero(num_moments).eval();
 
-    std::mt19937 generator;
+    auto starter = random_starter(optimized_hamiltonian);
     for (auto j = 0; j < num_random; ++j) {
-        compute(moments, random_starter(optimized_hamiltonian, generator, var::tag<scalar_t>{}),
-                specialized_algorithm);
+        compute(moments, starter, specialized_algorithm);
         total_mu += moments.get();
     }
     total_mu /= static_cast<real_t>(num_random);
@@ -169,22 +166,19 @@ ArrayXcd StrategyTemplate<scalar_t>::conductivity(
     optimized_hamiltonian.optimize_for({0, 0}, scale);
     stats.reset(num_moments, optimized_hamiltonian, specialized_algorithm, num_random);
 
-    auto velocity_l = velocity(*hamiltonian, left_coords);
-    auto velocity_r = velocity(*hamiltonian, right_coords);
-    optimized_hamiltonian.reorder(velocity_l);
-    optimized_hamiltonian.reorder(velocity_r);
+    // On the left, the velocity operator is only applied to the starter
+    auto starter_l = random_starter(optimized_hamiltonian, velocity(*hamiltonian, left_coords));
+    auto moments_l = DenseMatrixCollector<scalar_t>(num_moments, optimized_hamiltonian);
 
-    auto moments_l = DenseMatrixCollector<scalar_t>(num_moments, hamiltonian->rows());
-    auto moments_r = DenseMatrixCollector<scalar_t>(num_moments, hamiltonian->rows(), velocity_r);
+    // On the right, the operator is applied at collection time to each vector
+    auto starter_r = random_starter(optimized_hamiltonian);
+    auto moments_r = DenseMatrixCollector<scalar_t>(num_moments, optimized_hamiltonian,
+                                                    velocity(*hamiltonian, right_coords));
+
     auto total_mu = MatrixX<scalar_t>::Zero(num_moments, num_moments).eval();
-
-    std::mt19937 generator;
     for (auto j = 0; j < num_random; ++j) {
-        auto r0 = random_starter(optimized_hamiltonian, generator, var::tag<scalar_t>{});
-        auto l0 = (velocity_l * r0).eval();
-        compute(moments_l, std::move(l0), specialized_algorithm);
-        compute(moments_r, std::move(r0), specialized_algorithm);
-
+        compute(moments_l, starter_l, specialized_algorithm);
+        compute(moments_r, starter_r, specialized_algorithm);
         total_mu += moments_l.matrix() * moments_r.matrix().adjoint();
     }
     total_mu /= static_cast<real_t>(num_random);
@@ -203,18 +197,18 @@ std::string StrategyTemplate<scalar_t>::report(bool shortform) const {
 }
 
 template<class scalar_t>
-void StrategyTemplate<scalar_t>::compute(DiagonalMoments<scalar_t>& m, VectorX<scalar_t>&& r0,
+void StrategyTemplate<scalar_t>::compute(DiagonalMoments<scalar_t>& m, Starter const& starter,
                                          AlgorithmConfig const& ac) {
     stats.moments_timer.tic();
-    compute(m, std::move(r0), ac, optimized_hamiltonian);
+    compute(m, starter, ac, optimized_hamiltonian);
     stats.moments_timer.toc_accumulate();
 }
 
 template<class scalar_t>
-void StrategyTemplate<scalar_t>::compute(OffDiagonalMoments<scalar_t>& m, VectorX<scalar_t>&& r0,
+void StrategyTemplate<scalar_t>::compute(OffDiagonalMoments<scalar_t>& m, Starter const& starter,
                                          AlgorithmConfig const& ac) {
     stats.moments_timer.tic();
-    compute(m, std::move(r0), ac, optimized_hamiltonian);
+    compute(m, starter, ac, optimized_hamiltonian);
     stats.moments_timer.toc_accumulate();
 }
 

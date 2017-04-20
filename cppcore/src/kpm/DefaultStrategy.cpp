@@ -1,6 +1,5 @@
 #include "kpm/DefaultStrategy.hpp"
 
-#include "kpm/starters.hpp"
 #include "compute/kernel_polynomial.hpp"
 #include "kpm/calc_moments.hpp"
 
@@ -11,7 +10,7 @@ namespace {
 template<class scalar_t>
 struct ComputeDiagonal {
     DiagonalMoments<scalar_t>& moments;
-    VectorX<scalar_t>& r0;
+    Starter const& starter;
     SliceMap const& map;
     AlgorithmConfig const& config;
 
@@ -25,6 +24,7 @@ struct ComputeDiagonal {
         using namespace calc_moments;
         simd::scope_disable_denormals guard;
 
+        auto r0 = make_r0<scalar_t>(starter);
         auto r1 = make_r1(h2, r0);
         moments.collect_initial(r0, r1);
 
@@ -43,7 +43,7 @@ struct ComputeDiagonal {
 template<class scalar_t>
 struct ComputeOffDiagonal {
     OffDiagonalMoments<scalar_t>& moments;
-    VectorX<scalar_t>& r0;
+    Starter const& starter;
     SliceMap const& map;
     AlgorithmConfig const& config;
 
@@ -57,6 +57,7 @@ struct ComputeOffDiagonal {
         using namespace calc_moments;
         simd::scope_disable_denormals guard;
 
+        auto r0 = make_r0<scalar_t>(starter);
         auto r1 = make_r1(h2, r0);
         moments.collect_initial(r0, r1);
 
@@ -76,18 +77,18 @@ struct ComputeOffDiagonal {
 
 template<class scalar_t>
 void DefaultStrategy<scalar_t>::compute(
-    DiagonalMoments<scalar_t>& m, VectorX<scalar_t>&& r0,
+    DiagonalMoments<scalar_t>& m, Starter const& starter,
     AlgorithmConfig const& ac, OptimizedHamiltonian const& oh
 ) const {
-    oh.matrix().match(ComputeDiagonal<scalar_t>{m, r0, oh.map(), ac});
+    oh.matrix().match(ComputeDiagonal<scalar_t>{m, starter, oh.map(), ac});
 }
 
 template<class scalar_t>
 void DefaultStrategy<scalar_t>::compute(
-    OffDiagonalMoments<scalar_t>& m, VectorX<scalar_t>&& r0,
+    OffDiagonalMoments<scalar_t>& m, Starter const& starter,
     AlgorithmConfig const& ac, OptimizedHamiltonian const& oh
 ) const {
-    oh.matrix().match(ComputeOffDiagonal<scalar_t>{m, r0, oh.map(), ac});
+    oh.matrix().match(ComputeOffDiagonal<scalar_t>{m, starter, oh.map(), ac});
 }
 
 CPB_INSTANTIATE_TEMPLATE_CLASS(DefaultStrategy)

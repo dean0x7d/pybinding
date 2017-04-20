@@ -124,8 +124,13 @@ class DenseMatrixCollector : public OffDiagonalMoments<scalar_t> {
     using VectorRef = typename OffDiagonalMoments<scalar_t>::VectorRef;
 
 public:
-    DenseMatrixCollector(idx_t num_moments, idx_t ham_size, SparseMatrixX<scalar_t> const& op = {})
-        : data(num_moments, ham_size), op(op) {}
+    DenseMatrixCollector(idx_t num_moments, OptimizedHamiltonian const& oh,
+                         SparseMatrixX<scalar_t> const& csr_operator = {})
+        : data(num_moments, oh.size()), op(csr_operator) {
+        if (op.size() != 0) {
+            oh.reorder(op);
+        }
+    }
 
     MatrixX<scalar_t>& matrix() { return data; }
 

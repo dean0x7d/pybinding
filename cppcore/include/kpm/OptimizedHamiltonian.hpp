@@ -145,6 +145,7 @@ public:
     Indices const& idx() const { return optimized_idx; }
     SliceMap const& map() const { return slice_map; }
     VariantMatrix const& matrix() const { return optimized_matrix; }
+    var::scalar_tag scalar_tag() const { return tag; }
 
 private:
     /// Just scale the Hamiltonian: H2 = (H - I*b) * (2/a)
@@ -174,6 +175,7 @@ private:
     Indices original_idx; ///< original target indices for which the optimization was done
 
     VariantMatrix optimized_matrix; ///< reordered for faster compute
+    var::scalar_tag tag; ///< indicates the scalar type of the matrix
     Indices optimized_idx; ///< reordered target indices in the optimized matrix
     SliceMap slice_map; ///< slice border indices
     std::vector<storage_idx_t> reorder_map; ///< mapping from original matrix indices to reordered indices

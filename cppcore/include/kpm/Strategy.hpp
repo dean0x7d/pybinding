@@ -6,6 +6,7 @@
 #include "kpm/Config.hpp"
 #include "kpm/Kernel.hpp"
 #include "kpm/OptimizedHamiltonian.hpp"
+#include "kpm/Starter.hpp"
 #include "kpm/Moments.hpp"
 #include "kpm/Stats.hpp"
 
@@ -94,14 +95,14 @@ public:
 
 protected:
     /// KPM moment computation which must be implemented by derived classes
-    virtual void compute(DiagonalMoments<scalar_t>&, VectorX<scalar_t>&& r0,
+    virtual void compute(DiagonalMoments<scalar_t>&, Starter const&,
                          AlgorithmConfig const&, OptimizedHamiltonian const&) const = 0;
-    virtual void compute(OffDiagonalMoments<scalar_t>&, VectorX<scalar_t>&& r0,
+    virtual void compute(OffDiagonalMoments<scalar_t>&, Starter const&,
                          AlgorithmConfig const&, OptimizedHamiltonian const&) const = 0;
 
 private:
-    void compute(DiagonalMoments<scalar_t>&, VectorX<scalar_t>&& r0, AlgorithmConfig const&);
-    void compute(OffDiagonalMoments<scalar_t>&, VectorX<scalar_t>&& r0, AlgorithmConfig const&);
+    void compute(DiagonalMoments<scalar_t>&, Starter const&, AlgorithmConfig const&);
+    void compute(OffDiagonalMoments<scalar_t>&, Starter const&, AlgorithmConfig const&);
 
 private:
     SparseMatrixRC<scalar_t> hamiltonian;
