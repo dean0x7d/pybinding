@@ -527,8 +527,8 @@ class Structure:
 
     def __getitem__(self, idx):
         """Same rules as numpy indexing"""
-        return self.__class__(self._sites[idx], self._hoppings[idx],
-                              [b[idx] for b in self._boundaries])
+        return Structure(self._sites[idx], self._hoppings[idx],
+                         [b[idx] for b in self._boundaries])
 
     def cropped(self, **limits):
         """Return a copy which retains only the sites within the given limits
