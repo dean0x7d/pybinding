@@ -12,7 +12,7 @@ from .utils import with_defaults, rotate_axes
 from .support.alias import AliasArray
 from .support.fuzzy_set import FuzzySet
 from .support.structure import AbstractSites, Sites
-from .results import Structure
+from .results import Structure, StructureMap
 
 __all__ = ['Sites', 'System', 'plot_hoppings', 'plot_periodic_boundaries', 'plot_sites',
            'structure_plot_properties']
@@ -65,6 +65,20 @@ class System(Structure):
         """:class:`.Lattice` specification"""
         return Lattice.from_impl(self.impl.lattice)
 
+    @property
+    def hamiltonian_size(self) -> int:
+        """The size of the Hamiltonian matrix constructed from this system
+
+        Takes into account the number of orbitals/spins at each lattice site 
+        which makes `hamiltonian_size` >= `num_sites`.
+        """
+        return self.impl.hamiltonian_size
+
+    def with_data(self, data) -> StructureMap:
+        """Map some data to this system"""
+        data = self.reduce_orbitals(data)
+        return StructureMap(data, self._sites, self._hoppings, self._boundaries)
+
     def find_nearest(self, position, sublattice=""):
         """Find the index of the atom closest to the given position
 
@@ -99,6 +113,38 @@ class System(Structure):
         array_like
         """
         return self.impl.to_hamiltonian_indices(system_idx)
+
+    def reduce_orbitals(self, data):
+        """Sum up the contributions of individual orbitals in the given data
+
+        Takes a 1D array of `hamiltonian_size` and returns a 1D array of `num_sites` size
+        where the multiple orbital data has been reduced per site.
+
+        Parameters
+        ----------
+        data : array_like
+            Must be 1D and the equal to the size of the Hamiltonian matrix
+
+        Returns
+        -------
+        array_like
+        """
+        data = np.atleast_1d(data)
+        if data.size == self.num_sites:
+            return data
+        if data.ndim != 1 or data.size != self.hamiltonian_size:
+            raise RuntimeError("The given data does not match the Hamiltonian size")
+
+        start = 0
+        reduced_data = []
+        cs = self.impl.compressed_sublattices
+
+        for nsites, norb in zip(cs.site_counts, cs.orbital_counts):
+            end = start + nsites * norb
+            reduced_data.append(data[start:end].reshape((-1, norb)).sum(axis=1))
+            start = end
+
+        return np.concatenate(reduced_data)
 
     def plot(self, num_periods=1, **kwargs):
         """Plot the structure: sites, hoppings and periodic boundaries (if any)

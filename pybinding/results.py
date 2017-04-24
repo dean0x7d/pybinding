@@ -224,6 +224,9 @@ class SpatialMap:
         else:
             self._sites = Sites(positions, sublattices)
 
+        if self.num_sites != data.size:
+            raise RuntimeError("Data size doesn't match number of sites")
+
     @property
     def num_sites(self) -> int:
         """Total number of lattice sites"""

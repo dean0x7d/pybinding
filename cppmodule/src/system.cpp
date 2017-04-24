@@ -17,6 +17,9 @@ void wrap_system(py::module& m) {
 
     py::class_<CompressedSublattices>(m, "CompressedSublattices")
         .def("decompressed", [](CompressedSublattices const& c) { return c.decompressed(); })
+        .def_property_readonly("alias_ids", &CompressedSublattices::alias_ids)
+        .def_property_readonly("site_counts", &CompressedSublattices::site_counts)
+        .def_property_readonly("orbital_counts", &CompressedSublattices::orbital_counts)
         .def("__getstate__", [](CompressedSublattices const& c) {
             return py::dict("alias_ids"_a=c.alias_ids(), "site_counts"_a=c.site_counts(),
                             "orbital_counts"_a=c.orbital_counts());
@@ -74,6 +77,7 @@ void wrap_system(py::module& m) {
         .def_readonly("compressed_sublattices", &System::compressed_sublattices)
         .def_readonly("hopping_blocks", &System::hopping_blocks)
         .def_readonly("boundaries", &System::boundaries)
+        .def_property_readonly("hamiltonian_size", &System::hamiltonian_size)
         .def("__getstate__", [](System const& s) {
             return py::dict("lattice"_a=s.lattice, "positions"_a=s.positions,
                             "compressed_sublattices"_a=s.compressed_sublattices,

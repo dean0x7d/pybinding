@@ -1,5 +1,11 @@
 # Changelog
 
+### v0.9.1 | in development
+
+* Fixed `Solver.calc_spatial_ldos` and `Solver.calc_probability` returning single-orbital results
+  for multi-orbital models.
+
+
 ### v0.9.0 | 2017-04-14
 
 ##### Updated requirements
