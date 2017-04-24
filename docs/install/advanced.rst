@@ -16,7 +16,7 @@ installing some dependencies.
 .. rubric:: Windows
 
 #. Install the `Visual C++ 2015 Runtime
-   <https://www.microsoft.com/en-us/download/details.aspx?id=48145>`_.
+   <https://www.microsoft.com/en-us/download/details.aspx?id=53587>`_.
 
 #. Install numpy, scipy and matplotlib binaries from `Christoph Gohlke
    <http://www.lfd.uci.edu/~gohlke/pythonlibs/>`_.
