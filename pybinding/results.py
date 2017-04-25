@@ -237,6 +237,10 @@ class SpatialMap:
         """1D array of values for each site, i.e. maps directly to x, y, z site coordinates"""
         return self._data
 
+    @data.setter
+    def data(self, value):
+        self._data = value
+
     @property
     def positions(self) -> Positions:
         """Lattice site positions. Named tuple with x, y, z fields, each a 1D array."""
