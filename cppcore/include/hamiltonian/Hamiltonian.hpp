@@ -35,7 +35,7 @@ public:
     }
 
     template<class... Args>
-    auto match(Args&&... args) -> decltype(ptr->match(std::forward<Args>(args)...)) {
+    auto match(Args&&... args) const -> decltype(ptr->match(std::forward<Args>(args)...)) {
         return ptr->match(std::forward<Args>(args)...);
     }
 };

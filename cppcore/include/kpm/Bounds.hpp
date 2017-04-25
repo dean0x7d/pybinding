@@ -51,11 +51,7 @@ public:
     Scale<> scaling_factors() { compute_bounds(); return {min, max}; }
 
     /// Return an array with `size` linearly spaced values within the bounds
-    template<class scalar_t>
-    ArrayX<scalar_t> linspaced(idx_t size) {
-        return ArrayX<scalar_t>::LinSpaced(size, static_cast<scalar_t>(min_energy()),
-                                           static_cast<scalar_t>(max_energy()));
-    }
+    ArrayXd linspaced(idx_t size) { return ArrayXd::LinSpaced(size, min_energy(), max_energy()); }
 
     std::string report(bool shortform = false) const;
 

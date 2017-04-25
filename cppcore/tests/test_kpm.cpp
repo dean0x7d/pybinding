@@ -71,8 +71,8 @@ struct TestGreensResult {
     TestGreensResult() = default;
 };
 
-template<template<class> class Strategy>
-std::vector<TestGreensResult> test_kpm_strategy(std::vector<kpm::Config> const& configs) {
+std::vector<TestGreensResult> test_kpm_strategy(kpm::Compute const& compute,
+                                                std::vector<kpm::Config> const& configs) {
     constexpr auto pi = double{constant::pi};
     auto results = std::vector<TestGreensResult>();
 
@@ -92,27 +92,26 @@ std::vector<TestGreensResult> test_kpm_strategy(std::vector<kpm::Config> const& 
             auto unoptimized_result = TestGreensResult();
             for (auto opt_level = size_t{0}; opt_level < configs.size(); ++opt_level) {
                 INFO("opt_level: " << opt_level);
-                auto strategy = make_kpm_strategy<Strategy>(model.hamiltonian(),
-                                                            configs[opt_level]);
+                auto core = kpm::Core(model.hamiltonian(), compute, configs[opt_level]);
 
-                auto const gs = strategy->greens_vector(i, cols, energy_range, broadening);
+                auto const gs = core.greens_vector(i, cols, energy_range, broadening);
                 REQUIRE(gs.size() == cols.size());
                 REQUIRE_FALSE(gs[0].isApprox(gs[1], precision));
                 REQUIRE_FALSE(gs[1].isApprox(gs[2], precision));
 
-                strategy->change_hamiltonian(model.hamiltonian());
-                auto const g_ii = strategy->greens(i, i, energy_range, broadening);
+                core.set_hamiltonian(model.hamiltonian());
+                auto const g_ii = core.greens(i, i, energy_range, broadening);
                 REQUIRE(g_ii.isApprox(gs[0], precision));
 
-                auto const g_ij = strategy->greens(i, j, energy_range, broadening);
+                auto const g_ij = core.greens(i, j, energy_range, broadening);
                 REQUIRE(g_ij.isApprox(gs[1], precision));
 
                 if (!is_complex) {
-                    auto const g_ji = strategy->greens(j, i, energy_range, broadening);
+                    auto const g_ji = core.greens(j, i, energy_range, broadening);
                     REQUIRE(g_ij.isApprox(g_ji, precision));
                 }
 
-                auto const ldos = strategy->ldos(i, energy_range, broadening);
+                auto const ldos = core.ldos(i, energy_range, broadening);
                 REQUIRE(ldos.isApprox(-1/pi * g_ii.imag(), precision));
 
                 if (opt_level == 0) {
@@ -130,7 +129,7 @@ std::vector<TestGreensResult> test_kpm_strategy(std::vector<kpm::Config> const& 
     return results;
 }
 
-TEST_CASE("KPM strategy", "[kpm]") {
+TEST_CASE("KPM core", "[kpm]") {
     auto make_config = [](kpm::MatrixFormat matrix_format, bool optimal_size, bool interleaved) {
         auto config = kpm::Config{};
         config.matrix_format = matrix_format;
@@ -140,7 +139,7 @@ TEST_CASE("KPM strategy", "[kpm]") {
     };
 
 #ifndef CPB_USE_CUDA
-    test_kpm_strategy<kpm::DefaultStrategy>({
+    test_kpm_strategy(kpm::DefaultCompute(), {
         make_config(kpm::MatrixFormat::CSR, false, false),
         make_config(kpm::MatrixFormat::CSR, true,  false),
         make_config(kpm::MatrixFormat::CSR, false,  true),

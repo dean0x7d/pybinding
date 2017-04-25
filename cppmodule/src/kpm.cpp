@@ -5,12 +5,11 @@ using namespace cpb;
 
 namespace {
 
-template<template<class> class Strategy>
-void wrap_kpm_strategy(py::module& m, char const* name) {
+void wrap_kpm_strategy(py::module& m, char const* name, kpm::Compute const& compute) {
     auto const kpm_defaults = kpm::Config();
     m.def(
         name,
-        [](Model const& model, std::pair<float, float> energy, kpm::Kernel const& kernel,
+        [compute](Model const& model, std::pair<float, float> energy, kpm::Kernel const& kernel,
            std::string matrix_format, bool optimal_size, bool interleaved, float lanczos) {
             kpm::Config config;
             config.min_energy = energy.first;
@@ -22,7 +21,7 @@ void wrap_kpm_strategy(py::module& m, char const* name) {
             config.algorithm.interleaved = interleaved;
             config.lanczos_precision = lanczos;
 
-            return make_kpm<Strategy>(model, config);
+            return KPM(model, compute, config);
         },
         "model"_a,
         "energy_range"_a=py::make_tuple(kpm_defaults.min_energy, kpm_defaults.max_energy),
@@ -88,21 +87,17 @@ void wrap_greens(py::module& m) {
         })
         .def("report", &KPM::report, "shortform"_a=false)
         .def_property("model", &KPM::get_model, &KPM::set_model)
-        .def_property_readonly("system", &KPM::system)
+        .def_property_readonly("system", [](KPM const& kpm) { return kpm.get_model().system(); })
         .def_property_readonly("scaling_factors", [](KPM& kpm) {
-            auto const s = kpm.get_strategy().scaling_factors();
+            auto const s = kpm.get_core().scaling_factors();
             return py::make_tuple(s.a, s.b);
         })
         .def_property_readonly("kernel", [](KPM& kpm) {
-            return kpm.get_strategy().get_config().kernel;
+            return kpm.get_core().get_config().kernel;
         })
-        .def_property_readonly("stats", &KPM::get_stats);
+        .def_property_readonly("stats", [](KPM& kpm) { return kpm.get_core().get_stats(); });
 
-    wrap_kpm_strategy<kpm::DefaultStrategy>(m, "kpm");
-
-#ifdef CPB_USE_CUDA
-    wrap_kpm_strategy<kpm::CudaStrategy>(m, "kpm_cuda");
-#endif
+    wrap_kpm_strategy(m, "kpm", kpm::DefaultCompute());
 
     py::class_<kpm::OptimizedHamiltonian>(m, "OptimizedHamiltonian")
         .def("__init__", [](kpm::OptimizedHamiltonian& self, Hamiltonian const& h, int index) {

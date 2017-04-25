@@ -26,15 +26,20 @@ struct Kernel {
 
     /// Apply the kernel damping to an array of moments
     template<class scalar_t>
-    void apply(ArrayX<scalar_t>& moments) const {
+    void operator()(ArrayX<scalar_t>& moments) const {
         using real_t = num::get_real_t<scalar_t>;
         auto const N = static_cast<int>(moments.size());
         moments *= damping_coefficients(N).template cast<real_t>();
     }
 
+    template<class scalar_t>
+    void operator()(std::vector<ArrayX<scalar_t>>& moments) const {
+        for (auto& m : moments) { operator()(m); }
+    }
+
     /// Apply the kernel damping to a matrix of moments
     template<class scalar_t>
-    void apply(MatrixX<scalar_t>& moments) const {
+    void operator()(MatrixX<scalar_t>& moments) const {
         using real_t = num::get_real_t<scalar_t>;
         assert(moments.rows() == moments.cols());
 

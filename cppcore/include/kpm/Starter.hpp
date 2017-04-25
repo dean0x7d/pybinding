@@ -20,7 +20,7 @@ Starter random_starter(OptimizedHamiltonian const& oh, VariantCSR const& op = {}
 
 /// Construct a concrete scalar type r0 vector based on a `Starter`
 template<class scalar_t>
-VectorX<scalar_t> make_r0(Starter const& starter) {
+VectorX<scalar_t> make_r0(Starter const& starter, var::tag<VectorX<scalar_t>>) {
     return starter(var::tag<scalar_t>{}).template get<VectorX<scalar_t>>();
 }
 

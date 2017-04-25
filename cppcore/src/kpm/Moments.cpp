@@ -2,82 +2,95 @@
 
 namespace cpb { namespace kpm {
 
-template<class scalar_t>
-void DiagonalMoments<scalar_t>::collect_initial(VectorRef r0, VectorRef r1) {
-    m0 = moments[0] = r0.squaredNorm() * scalar_t{0.5};
-    m1 = moments[1] = r1.dot(r0);
-}
+namespace {
 
-template<class scalar_t>
-void DiagonalMoments<scalar_t>::collect(idx_t n, scalar_t m2, scalar_t m3) {
-    assert(n >= 2 && n <= size() / 2);
-    moments[2 * (n - 1)] = scalar_t{2} * (m2 - m0);
-    moments[2 * (n - 1) + 1] = scalar_t{2} * m3 - m1;
-}
+struct InitMatrix {
+    idx_t size;
 
-template<class scalar_t>
-void GenericMoments<scalar_t>::collect_initial(VectorRef r0, VectorRef r1) {
-    if (op.size() != 0) {
-        moments[0] = beta.dot(op * r0);
-        moments[1] = beta.dot(op * r1);
+    template<class scalar_t>
+    var::Complex<MatrixX> operator()(var::tag<scalar_t>) const {
+        return MatrixX<scalar_t>::Zero(size, size).eval();
+    }
+};
+
+struct ArrayAdd {
+    var::Complex<ArrayX> const& other;
+
+    template<class scalar_t>
+    void operator()(ArrayX<scalar_t>& result) const {
+        result += other.template get<ArrayX<scalar_t>>();
+    }
+};
+
+struct MatrixMulAdd {
+    var::Complex<MatrixX>& result;
+    var::Complex<MatrixX> const& a;
+
+    template<class scalar_t>
+    void operator()(MatrixX<scalar_t> const& b) {
+        using T = MatrixX<scalar_t>;
+        result.template get<T>() += a.template get<T>() * b.adjoint();
+    }
+};
+
+struct Div {
+    idx_t n;
+
+    template<class T, class real_t = num::get_real_t<typename T::Scalar>>
+    void operator()(T& x) const { x /= static_cast<real_t>(n); }
+};
+
+} // anonymous namespace
+
+void MomentAccumulator::add(var::Complex<ArrayX> const& other) {
+    if (_count == 0) {
+        data = other;
     } else {
-        moments[0] = beta.dot(r0);;
-        moments[1] = beta.dot(r1);
+        var::apply_visitor(ArrayAdd{other}, data);
     }
-    moments[0] *= 0.5f;
-}
 
-template<class scalar_t>
-void GenericMoments<scalar_t>::collect(idx_t n, VectorRef r1) {
-    moments[n] = (op.size() != 0) ? beta.dot(op * r1)
-                                  : beta.dot(r1);
-}
-
-template<class scalar_t>
-void MultiUnitCollector<scalar_t>::collect_initial(VectorRef r0, VectorRef r1) {
-    using real_t = num::get_real_t<scalar_t>;
-
-    for (auto i = 0; i < idx.cols.size(); ++i) {
-        auto const col = idx.cols[i];
-        data[i][0] = r0[col] * real_t{0.5}; // 0.5 is special for the moment zero
-        data[i][1] = r1[col];
+    ++_count;
+    if (_count == total && total != 1) {
+        var::apply_visitor(Div{total}, data);
     }
 }
 
-template<class scalar_t>
-void MultiUnitCollector<scalar_t>::collect(idx_t n, VectorRef r1) {
-    assert(n >= 2 && n < data[0].size());
-    for (auto i = 0; i < idx.cols.size(); ++i) {
-        auto const col = idx.cols[i];
-        data[i][n] = r1[col];
-    }
+MomentMultiplication::MomentMultiplication(idx_t num_moments, var::scalar_tag tag)
+    : data(var::apply_visitor(InitMatrix{num_moments}, tag)) {}
+
+void  MomentMultiplication::matrix_mul_add(DenseMatrixMoments const& a,
+                                           DenseMatrixMoments const& b) {
+    var::apply_visitor(MatrixMulAdd{data, a.data}, b.data);
 }
 
-template<class scalar_t>
-void DenseMatrixCollector<scalar_t>::collect_initial(VectorRef r0, VectorRef r1) {
-    using real_t = num::get_real_t<scalar_t>;
-    if (op.size() != 0){
-        data.row(0) = op * r0 * real_t{0.5}; // 0.5 is special for the moment zero
-        data.row(1) = op * r1;
-    } else {
-        data.row(0) = r0 * real_t{0.5}; // 0.5 is special for the moment zero
-        data.row(1) = r1;
-    }
+void MomentMultiplication::normalize(idx_t total) {
+    var::apply_visitor(Div{total}, data);
 }
 
-template<class scalar_t>
-void DenseMatrixCollector<scalar_t>::collect(idx_t n, VectorRef r1) {
-    assert(n >= 2 && n < data.rows());
-    if (op.size() != 0) {
-        data.row(n) = op * r1;
-    } else {
-        data.row(n) = r1;
-    }
-}
+struct Velocity {
+    ArrayXf const& alpha;
 
-CPB_INSTANTIATE_TEMPLATE_CLASS(DiagonalMoments)
-CPB_INSTANTIATE_TEMPLATE_CLASS(GenericMoments)
-CPB_INSTANTIATE_TEMPLATE_CLASS(MultiUnitCollector)
-CPB_INSTANTIATE_TEMPLATE_CLASS(DenseMatrixCollector)
+    template<class scalar_t>
+    VariantCSR operator()(SparseMatrixRC<scalar_t> const& ham) const {
+        auto result = *ham;
+        auto const data = result.valuePtr();
+        auto const indices = result.innerIndexPtr();
+        auto const indptr = result.outerIndexPtr();
+
+        auto const size = result.rows();
+        for (auto row = idx_t{0}; row < size; ++row) {
+            for (auto n = indptr[row]; n < indptr[row + 1]; ++n) {
+                const auto col = indices[n];
+                data[n] *= static_cast<scalar_t>(alpha[row] - alpha[col]);
+            }
+        }
+
+        return std::move(result);
+    }
+};
+
+VariantCSR velocity(Hamiltonian const& hamiltonian, ArrayXf const& alpha) {
+    return var::apply_visitor(Velocity{alpha}, hamiltonian.get_variant());
+}
 
 }} // namespace cpb::kpm

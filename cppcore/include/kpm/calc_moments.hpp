@@ -2,11 +2,25 @@
 
 namespace cpb { namespace kpm { namespace calc_moments {
 
-/**
+template<class...> struct void_type { using type = void; };
+template<class... Ts> using void_t = typename void_type<Ts...>::type;
+
+template<class Collector, class = void>
+struct is_diagonal : std::false_type {};
+
+template<class Collector>
+struct is_diagonal<Collector, void_t<decltype(Collector::zero())>> : std::true_type {};
+
+template<class Collector>
+using requires_diagonal = typename std::enable_if<is_diagonal<Collector>::value, int>::type;
+
+template<class Collector>
+using requires_offdiagonal = typename std::enable_if<!is_diagonal<Collector>::value, int>::type;
+
+/**********************************************************************\
  Diagonal KPM implementation: the left and right vectors are identical,
  i.e. `mu_n = <r|Tn(H)|r>` where `bra == ket == r`.
- */
-namespace diagonal {
+\**********************************************************************/
 
 /**
  Reference implementation, no optimizations, no special requirements
@@ -18,16 +32,16 @@ namespace diagonal {
  a unit vector for the expectation value variant or a random vector for the
  stochastic trace variant.
  */
-template<class Moments, class Vector, class Matrix>
-void basic(Moments& moments, Vector r0, Vector r1, Matrix const& h2) {
-    auto const num_moments = moments.size();
+template<class C, class Vector, class Matrix, requires_diagonal<C> = 1>
+void basic(C& collect, Vector r0, Vector r1, Matrix const& h2) {
+    auto const num_moments = collect.size();
     assert(num_moments % 2 == 0);
 
-    static constexpr auto zero = Moments::zero();
+    static constexpr auto zero = C::zero();
     for (auto n = 2; n <= num_moments / 2; ++n) {
         auto m2 = zero, m3 = zero;
         compute::kpm_spmv_diagonal(0, h2.rows(), h2, r1, r0, m2, m3);
-        moments.collect(n, m2, m3);
+        collect(n, m2, m3);
         r1.swap(r0);
     }
 }
@@ -39,16 +53,16 @@ void basic(Moments& moments, Vector r0, Vector r1, Matrix const& h2) {
  system which contains non-zero values. The speedup is about equal to the amount
  of removed work.
  */
-template<class Moments, class Vector, class Matrix>
-void opt_size(Moments& moments, Vector r0, Vector r1, Matrix const& h2, SliceMap const& map) {
-    auto const num_moments = moments.size();
+template<class C, class Vector, class Matrix, requires_diagonal<C> = 1>
+void opt_size(C& collect, Vector r0, Vector r1, Matrix const& h2, SliceMap const& map) {
+    auto const num_moments = collect.size();
     assert(num_moments % 2 == 0);
 
-    static constexpr auto zero = Moments::zero();
+    static constexpr auto zero = C::zero();
     for (auto n = 2; n <= num_moments / 2; ++n) {
         auto m2 = zero, m3 = zero;
         compute::kpm_spmv_diagonal(0, map.optimal_size(n, num_moments), h2, r1, r0, m2, m3);
-        moments.collect(n, m2, m3);
+        collect(n, m2, m3);
         r1.swap(r0);
     }
 }
@@ -59,14 +73,14 @@ void opt_size(Moments& moments, Vector r0, Vector r1, Matrix const& h2, SliceMap
  The two concurrent operations share some of the same data, thus promoting cache
  usage and reducing main memory bandwidth.
  */
-template<class Moments, class Vector, class Matrix>
-void interleaved(Moments& moments, Vector r0, Vector r1, Matrix const& h2, SliceMap const& map) {
-    auto const num_moments = moments.size();
+template<class C, class Vector, class Matrix, requires_diagonal<C> = 1>
+void interleaved(C& collect, Vector r0, Vector r1, Matrix const& h2, SliceMap const& map) {
+    auto const num_moments = collect.size();
     assert((num_moments - 2) % 4 == 0);
 
     // Interleave moments `n` and `n + 1` for better data locality
     // Diagonal + interleaved computes 4 moments per iteration
-    static constexpr auto zero = Moments::zero();
+    static constexpr auto zero = C::zero();
     for (auto n = idx_t{2}; n <= num_moments / 2; n += 2) {
         auto m2 = zero, m3 = zero, m4 = zero, m5 = zero;
 
@@ -81,21 +95,21 @@ void interleaved(Moments& moments, Vector r0, Vector r1, Matrix const& h2, Slice
         }
         compute::kpm_spmv_diagonal(map[max - 1], map[max], h2, r0, r1, m4, m5);
 
-        moments.collect(n, m2, m3);
-        moments.collect(n + 1, m4, m5);
+        collect(n, m2, m3);
+        collect(n + 1, m4, m5);
     }
 }
 
 /**
  Optimal size + interleaved
  */
-template<class Moments, class Vector, class Matrix>
-void opt_size_and_interleaved(Moments& moments, Vector r0, Vector r1, Matrix const& h2,
+template<class C, class Vector, class Matrix, requires_diagonal<C> = 1>
+void opt_size_and_interleaved(C& collect, Vector r0, Vector r1, Matrix const& h2,
                               SliceMap const& map) {
-    auto const num_moments = moments.size();
+    auto const num_moments = collect.size();
     assert((num_moments - 2) % 4 == 0);
 
-    static constexpr auto zero = Moments::zero();
+    static constexpr auto zero = C::zero();
     for (auto n = idx_t{2}; n <= num_moments / 2; n += 2) {
         auto m2 = zero, m3 = zero, m4 = zero, m5 = zero;
 
@@ -111,19 +125,16 @@ void opt_size_and_interleaved(Moments& moments, Vector r0, Vector r1, Matrix con
         auto const max2 = map.index(n + 1, num_moments);
         compute::kpm_spmv_diagonal(map[max1 - 1], map[max2], h2, r0, r1, m4, m5);
 
-        moments.collect(n, m2, m3);
-        moments.collect(n + 1, m4, m5);
+        collect(n, m2, m3);
+        collect(n + 1, m4, m5);
     }
 }
 
-} // namespace diagonal
-
-/**
+/******************************************************************\
  Off-diagonal KPM implementation: different left and right vectors,
  i.e. `mu_n = <l|Tn(H)|r>` where `l != r`. The `Moments` collector
  contains the left vector.
- */
-namespace off_diagonal {
+\******************************************************************/
 
 /**
  Reference implementation, no optimizations, no special requirements
@@ -133,14 +144,14 @@ namespace off_diagonal {
  can be computed, but the diagonal version of this function is more efficient
  for that special case.
  */
-template<class Moments, class Vector, class Matrix>
-void basic(Moments& moments, Vector r0, Vector r1, Matrix const& h2) {
-    auto const num_moments = moments.size();
+template<class C, class Vector, class Matrix, requires_offdiagonal<C> = 1>
+void basic(C& collect, Vector r0, Vector r1, Matrix const& h2) {
+    auto const num_moments = collect.size();
     for (auto n = idx_t{2}; n < num_moments; ++n) {
         compute::kpm_spmv(0, h2.rows(), h2, r1, r0);
 
         r1.swap(r0);
-        moments.collect(n, r1);
+        collect(n, r1);
     }
 }
 
@@ -149,16 +160,16 @@ void basic(Moments& moments, Vector r0, Vector r1, Matrix const& h2) {
 
  See the diagonal version of this function for more information.
  */
-template<class Moments, class Vector, class Matrix>
-void opt_size(Moments& moments, Vector r0, Vector r1, Matrix const& h2, SliceMap const& map) {
-    auto const num_moments = moments.size();
+template<class C, class Vector, class Matrix, requires_offdiagonal<C> = 1>
+void opt_size(C& collect, Vector r0, Vector r1, Matrix const& h2, SliceMap const& map) {
+    auto const num_moments = collect.size();
     for (auto n = idx_t{2}; n < num_moments; ++n) {
         auto const opt_size = map.optimal_size(n, num_moments);
 
         compute::kpm_spmv(0, opt_size, h2, r1, r0); // r0 = matrix * r1 - r0
 
         r1.swap(r0);
-        moments.collect(n, r1);
+        collect(n, r1);
     }
 }
 
@@ -167,9 +178,9 @@ void opt_size(Moments& moments, Vector r0, Vector r1, Matrix const& h2, SliceMap
 
  See the diagonal version of this function for more information.
  */
-template<class Moments, class Vector, class Matrix>
-void interleaved(Moments& moments, Vector r0, Vector r1, Matrix const& h2, SliceMap const& map) {
-    auto const num_moments = moments.size();
+template<class C, class Vector, class Matrix, requires_offdiagonal<C> = 1>
+void interleaved(C& collect, Vector r0, Vector r1, Matrix const& h2, SliceMap const& map) {
+    auto const num_moments = collect.size();
     assert(num_moments % 2 == 0);
 
     // Interleave moments `n` and `n + 1` for better data locality
@@ -185,18 +196,18 @@ void interleaved(Moments& moments, Vector r0, Vector r1, Matrix const& h2, Slice
         }
         compute::kpm_spmv(map[max - 1], map[max], h2, r0, r1);
 
-        moments.collect(n, r0);
-        moments.collect(n + 1, r1);
+        collect(n, r0);
+        collect(n + 1, r1);
     }
 }
 
 /**
  Optimal size + interleaved
  */
-template<class Moments, class Vector, class Matrix>
-void opt_size_and_interleaved(Moments& moments, Vector r0, Vector r1, Matrix const& h2,
+template<class C, class Vector, class Matrix, requires_offdiagonal<C> = 1>
+void opt_size_and_interleaved(C& collect, Vector r0, Vector r1, Matrix const& h2,
                               SliceMap const& map) {
-    auto const num_moments = moments.size();
+    auto const num_moments = collect.size();
     assert(num_moments % 2 == 0);
 
     // Interleave moments `n` and `n + 1` for better data locality
@@ -213,11 +224,9 @@ void opt_size_and_interleaved(Moments& moments, Vector r0, Vector r1, Matrix con
         auto const max2 = map.index(n + 1, num_moments);
         compute::kpm_spmv(map[max1 - 1], map[max2], h2, r0, r1);
 
-        moments.collect(n, r0);
-        moments.collect(n + 1, r1);
+        collect(n, r0);
+        collect(n + 1, r1);
     }
 }
-
-} // namespace off_diagonal
 
 }}} // namespace cpb::kpm::calc_moments

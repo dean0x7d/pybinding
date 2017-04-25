@@ -27,17 +27,18 @@ add_library(cppcore
     include/detail/typelist.hpp
     include/hamiltonian/Hamiltonian.hpp
     include/hamiltonian/HamiltonianModifiers.hpp
+    include/kpm/default/collectors.hpp
+    include/kpm/default/Compute.hpp
     include/kpm/Bounds.hpp
     include/kpm/calc_moments.hpp
     include/kpm/Config.hpp
-    include/kpm/DefaultStrategy.hpp
+    include/kpm/Core.hpp
     include/kpm/Kernel.hpp
     include/kpm/Moments.hpp
     include/kpm/OptimizedHamiltonian.hpp
     include/kpm/reconstruct.hpp
     include/kpm/Starter.hpp
     include/kpm/Stats.hpp
-    include/kpm/Strategy.hpp
     include/leads/HamiltonianPair.hpp
     include/leads/Leads.hpp
     include/leads/Spec.hpp
@@ -70,14 +71,15 @@ add_library(cppcore
     include/Model.hpp
     src/hamiltonian/Hamiltonian.cpp
     src/hamiltonian/HamiltonianModifiers.cpp
+    src/kpm/default/collectors.cpp
+    src/kpm/default/Compute.cpp
     src/kpm/Bounds.cpp
-    src/kpm/DefaultStrategy.cpp
+    src/kpm/Core.cpp
     src/kpm/Kernel.cpp
     src/kpm/Moments.cpp
     src/kpm/OptimizedHamiltonian.cpp
     src/kpm/Starter.cpp
     src/kpm/Stats.cpp
-    src/kpm/Strategy.cpp
     src/leads/Leads.cpp
     src/leads/Spec.cpp
     src/leads/Structure.cpp
