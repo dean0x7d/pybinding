@@ -8,10 +8,6 @@
 #include "detail/macros.hpp"
 #include "support/simd.hpp"
 
-#ifdef CPB_USE_MKL
-# include "compute/mkl/wrapper.hpp"
-#endif
-
 namespace cpb { namespace compute {
 
 /**
@@ -19,8 +15,6 @@ namespace cpb { namespace compute {
 
  Equivalent to: y = matrix * x - y
  */
-#ifndef CPB_USE_MKL
-
 template<class scalar_t> CPB_ALWAYS_INLINE
 void kpm_spmv(idx_t start, idx_t end, SparseMatrixX<scalar_t> const& matrix,
               VectorX<scalar_t> const& x, VectorX<scalar_t>& y) {
@@ -36,43 +30,6 @@ void kpm_spmv(idx_t start, idx_t end, SparseMatrixX<scalar_t> const& matrix,
         y[row] = r - y[row];
     }
 }
-
-#else // CPB_USE_MKL
-
-template<class scalar_t> CPB_ALWAYS_INLINE
-void kpm_spmv(idx_t start, idx_t end, SparseMatrixX<scalar_t> const& matrix,
-              VectorX<scalar_t> const& x, VectorX<scalar_t>& y) {
-    if (end <= start) {
-        return;
-    }
-
-    char const transa = 'n'; // specifies normal (non-transposed) matrix-vector multiplication
-    char const metdescra[8] = "GLNC"; // G - general matrix, C - zero-based indexing, LN - ignored
-    auto const alpha = scalar_t{1};
-    auto const beta = scalar_t{-1};
-    auto const size = static_cast<std::int32_t>(end - start);
-    auto const start_idx = matrix.outerIndexPtr()[start];
-
-    using mkl_scalar_t = mkl::type<scalar_t>;
-    mkl::csrmv<scalar_t>::call(
-        &transa,
-        &size, &size,
-        reinterpret_cast<mkl_scalar_t const*>(&alpha),
-        metdescra,
-        // input matrix
-        reinterpret_cast<mkl_scalar_t const*>(matrix.valuePtr()) + start_idx,
-        matrix.innerIndexPtr() + start_idx,
-        matrix.outerIndexPtr() + start,
-        matrix.outerIndexPtr() + 1 + start,
-        // input vector
-        reinterpret_cast<mkl_scalar_t const*>(x.data()),
-        reinterpret_cast<mkl_scalar_t const*>(&beta),
-        // output vector
-        reinterpret_cast<mkl_scalar_t*>(y.data()) + start
-    );
-}
-
-#endif // CPB_USE_MKL
 
 /**
  KPM-specialized sparse matrix-vector multiplication (CSR, diagonal)
