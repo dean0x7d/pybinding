@@ -31,20 +31,18 @@
 namespace cpb { namespace simd {
 using namespace simdpp;
 
+struct basic_traits {
+    static constexpr auto align_bytes = 32;
+    static constexpr auto register_size_bytes = 32; // emulated for < AVX-256
+};
+
+/// All SIMD vectors have the following traits
+template<class T>
+struct traits : basic_traits {
+    static constexpr auto size = register_size_bytes / sizeof(T);
+};
+
 namespace detail {
-    /**
-     All SIMD vectors have the following traits
-     */
-    struct basic_traits {
-        static constexpr auto align_bytes = 32;
-        static constexpr auto register_size_bytes = 32;
-    };
-
-    template<class T>
-    struct traits : basic_traits {
-        static constexpr auto size = register_size_bytes / sizeof(T);
-    };
-
     template<class T> struct select_vector;
     template<> struct select_vector<float> { using type = float32<traits<float>::size>; };
     template<> struct select_vector<double> { using type = float64<traits<double>::size>; };
@@ -57,6 +55,12 @@ namespace detail {
  */
 template<class scalar_t>
 using select_vector_t = typename detail::select_vector<scalar_t>::type;
+
+/**
+ Stack array with size matching a SIMD register of the corresponding type
+ */
+template<class scalar_t>
+using array = std::array<scalar_t, traits<scalar_t>::size>;
 
 /**
  Check if the data pointed to by `p` has `bytes` alignment
@@ -110,10 +114,10 @@ struct split_loop_t {
    2. Vector: [peel_end, vec_end) SIMD loop for aligned elements
    3. Remainder: [vec_end, end) scalar loop for the leftover (end - vec_end < step) elements
  */
-template<class scalar_t, idx_t step = detail::traits<scalar_t>::size>
+template<class scalar_t, idx_t step = traits<scalar_t>::size>
 split_loop_t<step> split_loop(scalar_t const* p, idx_t start, idx_t end) {
     auto peel_end = start;
-    static constexpr auto bytes = detail::traits<scalar_t>::align_bytes;
+    static constexpr auto bytes = traits<scalar_t>::align_bytes;
     while (!is_aligned<bytes>(p + peel_end) && peel_end < end) {
         ++peel_end;
     }
@@ -430,6 +434,65 @@ namespace detail {
 template<class scalar_t, class Vec> CPB_ALWAYS_INLINE
 scalar_t reduce_add_rc(Vec const& a) {
     return detail::ReduceAdd<scalar_t>::call(a);
+}
+
+namespace detail {
+    template<class scalar_t>
+    struct ReduceImag {
+        template<class Vec> CPB_ALWAYS_INLINE
+        static Vec call(Vec const& a) { return a; }
+    };
+
+    template<class real_t>
+    struct ReduceImag<std::complex<real_t>> {
+        template<class Vec> CPB_ALWAYS_INLINE
+        static Vec call(Vec const& a) {
+            auto real = a;
+            auto imag = make_float<Vec>(0);
+            transpose2(real, imag);
+            permute2<1, 0>(imag);
+            return real + imag;
+        }
+    };
+} // namespace detail
+
+/**
+ Add the imaginary part of a complex number to the real part (noop for real numbers)
+
+ result = std::complex<real_t>(a.real() + a.imag(), 0);
+ */
+template<class scalar_t, class Vec> CPB_ALWAYS_INLINE
+Vec reduce_imag(Vec const& a) {
+    return detail::ReduceImag<scalar_t>::call(a);
+}
+
+namespace detail {
+    template<class scalar_t>
+    struct LoadSplat {
+        template<class Vec> CPB_ALWAYS_INLINE
+        static Vec call(scalar_t const* p) {
+            return load_splat<Vec>(p);
+        }
+    };
+
+    template<class real_t>
+    struct LoadSplat<std::complex<real_t>> {
+        template<class Vec> CPB_ALWAYS_INLINE
+        static Vec call(void const* p) {
+            auto a = load_splat<Vec>(p);
+            auto b = load_splat<Vec>(static_cast<real_t const*>(p) + 1);
+            transpose2(a, b);
+            return a;
+        }
+    };
+} // namespace detail
+
+/**
+ Load splat which works for real or complex arguments
+ */
+template<class Vec, class scalar_t> CPB_ALWAYS_INLINE
+Vec load_splat_rc(scalar_t const* p) {
+    return detail::LoadSplat<scalar_t>::template call<Vec>(p);
 }
 
 }} // namespace cpb::simd

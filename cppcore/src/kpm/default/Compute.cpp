@@ -43,6 +43,12 @@ struct SelectAlgorithm {
         m->data = std::move(collect.moments);
     }
 
+    void operator()(BatchDiagonalMoments* m) {
+        auto collect = BatchDiagonalCollector<scalar_t>(m->num_moments, m->batch_size);
+        with<BatchDiagonalCollector>(collect);
+        m->data = std::move(collect.moments);
+    }
+
     void operator()(GenericMoments* m) {
         auto collect = GenericCollector<scalar_t>(m->num_moments, oh, m->alpha, m->beta, m->op);
         with<OffDiagonalCollector>(collect);
@@ -74,7 +80,18 @@ struct SelectMatrix {
     }
 };
 
+struct BatchSize {
+    template<class scalar_t>
+    idx_t operator()(var::tag<scalar_t>) const {
+        return static_cast<idx_t>(simd::traits<scalar_t>::size);
+    }
+};
+
 } // anonymous namespace
+
+idx_t DefaultCompute::batch_size(var::scalar_tag tag) const {
+    return var::apply_visitor(BatchSize{}, tag);
+}
 
 void DefaultCompute::moments(MomentsRef m, Starter const& s, AlgorithmConfig const& ac,
                              OptimizedHamiltonian const& oh) const {

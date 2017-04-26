@@ -15,6 +15,15 @@ struct DiagonalMoments {
     DiagonalMoments(idx_t num_moments) : num_moments(num_moments) {}
 };
 
+struct BatchDiagonalMoments {
+    idx_t num_moments;
+    idx_t batch_size;
+    var::Complex<ArrayXX> data;
+
+    BatchDiagonalMoments(idx_t num_moments, idx_t batch_size)
+        : num_moments(num_moments), batch_size(batch_size) {}
+};
+
 /**
  Collects moments in the form of expectation values with an optional operator:
  `mu_n = <beta|op Tn(H)|alpha>` where `beta != alpha`. The `op` can be empty,
@@ -73,12 +82,15 @@ struct DenseMatrixMoments {
 struct MomentAccumulator {
     idx_t num_moments;
     idx_t total; ///< add new result to existing data for this number of moments
+    idx_t batch_size;
     idx_t _count = 0; ///< internal: keeps track of how many moments have been summed up so far
     var::Complex<ArrayX> data;
 
-    MomentAccumulator(idx_t num_moments, idx_t total) : num_moments(num_moments), total(total) {}
+    MomentAccumulator(idx_t num_moments, idx_t total, idx_t batch_size = 1)
+        : num_moments(num_moments), total(total), batch_size(batch_size) {}
 
     void add(var::Complex<ArrayX> const& other);
+    void add(var::Complex<ArrayXX> const& other);
 };
 
 struct MomentMultiplication {
@@ -90,7 +102,7 @@ struct MomentMultiplication {
     void normalize(idx_t total);
 };
 
-using MomentsRef = var::variant<DiagonalMoments*, GenericMoments*,
+using MomentsRef = var::variant<DiagonalMoments*, BatchDiagonalMoments*, GenericMoments*,
                                 MultiUnitMoments*, DenseMatrixMoments*>;
 
 template<class M>

@@ -78,13 +78,25 @@ ArrayXd Core::dos(ArrayXd const& energy, double broadening, idx_t num_random) {
     optimized_hamiltonian.optimize_for({0, 0}, scale);
     stats.reset(num_moments, optimized_hamiltonian, specialized_algorithm, num_random);
 
-    auto starter = random_starter(optimized_hamiltonian);
-    auto moments = DiagonalMoments(num_moments);
-    auto total_mu = MomentAccumulator(num_moments, num_random);
+    auto const batch_size = compute->batch_size(optimized_hamiltonian.scalar_tag());
+    auto total_mu = MomentAccumulator(num_moments, num_random, batch_size);
 
-    for (auto j = 0; j < num_random; ++j) {
-        timed_compute(&moments, starter, specialized_algorithm);
-        total_mu.add(moments.data);
+    if (num_random <= 2) {
+        auto starter = random_starter(optimized_hamiltonian);
+        auto moments = DiagonalMoments(num_moments);
+
+        for (auto n = idx_t{0}; n < num_random; ++n) {
+            timed_compute(&moments, starter, specialized_algorithm);
+            total_mu.add(moments.data);
+        }
+    } else {
+        auto starter = random_starter(optimized_hamiltonian, batch_size);
+        auto moments = BatchDiagonalMoments(num_moments, batch_size);
+
+        for (auto n = idx_t{0}; n < num_random; n += batch_size) {
+            timed_compute(&moments, starter, specialized_algorithm);
+            total_mu.add(moments.data);
+        }
     }
 
     apply_damping(total_mu, config.kernel);

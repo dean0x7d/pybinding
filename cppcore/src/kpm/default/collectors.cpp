@@ -15,6 +15,25 @@ void DiagonalCollector<scalar_t>::operator()(idx_t n, scalar_t m2, scalar_t m3) 
 }
 
 template<class scalar_t>
+void BatchDiagonalCollector<scalar_t>::initial(VectorRef r0, VectorRef r1) {
+    auto const size = m0.size();
+    for (auto i = size_t{0}; i < size; ++i) {
+        moments(0, i) = m0[i] = r0.col(i).squaredNorm() * scalar_t{0.5};
+        moments(1, i) = m1[i] = r1.col(i).dot(r0.col(i));
+    }
+}
+
+template<class scalar_t>
+void BatchDiagonalCollector<scalar_t>::operator()(idx_t n, simd::array<scalar_t> m2,
+                                                  simd::array<scalar_t> m3) {
+    auto const size = m0.size();
+    for (auto i = size_t{0}; i < size; ++i) {
+        moments(2 * (n - 1), i) = scalar_t{2} * (m2[i] - m0[i]);
+        moments(2 * (n - 1) + 1, i) = scalar_t{2} * m3[i] - m1[i];
+    }
+}
+
+template<class scalar_t>
 GenericCollector<scalar_t>::GenericCollector(idx_t num_moments, OptimizedHamiltonian const& oh,
                                              VectorXcd const& alpha_, VectorXcd const& beta_,
                                              SparseMatrixXcd const& op_) : moments(num_moments) {
@@ -89,6 +108,7 @@ void DenseMatrixCollector<scalar_t>::operator()(idx_t n, VectorRef r1) {
 }
 
 CPB_INSTANTIATE_TEMPLATE_CLASS(DiagonalCollector)
+CPB_INSTANTIATE_TEMPLATE_CLASS(BatchDiagonalCollector)
 CPB_INSTANTIATE_TEMPLATE_CLASS(GenericCollector)
 CPB_INSTANTIATE_TEMPLATE_CLASS(MultiUnitCollector)
 CPB_INSTANTIATE_TEMPLATE_CLASS(DenseMatrixCollector)

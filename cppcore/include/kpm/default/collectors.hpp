@@ -2,6 +2,8 @@
 #include "kpm/OptimizedHamiltonian.hpp"
 #include "detail/macros.hpp"
 
+#include "support/simd.hpp"
+
 namespace cpb { namespace kpm {
 
 template<class scalar_t>
@@ -27,6 +29,26 @@ public:
     /// Zero of the same scalar type as the moments
     static constexpr scalar_t zero() { return scalar_t{0}; }
 };
+
+template<class scalar_t>
+class BatchDiagonalCollector {
+public:
+    using Vector = MatrixX<scalar_t>;
+    using VectorRef = Eigen::Ref<Vector>;
+
+    ArrayXX<scalar_t> moments;
+    simd::array<scalar_t> m0;
+    simd::array<scalar_t> m1;
+
+    BatchDiagonalCollector(idx_t num_moments, idx_t batch_size)
+        : moments(num_moments, batch_size) {}
+
+    idx_t size() const { return moments.rows(); }
+    void initial(VectorRef r0, VectorRef r1);
+    void operator()(idx_t n, simd::array<scalar_t> m2, simd::array<scalar_t> m3);
+    static constexpr simd::array<scalar_t> zero() { return {{0}}; }
+};
+
 
 /**
  Moments collector interface for the off-diagonal algorithm.
@@ -101,6 +123,7 @@ public:
 };
 
 CPB_EXTERN_TEMPLATE_CLASS(DiagonalCollector)
+CPB_EXTERN_TEMPLATE_CLASS(BatchDiagonalCollector)
 CPB_EXTERN_TEMPLATE_CLASS(GenericCollector)
 CPB_EXTERN_TEMPLATE_CLASS(MultiUnitCollector)
 CPB_EXTERN_TEMPLATE_CLASS(DenseMatrixCollector)

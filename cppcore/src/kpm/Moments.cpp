@@ -22,6 +22,28 @@ struct ArrayAdd {
     }
 };
 
+struct ArraySetZero {
+    var::Complex<ArrayX>& data;
+    idx_t num_moments;
+
+    template<class scalar_t>
+    void operator()(ArrayXX<scalar_t> const&) {
+        data = ArrayX<scalar_t>::Zero(num_moments).eval();
+    }
+};
+
+struct ArrayRowWiseSum {
+    var::Complex<ArrayXX> const& other;
+    idx_t cols;
+
+    template<class scalar_t>
+    void operator()(ArrayX<scalar_t>& result) const {
+        auto const& a = other.template get<ArrayXX<scalar_t>>();
+        result += a.leftCols(cols).rowwise().sum();
+
+    }
+};
+
 struct MatrixMulAdd {
     var::Complex<MatrixX>& result;
     var::Complex<MatrixX> const& a;
@@ -51,6 +73,21 @@ void MomentAccumulator::add(var::Complex<ArrayX> const& other) {
 
     ++_count;
     if (_count == total && total != 1) {
+        var::apply_visitor(Div{total}, data);
+    }
+}
+
+void MomentAccumulator::add(var::Complex<ArrayXX> const& other) {
+    if (_count == 0) {
+        var::apply_visitor(ArraySetZero{data, num_moments}, other);
+    }
+
+    auto remaining = total - _count;
+    auto cols = remaining > batch_size ? batch_size : remaining;
+    var::apply_visitor(ArrayRowWiseSum{other, cols}, data);
+
+    _count += batch_size;
+    if (_count >= total && total != 1) {
         var::apply_visitor(Div{total}, data);
     }
 }

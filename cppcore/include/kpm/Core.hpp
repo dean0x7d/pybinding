@@ -24,6 +24,7 @@ public:
     public:
         virtual ~Interface() = default;
 
+        virtual idx_t batch_size(var::scalar_tag) const = 0;
         virtual void moments(MomentsRef, Starter const&, AlgorithmConfig const&,
                              OptimizedHamiltonian const&) const = 0;
     };

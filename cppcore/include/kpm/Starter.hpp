@@ -7,7 +7,16 @@
 namespace cpb { namespace kpm {
 
 /// Produce the r0 starter vector for the KPM procedure
-using Starter = std::function<var::Complex<VectorX> (var::scalar_tag)>;
+struct Starter {
+    using Make = std::function<var::Complex<VectorX> (var::scalar_tag)>;
+
+    Make make;
+    idx_t vector_size;
+    idx_t batch_size;
+
+    Starter(Make make, idx_t vector_size, idx_t batch_size)
+        : make(std::move(make)), vector_size(vector_size), batch_size(batch_size) {}
+};
 
 /// Starter vector equal to the constant `alpha` (`oh` is needed for reordering)
 Starter constant_starter(OptimizedHamiltonian const& oh, VectorXcd const& alpha);
@@ -17,11 +26,21 @@ Starter unit_starter(OptimizedHamiltonian const& oh);
 
 /// Starter vector for the stochastic KPM procedure (`oh` is needed for size and reordering)
 Starter random_starter(OptimizedHamiltonian const& oh, VariantCSR const& op = {});
+Starter random_starter(OptimizedHamiltonian const& oh, idx_t batch_size, VariantCSR const& op = {});
 
 /// Construct a concrete scalar type r0 vector based on a `Starter`
 template<class scalar_t>
 VectorX<scalar_t> make_r0(Starter const& starter, var::tag<VectorX<scalar_t>>) {
-    return starter(var::tag<scalar_t>{}).template get<VectorX<scalar_t>>();
+    return starter.make(var::tag<scalar_t>{}).template get<VectorX<scalar_t>>();
+}
+
+template<class scalar_t>
+MatrixX<scalar_t> make_r0(Starter const& starter, var::tag<MatrixX<scalar_t>>) {
+    auto r0 = MatrixX<scalar_t>(starter.vector_size, starter.batch_size);
+    for (auto i = 0; i < starter.batch_size; ++i) {
+        r0.col(i) = starter.make(var::tag<scalar_t>{}).template get<VectorX<scalar_t>>();
+    }
+    return r0;
 }
 
 /// Return the vector following the starter: r1 = h2 * r0 * 0.5
@@ -45,6 +64,27 @@ VectorX<scalar_t> make_r1(SparseMatrixX<scalar_t> const& h2, VectorX<scalar_t> c
 }
 
 template<class scalar_t>
+MatrixX<scalar_t> make_r1(SparseMatrixX<scalar_t> const& h2, MatrixX<scalar_t> const& r0) {
+    auto const size = h2.rows();
+    auto const data = h2.valuePtr();
+    auto const indices = h2.innerIndexPtr();
+    auto const indptr = h2.outerIndexPtr();
+
+    using Row = Eigen::Matrix<scalar_t, 1, Eigen::Dynamic>;
+    auto tmp = Row(r0.cols());
+    auto r1 = MatrixX<scalar_t>(r0.rows(), r0.cols());
+
+    for (auto row = 0; row < size; ++row) {
+        tmp.setZero();
+        for (auto n = indptr[row]; n < indptr[row + 1]; ++n) {
+            tmp += data[n] * r0.row(indices[n]);
+        }
+        r1.row(row) = tmp * scalar_t{0.5};
+    }
+    return r1;
+}
+
+template<class scalar_t>
 VectorX<scalar_t> make_r1(num::EllMatrix<scalar_t> const& h2, VectorX<scalar_t> const& r0) {
     auto const size = h2.rows();
     auto r1 = VectorX<scalar_t>::Zero(size).eval();
@@ -53,6 +93,19 @@ VectorX<scalar_t> make_r1(num::EllMatrix<scalar_t> const& h2, VectorX<scalar_t> 
             auto const a = h2.data(row, n);
             auto const b = r0[h2.indices(row, n)];
             r1[row] += compute::detail::mul(a, b) * scalar_t{0.5};
+        }
+    }
+    return r1;
+}
+
+template<class scalar_t>
+MatrixX<scalar_t> make_r1(num::EllMatrix<scalar_t> const& h2, MatrixX<scalar_t> const& r0) {
+    auto const size = h2.rows();
+    auto r1 = MatrixX<scalar_t>::Zero(r0.rows(), r0.cols()).eval();
+    for (auto n = 0; n < h2.nnz_per_row; ++n) {
+        for (auto row = 0; row < size; ++row) {
+            auto const a = h2.data(row, n);
+            r1.row(row) += a * r0.row(h2.indices(row, n)) * scalar_t{0.5};
         }
     }
     return r1;
