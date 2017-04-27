@@ -27,7 +27,7 @@ struct Optimize {
 
         if (oh.matrix_format == MatrixFormat::ELL) {
             auto const& csr = oh.optimized_matrix.template get<SparseMatrixX<scalar_t>>();
-            oh.optimized_matrix = oh.convert_to_ellpack(csr);
+            oh.optimized_matrix = num::csr_to_ell(csr);
         }
 
         oh.tag = var::tag<scalar_t>{};
@@ -145,27 +145,6 @@ void OptimizedHamiltonian::create_reordered(Indices const& idx, Scale<> s) {
 
     optimized_idx = reorder_indices(idx, reorder_map);
     slice_map = {std::move(slice_border_indices), optimized_idx};
-}
-
-template<class scalar_t>
-num::EllMatrix<scalar_t>
-OptimizedHamiltonian::convert_to_ellpack(SparseMatrixX<scalar_t> const& h2_csr) {
-    auto h2_ell = num::EllMatrix<scalar_t>(h2_csr.rows(), h2_csr.cols(),
-                                           sparse::max_nnz_per_row(h2_csr));
-    auto const h2_csr_loop = sparse::make_loop(h2_csr);
-    for (auto row = 0; row < h2_csr.rows(); ++row) {
-        auto n = 0;
-        h2_csr_loop.for_each_in_row(row, [&](storage_idx_t col, scalar_t value) {
-            h2_ell.data(row, n) = value;
-            h2_ell.indices(row, n) = col;
-            ++n;
-        });
-        for (; n < h2_ell.nnz_per_row; ++n) {
-            h2_ell.data(row, n) = scalar_t{0};
-            h2_ell.indices(row, n) = (row > 0) ? h2_ell.indices(row - 1, n) : 0;
-        }
-    }
-    return h2_ell;
 }
 
 Indices OptimizedHamiltonian::reorder_indices(Indices const& original_idx,

@@ -54,13 +54,32 @@ public:
     }
 };
 
-/**
- Return an ELLPACK matrix reference
- */
+/// Return an ELLPACK matrix reference
 template<class scalar_t>
 inline EllConstRef<scalar_t> ellref(EllMatrix<scalar_t> const& m) {
     return {m.rows(), m.cols(), m.nnz_per_row, static_cast<int>(m.data.rows()),
             m.data.data(), m.indices.data()};
+}
+
+/// Convert an Eigen CSR matrix to ELLPACK
+template<class scalar_t>
+num::EllMatrix<scalar_t> csr_to_ell(SparseMatrixX<scalar_t> const& csr) {
+    auto ell = num::EllMatrix<scalar_t>(csr.rows(), csr.cols(),
+                                        sparse::max_nnz_per_row(csr));
+    auto const loop = sparse::make_loop(csr);
+    for (auto row = 0; row < csr.rows(); ++row) {
+        auto n = 0;
+        loop.for_each_in_row(row, [&](storage_idx_t col, scalar_t value) {
+            ell.data(row, n) = value;
+            ell.indices(row, n) = col;
+            ++n;
+        });
+        for (; n < ell.nnz_per_row; ++n) {
+            ell.data(row, n) = scalar_t{0};
+            ell.indices(row, n) = (row > 0) ? ell.indices(row - 1, n) : 0;
+        }
+    }
+    return ell;
 }
 
 }} // namespace cpb::num

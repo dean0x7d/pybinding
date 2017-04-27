@@ -154,9 +154,6 @@ private:
     /// Scale and reorder the Hamiltonian so that idx is at the start of the optimized matrix
     template<class scalar_t>
     void create_reordered(Indices const& idx, Scale<> scale);
-    /// Convert CSR matrix into ELLPACK format
-    template<class scalar_t>
-    static num::EllMatrix<scalar_t> convert_to_ellpack(SparseMatrixX<scalar_t> const& csr);
     /// Get optimized indices which map to the given originals
     static Indices reorder_indices(Indices const& original_idx,
                                    std::vector<storage_idx_t> const& reorder_map);

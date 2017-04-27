@@ -71,8 +71,14 @@ struct TestGreensResult {
     TestGreensResult() = default;
 };
 
-std::vector<TestGreensResult> test_kpm_strategy(kpm::Compute const& compute,
-                                                std::vector<kpm::Config> const& configs) {
+struct TestDosResult {
+    ArrayXd dos1, dos2, dos3, dos20;
+
+    TestDosResult() = default;
+};
+
+std::vector<TestGreensResult> test_kpm_core(kpm::Compute const& compute,
+                                            std::vector<kpm::Config> const& configs) {
     constexpr auto pi = double{constant::pi};
     auto results = std::vector<TestGreensResult>();
 
@@ -89,7 +95,9 @@ std::vector<TestGreensResult> test_kpm_strategy(kpm::Compute const& compute,
             auto const cols = std::vector<idx_t>{i, j, j+1, j+2};
             auto const precision = Eigen::NumTraits<float>::dummy_precision();
 
-            auto unoptimized_result = TestGreensResult();
+            auto unoptimized_greens = TestGreensResult();
+            auto unoptimized_dos = TestDosResult();
+
             for (auto opt_level = size_t{0}; opt_level < configs.size(); ++opt_level) {
                 INFO("opt_level: " << opt_level);
                 auto core = kpm::Core(model.hamiltonian(), compute, configs[opt_level]);
@@ -115,14 +123,32 @@ std::vector<TestGreensResult> test_kpm_strategy(kpm::Compute const& compute,
                 REQUIRE(ldos.isApprox(-1/pi * g_ii.imag(), precision));
 
                 if (opt_level == 0) {
-                    unoptimized_result = {g_ii, g_ij};
+                    unoptimized_greens = {g_ii, g_ij};
                 } else {
-                    REQUIRE(g_ii.isApprox(unoptimized_result.g_ii, precision));
-                    REQUIRE(g_ij.isApprox(unoptimized_result.g_ij, precision));
+                    REQUIRE(g_ii.isApprox(unoptimized_greens.g_ii, precision));
+                    REQUIRE(g_ij.isApprox(unoptimized_greens.g_ij, precision));
+                }
+
+                auto const dos1 = core.dos(energy_range, broadening, 1);
+                auto const dos2 = core.dos(energy_range, broadening, 2);
+                auto const dos3 = core.dos(energy_range, broadening, 3);
+                auto const dos20 = core.dos(energy_range, broadening, 20);
+                REQUIRE_FALSE(dos1.isApprox(dos2, precision));
+                REQUIRE_FALSE(dos2.isApprox(dos3, precision));
+                REQUIRE_FALSE(dos3.isApprox(dos20, precision));
+                REQUIRE_FALSE(dos20.isApprox(dos1, precision));
+
+                if (opt_level == 0) {
+                    unoptimized_dos = {dos1, dos2, dos3, dos20};
+                } else {
+                    REQUIRE(dos1.isApprox(unoptimized_dos.dos1, precision));
+                    REQUIRE(dos2.isApprox(unoptimized_dos.dos2, precision));
+                    REQUIRE(dos3.isApprox(unoptimized_dos.dos3, precision));
+                    REQUIRE(dos20.isApprox(unoptimized_dos.dos20, precision));
                 }
             } // for opt_level
 
-            results.push_back(unoptimized_result);
+            results.push_back(unoptimized_greens);
         } // for is_complex
     } // for is_double_precision
 
@@ -139,7 +165,7 @@ TEST_CASE("KPM core", "[kpm]") {
     };
 
 #ifndef CPB_USE_CUDA
-    test_kpm_strategy(kpm::DefaultCompute(), {
+    test_kpm_core(kpm::DefaultCompute(), {
         make_config(kpm::MatrixFormat::CSR, false, false),
         make_config(kpm::MatrixFormat::CSR, true,  false),
         make_config(kpm::MatrixFormat::CSR, false,  true),
