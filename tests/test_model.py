@@ -88,8 +88,8 @@ def test_multiorbital_hamiltonian():
                                            [2, 3]])
 
     @pb.onsite_energy_modifier
-    def onsite(energy):
-        return 3 * energy
+    def onsite(energy, x, sub_id):
+        return 3 * energy + sub_id.eye * 0 * x
 
     @pb.hopping_energy_modifier
     def hopping(energy):

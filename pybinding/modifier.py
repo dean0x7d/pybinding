@@ -79,9 +79,10 @@ def _check_modifier_spec(func, keywords, has_sites=False):
                            "Arguments must be any of: {expected}".format(**locals()))
 
 
-def _sanitize_modifier_result(result, arg, expected_num_return, can_be_complex):
-    """Make sure the modifier returns ndarrays with type and shape matching the input `arg`"""
+def _sanitize_modifier_result(result, args, expected_num_return, can_be_complex):
+    """Make sure the modifier returns ndarrays with type and shape matching the input `args`"""
     result = result if isinstance(result, tuple) else (result,)
+    prime_arg = args[0]
 
     if any(not isinstance(r, np.ndarray) for r in result):
         raise TypeError("Modifiers must return ndarray(s)")
@@ -90,20 +91,29 @@ def _sanitize_modifier_result(result, arg, expected_num_return, can_be_complex):
         raise TypeError("Modifier expected to return {} ndarray(s), "
                         "but got {}".format(expected_num_return, len(result)))
 
-    if any(r.size != arg.size for r in result):
+    if any(r.size != prime_arg.size for r in result):
         raise TypeError("Modifier must return the same size ndarray as the arguments")
 
     def cast(r):
+        """Cast the result back to the same data type as the arguments"""
         try:
-            return r.astype(arg.dtype, casting="same_kind", copy=False)
+            return r.astype(prime_arg.dtype, casting="same_kind", copy=False)
         except TypeError:
             if np.iscomplexobj(r) and can_be_complex:
                 return r  # fine, the model will be upgraded to complex for certain modifiers
             else:
                 raise TypeError("Modifier result is '{}', but expected same kind as '{}'"
-                                " (precision is flexible)".format(r.dtype, arg.dtype))
+                                " (precision is flexible)".format(r.dtype, prime_arg.dtype))
+
+    def moveaxis(r):
+        """If the result is a new contiguous array, the axis needs to be moved back"""
+        if r.ndim == 3 and r.flags["OWNDATA"] and r.flags["C_CONTIGUOUS"]:
+            return np.moveaxis(r, 0, 2).copy()
+        else:
+            return r
 
     result = tuple(map(cast, result))
+    result = tuple(map(moveaxis, result))
     return result[0] if expected_num_return == 1 else result
 
 
@@ -138,7 +148,7 @@ def _make_modifier(func, kind, init, keywords, has_sites=True, num_return=1, can
     def apply_func(*args):
         requested_kwargs = _process_modifier_args(args, keywords, requested_argnames)
         result = func(**requested_kwargs)
-        return _sanitize_modifier_result(result, args[0], num_return, can_be_complex)
+        return _sanitize_modifier_result(result, args, num_return, can_be_complex)
 
     class Modifier(kind):
         callsig = getattr(func, 'callsig', None)
