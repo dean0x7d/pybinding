@@ -26,9 +26,8 @@ public:
     EllMatrix() = default;
     EllMatrix(idx_t rows, idx_t cols, idx_t nnz_per_row)
         : _rows(rows), _cols(cols), nnz_per_row(nnz_per_row) {
-        auto const aligned_rows = aligned_size<scalar_t, align_bytes>(rows);
-        data.resize(aligned_rows, nnz_per_row);
-        indices.resize(aligned_rows, nnz_per_row);
+        data.resize(aligned_size<scalar_t, align_bytes>(rows), nnz_per_row);
+        indices.resize(aligned_size<storage_idx_t, align_bytes>(rows), nnz_per_row);
     }
 
     idx_t rows() const { return _rows; }
