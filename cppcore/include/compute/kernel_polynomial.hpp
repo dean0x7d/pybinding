@@ -126,32 +126,31 @@ simd::split_loop_t<step> kpm_spmv(idx_t start, idx_t end, num::EllMatrix<scalar_
     using simd_register_t = simd::select_vector_t<scalar_t>;
     auto const loop = simd::split_loop(y.data(), start, end);
 
-    for (auto row = loop.start; row < loop.peel_end; ++row) {
-        y[row] = -y[row];
-    }
-    for (auto row = loop.peel_end; row < loop.vec_end; row += loop.step) {
-        auto const r = simd::load<simd_register_t>(y.data() + row);
-        simd::store(y.data() + row, simd::neg(r));
-    }
-    for (auto row = loop.vec_end; row < loop.end; ++row) {
-        y[row] = -y[row];
-    }
-
+    auto const px0 = x.data();
     for (auto n = 0; n < matrix.nnz_per_row - skip_last_n; ++n) {
-        auto const data = &matrix.data(0, n);
-        auto const indices = &matrix.indices(0, n);
+        auto data = &matrix.data(0, n) + start;
+        auto idx = &matrix.indices(0, n) + start;
+        auto py = y.data() + start;
 
-        for (auto row = loop.start; row < loop.peel_end; ++row) {
-            y[row] += detail::mul(data[row], x[indices[row]]);
+        for (auto _ = loop.start; _ < loop.peel_end; ++_, ++data, ++idx, ++py) {
+            auto const a = *data;
+            auto const b = px0[*idx];
+            auto const c = (n == 0) ? -*py : *py;
+            *py = detail::mul(a, b) + c;
         }
-        for (auto row = loop.peel_end; row < loop.vec_end; row += loop.step) {
-            auto const a = simd::load<simd_register_t>(data + row);
-            auto const b = simd::gather<simd_register_t>(x.data(), indices + row);
-            auto const c = simd::load<simd_register_t>(y.data() + row);
-            simd::store(y.data() + row, simd::madd_rc<scalar_t>(a, b, c));
+        for (auto _ = loop.peel_end; _ < loop.vec_end;
+             _ += step, data += step, idx += step, py += step) {
+            auto const a = simd::load<simd_register_t>(data);
+            auto const b = simd::gather<simd_register_t>(px0, idx);
+            auto c = simd::load<simd_register_t>(py);
+            if (n == 0) { c = simd::neg(c); }
+            simd::store(py, simd::madd_rc<scalar_t>(a, b, c));
         }
-        for (auto row = loop.vec_end; row < loop.end; ++row) {
-            y[row] += detail::mul(data[row], x[indices[row]]);
+        for (auto _ = loop.vec_end; _ < loop.end; ++_, ++data, ++idx, ++py) {
+            auto const a = *data;
+            auto const b = px0[*idx];
+            auto const c = (n == 0) ? -*py : *py;
+            *py = detail::mul(a, b) + c;
         }
     }
 
@@ -230,39 +229,55 @@ void kpm_spmv_diagonal(idx_t start, idx_t end, num::EllMatrix<scalar_t> const& m
     // in a register. While `x` data (`r1`) is not strictly reused, there is good
     // locality between the `b = gather(x)` and `r2 = load(x)` operations which
     // improves the cache hit rate. Overall, this offers a nice speed improvement.
-    auto const n = matrix.nnz_per_row - 1;
-    auto const data = &matrix.data(0, n);
-    auto const indices = &matrix.indices(0, n);
-
     using simd_register_t = simd::select_vector_t<scalar_t>;
+    static constexpr auto step = simd::traits<scalar_t>::size;
+    auto const n = matrix.nnz_per_row - 1;
+
+    auto data = &matrix.data(0, n) + start;
+    auto idx = &matrix.indices(0, n) + start;
+    auto px0 = x.data();
+    auto px = x.data() + start;
+    auto py = y.data() + start;
     auto m2_vec = simd::make_float<simd_register_t>(0);
     auto m3_vec = simd::make_float<simd_register_t>(0);
 
-    for (auto row = loop.start; row < loop.peel_end; ++row) {
-        auto const r1 = x[row];
-        auto const r2 = y[row] + detail::mul(data[row], x[indices[row]]);
+    for (auto _ = loop.start; _ < loop.peel_end; ++_, ++data, ++idx, ++py, ++px) {
+        auto const a = *data;
+        auto const b = px0[*idx];
+        auto const c = (n == 0 ? -*py : *py);
+
+        auto const r1 = *px;
+        auto const r2 = a * b + c;
         m2 += detail::square(r1);
         m3 += detail::mul(num::conjugate(r2), r1);
-        y[row] = r2;
-    }
-    for (auto row = loop.peel_end; row < loop.vec_end; row += loop.step) {
-        auto const a = simd::load<simd_register_t>(data + row);
-        auto const b = simd::gather<simd_register_t>(x.data(), indices + row);
-        auto const c = simd::load<simd_register_t>(y.data() + row);
 
-        auto const r1 = simd::load<simd_register_t>(x.data() + row);
+        *py = r2;
+    }
+    for (auto _ = loop.peel_end; _ < loop.vec_end;
+         _ += step, data += step, idx += step, py += step, px += step) {
+        auto const a = simd::load<simd_register_t>(data);
+        auto const b = simd::gather<simd_register_t>(px0, idx);
+        auto c = simd::load<simd_register_t>(py);
+        if (n == 0) { c = simd::neg(c); }
+
+        auto const r1 = simd::load<simd_register_t>(px);
         auto const r2 = simd::madd_rc<scalar_t>(a, b, c);
         m2_vec = m2_vec + r1 * r1;
         m3_vec = simd::conjugate_madd_rc<scalar_t>(r2, r1, m3_vec);
 
-        simd::store(y.data() + row, r2);
+        simd::store(py, r2);
     }
-    for (auto row = loop.vec_end; row < loop.end; ++row) {
-        auto const r1 = x[row];
-        auto const r2 = y[row] + detail::mul(data[row], x[indices[row]]);
+    for (auto _ = loop.vec_end; _ < loop.end; ++_, ++data, ++idx, ++py, ++px) {
+        auto const a = *data;
+        auto const b = px0[*idx];
+        auto const c = (n == 0 ? -*py : *py);
+
+        auto const r1 = *px;
+        auto const r2 = a * b + c;
         m2 += detail::square(r1);
         m3 += detail::mul(num::conjugate(r2), r1);
-        y[row] = r2;
+
+        *py = r2;
     }
 
     m2 += simd::reduce_add(m2_vec);
