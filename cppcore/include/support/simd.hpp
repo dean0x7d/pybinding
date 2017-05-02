@@ -26,6 +26,7 @@
 
 #include "detail/config.hpp"
 #include "detail/macros.hpp"
+#include "support/cppfuture.hpp"
 #include <complex>
 
 namespace cpb { namespace simd {
@@ -48,6 +49,11 @@ namespace detail {
     template<> struct select_vector<double> { using type = float64<traits<double>::size>; };
     template<> struct select_vector<std::complex<float>> : select_vector<float> {};
     template<> struct select_vector<std::complex<double>> : select_vector<double> {};
+
+    template<class T>
+    using requires_real = std14::enable_if_t<std::is_floating_point<T>::value, int>;
+    template<class T>
+    using requires_complex = std14::enable_if_t<!std::is_floating_point<T>::value, int>;
 } // namespace detail
 
 /**
@@ -348,151 +354,89 @@ float64<N> conjugate(float64<N, E> const& a) {
     return bit_xor(a, make_uint<uint64<N>>(0, 0x8000000000000000));
 }
 
-namespace detail {
-#if SIMDPP_USE_FMA3
-    template<class scalar_t, bool /*conjugate*/ = false>
-    struct FMADD {
-        template<template<unsigned, class> class Vec, unsigned N,
-                 class E1, class E2, class E3> CPB_ALWAYS_INLINE
-        static Vec<N, void> call(Vec<N, E1> const& a, Vec<N, E2> const& b, Vec<N, E3> const& c) {
-            return fmadd(a, b, c);
-        }
-    };
-#else
-    template<class scalar_t, bool /*conjugate*/ = false>
-    struct FMADD {
-        template<template<unsigned, class> class Vec, unsigned N,
-                 class E1, class E2, class E3> CPB_ALWAYS_INLINE
-        static Vec<N, void> call(Vec<N, E1> const& a, Vec<N, E2> const& b, Vec<N, E3> const& c) {
-            return a * b + c;
-        }
-    };
-#endif
-
-    template<class real_t>
-    struct FMADD<std::complex<real_t>, /*conjugate*/false> {
-        template<template<unsigned, class> class Vec, unsigned N,
-                 class E1, class E2, class E3> CPB_ALWAYS_INLINE
-        static Vec<N, void> call(Vec<N, E1> const& a, Vec<N, E2> const& b, Vec<N, E3> const& c) {
-            return complex_mul(a, b) + c;
-        }
-    };
-
-    template<class real_t>
-    struct FMADD<std::complex<real_t>, /*conjugate*/true> {
-        template<template<unsigned, class> class Vec, unsigned N,
-                 class E1, class E2, class E3> CPB_ALWAYS_INLINE
-        static Vec<N, void> call(Vec<N, E1> const& a, Vec<N, E2> const& b, Vec<N, E3> const& c) {
-            return complex_mul(conjugate(a), b) + c;
-        }
-    };
-} // namespace detail
-
 /**
  Multiply and add `a * b + c` for real or complex arguments
  */
-template<class scalar_t, template<unsigned, class> class Vec, unsigned N,
-         class E1, class E2, class E3> CPB_ALWAYS_INLINE
-Vec<N, void> madd_rc(Vec<N, E1> const& a, Vec<N, E2> const& b, Vec<N, E3> const& c) {
-    return detail::FMADD<scalar_t>::call(a, b, c);
+template<class scalar_t, class Vec, detail::requires_real<scalar_t> = 1> CPB_ALWAYS_INLINE
+Vec madd_rc(Vec const& a, Vec const& b, Vec const& c) {
+#if SIMDPP_USE_FMA3
+    return fmadd(a, b, c);
+#else
+    return a * b + c;
+#endif
+}
+
+template<class scalar_t, class Vec, detail::requires_complex<scalar_t> = 1> CPB_ALWAYS_INLINE
+Vec madd_rc(Vec const& a, Vec const& b, Vec const& c) {
+    return complex_mul(a, b) + c;
 }
 
 /**
  Conjugate multiply and add `conjugate(a) * b + c` for real or complex arguments
  */
-template<class scalar_t, template<unsigned, class> class Vec, unsigned N,
-         class E1, class E2, class E3> CPB_ALWAYS_INLINE
-Vec<N, void> conjugate_madd_rc(Vec<N, E1> const& a, Vec<N, E2> const& b, Vec<N, E3> const& c) {
-    return detail::FMADD<scalar_t, /*conjugate*/true>::call(a, b, c);
+template<class scalar_t, class Vec, detail::requires_real<scalar_t> = 1> CPB_ALWAYS_INLINE
+Vec conjugate_madd_rc(Vec const& a, Vec const& b, Vec const& c) {
+    return madd_rc<scalar_t>(a, b, c);
 }
 
-namespace detail {
-    template<class scalar_t>
-    struct ReduceAdd {
-        template<class Vec> CPB_ALWAYS_INLINE
-        static scalar_t call(Vec const& a) {
-            return reduce_add(a);
-        }
-    };
-
-    template<class real_t>
-    struct ReduceAdd<std::complex<real_t>> {
-        template<template<unsigned, class> class V, unsigned N, class E> CPB_ALWAYS_INLINE
-        static std::complex<real_t> call(V<N, E> const& a) {
-            using Vec = V<N, void>;
-            auto real = Vec{a};
-            auto imag = make_float<Vec>(0);
-            transpose2(real, imag);
-            return {reduce_add(real), reduce_add(imag)};
-        }
-    };
-} // namespace detail
+template<class scalar_t, class Vec, detail::requires_complex<scalar_t> = 1> CPB_ALWAYS_INLINE
+Vec conjugate_madd_rc(Vec const& a, Vec const& b, Vec const& c) {
+    return complex_mul(conjugate(a), b) + c;
+}
 
 /**
  Reduce add for real or complex arguments
  */
-template<class scalar_t, class Vec> CPB_ALWAYS_INLINE
+template<class scalar_t, class Vec, detail::requires_real<scalar_t> = 1> CPB_ALWAYS_INLINE
 scalar_t reduce_add_rc(Vec const& a) {
-    return detail::ReduceAdd<scalar_t>::call(a);
+    return reduce_add(a);
 }
 
-namespace detail {
-    template<class scalar_t>
-    struct ReduceImag {
-        template<class Vec> CPB_ALWAYS_INLINE
-        static Vec call(Vec const& a) { return a; }
-    };
-
-    template<class real_t>
-    struct ReduceImag<std::complex<real_t>> {
-        template<class Vec> CPB_ALWAYS_INLINE
-        static Vec call(Vec const& a) {
-            auto real = a;
-            auto imag = make_float<Vec>(0);
-            transpose2(real, imag);
-            permute2<1, 0>(imag);
-            return real + imag;
-        }
-    };
-} // namespace detail
+template<class scalar_t, class Vec, detail::requires_complex<scalar_t> = 1> CPB_ALWAYS_INLINE
+scalar_t reduce_add_rc(Vec const& a) {
+    auto real = a;
+    auto imag = make_float<Vec>(0);
+    transpose2(real, imag);
+    return {reduce_add(real), reduce_add(imag)};
+}
 
 /**
  Add the imaginary part of a complex number to the real part (noop for real numbers)
 
  result = std::complex<real_t>(a.real() + a.imag(), 0);
  */
-template<class scalar_t, class Vec> CPB_ALWAYS_INLINE
+template<class scalar_t, class Vec, detail::requires_real<scalar_t> = 1> CPB_ALWAYS_INLINE
 Vec reduce_imag(Vec const& a) {
-    return detail::ReduceImag<scalar_t>::call(a);
+    return a;
 }
 
-namespace detail {
-    template<class scalar_t>
-    struct LoadSplat {
-        template<class Vec> CPB_ALWAYS_INLINE
-        static Vec call(scalar_t const* p) {
-            return load_splat<Vec>(p);
-        }
-    };
-
-    template<class real_t>
-    struct LoadSplat<std::complex<real_t>> {
-        template<class Vec> CPB_ALWAYS_INLINE
-        static Vec call(void const* p) {
-            auto a = load_splat<Vec>(p);
-            auto b = load_splat<Vec>(static_cast<real_t const*>(p) + 1);
-            transpose2(a, b);
-            return a;
-        }
-    };
-} // namespace detail
+template<class scalar_t, class Vec, detail::requires_complex<scalar_t> = 1> CPB_ALWAYS_INLINE
+Vec reduce_imag(Vec const& a) {
+    auto real = a;
+    auto imag = make_float<Vec>(0);
+    transpose2(real, imag);
+    return real + imag;
+}
 
 /**
  Load splat which works for real or complex arguments
  */
 template<class Vec, class scalar_t> CPB_ALWAYS_INLINE
 Vec load_splat_rc(scalar_t const* p) {
-    return detail::LoadSplat<scalar_t>::template call<Vec>(p);
+    return load_splat<Vec>(p);
+}
+
+template<class Vec> CPB_ALWAYS_INLINE
+Vec load_splat_rc(std::complex<float> const* p) {
+    return bit_cast<Vec>(load_splat<select_vector_t<double>>(p));
+}
+
+template<class Vec, class real_t> CPB_ALWAYS_INLINE
+Vec load_splat_rc(std::complex<real_t> const* p) {
+    auto a = load_splat<Vec>(p);
+    auto b = load_splat<Vec>(reinterpret_cast<real_t const*>(p) + 1);
+    transpose2(a, b);
+    return a;
 }
 
 }} // namespace cpb::simd
