@@ -164,9 +164,13 @@ namespace detail {
     struct Gather<float32x4> {
         CPB_ALWAYS_INLINE
         static __m128 call(float const* data, std::int32_t const* indices) {
-            auto const idx = load<int32x4>(indices);
-            return _mm_set_ps(data[extract<3>(idx)], data[extract<2>(idx)],
-                              data[extract<1>(idx)], data[extract<0>(idx)]);
+            auto const a = _mm_load_ss(data + indices[0]);
+            auto const b = _mm_load_ss(data + indices[1]);
+            auto const c = _mm_load_ss(data + indices[2]);
+            auto const d = _mm_load_ss(data + indices[3]);
+            auto const ac = _mm_unpacklo_ps(a, c);
+            auto const bd = _mm_unpacklo_ps(b, d);
+            return _mm_unpacklo_ps(ac, bd);
         }
 
         CPB_ALWAYS_INLINE
@@ -182,9 +186,8 @@ namespace detail {
     struct Gather<float64x4> {
         CPB_ALWAYS_INLINE
         static __m256d call(double const* data, std::int32_t const* indices) {
-            auto const idx = load<int32x4>(indices);
-            return _mm256_set_pd(data[extract<3>(idx)], data[extract<2>(idx)],
-                                 data[extract<1>(idx)], data[extract<0>(idx)]);
+            return _mm256_set_pd(data[indices[3]], data[indices[2]],
+                                 data[indices[1]], data[indices[0]]);
         }
 
         CPB_ALWAYS_INLINE
@@ -199,17 +202,9 @@ namespace detail {
     struct Gather<float32x8> {
         CPB_ALWAYS_INLINE
         static __m256 call(float const* data, std::int32_t const* indices) {
-            auto const idx = _mm256_load_si256(reinterpret_cast<__m256i const*>(indices));
-            return _mm256_set_ps(
-                data[_mm256_extract_epi32(idx, 7)],
-                data[_mm256_extract_epi32(idx, 6)],
-                data[_mm256_extract_epi32(idx, 5)],
-                data[_mm256_extract_epi32(idx, 4)],
-                data[_mm256_extract_epi32(idx, 3)],
-                data[_mm256_extract_epi32(idx, 2)],
-                data[_mm256_extract_epi32(idx, 1)],
-                data[_mm256_extract_epi32(idx, 0)]
-            );
+            auto const a = _mm256_castps128_ps256(Gather<float32x4>::call(data, indices));
+            auto const b = Gather<float32x4>::call(data, indices + 4);
+            return _mm256_insertf128_ps(a, b, 1);
         }
 
         CPB_ALWAYS_INLINE
