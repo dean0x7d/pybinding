@@ -55,17 +55,38 @@ ArrayXcd Core::moments(idx_t num_moments, VectorXcd const& alpha, VectorXcd cons
     }
 }
 
-ArrayXd Core::ldos(idx_t index, ArrayXd const& energy, double broadening) {
+ArrayXXdCM Core::ldos(std::vector<idx_t> const& idx, ArrayXd const& energy, double broadening) {
     auto const scale = bounds.scaling_factors();
     auto const num_moments = config.kernel.required_num_moments(broadening / scale.a);
+    auto const num_indices = static_cast<idx_t>(idx.size());
 
-    optimized_hamiltonian.optimize_for({index, index}, scale);
-    stats.reset(num_moments, optimized_hamiltonian, config.algorithm);
+    optimized_hamiltonian.optimize_for({idx, idx}, scale);
+    stats.reset(num_moments, optimized_hamiltonian, config.algorithm, num_indices);
 
-    auto moments = DiagonalMoments(num_moments);
-    timed_compute(&moments, unit_starter(optimized_hamiltonian), config.algorithm);
-    apply_damping(moments, config.kernel);
-    return reconstruct<SpectralDensity>(moments, energy, scale);
+    auto const scalar_tag = optimized_hamiltonian.scalar_tag();
+    auto const batch_size = compute->batch_size(scalar_tag);
+    auto all_moments = MomentConcatenator(num_moments, num_indices, scalar_tag);
+
+    if (num_indices <= 2) {
+        auto starter = unit_starter(optimized_hamiltonian);
+        auto moments = DiagonalMoments(num_moments);
+
+        for (auto n = idx_t{0}; n < num_indices; ++n) {
+            timed_compute(&moments, starter, config.algorithm);
+            all_moments.add(moments.data);
+        }
+    } else {
+        auto starter = unit_starter(optimized_hamiltonian, batch_size);
+        auto moments = BatchDiagonalMoments(num_moments, batch_size);
+
+        for (auto n = idx_t{0}; n < num_indices; n += batch_size) {
+            timed_compute(&moments, starter, config.algorithm);
+            all_moments.add(moments.data);
+        }
+    }
+
+    apply_damping(all_moments, config.kernel);
+    return reconstruct<SpectralDensity>(all_moments, energy, scale);
 }
 
 ArrayXd Core::dos(ArrayXd const& energy, double broadening, idx_t num_random) {

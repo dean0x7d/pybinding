@@ -13,6 +13,16 @@ struct InitMatrix {
     }
 };
 
+struct InitArrayXX {
+    idx_t rows;
+    idx_t cols;
+
+    template<class scalar_t>
+    var::Complex<ArrayXX> operator()(var::tag<scalar_t>) const {
+        return ArrayXX<scalar_t>::Zero(rows, cols).eval();
+    }
+};
+
 struct ArrayAdd {
     var::Complex<ArrayX> const& other;
 
@@ -62,6 +72,30 @@ struct Div {
     void operator()(T& x) const { x /= static_cast<real_t>(n); }
 };
 
+struct ConcatArrayXX {
+    var::Complex<ArrayXX>& var_data;
+    idx_t& filled_cols;
+
+    template<class scalar_t>
+    void operator()(ArrayXX<scalar_t> const& a) {
+        auto& data = var_data.template get<ArrayXX<scalar_t>>();
+
+        auto const batch_size = a.cols();
+        auto const remaining_cols = data.cols() - filled_cols;
+        auto const cols = remaining_cols > batch_size ? batch_size : remaining_cols;
+        data.block(0, filled_cols, data.rows(), cols) = a.leftCols(cols);
+        filled_cols += cols;
+    }
+
+    template<class scalar_t>
+    void operator()(ArrayX<scalar_t> const& a) {
+        auto& data = var_data.template get<ArrayXX<scalar_t>>();
+
+        data.col(filled_cols) = a;
+        ++filled_cols;
+    }
+};
+
 } // anonymous namespace
 
 void MomentAccumulator::add(var::Complex<ArrayX> const& other) {
@@ -90,6 +124,18 @@ void MomentAccumulator::add(var::Complex<ArrayXX> const& other) {
     if (_count >= total && total != 1) {
         var::apply_visitor(Div{total}, data);
     }
+}
+
+
+MomentConcatenator::MomentConcatenator(idx_t num_moments, idx_t num_points, var::scalar_tag tag)
+    : data(var::apply_visitor(InitArrayXX{num_moments, num_points}, tag)) {}
+
+void MomentConcatenator::add(var::Complex<ArrayX> const& other) {
+    var::apply_visitor(ConcatArrayXX{data, _filled_cols}, other);
+}
+
+void MomentConcatenator::add(var::Complex<ArrayXX> const& other) {
+    var::apply_visitor(ConcatArrayXX{data, _filled_cols}, other);
 }
 
 MomentMultiplication::MomentMultiplication(idx_t num_moments, var::scalar_tag tag)

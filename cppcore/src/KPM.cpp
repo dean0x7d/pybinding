@@ -58,10 +58,7 @@ ArrayXXdCM KPM::calc_ldos(ArrayXd const& energy, double broadening, Cartesian po
     auto const ham_idx = model.system()->to_hamiltonian_indices(system_index);
 
     calculation_timer.tic();
-    auto results = ArrayXXdCM(energy.size(), ham_idx.size());
-    for (auto i = 0; i < ham_idx.size(); ++i) {
-        results.col(i) = core.ldos(ham_idx[i], energy, broadening);
-    }
+    auto results = core.ldos({begin(ham_idx), end(ham_idx)}, energy, broadening);
     calculation_timer.toc();
 
     return (reduce && results.cols() > 1) ? results.rowwise().sum() : results;

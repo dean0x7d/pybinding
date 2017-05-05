@@ -2,7 +2,7 @@ import pytest
 import numpy as np
 
 import pybinding as pb
-from pybinding.repository import graphene
+from pybinding.repository import graphene, group6_tmd
 
 models = {
     'graphene-pristine': [graphene.monolayer(), pb.rectangle(15)],
@@ -13,32 +13,31 @@ models = {
                                 graphene.constant_magnetic_field(1e3)],
 }
 
-configurations = [
-    {'matrix_format': "CSR", 'optimal_size': False, 'interleaved': False},
-    {'matrix_format': "CSR", 'optimal_size': True,  'interleaved': False},
-    {'matrix_format': "CSR", 'optimal_size': False, 'interleaved': True},
-    {'matrix_format': "ELL", 'optimal_size': True,  'interleaved': True},
-]
-
 
 @pytest.fixture(scope='module', ids=list(models.keys()), params=models.values())
 def model(request):
     return pb.Model(*request.param)
 
 
-@pytest.fixture(scope='module')
-def kpm(model):
+ldos_models = {**models, "mos2": [group6_tmd.monolayer_3band("MoS2"), pb.rectangle(6)]}
+
+
+@pytest.mark.parametrize("params", ldos_models.values(), ids=list(ldos_models.keys()))
+def test_ldos(params, baseline, plot_if_fails):
+    configurations = [
+        {'matrix_format': "CSR", 'optimal_size': False, 'interleaved': False},
+        {'matrix_format': "CSR", 'optimal_size': True, 'interleaved': False},
+        {'matrix_format': "CSR", 'optimal_size': False, 'interleaved': True},
+        {'matrix_format': "ELL", 'optimal_size': True, 'interleaved': True},
+    ]
+    model = pb.Model(*params)
+
     kernel = pb.lorentz_kernel()
     strategies = [pb.kpm(model, kernel=kernel, **c) for c in configurations]
-    strategies += [pb.chebyshev._kpm_python(model, kernel=kernel)]
-    if hasattr(pb._cpp, 'kpm_cuda'):
-        strategies += [pb.kpm_cuda(model, kernel=kernel)]
-    return strategies
 
-
-def test_ldos(kpm, baseline, plot_if_fails):
     energy = np.linspace(0, 2, 25)
-    results = [k.calc_ldos(energy, broadening=0.15, position=(0, 0), sublattice='B') for k in kpm]
+    results = [kpm.calc_ldos(energy, broadening=0.15, position=[0, 0.07], reduce=False)
+               for kpm in strategies]
 
     expected = results[0].with_data(baseline(results[0].data.astype(np.float32)))
     for i in range(len(results)):

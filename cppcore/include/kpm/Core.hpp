@@ -61,8 +61,8 @@ public:
     ArrayXcd moments(idx_t num_moments, VectorXcd const& alpha, VectorXcd const& beta,
                      SparseMatrixXcd const& op);
 
-    /// LDOS at the given Hamiltonian index for the energy range and broadening
-    ArrayXd ldos(idx_t index, ArrayXd const& energy, double broadening);
+    /// LDOS at the given Hamiltonian indices for the energy range and broadening
+    ArrayXXdCM ldos(std::vector<idx_t> const& idx, ArrayXd const& energy, double broadening);
     /// DOS for the given energy range and broadening
     ArrayXd dos(ArrayXd const& energy, double broadening, idx_t num_random);
 

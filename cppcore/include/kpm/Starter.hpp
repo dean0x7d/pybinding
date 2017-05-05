@@ -22,7 +22,7 @@ struct Starter {
 Starter constant_starter(OptimizedHamiltonian const& oh, VectorXcd const& alpha);
 
 /// Unit vector starter (`oh` encodes the unit index)
-Starter unit_starter(OptimizedHamiltonian const& oh);
+Starter unit_starter(OptimizedHamiltonian const& oh, idx_t batch_size = 1);
 
 /// Starter vector for the stochastic KPM procedure (`oh` is needed for size and reordering)
 Starter random_starter(OptimizedHamiltonian const& oh, VariantCSR const& op = {});

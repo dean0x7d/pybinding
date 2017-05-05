@@ -15,6 +15,9 @@ struct DiagonalMoments {
     DiagonalMoments(idx_t num_moments) : num_moments(num_moments) {}
 };
 
+/**
+ Same as `DiagonalMoments` but stores multiple moments as rows of `data`.
+ */
 struct BatchDiagonalMoments {
     idx_t num_moments;
     idx_t batch_size;
@@ -88,6 +91,19 @@ struct MomentAccumulator {
 
     MomentAccumulator(idx_t num_moments, idx_t total, idx_t batch_size = 1)
         : num_moments(num_moments), total(total), batch_size(batch_size) {}
+
+    void add(var::Complex<ArrayX> const& other);
+    void add(var::Complex<ArrayXX> const& other);
+};
+
+/**
+ Concatenate successive moment arrays
+ */
+struct MomentConcatenator {
+    idx_t _filled_cols = 0;
+    var::Complex<ArrayXX> data;
+
+    MomentConcatenator(idx_t num_moments, idx_t num_points, var::scalar_tag tag);
 
     void add(var::Complex<ArrayX> const& other);
     void add(var::Complex<ArrayXX> const& other);

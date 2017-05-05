@@ -225,8 +225,18 @@ std::vector<TestGreensResult> test_kpm_core(kpm::Compute const& compute,
                     REQUIRE(g_ij.isApprox(g_ji, precision));
                 }
 
-                auto const ldos = core.ldos(i, energy_range, broadening);
-                REQUIRE(ldos.isApprox(-1/pi * g_ii.imag(), precision));
+                auto const ldos0 = core.ldos({i}, energy_range, broadening);
+                auto const ldos1 = core.ldos({j}, energy_range, broadening);
+                REQUIRE(ldos0.isApprox(-1/pi * g_ii.imag(), precision));
+                REQUIRE_FALSE(ldos0.isApprox(ldos1, precision));
+
+                auto const ldos2 = core.ldos({i, j, i, j, i, j, i, j, i, j},
+                                             energy_range, broadening);
+                REQUIRE(ldos2.cols() == 10);
+                for (auto n = 0; n < 10; n += 2) {
+                    REQUIRE(ldos0.isApprox(ldos2.col(n + 0), precision));
+                    REQUIRE(ldos1.isApprox(ldos2.col(n + 1), precision));
+                }
 
                 if (opt_level == 0) {
                     unoptimized_greens = {g_ii, g_ij};

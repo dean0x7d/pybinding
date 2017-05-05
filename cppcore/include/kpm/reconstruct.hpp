@@ -31,6 +31,27 @@ struct SpectralDensity {
             return k / sqrt(1 - E*E) * sum(real_moments * cos(ns * acos(E)));
         }).template cast<double>();
     }
+
+    template<class scalar_t>
+    ArrayXXdCM operator()(ArrayXX<scalar_t> const& moments) const {
+        using real_t = num::get_real_t<scalar_t>;
+        auto const num_moments = moments.rows();
+
+        auto const scale = Scale<real_t>(s);
+        auto const scaled_energy = scale(energy.cast<real_t>());
+        auto const real_moments = ArrayXX<real_t>(moments.real());
+        auto const ns = make_integer_range<real_t>(num_moments);
+        auto const k = real_t{2 / constant::pi} / scale.a;
+
+        auto result = ArrayXXdCM(scaled_energy.size(), moments.cols());
+        for (auto i = idx_t{0}; i < scaled_energy.size(); ++i) {
+            auto const E = scaled_energy[i];
+            auto const cos_n = cos(ns * acos(E)).eval();
+            auto const r = k / sqrt(1 - E*E) * (real_moments.colwise() * cos_n).colwise().sum();
+            result.row(i) = r.transpose().template cast<double>();
+        }
+        return result;
+    }
 };
 
 /// Reconstruct Green's function based on the given KPM moments

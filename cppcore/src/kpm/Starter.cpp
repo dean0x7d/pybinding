@@ -25,16 +25,22 @@ struct ConstantStarter {
 
 struct UnitStarter {
     idx_t size;
-    idx_t index;
+    ArrayXi sources;
+    idx_t i = 0;
 
-    UnitStarter(OptimizedHamiltonian const& oh) : size(oh.size()), index(oh.idx().src[0]) {}
+    UnitStarter(OptimizedHamiltonian const& oh) : size(oh.size()), sources(oh.idx().src) {}
 
-    var::Complex<VectorX> operator()(var::scalar_tag tag) const { return tag.match(*this); }
+    var::Complex<VectorX> operator()(var::scalar_tag tag) {
+        return var::apply_visitor(*this, tag);
+    }
 
     template<class scalar_t>
-    var::Complex<VectorX> operator()(var::tag<scalar_t>) const {
+    var::Complex<VectorX> operator()(var::tag<scalar_t>) {
         auto r0 = VectorX<scalar_t>::Zero(size).eval();
-        r0[index] = 1;
+        if (i < sources.size()) {
+            r0[sources[i]] = 1;
+            ++i;
+        }
         return r0;
     }
 };
@@ -82,8 +88,8 @@ Starter constant_starter(OptimizedHamiltonian const& oh, VectorXcd const& alpha)
     return {ConstantStarter(oh, alpha), oh.size(), 1};
 }
 
-Starter unit_starter(OptimizedHamiltonian const& oh) {
-    return {UnitStarter(oh), oh.size(), 1};
+Starter unit_starter(OptimizedHamiltonian const& oh, idx_t batch_size) {
+    return {UnitStarter(oh), oh.size(), batch_size};
 }
 
 Starter random_starter(OptimizedHamiltonian const& oh, VariantCSR const& op) {

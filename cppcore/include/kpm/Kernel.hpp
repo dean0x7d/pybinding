@@ -37,6 +37,13 @@ struct Kernel {
         for (auto& m : moments) { operator()(m); }
     }
 
+    template<class scalar_t>
+    void operator()(ArrayXX<scalar_t>& moments) const {
+        using real_t = num::get_real_t<scalar_t>;
+        auto const N = static_cast<int>(moments.rows());
+        moments.colwise() *= damping_coefficients(N).template cast<real_t>().eval();
+    }
+
     /// Apply the kernel damping to a matrix of moments
     template<class scalar_t>
     void operator()(MatrixX<scalar_t>& moments) const {
