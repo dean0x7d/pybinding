@@ -4,12 +4,17 @@ namespace cpb { namespace kpm {
 
 SliceMap::SliceMap(std::vector<storage_idx_t> indices, Indices const& optimized_idx)
     : data(std::move(indices)) {
-    assert(optimized_idx.cols.size() != 0);
-    auto const max_index = *std::max_element(begin(optimized_idx.cols), end(optimized_idx.cols));
-    auto const it = std::find_if(data.begin(), data.end(),
-                                 [&](storage_idx_t index) { return index > max_index; });
-    assert(it != data.end());
-    offset = static_cast<idx_t>(it - data.begin());
+    auto find_offset = [&](ArrayXi const& idx) {
+        assert(idx.size() != 0);
+        auto const max_index = *std::max_element(begin(idx), end(idx));
+        auto const it = std::find_if(data.begin(), data.end(),
+                                     [&](storage_idx_t index) { return index > max_index; });
+        assert(it != data.end());
+        return static_cast<idx_t>(it - data.begin());
+    };
+
+    src_offset = find_offset(optimized_idx.src);
+    dest_offset = find_offset(optimized_idx.dest);
 }
 
 struct Optimize {
@@ -86,12 +91,12 @@ void OptimizedHamiltonian::create_reordered(Indices const& idx, Scale<> s) {
     // The index queue will contain the indices that need to be checked next
     auto index_queue = std::vector<storage_idx_t>();
     index_queue.reserve(system_size);
-    index_queue.push_back(idx.row); // starting from the given index
+    index_queue.push_back(idx.src[0]); // starting from the given index
 
     // Map from original matrix indices to reordered matrix indices
     reorder_map = std::vector<storage_idx_t>(system_size, -1); // reset all to invalid state
     // The point of the reordering is to have the target become index number 0
-    reorder_map[idx.row] = 0;
+    reorder_map[idx.src[0]] = 0;
 
     // As the reordered matrix is filled, the slice border indices are recorded
     auto slice_border_indices = std::vector<storage_idx_t>();
@@ -149,13 +154,8 @@ void OptimizedHamiltonian::create_reordered(Indices const& idx, Scale<> s) {
 
 Indices OptimizedHamiltonian::reorder_indices(Indices const& original_idx,
                                               std::vector<storage_idx_t> const& map) {
-    auto const size = original_idx.cols.size();
-    ArrayX<storage_idx_t> cols(size);
-    for (auto i = 0; i < size; ++i) {
-        cols[i] = map[original_idx.cols[i]];
-    }
-    // original_idx.row is always reordered to 0, that's the whole purpose of the optimization
-    return {0, std::move(cols)};
+    return {transform<ArrayX>(original_idx.src,  [&](storage_idx_t i) { return map[i]; }),
+            transform<ArrayX>(original_idx.dest, [&](storage_idx_t i) { return map[i]; })};
 }
 
 namespace {

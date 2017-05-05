@@ -30,23 +30,98 @@ TEST_CASE("OptimizedHamiltonian reordering", "[kpm]") {
     };
     auto equals = [](std::vector<idx_t> const& v) { return Catch::Equals(v); };
 
-    SECTION("Diagonal") {
+    SECTION("Diagonal single") {
         auto oh = kpm::OptimizedHamiltonian(model.hamiltonian(), kpm::MatrixFormat::CSR, true);
         auto const i = model.system()->find_nearest({0, 0.07f, 0}, "B");
         oh.optimize_for({i, i}, bounds.scaling_factors());
 
-        REQUIRE(oh.idx().row == 0);
-        REQUIRE(oh.idx().cols[0] == 0);
+        REQUIRE(oh.idx().src[0] == 0);
+        REQUIRE(oh.idx().dest[0] == 0);
+        REQUIRE(oh.idx().is_diagonal());
         REQUIRE(oh.map().get_data().front() == 1);
         REQUIRE(oh.map().get_data().back() == num_sites);
-        REQUIRE(oh.map().get_offset() == 0);
+        REQUIRE(oh.map().get_data().size() == 5);
+        REQUIRE(oh.map().get_src_offset() == 0);
+        REQUIRE(oh.map().get_dest_offset() == 0);
 
         REQUIRE_THAT(size_indices(oh,  6), equals({0, 1, 2, 2, 1, 0}));
         REQUIRE_THAT(size_indices(oh,  9), equals({0, 1, 2, 3, 4, 3, 2, 1, 0}));
         REQUIRE_THAT(size_indices(oh, 12), equals({0, 1, 2, 3, 4, 4, 4, 4, 3, 2, 1, 0}));
     }
 
-    SECTION("Off-diagonal") {
+    SECTION("Diagonal multi 1") {
+        auto oh = kpm::OptimizedHamiltonian(model.hamiltonian(), kpm::MatrixFormat::CSR, true);
+        auto const i1 = model.system()->find_nearest({0, -0.07f, 0}, "A");
+        auto const i2 = model.system()->find_nearest({0,  0.07f, 0}, "B");
+        REQUIRE(i1 != i2);
+
+        auto const idx = std::vector<idx_t>{i1, i2};
+        oh.optimize_for({idx, idx}, bounds.scaling_factors());
+
+        REQUIRE(oh.idx().src[0] == 0);
+        REQUIRE(oh.idx().src[1] == 3);
+        REQUIRE(oh.idx().dest[0] == 0);
+        REQUIRE(oh.idx().dest[1] == 3);
+        REQUIRE(oh.idx().is_diagonal());
+        REQUIRE(oh.map().get_data().front() == 1);
+        REQUIRE(oh.map().get_data().back() == num_sites);
+        REQUIRE(oh.map().get_data().size() == 5);
+        REQUIRE(oh.map().get_src_offset() == 1);
+        REQUIRE(oh.map().get_dest_offset() == 1);
+
+        REQUIRE_THAT(size_indices(oh,  6), equals({1, 2, 3, 3, 2, 1}));
+        REQUIRE_THAT(size_indices(oh,  9), equals({1, 2, 3, 4, 4, 4, 3, 2, 1}));
+        REQUIRE_THAT(size_indices(oh, 12), equals({1, 2, 3, 4, 4, 4, 4, 4, 4, 3, 2, 1}));
+    }
+
+    SECTION("Diagonal multi 2") {
+        auto oh = kpm::OptimizedHamiltonian(model.hamiltonian(), kpm::MatrixFormat::CSR, true);
+        auto const i1 = model.system()->find_nearest({0,  0.07f, 0}, "B");
+        auto const i2 = model.system()->find_nearest({0, -0.07f, 0}, "A");
+        auto const i3 = model.system()->find_nearest({0,  0.35f, 0}, "A");
+        auto const idx = std::vector<idx_t>{i1, i2, i3};
+        oh.optimize_for({idx, idx}, bounds.scaling_factors());
+
+        REQUIRE(oh.idx().src[0] == 0);
+        REQUIRE(oh.idx().src[1] == 1);
+        REQUIRE(oh.idx().src[2] == 15);
+        REQUIRE(oh.idx().dest[0] == 0);
+        REQUIRE(oh.idx().dest[1] == 1);
+        REQUIRE(oh.idx().dest[2] == 15);
+        REQUIRE(oh.idx().is_diagonal());
+        REQUIRE(oh.map().get_data().front() == 1);
+        REQUIRE(oh.map().get_data().back() == num_sites);
+        REQUIRE(oh.map().get_data().size() == 5);
+        REQUIRE(oh.map().get_src_offset() == 3);
+        REQUIRE(oh.map().get_dest_offset() == 3);
+
+        REQUIRE_THAT(size_indices(oh,  6), equals({3, 4, 4, 4, 4, 3}));
+        REQUIRE_THAT(size_indices(oh,  9), equals({3, 4, 4, 4, 4, 4, 4, 4, 3}));
+        REQUIRE_THAT(size_indices(oh, 12), equals({3, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 3}));
+    }
+
+    SECTION("Off-diagonal single") {
+        auto oh = kpm::OptimizedHamiltonian(model.hamiltonian(), kpm::MatrixFormat::CSR, true);
+        auto const i = model.system()->find_nearest({0, 0.35f, 0}, "A");
+        auto const j = model.system()->find_nearest({0, 0.07f, 0}, "B");
+        oh.optimize_for({i, j}, bounds.scaling_factors());
+
+        REQUIRE(oh.idx().src[0] == 0);
+        REQUIRE(oh.idx().dest[0] == 8);
+        REQUIRE(oh.idx().is_diagonal() == false);
+        REQUIRE(oh.map().get_data().front() == 1);
+        REQUIRE(oh.map().get_data().back() == num_sites);
+        REQUIRE(oh.map().get_data().size() == 8);
+        REQUIRE(oh.map().get_src_offset() == 0);
+        REQUIRE(oh.map().get_dest_offset() == 3);
+
+        REQUIRE_THAT(size_indices(oh,  6), equals({0, 1, 2, 3, 4, 3}));
+        REQUIRE_THAT(size_indices(oh,  9), equals({0, 1, 2, 3, 4, 5, 5, 4, 3}));
+        REQUIRE_THAT(size_indices(oh, 12), equals({0, 1, 2, 3, 4, 5, 6, 7, 6, 5, 4, 3}));
+        REQUIRE_THAT(size_indices(oh, 14), equals({0, 1, 2, 3, 4, 5, 6, 7, 7, 7, 6, 5, 4, 3}));
+    }
+
+    SECTION("Off-diagonal multi 1") {
         auto oh = kpm::OptimizedHamiltonian(model.hamiltonian(), kpm::MatrixFormat::CSR, true);
         auto const i = model.system()->find_nearest({0, 0.35f, 0}, "A");
         auto const j1 = model.system()->find_nearest({0, 0.07f, 0}, "B");
@@ -54,14 +129,45 @@ TEST_CASE("OptimizedHamiltonian reordering", "[kpm]") {
         auto const j3 = model.system()->find_nearest({0.12f, 0.28f, 0}, "B");
         oh.optimize_for({i, std::vector<idx_t>{j1, j2, j3}}, bounds.scaling_factors());
 
-        REQUIRE(oh.idx().row != oh.idx().cols[0]);
+        REQUIRE(oh.idx().src[0] == 0);
+        REQUIRE(oh.idx().dest[0] == 8);
+        REQUIRE(oh.idx().dest[1] == 5);
+        REQUIRE(oh.idx().dest[2] == 2);
         REQUIRE(oh.map().get_data().front() == 1);
         REQUIRE(oh.map().get_data().back() == num_sites);
-        REQUIRE(oh.map().get_offset() > 0);
+        REQUIRE(oh.map().get_data().size() == 8);
+        REQUIRE(oh.map().get_src_offset() == 0);
+        REQUIRE(oh.map().get_dest_offset() == 3);
 
-        REQUIRE_THAT(size_indices(oh,  6), equals({0, 1, 2, 3, 3, 3}));
-        REQUIRE_THAT(size_indices(oh,  9), equals({0, 1, 2, 3, 4, 4, 4, 4, 3}));
-        REQUIRE_THAT(size_indices(oh, 12), equals({0, 1, 2, 3, 4, 5, 6, 6, 6, 5, 4, 3}));
+        REQUIRE_THAT(size_indices(oh,  6), equals({0, 1, 2, 3, 4, 3}));
+        REQUIRE_THAT(size_indices(oh,  9), equals({0, 1, 2, 3, 4, 5, 5, 4, 3}));
+        REQUIRE_THAT(size_indices(oh, 12), equals({0, 1, 2, 3, 4, 5, 6, 7, 6, 5, 4, 3}));
+    }
+
+    SECTION("Off-diagonal multi 2") {
+        auto oh = kpm::OptimizedHamiltonian(model.hamiltonian(), kpm::MatrixFormat::CSR, true);
+        auto const i1 = model.system()->find_nearest({0,  0.35f, 0}, "A");
+        auto const i2 = model.system()->find_nearest({0, -0.35f, 0}, "B");
+        auto const idx1 = std::vector<idx_t>{i1, i2};
+        auto const j1 = model.system()->find_nearest({0.12f, 0.28f, 0}, "B");
+        auto const j2 = model.system()->find_nearest({0, 0.35f, 0}, "B");
+        auto const idx2 = std::vector<idx_t>{j1, j2};
+        oh.optimize_for({idx1, idx2}, bounds.scaling_factors());
+
+        REQUIRE(oh.idx().src[0] == 0);
+        REQUIRE(oh.idx().src[1] == 18);
+        REQUIRE(oh.idx().dest[0] == 2);
+        REQUIRE(oh.idx().dest[1] == 1);
+        REQUIRE(oh.idx().is_diagonal() == false);
+        REQUIRE(oh.map().get_data().front() == 1);
+        REQUIRE(oh.map().get_data().back() == num_sites);
+        REQUIRE(oh.map().get_data().size() == 8);
+        REQUIRE(oh.map().get_src_offset() == 7);
+        REQUIRE(oh.map().get_dest_offset() == 1);
+
+        REQUIRE_THAT(size_indices(oh,  6), equals({6, 5, 4, 3, 2, 1}));
+        REQUIRE_THAT(size_indices(oh,  9), equals({7, 7, 7, 6, 5, 4, 3, 2, 1}));
+        REQUIRE_THAT(size_indices(oh, 12), equals({7, 7, 7, 7, 7, 7, 6, 5, 4, 3, 2, 1}));
     }
 }
 

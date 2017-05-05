@@ -14,30 +14,37 @@
 namespace cpb { namespace kpm {
 
 /**
- Indices of the Green's function matrix that will be computed
-
- A single KPM calculation will compute an entire `row` of the Green's matrix,
- however only some column indices are required to be saved, as indicated by `cols`.
+ Source and destination indices for Hamiltonian optimization and local KPM calculations
  */
 struct Indices {
-    storage_idx_t row = -1;
-    ArrayXi cols;
+    ArrayXi src;
+    ArrayXi dest;
 
     Indices() = default;
-    Indices(idx_t row, idx_t col) : row(static_cast<storage_idx_t>(row)), cols(1) {
-        cols[0] = static_cast<storage_idx_t>(col);
+    Indices(idx_t source, idx_t destination) : src(1), dest(1) {
+        src[0] = static_cast<storage_idx_t>(source);
+        dest[0] = static_cast<storage_idx_t>(destination);
     }
-    Indices(idx_t row, std::vector<idx_t> const& cols)
-        : row(static_cast<storage_idx_t>(row)),
-          cols(eigen_cast<ArrayX>(cols).cast<storage_idx_t>()) {}
-    Indices(idx_t row, ArrayXi cols)
-        : row(static_cast<storage_idx_t>(row)), cols(std::move(cols)) {}
+
+    Indices(idx_t source, ArrayXi destination)
+        : src(1), dest(std::move(destination)) { src[0] = static_cast<storage_idx_t>(source); }
+    Indices(idx_t source, std::vector<idx_t> const& destination)
+        : Indices(source, eigen_cast<ArrayX>(destination).cast<storage_idx_t>()) {}
+
+    Indices(ArrayXi source, ArrayXi destination)
+        : src(std::move(source)), dest(std::move(destination)) {}
+    Indices(std::vector<idx_t> const& source, std::vector<idx_t> const& destination)
+        : Indices(eigen_cast<ArrayX>(source).cast<storage_idx_t>(),
+                  eigen_cast<ArrayX>(destination).cast<storage_idx_t>()) {}
 
     /// Indicates a single element on the main diagonal
-    bool is_diagonal() const { return cols.size() == 1 && row == cols[0]; }
+    bool is_diagonal() const {
+        return src.size() == dest.size() && (src == dest).all();
+    }
 
     friend bool operator==(Indices const& l, Indices const& r) {
-        return l.row == r.row && all_of(l.cols == r.cols);
+        return l.src.size() == r.src.size() && (l.src == r.src).all()
+               && l.dest.size() == r.dest.size() && (l.dest == r.dest).all();
     }
 };
 
@@ -46,7 +53,8 @@ struct Indices {
  */
 class SliceMap {
     std::vector<storage_idx_t> data; ///< optimized Hamiltonian indices marking slice borders
-    idx_t offset = 0; ///< needed to correctly compute off-diagonal elements (i != j)
+    idx_t src_offset = 0; ///< needed when there are multiple source indices (start at offset)
+    idx_t dest_offset = 0; ///< indicates the slice of the highest destination index
 
 public:
     /// Simple constructor for non-optimized case -> single slice equal to full system size
@@ -59,11 +67,12 @@ public:
     idx_t index(idx_t n, idx_t num_moments) const {
         assert(n < num_moments);
 
-        auto const max = std::min(last_index(), num_moments / 2);
-        if (n < max) {
-            return n; // size grows in the beginning
+        auto const mid = (num_moments - 1 + dest_offset - src_offset) / 2;
+        auto const max = std::min(last_index(), mid + src_offset);
+        if (n < mid) {
+            return std::min(max, n + src_offset); // the size grows in the beginning
         } else { // constant in the middle and shrinking near the end as reverse `n`
-            return std::min(max, num_moments - 1 - n + offset);
+            return std::min(max, num_moments - 1 - n + dest_offset);
         }
     }
 
@@ -82,7 +91,8 @@ public:
 
     idx_t operator[](idx_t i) const { return data[i]; }
     std::vector<storage_idx_t> const& get_data() const { return data; }
-    idx_t get_offset() const { return offset; }
+    idx_t get_src_offset() const { return src_offset; }
+    idx_t get_dest_offset() const { return dest_offset; }
 };
 
 /**

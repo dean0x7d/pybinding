@@ -61,18 +61,16 @@ template<class scalar_t>
 void MultiUnitCollector<scalar_t>::initial(VectorRef r0, VectorRef r1) {
     using real_t = num::get_real_t<scalar_t>;
 
-    for (auto i = 0; i < idx.cols.size(); ++i) {
-        auto const col = idx.cols[i];
-        moments[i][0] = r0[col] * real_t{0.5}; // 0.5 is special for the moment zero
-        moments[i][1] = r1[col];
+    for (auto i = 0; i < idx.dest.size(); ++i) {
+        moments[i][0] = r0[idx.dest[i]] * real_t{0.5}; // 0.5 is special the moment zero
+        moments[i][1] = r1[idx.dest[i]];
     }
 }
 
 template<class scalar_t>
 void MultiUnitCollector<scalar_t>::operator()(idx_t n, VectorRef r1) {
-    for (auto i = 0; i < idx.cols.size(); ++i) {
-        auto const col = idx.cols[i];
-        moments[i][n] = r1[col];
+    for (auto i = 0; i < idx.dest.size(); ++i) {
+        moments[i][n] = r1[idx.dest[i]];
     }
 }
 

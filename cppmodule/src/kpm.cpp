@@ -115,6 +115,6 @@ void wrap_greens(py::module& m) {
             return self.map().get_data();
         })
         .def_property_readonly("indices", [](kpm::OptimizedHamiltonian const& self) {
-            return self.idx().cols;
+            return self.idx().dest;
         });
 }

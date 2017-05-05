@@ -99,7 +99,7 @@ public:
     std::vector<ArrayX<scalar_t>> moments;
 
     MultiUnitCollector(idx_t num_moments, Indices const& idx)
-        : idx(idx), moments(idx.cols.size(), ArrayX<scalar_t>(num_moments)) {}
+        : idx(idx), moments(idx.dest.size(), ArrayX<scalar_t>(num_moments)) {}
 
     idx_t size() const override { return moments[0].size(); }
     void initial(VectorRef r0, VectorRef r1) override;

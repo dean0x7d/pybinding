@@ -27,7 +27,7 @@ struct UnitStarter {
     idx_t size;
     idx_t index;
 
-    UnitStarter(OptimizedHamiltonian const& oh) : size(oh.size()), index(oh.idx().row) {}
+    UnitStarter(OptimizedHamiltonian const& oh) : size(oh.size()), index(oh.idx().src[0]) {}
 
     var::Complex<VectorX> operator()(var::scalar_tag tag) const { return tag.match(*this); }
 
