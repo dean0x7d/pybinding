@@ -72,6 +72,27 @@ TEST_CASE("to_hamiltonian_indices") {
     }
 }
 
+TEST_CASE("sublattice_range") {
+    auto const model = Model(lattice::square_multiorbital(), shape::rectangle(1, 2));
+    auto const& system = *model.system();
+
+    auto const ra = system.sublattice_range("A");
+    REQUIRE(ra.start == 2);
+    REQUIRE(ra.end   == 4);
+
+    auto const rb = system.sublattice_range("B");
+    REQUIRE(rb.start == 0);
+    REQUIRE(rb.end   == 2);
+
+    auto const rc = system.sublattice_range("C");
+    REQUIRE(rc.start == 4);
+    REQUIRE(rc.end   == 6);
+
+    auto const rd = system.sublattice_range("D");
+    REQUIRE(rd.start == 6);
+    REQUIRE(rd.end   == 8);
+}
+
 TEST_CASE("expanded_positions") {
     auto const model = Model(lattice::square_multiorbital());
     auto const& sys = *model.system();

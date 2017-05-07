@@ -19,6 +19,41 @@ __all__ = ['KernelPolynomialMethod', 'kpm', 'kpm_cuda',
            'jackson_kernel', 'lorentz_kernel', 'dirichlet_kernel']
 
 
+class SpatialLDOS:
+    """Holds the results of :meth:`KPM.calc_spatial_ldos`
+
+    It's a product of a :class:`Series` and a :class:`StructureMap`.
+    """
+
+    def __init__(self, data, energy, structure):
+        self.data = data
+        self.energy = energy
+        self.structure = structure
+
+    def structure_map(self, energy):
+        """Return a :class:`StructureMap` of the spatial LDOS at the given energy
+        
+        Parameters
+        ----------
+        energy : float
+            Produce a structure map for LDOS data closest to this energy value.
+        """
+        idx = np.argmin(abs(self.energy - energy))
+        return self.structure.with_data(self.data[idx])
+
+    def ldos(self, position, sublattice=""):
+        """Return the LDOS as a function of energy at a specific position
+
+        Parameters
+        ----------
+        position : array_like
+        sublattice : Optional[str]
+        """
+        idx = self.structure.find_nearest(position, sublattice)
+        return results.Series(self.energy, self.data[:, idx],
+                              labels=dict(variable="E (eV)", data="LDOS", columns="orbitals"))
+
+
 class KernelPolynomialMethod:
     """The common interface for various KPM implementations
     
@@ -154,6 +189,32 @@ class KernelPolynomialMethod:
         ldos = self.impl.calc_ldos(energy, broadening, position, sublattice, reduce)
         return results.Series(energy, ldos.squeeze(), labels=dict(variable="E (eV)", data="LDOS",
                                                                   columns="orbitals"))
+
+    def calc_spatial_ldos(self, energy, broadening, shape, sublattice=""):
+        """Calculate the LDOS as a function of energy and space (in the area of the given shape)
+
+        Parameters
+        ----------
+        energy : ndarray
+            Values for which the LDOS is calculated.
+        broadening : float
+            Width, in energy, of the smallest detail which can be resolved.
+            Lower values result in longer calculation time.
+        shape : Shape
+            Determines the site positions at which to do the calculation. 
+        sublattice : str
+            Only look for sites of a specific sublattice, within the `shape`.
+            The default value considers any sublattice.
+
+        Returns
+        -------
+        :class:`SpatialLDOS`
+        """
+        ldos = self.impl.calc_spatial_ldos(energy, broadening, shape, sublattice)
+        smap = self.system[shape.contains(*self.system.positions)]
+        if sublattice:
+            smap = smap[smap.sub == sublattice]
+        return SpatialLDOS(ldos, energy, smap)
 
     def calc_dos(self, energy, broadening, num_random=1):
         """Calculate the density of states as a function of energy

@@ -86,7 +86,7 @@ class System(Structure):
         ----------
         position : array_like
             Where to look.
-        sublattice : Optional[int]
+        sublattice : Optional[str]
             Look for a specific sublattice site. By default any will do.
 
         Returns

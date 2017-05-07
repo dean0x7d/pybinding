@@ -537,6 +537,22 @@ class Structure:
         return Structure(self._sites[idx], self._hoppings[idx],
                          [b[idx] for b in self._boundaries])
 
+    def find_nearest(self, position, sublattice=""):
+        """Find the index of the atom closest to the given position
+
+        Parameters
+        ----------
+        position : array_like
+            Where to look.
+        sublattice : Optional[str]
+            Look for a specific sublattice site. By default any will do.
+
+        Returns
+        -------
+        int
+        """
+        return self._sites.find_nearest(position, sublattice)
+
     def cropped(self, **limits):
         """Return a copy which retains only the sites within the given limits
 

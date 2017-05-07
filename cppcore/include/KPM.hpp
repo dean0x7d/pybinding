@@ -24,6 +24,10 @@ public:
     /// LDOS at the given position and sublattice for the energy range and broadening
     ArrayXXdCM calc_ldos(ArrayXd const& energy, double broadening, Cartesian position,
                          string_view sublattice = "", bool reduce = true) const;
+    /// LDOS for multiple positions determined by the given shape
+    ArrayXXdCM calc_spatial_ldos(ArrayXd const& energy, double broadening, Shape const& shape,
+                                 string_view sublattice = "") const;
+
     /// DOS for the given energy range and broadening
     ArrayXd calc_dos(ArrayXd const& energy, double broadening, idx_t num_random) const;
 

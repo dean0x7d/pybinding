@@ -16,6 +16,8 @@ class Foundation;
 class FinalizedIndices;
 class TranslationalSymmetry;
 
+struct Range { idx_t start, end; };
+
 /**
  Stores the positions, sublattice and hopping IDs for all lattice sites.
  */
@@ -43,6 +45,9 @@ struct System {
 
     /// Translate the given System site index into its corresponding Hamiltonian indices
     ArrayXi to_hamiltonian_indices(idx_t system_index) const;
+
+    /// The [start, end) range (pair of system indices) of all sites of a sublattice
+    Range sublattice_range(string_view sublattice) const;
 
     /// Find the index of the site nearest to the given position. Optional: filter by sublattice.
     idx_t find_nearest(Cartesian position, string_view sublattice_name = "") const;

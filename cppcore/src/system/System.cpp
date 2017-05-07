@@ -45,28 +45,26 @@ ArrayXi System::to_hamiltonian_indices(idx_t system_index) const {
     throw std::runtime_error("to_hamiltonian_indices: this should never happen");
 }
 
-idx_t System::find_nearest(Cartesian target_position, string_view sublattice_name) const {
-    auto const range = [&]{
-        struct Range { idx_t start, end; };
-
-        if (sublattice_name.empty()) {
-            // Check all sites
-            return Range{0, num_sites()};
-        } else {
-            // Only check sites belonging to the target sublattice
-            auto const target_id = lattice[sublattice_name].alias_id;
-            auto const it = std::find_if(
-                compressed_sublattices.begin(), compressed_sublattices.end(),
-                [&](CompressedSublattices::It const& sub) { return sub.alias_id() == target_id; }
-            );
-            if (it == compressed_sublattices.end()) {
-                throw std::runtime_error("System::find_nearest() This should never happen");
-            }
-
-            return Range{it->sys_start(), it->sys_end()};
+Range System::sublattice_range(string_view sublattice) const {
+    if (sublattice.empty()) {
+        return {0, num_sites()};
+    } else {
+        // Only check sites belonging to the target sublattice
+        auto const target_id = lattice[sublattice].alias_id;
+        auto const it = std::find_if(
+            compressed_sublattices.begin(), compressed_sublattices.end(),
+            [&](CompressedSublattices::It const& sub) { return sub.alias_id() == target_id; }
+        );
+        if (it == compressed_sublattices.end()) {
+            throw std::runtime_error("System::sublattice_range() This should never happen");
         }
-    }();
 
+        return {it->sys_start(), it->sys_end()};
+    }
+}
+
+idx_t System::find_nearest(Cartesian target_position, string_view sublattice_name) const {
+    auto const range = sublattice_range(sublattice_name);
     auto nearest_index = range.start;
     auto min_distance = (positions[range.start] - target_position).norm();
 

@@ -93,13 +93,13 @@ class AbstractSites(metaclass=ABCMeta):
         positions = np.stack(self.positions[:ndim], axis=1)
         return np.linalg.norm(positions - target_position, axis=1)
 
-    def find_nearest(self, target_position, target_site_family=None):
+    def find_nearest(self, target_position, target_site_family=""):
         """Return the index of the position nearest the target
 
         Parameters
         ----------
         target_position : array_like
-        target_site_family : int
+        target_site_family : Optional[str]
             Look for a specific sublattice site. By default any will do.
 
         Returns
@@ -115,7 +115,7 @@ class AbstractSites(metaclass=ABCMeta):
         2
         """
         distances = self.distances(target_position)
-        if target_site_family is None:
+        if target_site_family == "":
             return np.argmin(distances)
         else:
             return ma.argmin(ma.array(distances, mask=(self.ids != target_site_family)))

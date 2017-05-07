@@ -64,6 +64,35 @@ ArrayXXdCM KPM::calc_ldos(ArrayXd const& energy, double broadening, Cartesian po
     return (reduce && results.cols() > 1) ? results.rowwise().sum() : results;
 }
 
+ArrayXXdCM KPM::calc_spatial_ldos(ArrayXd const& energy, double broadening, Shape const& shape,
+                                  string_view sublattice) const {
+    if (model.get_lattice().has_multiple_orbitals()) {
+        throw std::runtime_error("This function doesn't currently support multi-orbital models");
+    }
+
+    auto const& system = *model.system();
+
+    calculation_timer.tic();
+    auto const indices = [&]{
+        auto const contains = shape.contains(system.positions);
+        auto const range = system.sublattice_range(sublattice);
+
+        auto v = std::vector<idx_t>();
+        v.reserve(std::count(contains.data() + range.start, contains.data() + range.end, true));
+
+        for (auto i = range.start; i < range.end; ++i) {
+            if (contains[i]) { v.push_back(i); }
+        }
+
+        return v;
+    }();
+
+    auto results = core.ldos(indices, energy, broadening);
+    calculation_timer.toc();
+
+    return results;
+}
+
 ArrayXd KPM::calc_dos(ArrayXd const& energy, double broadening, idx_t num_random) const {
     calculation_timer.tic();
     auto dos = core.dos(energy, broadening, num_random);

@@ -77,6 +77,7 @@ void wrap_greens(py::module& m) {
         .def("calc_dos", &KPM::calc_dos)
         .def("calc_conductivity", &KPM::calc_conductivity)
         .def("calc_ldos", &KPM::calc_ldos)
+        .def("calc_spatial_ldos", &KPM::calc_spatial_ldos)
         .def("deferred_ldos", [](py::object self, ArrayXd energy, double broadening,
                                  Cartesian position, std::string sublattice) {
             auto& kpm = self.cast<KPM&>();
