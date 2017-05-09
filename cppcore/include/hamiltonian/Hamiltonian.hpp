@@ -16,7 +16,7 @@ namespace cpb {
  to copy. The matrix itself is immutable (for safety with the reference counting).
  */
 class VariantCSR {
-    using Variant = var::Complex<SparseMatrixX>;
+    using Variant = var::complex<SparseMatrixX>;
     std::shared_ptr<Variant const> ptr;
 
 public:
@@ -55,7 +55,7 @@ public:
     template<class scalar_t>
     Hamiltonian(std::shared_ptr<SparseMatrixX<scalar_t> const> p) : variant_matrix(std::move(p)) {}
 
-    var::Complex<SparseMatrixRC> const& get_variant() const { return variant_matrix; }
+    var::complex<SparseMatrixRC> const& get_variant() const { return variant_matrix; }
 
     explicit operator bool() const;
     void reset();
@@ -66,7 +66,7 @@ public:
     idx_t cols() const;
 
 private:
-    var::Complex<SparseMatrixRC> variant_matrix;
+    var::complex<SparseMatrixRC> variant_matrix;
 };
 
 namespace detail {

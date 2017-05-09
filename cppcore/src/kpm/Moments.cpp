@@ -8,7 +8,7 @@ struct InitMatrix {
     idx_t size;
 
     template<class scalar_t>
-    var::Complex<MatrixX> operator()(var::tag<scalar_t>) const {
+    var::complex<MatrixX> operator()(var::tag<scalar_t>) const {
         return MatrixX<scalar_t>::Zero(size, size).eval();
     }
 };
@@ -18,13 +18,13 @@ struct InitArrayXX {
     idx_t cols;
 
     template<class scalar_t>
-    var::Complex<ArrayXX> operator()(var::tag<scalar_t>) const {
+    var::complex<ArrayXX> operator()(var::tag<scalar_t>) const {
         return ArrayXX<scalar_t>::Zero(rows, cols).eval();
     }
 };
 
 struct ArrayAdd {
-    var::Complex<ArrayX> const& other;
+    var::complex<ArrayX> const& other;
 
     template<class scalar_t>
     void operator()(ArrayX<scalar_t>& result) const {
@@ -33,7 +33,7 @@ struct ArrayAdd {
 };
 
 struct ArraySetZero {
-    var::Complex<ArrayX>& data;
+    var::complex<ArrayX>& data;
     idx_t num_moments;
 
     template<class scalar_t>
@@ -43,7 +43,7 @@ struct ArraySetZero {
 };
 
 struct ArrayRowWiseSum {
-    var::Complex<ArrayXX> const& other;
+    var::complex<ArrayXX> const& other;
     idx_t cols;
 
     template<class scalar_t>
@@ -55,8 +55,8 @@ struct ArrayRowWiseSum {
 };
 
 struct MatrixMulAdd {
-    var::Complex<MatrixX>& result;
-    var::Complex<MatrixX> const& a;
+    var::complex<MatrixX>& result;
+    var::complex<MatrixX> const& a;
 
     template<class scalar_t>
     void operator()(MatrixX<scalar_t> const& b) {
@@ -73,7 +73,7 @@ struct Div {
 };
 
 struct ConcatArrayXX {
-    var::Complex<ArrayXX>& var_data;
+    var::complex<ArrayXX>& var_data;
     idx_t& filled_cols;
 
     template<class scalar_t>
@@ -98,7 +98,7 @@ struct ConcatArrayXX {
 
 } // anonymous namespace
 
-void MomentAccumulator::add(var::Complex<ArrayX> const& other) {
+void MomentAccumulator::add(var::complex<ArrayX> const& other) {
     if (_count == 0) {
         data = other;
     } else {
@@ -111,7 +111,7 @@ void MomentAccumulator::add(var::Complex<ArrayX> const& other) {
     }
 }
 
-void MomentAccumulator::add(var::Complex<ArrayXX> const& other) {
+void MomentAccumulator::add(var::complex<ArrayXX> const& other) {
     if (_count == 0) {
         var::apply_visitor(ArraySetZero{data, num_moments}, other);
     }
@@ -130,11 +130,11 @@ void MomentAccumulator::add(var::Complex<ArrayXX> const& other) {
 MomentConcatenator::MomentConcatenator(idx_t num_moments, idx_t num_points, var::scalar_tag tag)
     : data(var::apply_visitor(InitArrayXX{num_moments, num_points}, tag)) {}
 
-void MomentConcatenator::add(var::Complex<ArrayX> const& other) {
+void MomentConcatenator::add(var::complex<ArrayX> const& other) {
     var::apply_visitor(ConcatArrayXX{data, _filled_cols}, other);
 }
 
-void MomentConcatenator::add(var::Complex<ArrayXX> const& other) {
+void MomentConcatenator::add(var::complex<ArrayXX> const& other) {
     var::apply_visitor(ConcatArrayXX{data, _filled_cols}, other);
 }
 

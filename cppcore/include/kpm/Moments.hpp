@@ -10,7 +10,7 @@ namespace cpb { namespace kpm {
  */
 struct DiagonalMoments {
     idx_t num_moments;
-    var::Complex<ArrayX> data;
+    var::complex<ArrayX> data;
 
     DiagonalMoments(idx_t num_moments) : num_moments(num_moments) {}
 };
@@ -21,7 +21,7 @@ struct DiagonalMoments {
 struct BatchDiagonalMoments {
     idx_t num_moments;
     idx_t batch_size;
-    var::Complex<ArrayXX> data;
+    var::complex<ArrayXX> data;
 
     BatchDiagonalMoments(idx_t num_moments, idx_t batch_size)
         : num_moments(num_moments), batch_size(batch_size) {}
@@ -37,7 +37,7 @@ struct GenericMoments {
     VectorXcd const& alpha;
     VectorXcd const& beta;
     SparseMatrixXcd const& op;
-    var::Complex<ArrayX> data;
+    var::complex<ArrayX> data;
 
     GenericMoments(idx_t num_moments, VectorXcd const& alpha, VectorXcd const& beta,
                    SparseMatrixXcd const& op)
@@ -59,7 +59,7 @@ struct MultiUnitMoments {
 
     idx_t num_moments;
     Indices const& idx;
-    var::Complex<Data> data;
+    var::complex<Data> data;
 
     MultiUnitMoments(idx_t num_moments, Indices const& idx)
         : num_moments(num_moments), idx(idx) {}
@@ -73,7 +73,7 @@ struct MultiUnitMoments {
 struct DenseMatrixMoments {
     idx_t num_moments;
     VariantCSR op;
-    var::Complex<MatrixX> data;
+    var::complex<MatrixX> data;
 
     DenseMatrixMoments(idx_t num_moments, VariantCSR op = {})
         : num_moments(num_moments), op(std::move(op)) {}
@@ -87,13 +87,13 @@ struct MomentAccumulator {
     idx_t total; ///< add new result to existing data for this number of moments
     idx_t batch_size;
     idx_t _count = 0; ///< internal: keeps track of how many moments have been summed up so far
-    var::Complex<ArrayX> data;
+    var::complex<ArrayX> data;
 
     MomentAccumulator(idx_t num_moments, idx_t total, idx_t batch_size = 1)
         : num_moments(num_moments), total(total), batch_size(batch_size) {}
 
-    void add(var::Complex<ArrayX> const& other);
-    void add(var::Complex<ArrayXX> const& other);
+    void add(var::complex<ArrayX> const& other);
+    void add(var::complex<ArrayXX> const& other);
 };
 
 /**
@@ -101,16 +101,16 @@ struct MomentAccumulator {
  */
 struct MomentConcatenator {
     idx_t _filled_cols = 0;
-    var::Complex<ArrayXX> data;
+    var::complex<ArrayXX> data;
 
     MomentConcatenator(idx_t num_moments, idx_t num_points, var::scalar_tag tag);
 
-    void add(var::Complex<ArrayX> const& other);
-    void add(var::Complex<ArrayXX> const& other);
+    void add(var::complex<ArrayX> const& other);
+    void add(var::complex<ArrayXX> const& other);
 };
 
 struct MomentMultiplication {
-    var::Complex<MatrixX> data;
+    var::complex<MatrixX> data;
 
     MomentMultiplication(idx_t num_moments, var::scalar_tag tag);
 

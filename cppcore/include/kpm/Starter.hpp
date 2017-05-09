@@ -8,7 +8,7 @@ namespace cpb { namespace kpm {
 
 /// Produce the r0 starter vector for the KPM procedure
 struct Starter {
-    using Make = std::function<var::Complex<VectorX> (var::scalar_tag)>;
+    using Make = std::function<var::complex<VectorX> (var::scalar_tag)>;
 
     Make make;
     idx_t vector_size;

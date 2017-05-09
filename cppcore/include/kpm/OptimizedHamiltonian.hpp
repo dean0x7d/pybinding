@@ -114,7 +114,7 @@ public:
  */
 class OptimizedHamiltonian {
 public:
-    using VariantMatrix = var::Complex<SparseMatrixX, num::EllMatrix>;
+    using VariantMatrix = var::complex<SparseMatrixX, num::EllMatrix>;
 
     OptimizedHamiltonian(Hamiltonian const& h, MatrixFormat const& mf, bool reorder)
         : original_h(h), slice_map(h.rows()), matrix_format(mf), is_reordered(reorder) {}
