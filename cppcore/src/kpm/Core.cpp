@@ -63,30 +63,12 @@ ArrayXXdCM Core::ldos(std::vector<idx_t> const& idx, ArrayXd const& energy, doub
     optimized_hamiltonian.optimize_for({idx, idx}, scale);
     stats.reset(num_moments, optimized_hamiltonian, config.algorithm, num_indices);
 
-    auto const scalar_tag = optimized_hamiltonian.scalar_tag();
-    auto const batch_size = compute->batch_size(scalar_tag);
-    auto all_moments = MomentConcatenator(num_moments, num_indices, scalar_tag);
+    auto starter = unit_starter(optimized_hamiltonian);
+    auto moments = BatchDiagonalMoments(num_moments, num_indices, BatchConcatenator());
 
-    if (num_indices <= 2) {
-        auto starter = unit_starter(optimized_hamiltonian);
-        auto moments = DiagonalMoments(num_moments);
-
-        for (auto n = idx_t{0}; n < num_indices; ++n) {
-            timed_compute(&moments, starter, config.algorithm);
-            all_moments.add(moments.data);
-        }
-    } else {
-        auto starter = unit_starter(optimized_hamiltonian, batch_size);
-        auto moments = BatchDiagonalMoments(num_moments, batch_size);
-
-        for (auto n = idx_t{0}; n < num_indices; n += batch_size) {
-            timed_compute(&moments, starter, config.algorithm);
-            all_moments.add(moments.data);
-        }
-    }
-
-    apply_damping(all_moments, config.kernel);
-    return reconstruct<SpectralDensity>(all_moments, energy, scale);
+    timed_compute(&moments, starter, config.algorithm);
+    apply_damping(moments, config.kernel);
+    return reconstruct<SpectralDensity>(moments, energy, scale);
 }
 
 ArrayXd Core::dos(ArrayXd const& energy, double broadening, idx_t num_random) {
@@ -99,29 +81,12 @@ ArrayXd Core::dos(ArrayXd const& energy, double broadening, idx_t num_random) {
     optimized_hamiltonian.optimize_for({0, 0}, scale);
     stats.reset(num_moments, optimized_hamiltonian, specialized_algorithm, num_random);
 
-    auto const batch_size = compute->batch_size(optimized_hamiltonian.scalar_tag());
-    auto total_mu = MomentAccumulator(num_moments, num_random, batch_size);
+    auto starter = random_starter(optimized_hamiltonian);
+    auto moments = BatchDiagonalMoments(num_moments, num_random, BatchAccumulator());
 
-    if (num_random <= 2) {
-        auto starter = random_starter(optimized_hamiltonian);
-        auto moments = DiagonalMoments(num_moments);
-
-        for (auto n = idx_t{0}; n < num_random; ++n) {
-            timed_compute(&moments, starter, specialized_algorithm);
-            total_mu.add(moments.data);
-        }
-    } else {
-        auto starter = random_starter(optimized_hamiltonian, batch_size);
-        auto moments = BatchDiagonalMoments(num_moments, batch_size);
-
-        for (auto n = idx_t{0}; n < num_random; n += batch_size) {
-            timed_compute(&moments, starter, specialized_algorithm);
-            total_mu.add(moments.data);
-        }
-    }
-
-    apply_damping(total_mu, config.kernel);
-    return reconstruct<SpectralDensity>(total_mu, energy, scale);
+    timed_compute(&moments, starter, specialized_algorithm);
+    apply_damping(moments, config.kernel);
+    return reconstruct<SpectralDensity>(moments, energy, scale);
 }
 
 ArrayXcd Core::greens(idx_t row, idx_t col, ArrayXd const& energy, double broadening) {

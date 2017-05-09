@@ -3,6 +3,8 @@
 
 namespace cpb { namespace kpm {
 
+using BatchData = var::complex<ArrayX, ArrayXX>;
+
 /**
  Collects moments in the form of simple expectation values:
  `mu_n = <r|Tn(H)|r>` where `bra == ket == r`. It's only
@@ -16,15 +18,20 @@ struct DiagonalMoments {
 };
 
 /**
- Same as `DiagonalMoments` but stores multiple moments as rows of `data`.
+ Same as `DiagonalMoments` but stores multiple moment vectors as columns of `data`.
  */
 struct BatchDiagonalMoments {
-    idx_t num_moments;
-    idx_t batch_size;
-    var::complex<ArrayXX> data;
+    using Collect = std::function<void (BatchData&, idx_t, BatchData const&)>;
 
-    BatchDiagonalMoments(idx_t num_moments, idx_t batch_size)
-        : num_moments(num_moments), batch_size(batch_size) {}
+    idx_t num_moments;
+    idx_t num_vectors;
+    Collect collect;
+    BatchData data;
+
+    BatchDiagonalMoments(idx_t num_moments, idx_t num_vectors, Collect collect)
+        : num_moments(num_moments), num_vectors(num_vectors), collect(std::move(collect)) {}
+
+    void add(BatchData const& other) { collect(data, num_vectors, other); }
 };
 
 /**
@@ -82,31 +89,21 @@ struct DenseMatrixMoments {
 /**
  Adds up moments for the stochastic KPM procedure
  */
-struct MomentAccumulator {
-    idx_t num_moments;
-    idx_t total; ///< add new result to existing data for this number of moments
-    idx_t batch_size;
-    idx_t _count = 0; ///< internal: keeps track of how many moments have been summed up so far
-    var::complex<ArrayX> data;
+struct BatchAccumulator {
+    void operator()(BatchData& result, idx_t num_vectors, BatchData const& other);
 
-    MomentAccumulator(idx_t num_moments, idx_t total, idx_t batch_size = 1)
-        : num_moments(num_moments), total(total), batch_size(batch_size) {}
-
-    void add(var::complex<ArrayX> const& other);
-    void add(var::complex<ArrayXX> const& other);
+private:
+    idx_t count = 0; ///< keeps track of how many moments have been summed up so far
 };
 
 /**
  Concatenate successive moment arrays
  */
-struct MomentConcatenator {
-    idx_t _filled_cols = 0;
-    var::complex<ArrayXX> data;
+struct BatchConcatenator {
+    void operator()(BatchData& result, idx_t num_vectors, BatchData const& other);
 
-    MomentConcatenator(idx_t num_moments, idx_t num_points, var::scalar_tag tag);
-
-    void add(var::complex<ArrayX> const& other);
-    void add(var::complex<ArrayXX> const& other);
+private:
+    idx_t filled_cols = 0;
 };
 
 struct MomentMultiplication {

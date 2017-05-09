@@ -16,13 +16,14 @@ struct SelectAlgorithm {
     Starter const& starter;
     AlgorithmConfig const& config;
     OptimizedHamiltonian const& oh;
+    idx_t batch_size;
 
     template<template<class> class C, class Vector = typename C<scalar_t>::Vector>
     void with(C<scalar_t>& collect) const {
         using namespace calc_moments;
         simd::scope_disable_denormals guard;
 
-        auto r0 = make_r0(starter, var::tag<Vector>{});
+        auto r0 = make_r0(starter, var::tag<Vector>{}, batch_size);
         auto r1 = make_r1(h2, r0);
         collect.initial(r0, r1);
 
@@ -44,9 +45,19 @@ struct SelectAlgorithm {
     }
 
     void operator()(BatchDiagonalMoments* m) {
-        auto collect = BatchDiagonalCollector<scalar_t>(m->num_moments, m->batch_size);
-        with<BatchDiagonalCollector>(collect);
-        m->data = std::move(collect.moments);
+        if (m->num_vectors <= 2) {
+            auto collect = DiagonalCollector<scalar_t>(m->num_moments);
+            for (auto i = idx_t{0}; i < m->num_vectors; ++i) {
+                with<DiagonalCollector>(collect);
+                m->add(collect.moments);
+            }
+        } else {
+            auto collect = BatchDiagonalCollector<scalar_t>(m->num_moments, batch_size);
+            for (auto i = idx_t{0}; i < m->num_vectors; i += batch_size) {
+                with<BatchDiagonalCollector>(collect);
+                m->add(collect.moments);
+            }
+        }
     }
 
     void operator()(GenericMoments* m) {
@@ -73,10 +84,11 @@ struct SelectMatrix {
     Starter const& s;
     AlgorithmConfig const& ac;
     OptimizedHamiltonian const& oh;
+    idx_t batch_size;
 
     template<class Matrix>
     void operator()(Matrix const& h2) {
-        m.match(SelectAlgorithm<Matrix>{h2, s, ac, oh});
+        m.match(SelectAlgorithm<Matrix>{h2, s, ac, oh, batch_size});
     }
 };
 
@@ -89,13 +101,10 @@ struct BatchSize {
 
 } // anonymous namespace
 
-idx_t DefaultCompute::batch_size(var::scalar_tag tag) const {
-    return var::apply_visitor(BatchSize{}, tag);
-}
-
 void DefaultCompute::moments(MomentsRef m, Starter const& s, AlgorithmConfig const& ac,
                              OptimizedHamiltonian const& oh) const {
-    oh.matrix().match(SelectMatrix{std::move(m), s, ac, oh});
+    auto const batch_size = var::apply_visitor(BatchSize{}, oh.scalar_tag());
+    var::apply_visitor(SelectMatrix{std::move(m), s, ac, oh, batch_size}, oh.matrix());
 }
 
 }} // namespace cpb::kpm

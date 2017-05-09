@@ -18,7 +18,7 @@ struct SpectralDensity {
     Scale<> const& s;
 
     template<class scalar_t>
-    ArrayXd operator()(ArrayX<scalar_t> const& moments) const {
+    ArrayXXdCM operator()(ArrayX<scalar_t> const& moments) const {
         using real_t = num::get_real_t<scalar_t>;
 
         auto const scale = Scale<real_t>(s);

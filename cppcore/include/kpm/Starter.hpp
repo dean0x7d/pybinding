@@ -12,32 +12,29 @@ struct Starter {
 
     Make make;
     idx_t vector_size;
-    idx_t batch_size;
 
-    Starter(Make make, idx_t vector_size, idx_t batch_size)
-        : make(std::move(make)), vector_size(vector_size), batch_size(batch_size) {}
+    Starter(Make make, idx_t vector_size) : make(std::move(make)), vector_size(vector_size) {}
 };
 
 /// Starter vector equal to the constant `alpha` (`oh` is needed for reordering)
 Starter constant_starter(OptimizedHamiltonian const& oh, VectorXcd const& alpha);
 
 /// Unit vector starter (`oh` encodes the unit index)
-Starter unit_starter(OptimizedHamiltonian const& oh, idx_t batch_size = 1);
+Starter unit_starter(OptimizedHamiltonian const& oh);
 
 /// Starter vector for the stochastic KPM procedure (`oh` is needed for size and reordering)
 Starter random_starter(OptimizedHamiltonian const& oh, VariantCSR const& op = {});
-Starter random_starter(OptimizedHamiltonian const& oh, idx_t batch_size, VariantCSR const& op = {});
 
 /// Construct a concrete scalar type r0 vector based on a `Starter`
 template<class scalar_t>
-VectorX<scalar_t> make_r0(Starter const& starter, var::tag<VectorX<scalar_t>>) {
+VectorX<scalar_t> make_r0(Starter const& starter, var::tag<VectorX<scalar_t>>, idx_t /*cols=1*/) {
     return starter.make(var::tag<scalar_t>{}).template get<VectorX<scalar_t>>();
 }
 
 template<class scalar_t>
-MatrixX<scalar_t> make_r0(Starter const& starter, var::tag<MatrixX<scalar_t>>) {
-    auto r0 = MatrixX<scalar_t>(starter.vector_size, starter.batch_size);
-    for (auto i = 0; i < starter.batch_size; ++i) {
+MatrixX<scalar_t> make_r0(Starter const& starter, var::tag<MatrixX<scalar_t>>, idx_t cols) {
+    auto r0 = MatrixX<scalar_t>(starter.vector_size, cols);
+    for (auto i = idx_t{0}; i < cols; ++i) {
         r0.col(i) = starter.make(var::tag<scalar_t>{}).template get<VectorX<scalar_t>>();
     }
     return r0;

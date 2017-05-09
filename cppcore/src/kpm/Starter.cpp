@@ -85,19 +85,15 @@ struct RandomStarter {
 } // anonymous namespace
 
 Starter constant_starter(OptimizedHamiltonian const& oh, VectorXcd const& alpha) {
-    return {ConstantStarter(oh, alpha), oh.size(), 1};
+    return {ConstantStarter(oh, alpha), oh.size()};
 }
 
-Starter unit_starter(OptimizedHamiltonian const& oh, idx_t batch_size) {
-    return {UnitStarter(oh), oh.size(), batch_size};
+Starter unit_starter(OptimizedHamiltonian const& oh) {
+    return {UnitStarter(oh), oh.size()};
 }
 
 Starter random_starter(OptimizedHamiltonian const& oh, VariantCSR const& op) {
-    return {RandomStarter(oh, op), oh.size(), 1};
-}
-
-Starter random_starter(OptimizedHamiltonian const& oh, idx_t batch_size, VariantCSR const& op) {
-    return {RandomStarter(oh, op), oh.size(), batch_size};
+    return {RandomStarter(oh, op), oh.size()};
 }
 
 }} // namespace cpb::kpm

@@ -4,53 +4,86 @@ namespace cpb { namespace kpm {
 
 namespace {
 
+struct BatchAccumulatorImpl {
+    BatchData& var_result;
+    idx_t num_vectors;
+    idx_t& count;
+
+    template<class scalar_t>
+    void operator()(ArrayX<scalar_t> const& a) {
+        if (count == 0) {
+            var_result = a;
+        } else {
+            auto& result = var_result.template get<ArrayX<scalar_t>>();
+            result += a;
+        }
+
+        ++count;
+        if (count >= num_vectors && num_vectors != 1) {
+            auto& result = var_result.template get<ArrayX<scalar_t>>();
+            result /= static_cast<num::get_real_t<scalar_t>>(num_vectors);
+            count = 0;
+        }
+    }
+
+    template<class scalar_t>
+    void operator()(ArrayXX<scalar_t> const& a) {
+        if (count == 0) {
+            var_result = ArrayX<scalar_t>::Zero(a.rows()).eval();
+        }
+
+        auto const batch_size = a.cols();
+        auto const remaining = num_vectors - count;
+        auto cols = remaining > batch_size ? batch_size : remaining;
+
+        auto& result = var_result.template get<ArrayX<scalar_t>>();
+        result += a.leftCols(cols).rowwise().sum();
+
+        count += batch_size;
+        if (count >= num_vectors && num_vectors != 1) {
+            result /= static_cast<num::get_real_t<scalar_t>>(num_vectors);
+            count = 0;
+        }
+    }
+};
+
+struct BatchConcatenatorImpl {
+    BatchData& var_result;
+    idx_t num_vectors;
+    idx_t& filled_cols;
+
+    template<class scalar_t>
+    void operator()(ArrayX<scalar_t> const& a) {
+        if (filled_cols == 0) {
+            var_result = ArrayXX<scalar_t>(a.size(), num_vectors);
+        }
+        auto& data = var_result.template get<ArrayXX<scalar_t>>();
+        data.col(filled_cols) = a;
+        ++filled_cols;
+    }
+
+    template<class scalar_t>
+    void operator()(ArrayXX<scalar_t> const& a) {
+        if (filled_cols == 0) {
+            var_result = ArrayXX<scalar_t>(a.rows(), num_vectors);
+        }
+
+        auto const batch_size = a.cols();
+        auto const remaining_cols = num_vectors - filled_cols;
+        auto const cols = remaining_cols > batch_size ? batch_size : remaining_cols;
+
+        auto& data = var_result.template get<ArrayXX<scalar_t>>();
+        data.block(0, filled_cols, data.rows(), cols) = a.leftCols(cols);
+        filled_cols += cols;
+    }
+};
+
 struct InitMatrix {
     idx_t size;
 
     template<class scalar_t>
     var::complex<MatrixX> operator()(var::tag<scalar_t>) const {
         return MatrixX<scalar_t>::Zero(size, size).eval();
-    }
-};
-
-struct InitArrayXX {
-    idx_t rows;
-    idx_t cols;
-
-    template<class scalar_t>
-    var::complex<ArrayXX> operator()(var::tag<scalar_t>) const {
-        return ArrayXX<scalar_t>::Zero(rows, cols).eval();
-    }
-};
-
-struct ArrayAdd {
-    var::complex<ArrayX> const& other;
-
-    template<class scalar_t>
-    void operator()(ArrayX<scalar_t>& result) const {
-        result += other.template get<ArrayX<scalar_t>>();
-    }
-};
-
-struct ArraySetZero {
-    var::complex<ArrayX>& data;
-    idx_t num_moments;
-
-    template<class scalar_t>
-    void operator()(ArrayXX<scalar_t> const&) {
-        data = ArrayX<scalar_t>::Zero(num_moments).eval();
-    }
-};
-
-struct ArrayRowWiseSum {
-    var::complex<ArrayXX> const& other;
-    idx_t cols;
-
-    template<class scalar_t>
-    void operator()(ArrayX<scalar_t>& result) const {
-        auto const& a = other.template get<ArrayXX<scalar_t>>();
-        result += a.leftCols(cols).rowwise().sum();
-
     }
 };
 
@@ -72,70 +105,14 @@ struct Div {
     void operator()(T& x) const { x /= static_cast<real_t>(n); }
 };
 
-struct ConcatArrayXX {
-    var::complex<ArrayXX>& var_data;
-    idx_t& filled_cols;
-
-    template<class scalar_t>
-    void operator()(ArrayXX<scalar_t> const& a) {
-        auto& data = var_data.template get<ArrayXX<scalar_t>>();
-
-        auto const batch_size = a.cols();
-        auto const remaining_cols = data.cols() - filled_cols;
-        auto const cols = remaining_cols > batch_size ? batch_size : remaining_cols;
-        data.block(0, filled_cols, data.rows(), cols) = a.leftCols(cols);
-        filled_cols += cols;
-    }
-
-    template<class scalar_t>
-    void operator()(ArrayX<scalar_t> const& a) {
-        auto& data = var_data.template get<ArrayXX<scalar_t>>();
-
-        data.col(filled_cols) = a;
-        ++filled_cols;
-    }
-};
-
 } // anonymous namespace
 
-void MomentAccumulator::add(var::complex<ArrayX> const& other) {
-    if (_count == 0) {
-        data = other;
-    } else {
-        var::apply_visitor(ArrayAdd{other}, data);
-    }
-
-    ++_count;
-    if (_count == total && total != 1) {
-        var::apply_visitor(Div{total}, data);
-    }
+void BatchAccumulator::operator()(BatchData& result, idx_t num_vectors, BatchData const& other) {
+    var::apply_visitor(BatchAccumulatorImpl{result, num_vectors, count}, other);
 }
 
-void MomentAccumulator::add(var::complex<ArrayXX> const& other) {
-    if (_count == 0) {
-        var::apply_visitor(ArraySetZero{data, num_moments}, other);
-    }
-
-    auto remaining = total - _count;
-    auto cols = remaining > batch_size ? batch_size : remaining;
-    var::apply_visitor(ArrayRowWiseSum{other, cols}, data);
-
-    _count += batch_size;
-    if (_count >= total && total != 1) {
-        var::apply_visitor(Div{total}, data);
-    }
-}
-
-
-MomentConcatenator::MomentConcatenator(idx_t num_moments, idx_t num_points, var::scalar_tag tag)
-    : data(var::apply_visitor(InitArrayXX{num_moments, num_points}, tag)) {}
-
-void MomentConcatenator::add(var::complex<ArrayX> const& other) {
-    var::apply_visitor(ConcatArrayXX{data, _filled_cols}, other);
-}
-
-void MomentConcatenator::add(var::complex<ArrayXX> const& other) {
-    var::apply_visitor(ConcatArrayXX{data, _filled_cols}, other);
+void BatchConcatenator::operator()(BatchData& result, idx_t num_vectors, BatchData const& other) {
+    var::apply_visitor(BatchConcatenatorImpl{result, num_vectors, filled_cols}, other);
 }
 
 MomentMultiplication::MomentMultiplication(idx_t num_moments, var::scalar_tag tag)

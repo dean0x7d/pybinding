@@ -8,7 +8,6 @@ namespace cpb { namespace kpm {
  */
 class DefaultCompute : public Compute::Interface {
 public:
-    idx_t batch_size(var::scalar_tag tag) const override;
     void moments(MomentsRef m, Starter const& s, AlgorithmConfig const& ac,
                  OptimizedHamiltonian const& oh) const override;
 };
