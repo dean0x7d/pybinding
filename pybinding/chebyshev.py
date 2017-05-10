@@ -336,11 +336,11 @@ def kpm(model, energy_range=None, kernel="default", num_threads="auto", **kwargs
     -------
     :class:`~pybinding.chebyshev.KernelPolynomialMethod`
     """
-    if kernel == "default":
-        kernel = jackson_kernel()
+    if kernel != "default":
+        kwargs["kernel"] = kernel
     if num_threads != "auto":
         kwargs["num_threads"] = num_threads
-    return KernelPolynomialMethod(_cpp.kpm(model, energy_range or (0, 0), kernel, **kwargs))
+    return KernelPolynomialMethod(_cpp.kpm(model, energy_range or (0, 0), **kwargs))
 
 
 def kpm_cuda(model, energy_range=None, kernel="default", **kwargs):
@@ -360,11 +360,10 @@ def kpm_cuda(model, energy_range=None, kernel="default", **kwargs):
     :class:`~pybinding.chebyshev.KernelPolynomialMethod`
     """
     try:
-        if kernel == "default":
-            kernel = jackson_kernel()
+        if kernel != "default":
+            kwargs["kernel"] = kernel
         # noinspection PyUnresolvedReferences
-        return KernelPolynomialMethod(_cpp.kpm_cuda(model, energy_range or (0, 0),
-                                                    kernel, **kwargs))
+        return KernelPolynomialMethod(_cpp.kpm_cuda(model, energy_range or (0, 0), **kwargs))
     except AttributeError:
         raise Exception("The module was compiled without CUDA support.\n"
                         "Use a different KPM implementation or recompile the module with CUDA.")
