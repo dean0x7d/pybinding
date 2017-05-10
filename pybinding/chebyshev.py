@@ -307,7 +307,7 @@ class KernelPolynomialMethod:
                               labels=dict(variable=r"$\mu$ (eV)", data="$\sigma (e^2/h)$"))
 
 
-def kpm(model, energy_range=None, kernel="default", **kwargs):
+def kpm(model, energy_range=None, kernel="default", num_threads="auto", **kwargs):
     """The default CPU implementation of the Kernel Polynomial Method
 
     This implementation works on any system and is well optimized.
@@ -328,6 +328,9 @@ def kpm(model, energy_range=None, kernel="default", **kwargs):
         the function reconstructed from the Chebyshev series. Possible values are
         :func:`jackson_kernel` or :func:`lorentz_kernel`. The Jackson kernel is used
         by default.
+    num_threads : int
+        The number of CPU threads to use for calculations. This is automatically set 
+        to the number of logical cores available on the current machine.
 
     Returns
     -------
@@ -335,6 +338,8 @@ def kpm(model, energy_range=None, kernel="default", **kwargs):
     """
     if kernel == "default":
         kernel = jackson_kernel()
+    if num_threads != "auto":
+        kwargs["num_threads"] = num_threads
     return KernelPolynomialMethod(_cpp.kpm(model, energy_range or (0, 0), kernel, **kwargs))
 
 

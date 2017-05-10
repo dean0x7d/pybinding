@@ -6,6 +6,7 @@ namespace {
 
 struct BatchAccumulatorImpl {
     BatchData& var_result;
+    idx_t idx;
     idx_t num_vectors;
     idx_t& count;
 
@@ -33,7 +34,7 @@ struct BatchAccumulatorImpl {
         }
 
         auto const batch_size = a.cols();
-        auto const remaining = num_vectors - count;
+        auto const remaining = num_vectors - idx;
         auto cols = remaining > batch_size ? batch_size : remaining;
 
         auto& result = var_result.template get<ArrayX<scalar_t>>();
@@ -49,32 +50,33 @@ struct BatchAccumulatorImpl {
 
 struct BatchConcatenatorImpl {
     BatchData& var_result;
+    idx_t idx;
     idx_t num_vectors;
-    idx_t& filled_cols;
+    idx_t& count;
 
     template<class scalar_t>
     void operator()(ArrayX<scalar_t> const& a) {
-        if (filled_cols == 0) {
+        if (count == 0) {
             var_result = ArrayXX<scalar_t>(a.size(), num_vectors);
         }
         auto& data = var_result.template get<ArrayXX<scalar_t>>();
-        data.col(filled_cols) = a;
-        ++filled_cols;
+        data.col(idx) = a;
+        ++count;
     }
 
     template<class scalar_t>
     void operator()(ArrayXX<scalar_t> const& a) {
-        if (filled_cols == 0) {
+        if (count == 0) {
             var_result = ArrayXX<scalar_t>(a.rows(), num_vectors);
         }
 
         auto const batch_size = a.cols();
-        auto const remaining_cols = num_vectors - filled_cols;
+        auto const remaining_cols = num_vectors - idx;
         auto const cols = remaining_cols > batch_size ? batch_size : remaining_cols;
 
         auto& data = var_result.template get<ArrayXX<scalar_t>>();
-        data.block(0, filled_cols, data.rows(), cols) = a.leftCols(cols);
-        filled_cols += cols;
+        data.block(0, idx, data.rows(), cols) = a.leftCols(cols);
+        count += cols;
     }
 };
 
@@ -107,12 +109,12 @@ struct Div {
 
 } // anonymous namespace
 
-void BatchAccumulator::operator()(BatchData& result, idx_t num_vectors, BatchData const& other) {
-    var::apply_visitor(BatchAccumulatorImpl{result, num_vectors, count}, other);
+void BatchAccumulator::operator()(BatchData& result, BatchData const& nd, idx_t idx, idx_t nvec) {
+    var::apply_visitor(BatchAccumulatorImpl{result, idx, nvec, count}, nd);
 }
 
-void BatchConcatenator::operator()(BatchData& result, idx_t num_vectors, BatchData const& other) {
-    var::apply_visitor(BatchConcatenatorImpl{result, num_vectors, filled_cols}, other);
+void BatchConcatenator::operator()(BatchData& result, BatchData const& nd, idx_t idx, idx_t nvec) {
+    var::apply_visitor(BatchConcatenatorImpl{result, idx, nvec, count}, nd);
 }
 
 MomentMultiplication::MomentMultiplication(idx_t num_moments, var::scalar_tag tag)

@@ -5,12 +5,13 @@ using namespace cpb;
 
 namespace {
 
-void wrap_kpm_strategy(py::module& m, char const* name, kpm::Compute const& compute) {
+void wrap_kpm_strategy(py::module& m, char const* name) {
     auto const kpm_defaults = kpm::Config();
     m.def(
         name,
-        [compute](Model const& model, std::pair<float, float> energy, kpm::Kernel const& kernel,
-           std::string matrix_format, bool optimal_size, bool interleaved, float lanczos) {
+        [](Model const& model, std::pair<float, float> energy, kpm::Kernel const& kernel,
+           std::string matrix_format, bool optimal_size, bool interleaved, float lanczos,
+           idx_t num_threads) {
             kpm::Config config;
             config.min_energy = energy.first;
             config.max_energy = energy.second;
@@ -21,7 +22,7 @@ void wrap_kpm_strategy(py::module& m, char const* name, kpm::Compute const& comp
             config.algorithm.interleaved = interleaved;
             config.lanczos_precision = lanczos;
 
-            return KPM(model, compute, config);
+            return KPM(model, kpm::DefaultCompute(num_threads), config);
         },
         "model"_a,
         "energy_range"_a=py::make_tuple(kpm_defaults.min_energy, kpm_defaults.max_energy),
@@ -29,7 +30,8 @@ void wrap_kpm_strategy(py::module& m, char const* name, kpm::Compute const& comp
         "matrix_format"_a="ELL",
         "optimal_size"_a=true,
         "interleaved"_a=true,
-        "lanczos_precision"_a=kpm_defaults.lanczos_precision
+        "lanczos_precision"_a=kpm_defaults.lanczos_precision,
+        "num_threads"_a=std::thread::hardware_concurrency()
     );
 }
 
@@ -98,7 +100,7 @@ void wrap_greens(py::module& m) {
         })
         .def_property_readonly("stats", [](KPM& kpm) { return kpm.get_core().get_stats(); });
 
-    wrap_kpm_strategy(m, "kpm", kpm::DefaultCompute());
+    wrap_kpm_strategy(m, "kpm");
 
     py::class_<kpm::OptimizedHamiltonian>(m, "OptimizedHamiltonian")
         .def("__init__", [](kpm::OptimizedHamiltonian& self, Hamiltonian const& h, int index) {

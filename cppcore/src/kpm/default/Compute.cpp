@@ -4,6 +4,8 @@
 #include "compute/kernel_polynomial.hpp"
 #include "kpm/calc_moments.hpp"
 
+#include "detail/thread.hpp"
+
 namespace cpb { namespace kpm {
 
 namespace {
@@ -16,14 +18,18 @@ struct SelectAlgorithm {
     Starter const& starter;
     AlgorithmConfig const& config;
     OptimizedHamiltonian const& oh;
-    idx_t batch_size;
+    idx_t num_threads;
 
     template<template<class> class C, class Vector = typename C<scalar_t>::Vector>
-    void with(C<scalar_t>& collect) const {
+    idx_t with(C<scalar_t>& collect) const {
         using namespace calc_moments;
         simd::scope_disable_denormals guard;
 
-        auto r0 = make_r0(starter, var::tag<Vector>{}, batch_size);
+        starter.lock();
+        auto const idx = starter.count;
+        auto r0 = make_r0(starter, var::tag<Vector>{}, simd::traits<scalar_t>::size);
+        starter.unlock();
+
         auto r1 = make_r1(h2, r0);
         collect.initial(r0, r1);
 
@@ -36,6 +42,8 @@ struct SelectAlgorithm {
         } else {
             basic(collect, std::move(r0), std::move(r1), h2);
         }
+
+        return idx;
     }
 
     void operator()(DiagonalMoments* m) {
@@ -45,18 +53,30 @@ struct SelectAlgorithm {
     }
 
     void operator()(BatchDiagonalMoments* m) {
-        if (m->num_vectors <= 2) {
-            auto collect = DiagonalCollector<scalar_t>(m->num_moments);
-            for (auto i = idx_t{0}; i < m->num_vectors; ++i) {
-                with<DiagonalCollector>(collect);
-                m->add(collect.moments);
-            }
-        } else {
-            auto collect = BatchDiagonalCollector<scalar_t>(m->num_moments, batch_size);
-            for (auto i = idx_t{0}; i < m->num_vectors; i += batch_size) {
-                with<BatchDiagonalCollector>(collect);
-                m->add(collect.moments);
-            }
+        constexpr auto batch_size = static_cast<idx_t>(simd::traits<scalar_t>::size);
+        auto num_batches = m->num_vectors / batch_size;
+        auto num_singles = m->num_vectors % batch_size;
+
+        // Heuristic: prefer SIMD execution when there's a low number of threads
+        if (num_singles > num_threads * batch_size / 2) {
+            num_batches += 1;
+            num_singles = 0;
+        }
+
+        ThreadPool pool(num_threads);
+        for (auto i = 0; i < num_batches; ++i) {
+            pool.add([&]() {
+                auto collect = BatchDiagonalCollector<scalar_t>(m->num_moments, batch_size);
+                auto const idx = with<BatchDiagonalCollector>(collect);
+                m->add(collect.moments, idx);
+            });
+        }
+        for (auto i = 0; i < num_singles; ++i) {
+            pool.add([&]() {
+                auto collect = DiagonalCollector<scalar_t>(m->num_moments);
+                auto const idx = with<DiagonalCollector>(collect);
+                m->add(collect.moments, idx);
+            });
         }
     }
 
@@ -84,27 +104,23 @@ struct SelectMatrix {
     Starter const& s;
     AlgorithmConfig const& ac;
     OptimizedHamiltonian const& oh;
-    idx_t batch_size;
+    idx_t num_threads;
 
     template<class Matrix>
     void operator()(Matrix const& h2) {
-        m.match(SelectAlgorithm<Matrix>{h2, s, ac, oh, batch_size});
-    }
-};
-
-struct BatchSize {
-    template<class scalar_t>
-    idx_t operator()(var::tag<scalar_t>) const {
-        return static_cast<idx_t>(simd::traits<scalar_t>::size);
+        var::apply_visitor(SelectAlgorithm<Matrix>{h2, s, ac, oh, num_threads}, m);
     }
 };
 
 } // anonymous namespace
 
+DefaultCompute::DefaultCompute(idx_t num_threads) :
+    num_threads(num_threads > 0 ? num_threads : std::thread::hardware_concurrency())
+{}
+
 void DefaultCompute::moments(MomentsRef m, Starter const& s, AlgorithmConfig const& ac,
                              OptimizedHamiltonian const& oh) const {
-    auto const batch_size = var::apply_visitor(BatchSize{}, oh.scalar_tag());
-    var::apply_visitor(SelectMatrix{std::move(m), s, ac, oh, batch_size}, oh.matrix());
+    var::apply_visitor(SelectMatrix{std::move(m), s, ac, oh, num_threads}, oh.matrix());
 }
 
 }} // namespace cpb::kpm

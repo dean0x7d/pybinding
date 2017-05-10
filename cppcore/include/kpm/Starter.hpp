@@ -4,6 +4,8 @@
 #include "numeric/dense.hpp"
 #include "compute/detail.hpp"
 
+#include <mutex>
+
 namespace cpb { namespace kpm {
 
 /// Produce the r0 starter vector for the KPM procedure
@@ -12,6 +14,11 @@ struct Starter {
 
     Make make;
     idx_t vector_size;
+    mutable idx_t count = 0; ///< the number of vector this starter has produced
+    std::unique_ptr<std::mutex> mutex = std14::make_unique<std::mutex>();
+
+    void lock() const { mutex->lock(); }
+    void unlock() const { mutex->unlock(); }
 
     Starter(Make make, idx_t vector_size) : make(std::move(make)), vector_size(vector_size) {}
 };
@@ -28,11 +35,13 @@ Starter random_starter(OptimizedHamiltonian const& oh, VariantCSR const& op = {}
 /// Construct a concrete scalar type r0 vector based on a `Starter`
 template<class scalar_t>
 VectorX<scalar_t> make_r0(Starter const& starter, var::tag<VectorX<scalar_t>>, idx_t /*cols=1*/) {
+    ++starter.count;
     return starter.make(var::tag<scalar_t>{}).template get<VectorX<scalar_t>>();
 }
 
 template<class scalar_t>
 MatrixX<scalar_t> make_r0(Starter const& starter, var::tag<MatrixX<scalar_t>>, idx_t cols) {
+    starter.count += cols;
     auto r0 = MatrixX<scalar_t>(starter.vector_size, cols);
     for (auto i = idx_t{0}; i < cols; ++i) {
         r0.col(i) = starter.make(var::tag<scalar_t>{}).template get<VectorX<scalar_t>>();

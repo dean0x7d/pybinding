@@ -24,6 +24,7 @@ add_library(cppcore
     include/detail/slice.hpp
     include/detail/strategy.hpp
     include/detail/sugar.hpp
+    include/detail/thread.hpp
     include/detail/typelist.hpp
     include/hamiltonian/Hamiltonian.hpp
     include/hamiltonian/HamiltonianModifiers.hpp
@@ -103,6 +104,9 @@ target_include_directories(cppcore PUBLIC include)
 if(NOT WIN32)
     target_compile_options(cppcore PUBLIC ${PB_CPP_STANDARD})
 endif()
+
+find_package(Threads REQUIRED)
+target_link_libraries(cppcore PUBLIC Threads::Threads)
 
 include(warnings)
 enable_warnings(cppcore)

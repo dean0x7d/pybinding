@@ -1,6 +1,8 @@
 #pragma once
 #include "kpm/OptimizedHamiltonian.hpp"
 
+#include <mutex>
+
 namespace cpb { namespace kpm {
 
 using BatchData = var::complex<ArrayX, ArrayXX>;
@@ -21,17 +23,22 @@ struct DiagonalMoments {
  Same as `DiagonalMoments` but stores multiple moment vectors as columns of `data`.
  */
 struct BatchDiagonalMoments {
-    using Collect = std::function<void (BatchData&, idx_t, BatchData const&)>;
+    using Collect = std::function<void (BatchData&, BatchData const&, idx_t, idx_t)>;
 
     idx_t num_moments;
     idx_t num_vectors;
     Collect collect;
     BatchData data;
+    std::unique_ptr<std::mutex> mutex = std14::make_unique<std::mutex>();
 
     BatchDiagonalMoments(idx_t num_moments, idx_t num_vectors, Collect collect)
         : num_moments(num_moments), num_vectors(num_vectors), collect(std::move(collect)) {}
 
-    void add(BatchData const& other) { collect(data, num_vectors, other); }
+    /// `idx` is the index of the `new_data` within `data`
+    void add(BatchData const& new_data, idx_t idx) {
+        std::unique_lock<std::mutex> lk(*mutex);
+        collect(data, new_data, idx, num_vectors);
+    }
 };
 
 /**
@@ -90,7 +97,7 @@ struct DenseMatrixMoments {
  Adds up moments for the stochastic KPM procedure
  */
 struct BatchAccumulator {
-    void operator()(BatchData& result, idx_t num_vectors, BatchData const& other);
+    void operator()(BatchData& result, BatchData const& new_data, idx_t idx, idx_t num_vectors);
 
 private:
     idx_t count = 0; ///< keeps track of how many moments have been summed up so far
@@ -100,10 +107,10 @@ private:
  Concatenate successive moment arrays
  */
 struct BatchConcatenator {
-    void operator()(BatchData& result, idx_t num_vectors, BatchData const& other);
+    void operator()(BatchData& result, BatchData const& new_data, idx_t idx, idx_t num_vectors);
 
 private:
-    idx_t filled_cols = 0;
+    idx_t count = 0;
 };
 
 struct MomentMultiplication {
