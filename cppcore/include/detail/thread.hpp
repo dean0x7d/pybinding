@@ -177,21 +177,27 @@ public:
         }
     }
 
-    ~ThreadPool() {
-        queue.remove_producer();
-        for (auto& thread : workers) {
-            thread.join();
-        }
-    }
+    ~ThreadPool() { join(); }
 
     template<class F>
     void add(F&& f) {
         queue.push(std::forward<F>(f));
     }
 
+    void join() {
+        if (is_joined) { return; }
+
+        queue.remove_producer();
+        for (auto& thread : workers) {
+            thread.join();
+        }
+        is_joined = true;
+    }
+
 private:
     std::vector<std::thread> workers;
     detail::Queue<std::function<void()>> queue;
+    bool is_joined = false;
 };
 
 } // namespace cpb

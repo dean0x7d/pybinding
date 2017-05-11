@@ -18,7 +18,7 @@ struct SelectAlgorithm {
     Starter const& starter;
     AlgorithmConfig const& config;
     OptimizedHamiltonian const& oh;
-    idx_t num_threads;
+    DefaultCompute const& compute;
 
     template<template<class> class C, class Vector = typename C<scalar_t>::Vector>
     idx_t with(C<scalar_t>& collect) const {
@@ -54,6 +54,8 @@ struct SelectAlgorithm {
 
     void operator()(BatchDiagonalMoments* m) {
         constexpr auto batch_size = static_cast<idx_t>(simd::traits<scalar_t>::size);
+        auto const num_threads = compute.get_num_threads();
+
         auto num_batches = m->num_vectors / batch_size;
         auto num_singles = m->num_vectors % batch_size;
 
@@ -64,20 +66,28 @@ struct SelectAlgorithm {
         }
 
         ThreadPool pool(num_threads);
+        compute.progress_start(m->num_vectors);
+
         for (auto i = 0; i < num_batches; ++i) {
             pool.add([&]() {
                 auto collect = BatchDiagonalCollector<scalar_t>(m->num_moments, batch_size);
                 auto const idx = with<BatchDiagonalCollector>(collect);
                 m->add(collect.moments, idx);
+                compute.progress_update(batch_size, m->num_vectors);
             });
         }
+
         for (auto i = 0; i < num_singles; ++i) {
             pool.add([&]() {
                 auto collect = DiagonalCollector<scalar_t>(m->num_moments);
                 auto const idx = with<DiagonalCollector>(collect);
                 m->add(collect.moments, idx);
+                compute.progress_update(1, m->num_vectors);
             });
         }
+
+        pool.join();
+        compute.progress_finish(m->num_vectors);
     }
 
     void operator()(GenericMoments* m) {
@@ -104,23 +114,36 @@ struct SelectMatrix {
     Starter const& s;
     AlgorithmConfig const& ac;
     OptimizedHamiltonian const& oh;
-    idx_t num_threads;
+    DefaultCompute const& compute;
 
     template<class Matrix>
     void operator()(Matrix const& h2) {
-        var::apply_visitor(SelectAlgorithm<Matrix>{h2, s, ac, oh, num_threads}, m);
+        var::apply_visitor(SelectAlgorithm<Matrix>{h2, s, ac, oh, compute}, m);
     }
 };
 
 } // anonymous namespace
 
-DefaultCompute::DefaultCompute(idx_t num_threads) :
-    num_threads(num_threads > 0 ? num_threads : std::thread::hardware_concurrency())
-{}
+DefaultCompute::DefaultCompute(idx_t num_threads, ProgressCallback progress_callback)
+    : num_threads(num_threads > 0 ? num_threads : std::thread::hardware_concurrency()),
+      progress_callback(progress_callback) {}
 
 void DefaultCompute::moments(MomentsRef m, Starter const& s, AlgorithmConfig const& ac,
                              OptimizedHamiltonian const& oh) const {
-    var::apply_visitor(SelectMatrix{std::move(m), s, ac, oh, num_threads}, oh.matrix());
+    var::apply_visitor(SelectMatrix{std::move(m), s, ac, oh, *this}, oh.matrix());
+}
+
+void DefaultCompute::progress_start(idx_t total) const {
+    progress_update(-1, total);
+}
+
+void DefaultCompute::progress_update(idx_t delta, idx_t total) const {
+    if (!progress_callback) { return; }
+    progress_callback(delta, total);
+}
+
+void DefaultCompute::progress_finish(idx_t total) const {
+    progress_update(total, total);
 }
 
 }} // namespace cpb::kpm

@@ -11,7 +11,7 @@ void wrap_kpm_strategy(py::module& m, char const* name) {
         name,
         [](Model const& model, std::pair<float, float> energy, kpm::Kernel const& kernel,
            std::string matrix_format, bool optimal_size, bool interleaved, float lanczos,
-           idx_t num_threads) {
+           idx_t num_threads, kpm::DefaultCompute::ProgressCallback progress_callback) {
             kpm::Config config;
             config.min_energy = energy.first;
             config.max_energy = energy.second;
@@ -22,7 +22,7 @@ void wrap_kpm_strategy(py::module& m, char const* name) {
             config.algorithm.interleaved = interleaved;
             config.lanczos_precision = lanczos;
 
-            return KPM(model, kpm::DefaultCompute(num_threads), config);
+            return KPM(model, kpm::DefaultCompute(num_threads, progress_callback), config);
         },
         "model"_a,
         "energy_range"_a=py::make_tuple(kpm_defaults.min_energy, kpm_defaults.max_energy),
@@ -31,7 +31,8 @@ void wrap_kpm_strategy(py::module& m, char const* name) {
         "optimal_size"_a=true,
         "interleaved"_a=true,
         "lanczos_precision"_a=kpm_defaults.lanczos_precision,
-        "num_threads"_a=std::thread::hardware_concurrency()
+        "num_threads"_a=std::thread::hardware_concurrency(),
+        "progress_callback"_a=py::none()
     );
 }
 
@@ -74,12 +75,12 @@ void wrap_greens(py::module& m) {
 
     py::class_<KPM>(m, "KPM")
         .def("moments", &KPM::moments)
-        .def("calc_greens", &KPM::calc_greens)
-        .def("calc_greens", &KPM::calc_greens_vector)
-        .def("calc_dos", &KPM::calc_dos)
-        .def("calc_conductivity", &KPM::calc_conductivity)
-        .def("calc_ldos", &KPM::calc_ldos)
-        .def("calc_spatial_ldos", &KPM::calc_spatial_ldos)
+        .def("calc_greens", &KPM::calc_greens, release_gil())
+        .def("calc_greens", &KPM::calc_greens_vector, release_gil())
+        .def("calc_dos", &KPM::calc_dos, release_gil())
+        .def("calc_conductivity", &KPM::calc_conductivity, release_gil())
+        .def("calc_ldos", &KPM::calc_ldos, release_gil())
+        .def("calc_spatial_ldos", &KPM::calc_spatial_ldos, release_gil())
         .def("deferred_ldos", [](py::object self, ArrayXd energy, double broadening,
                                  Cartesian position, std::string sublattice) {
             auto& kpm = self.cast<KPM&>();

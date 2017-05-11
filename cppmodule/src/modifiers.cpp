@@ -49,6 +49,7 @@ void wrap_modifiers(py::module& m) {
         .def("__init__", [](SiteStateModifier& self, py::object apply, int min_neighbors) {
             new (&self) SiteStateModifier(
                 [apply](Eigen::Ref<ArrayX<bool>> state, CartesianArrayConstRef p, string_view s) {
+                    py::gil_scoped_acquire guard{};
                     auto result = apply(
                         arrayref(state), arrayref(p.x()), arrayref(p.y()), arrayref(p.z()), s
                     );
@@ -61,6 +62,7 @@ void wrap_modifiers(py::module& m) {
     py::class_<PositionModifier>(m, "PositionModifier")
         .def("__init__", [](PositionModifier& self, py::object apply) {
             new (&self) PositionModifier([apply](CartesianArrayRef p, string_view sub) {
+                py::gil_scoped_acquire guard{};
                 auto t = py::tuple(apply(arrayref(p.x()), arrayref(p.y()), arrayref(p.z()), sub));
                 extract_modifier_result<ArrayXf>(p.x(), t[0]);
                 extract_modifier_result<ArrayXf>(p.y(), t[1]);
@@ -74,6 +76,7 @@ void wrap_modifiers(py::module& m) {
             new (&self) HoppingGenerator(
                 name, energy,
                 [make](CartesianArray const& p, SubIdRef sub) {
+                    py::gil_scoped_acquire guard{};
                     auto t = py::tuple(make(arrayref(p.x), arrayref(p.y), arrayref(p.z), sub));
                     return HoppingGenerator::Result{t[0].cast<ArrayXi>(), t[1].cast<ArrayXi>()};
                 }
@@ -85,6 +88,7 @@ void wrap_modifiers(py::module& m) {
                             bool is_complex, bool is_double) {
             new (&self) OnsiteModifier(
                 [apply](ComplexArrayRef energy, CartesianArrayConstRef p, string_view sublattice) {
+                    py::gil_scoped_acquire guard{};
                     auto result = apply(
                         energy, arrayref(p.x()), arrayref(p.y()), arrayref(p.z()), sublattice
                     );
@@ -102,6 +106,7 @@ void wrap_modifiers(py::module& m) {
             new (&self) HoppingModifier(
                 [apply](ComplexArrayRef energy, CartesianArrayConstRef p1,
                         CartesianArrayConstRef p2, string_view hopping_family) {
+                    py::gil_scoped_acquire guard{};
                     auto result = apply(
                         energy, arrayref(p1.x()), arrayref(p1.y()), arrayref(p1.z()),
                         arrayref(p2.x()), arrayref(p2.y()), arrayref(p2.z()), hopping_family

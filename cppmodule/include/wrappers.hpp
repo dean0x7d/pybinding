@@ -12,6 +12,8 @@
 namespace py = pybind11;
 using namespace py::literals;
 
+using release_gil = py::call_guard<py::gil_scoped_release>;
+
 void wrap_greens(py::module& m);
 void wrap_lattice(py::module& m);
 void wrap_leads(py::module& m);

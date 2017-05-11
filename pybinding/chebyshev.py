@@ -307,7 +307,26 @@ class KernelPolynomialMethod:
                               labels=dict(variable=r"$\mu$ (eV)", data="$\sigma (e^2/h)$"))
 
 
-def kpm(model, energy_range=None, kernel="default", num_threads="auto", **kwargs):
+class _ComputeProgressReporter:
+    def __init__(self):
+        from .utils.progressbar import ProgressBar
+        self.pbar = ProgressBar(0)
+
+    def __call__(self, delta, total):
+        if total == 1:
+            return  # Skip reporting for short jobs
+
+        if delta < 0:
+            print("Computing KPM moments...")
+            self.pbar.size = total
+            self.pbar.start()
+        elif delta == total:
+            self.pbar.finish()
+        else:
+            self.pbar += delta
+
+
+def kpm(model, energy_range=None, kernel="default", num_threads="auto", silent=False, **kwargs):
     """The default CPU implementation of the Kernel Polynomial Method
 
     This implementation works on any system and is well optimized.
@@ -331,6 +350,8 @@ def kpm(model, energy_range=None, kernel="default", num_threads="auto", **kwargs
     num_threads : int
         The number of CPU threads to use for calculations. This is automatically set 
         to the number of logical cores available on the current machine.
+    silent : bool
+        Don't show any progress messages.
 
     Returns
     -------
@@ -340,6 +361,10 @@ def kpm(model, energy_range=None, kernel="default", num_threads="auto", **kwargs
         kwargs["kernel"] = kernel
     if num_threads != "auto":
         kwargs["num_threads"] = num_threads
+    if "progress_callback" not in kwargs:
+        kwargs["progress_callback"] = _ComputeProgressReporter()
+    if silent:
+        del kwargs["progress_callback"]
     return KernelPolynomialMethod(_cpp.kpm(model, energy_range or (0, 0), **kwargs))
 
 

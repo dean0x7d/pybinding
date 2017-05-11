@@ -33,7 +33,7 @@ def test_ldos(params, baseline, plot_if_fails):
     model = pb.Model(*params)
 
     kernel = pb.lorentz_kernel()
-    strategies = [pb.kpm(model, kernel=kernel, **c) for c in configurations]
+    strategies = [pb.kpm(model, kernel=kernel, silent=True, **c) for c in configurations]
 
     energy = np.linspace(0, 2, 25)
     results = [kpm.calc_ldos(energy, broadening=0.15, position=[0, 0.07], reduce=False)
@@ -52,7 +52,7 @@ def test_moments(model, plot_if_fails):
     broadening = 0.15
     position = dict(position=[0, 0], sublattice="A")
 
-    kpm = pb.kpm(model)
+    kpm = pb.kpm(model, silent=True)
     expected_ldos = kpm.calc_ldos(energy, broadening, **position)
 
     def manual_ldos():
@@ -86,7 +86,7 @@ def test_moments(model, plot_if_fails):
 
 def test_kpm_multiple_indices(model):
     """KPM can take a vector of column indices and return the Green's function for all of them"""
-    kpm = pb.kpm(model)
+    kpm = pb.kpm(model, silent=True)
 
     num_sites = model.system.num_sites
     i, j = num_sites // 2, num_sites // 4
@@ -104,7 +104,7 @@ def test_kpm_multiple_indices(model):
 def test_kpm_reuse():
     """KPM should return the same result when a single object is used for multiple calculations"""
     model = pb.Model(graphene.monolayer(), graphene.hexagon_ac(10))
-    kpm = pb.kpm(model)
+    kpm = pb.kpm(model, silent=True)
     energy = np.linspace(-5, 5, 50)
     broadening = 0.1
 
@@ -117,7 +117,7 @@ def test_kpm_reuse():
 def test_ldos_sublattice():
     """LDOS for A and B sublattices should be antisymmetric for graphene with a mass term"""
     model = pb.Model(graphene.monolayer(), graphene.hexagon_ac(10), graphene.mass_term(1))
-    kpm = pb.kpm(model)
+    kpm = pb.kpm(model, silent=True)
 
     a, b = (kpm.calc_ldos(np.linspace(-5, 5, 50), 0.1, [0, 0], sub) for sub in ('A', 'B'))
     assert pytest.fuzzy_equal(a.data, b.data[::-1], rtol=1e-3, atol=1e-6)
@@ -152,7 +152,7 @@ def test_dos(params, baseline, plot_if_fails):
     model = pb.Model(*params)
 
     kernel = pb.lorentz_kernel()
-    strategies = [pb.kpm(model, kernel=kernel, **c) for c in configurations]
+    strategies = [pb.kpm(model, kernel=kernel, silent=True, **c) for c in configurations]
 
     energy = np.linspace(0, 2, 25)
     results = [kpm.calc_dos(energy, broadening=0.15) for kpm in strategies]
@@ -182,7 +182,7 @@ def test_conductivity(params, baseline, plot_if_fails):
     model = pb.Model(*params)
 
     kernel = pb.lorentz_kernel()
-    strategies = [pb.kpm(model, energy_range=[-9, 9], kernel=kernel, **c)
+    strategies = [pb.kpm(model, energy_range=[-9, 9], kernel=kernel, silent=True, **c)
                   for c in configurations]
 
     energy = np.linspace(-2, 2, 25)

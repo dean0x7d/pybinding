@@ -45,8 +45,6 @@ class StdCapture:
 
     def get(self):
         output = getattr(sys, self.stream_name).getvalue()
-        self._old_stream.write(output)
-        self._old_stream.flush()
         setattr(sys, self.stream_name, io.StringIO())
         return output
 
@@ -57,22 +55,24 @@ class StdCapture:
 class StreamOutput:
     def __init__(self, stream):
         self.stream = stream
+        self.width = 80
 
     def start(self, width):
-        pass
+        self.width = width
 
     def clear_pbar(self):
-        self.stream.write('\r')
+        self.stream.write("\r" + " " * self.width + "\r")
 
     def write(self, line):
-        pass
+        self.stream.write(line)
+        self.stream.flush()
 
     def write_pbar(self, line):
         self.stream.write('\r' + line)
         self.stream.flush()
 
     def stop(self):
-        pass
+        self.stream.write("\n")
 
 
 class FileOutput:
@@ -175,11 +175,15 @@ class ProgressBar:
             output.start(self.width)
 
         self.start_time = datetime.datetime.now()
-        self.update(0)
+        self.last_update_time = self.start_time
+        self.refresh()
 
     def update(self, value):
         if not self.running:
             self.start()
+
+        if self.value == value:
+            return
 
         self.value = value
         self.last_update_time = datetime.datetime.now()
