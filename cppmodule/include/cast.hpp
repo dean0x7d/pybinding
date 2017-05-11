@@ -6,6 +6,18 @@
 
 namespace pybind11 { namespace detail {
 
+template<>
+struct visit_helper<cpb::var::variant> {
+    template<class... Args>
+    static auto call(Args&&... args)
+        -> decltype(cpb::var::apply_visitor(std::forward<Args>(args)...)) {
+        return cpb::var::apply_visitor(std::forward<Args>(args)...);
+    }
+};
+
+template<class... Args>
+struct type_caster<cpb::var::variant<Args...>> : variant_caster<cpb::var::variant<Args...>> {};
+
 /// Only for statically sized vectors: accepts smaller source arrays and zero-fills the remainder
 template<class Vector>
 struct static_vec_caster {
@@ -119,48 +131,6 @@ template<class T, class... Ts>
 struct type_caster<cpb::num::VariantCsrConstRef<T, Ts...>> : csrref_caster {};
 template<class T>
 struct type_caster<cpb::num::CsrConstRef<T>> : csrref_caster {};
-
-struct variant_visitor {
-    return_value_policy policy;
-    handle parent;
-
-    template<class T>
-    handle operator()(T const& src) const {
-        return make_caster<T>::cast(src, policy, parent);
-    }
-};
-
-template<class Variant> struct variant_caster;
-
-template<template<class...> class V, class... Ts>
-struct variant_caster<V<Ts...>> {
-    using Type = V<Ts...>;
-
-    template<class T>
-    bool load_one(handle src, bool convert) {
-        auto caster = make_caster<T>();
-        if (caster.load(src, convert)) {
-            value = cast_op<T>(caster);
-            return true;
-        }
-        return false;
-    }
-
-    bool load(handle src, bool convert) {
-        auto loaded = {false, load_one<Ts>(src, convert)...};
-        return std::any_of(loaded.begin(), loaded.end(), [](bool b) { return b; });
-    }
-
-    static handle cast(Type const& src, return_value_policy policy, handle parent) {
-        return cpb::var::apply_visitor(variant_visitor{policy, parent}, src);
-    }
-
-    PYBIND11_TYPE_CASTER(Type, _("Variant"));
-};
-
-template<class... Args> struct type_caster<cpb::var::variant<Args...>>
-    : variant_caster<cpb::var::variant<Args...>> {};
-
 
 template<class Tag, class T>
 struct type_caster<cpb::detail::OpaqueIntegerAlias<Tag, T>> {

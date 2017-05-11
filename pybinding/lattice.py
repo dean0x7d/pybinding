@@ -137,7 +137,7 @@ class Lattice:
                           LoudDeprecationWarning, stacklevel=2)
             self.add_one_alias(name, alias, position)
         else:
-            self.impl.add_sublattice(name, position, onsite_energy)
+            self.impl.add_sublattice(name, position, np.asarray(onsite_energy))
 
     def add_sublattices(self, *sublattices):
         """Add multiple new sublattices
