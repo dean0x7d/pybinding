@@ -22,7 +22,6 @@ struct SelectAlgorithm {
 
     template<template<class> class C, class Vector = typename C<scalar_t>::Vector>
     idx_t with(C<scalar_t>& collect) const {
-        using namespace calc_moments;
         simd::scope_disable_denormals guard;
 
         starter.lock();
@@ -33,14 +32,12 @@ struct SelectAlgorithm {
         auto r1 = make_r1(h2, r0);
         collect.initial(r0, r1);
 
-        if (config.optimal_size && config.interleaved) {
-            opt_size_and_interleaved(collect, std::move(r0), std::move(r1), h2, oh.map());
-        } else if (config.interleaved) {
-            interleaved(collect, std::move(r0), std::move(r1), h2, oh.map());
-        } else if (config.optimal_size) {
-            opt_size(collect, std::move(r0), std::move(r1), h2, oh.map());
+        if (config.interleaved) {
+            calc_moments::interleaved(collect, std::move(r0), std::move(r1),
+                                      h2, oh.map(), config.optimal_size);
         } else {
-            basic(collect, std::move(r0), std::move(r1), h2);
+            calc_moments::basic(collect, std::move(r0), std::move(r1),
+                                h2, oh.map(), config.optimal_size);
         }
 
         return idx;

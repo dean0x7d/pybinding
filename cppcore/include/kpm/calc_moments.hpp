@@ -17,113 +17,71 @@ using requires_diagonal = typename std::enable_if<is_diagonal<Collector>::value,
 template<class Collector>
 using requires_offdiagonal = typename std::enable_if<!is_diagonal<Collector>::value, int>::type;
 
-/**********************************************************************\
+/************************************************************************\
  Diagonal KPM implementation: the left and right vectors are identical,
- i.e. `mu_n = <r|Tn(H)|r>` where `bra == ket == r`.
-\**********************************************************************/
+ i.e. `mu_n = <r|Tn(H)|r>` where `bra == ket == r`. It's 1.5x to 2x times
+ faster than the general (off-diagonal) version.
+\************************************************************************/
 
 /**
- Reference implementation, no optimizations, no special requirements
+ Basic implementation with an optional size optimization (when applicable)
 
- Calculates moments for a single matrix element (i, i) on the main diagonal.
- It's 1.5x to 2x times faster than the general (off-diagonal) version.
-
- The initial vectors `r0` and `r1` are given by the user. E.g. `r0` can be
- a unit vector for the expectation value variant or a random vector for the
- stochastic trace variant.
+ When `opt_size == true`, the optimal size optimization is used. This requires
+ a specially ordered matrix as input. This matrix is divided into slices which
+ are mapped by `SliceMap`. At each iteration, the computation is performed only
+ for a subset of the total system which contains non-zero values. The speedup
+ is about equal to the amount of removed work.
  */
-template<class C, class Vector, class Matrix, requires_diagonal<C> = 1>
-void basic(C& collect, Vector r0, Vector r1, Matrix const& h2) {
+template<class Collector, class Vector, class Matrix, requires_diagonal<Collector> = 1>
+void basic(Collector& collect, Vector r0, Vector r1, Matrix const& h2,
+           SliceMap const& map, bool opt_size) {
     auto const num_moments = collect.size();
     assert(num_moments % 2 == 0);
 
-    static constexpr auto zero = C::zero();
+    constexpr auto zero = Collector::zero();
     for (auto n = 2; n <= num_moments / 2; ++n) {
         auto m2 = zero, m3 = zero;
-        compute::kpm_spmv_diagonal(0, h2.rows(), h2, r1, r0, m2, m3);
+        auto const size = opt_size ? map.optimal_size(n, num_moments) : h2.rows();
+
+        compute::kpm_spmv_diagonal(0, size, h2, r1, r0, m2, m3);
+
         collect(n, m2, m3);
         r1.swap(r0);
     }
 }
 
 /**
- Optimal size optimization, requires a specially ordered matrix as input
+ Optimized implementation: interleave two consecutive moment calculations
 
- At each iteration, the computation is performed only for a subset of the total
- system which contains non-zero values. The speedup is about equal to the amount
- of removed work.
- */
-template<class C, class Vector, class Matrix, requires_diagonal<C> = 1>
-void opt_size(C& collect, Vector r0, Vector r1, Matrix const& h2, SliceMap const& map) {
-    auto const num_moments = collect.size();
-    assert(num_moments % 2 == 0);
-
-    static constexpr auto zero = C::zero();
-    for (auto n = 2; n <= num_moments / 2; ++n) {
-        auto m2 = zero, m3 = zero;
-        compute::kpm_spmv_diagonal(0, map.optimal_size(n, num_moments), h2, r1, r0, m2, m3);
-        collect(n, m2, m3);
-        r1.swap(r0);
-    }
-}
-
-/**
- Interleave two moment calculations, requires a specially ordered matrix as input
+ Requires a specially ordered matrix as input.
 
  The two concurrent operations share some of the same data, thus promoting cache
  usage and reducing main memory bandwidth.
  */
-template<class C, class Vector, class Matrix, requires_diagonal<C> = 1>
-void interleaved(C& collect, Vector r0, Vector r1, Matrix const& h2, SliceMap const& map) {
+template<class Collector, class Vector, class Matrix, requires_diagonal<Collector> = 1>
+void interleaved(Collector& collect, Vector r0, Vector r1, Matrix const& h2,
+                 SliceMap const& map, bool opt_size) {
     auto const num_moments = collect.size();
     assert((num_moments - 2) % 4 == 0);
 
     // Interleave moments `n` and `n + 1` for better data locality
     // Diagonal + interleaved computes 4 moments per iteration
-    static constexpr auto zero = C::zero();
+    constexpr auto zero = Collector::zero();
     for (auto n = idx_t{2}; n <= num_moments / 2; n += 2) {
         auto m2 = zero, m3 = zero, m4 = zero, m5 = zero;
+        auto const max1 = opt_size ? map.index(n,     num_moments) : map.last_index();
+        auto const max2 = opt_size ? map.index(n + 1, num_moments) : map.last_index();
 
-        auto const max = map.last_index();
-        for (auto k = idx_t{0}, p0 = idx_t{0}, p1 = idx_t{0}; k <= max; ++k) {
-            auto const p2 = map[k];
-            compute::kpm_spmv_diagonal(p1, p2, h2, r1, r0, m2, m3);
-            compute::kpm_spmv_diagonal(p0, p1, h2, r0, r1, m4, m5);
+        for (auto k = idx_t{0}, start0 = idx_t{0}, start1 = idx_t{0}; k <= max1; ++k) {
+            auto const end0 = map[k];
+            auto const end1 = (k == max1) ? map[max2] : start0;
 
-            p0 = p1;
-            p1 = p2;
+            compute::kpm_spmv_diagonal(start0, end0, h2, r1, r0, m2, m3);
+            compute::kpm_spmv_diagonal(start1, end1, h2, r0, r1, m4, m5);
+
+            start1 = end1;
+            start0 = end0;
         }
-        compute::kpm_spmv_diagonal(map[max - 1], map[max], h2, r0, r1, m4, m5);
-
-        collect(n, m2, m3);
-        collect(n + 1, m4, m5);
-    }
-}
-
-/**
- Optimal size + interleaved
- */
-template<class C, class Vector, class Matrix, requires_diagonal<C> = 1>
-void opt_size_and_interleaved(C& collect, Vector r0, Vector r1, Matrix const& h2,
-                              SliceMap const& map) {
-    auto const num_moments = collect.size();
-    assert((num_moments - 2) % 4 == 0);
-
-    static constexpr auto zero = C::zero();
-    for (auto n = idx_t{2}; n <= num_moments / 2; n += 2) {
-        auto m2 = zero, m3 = zero, m4 = zero, m5 = zero;
-
-        auto const max1 = map.index(n, num_moments);
-        for (auto k = idx_t{0}, p0 = idx_t{0}, p1 = idx_t{0}; k <= max1; ++k) {
-            auto const p2 = map[k];
-            compute::kpm_spmv_diagonal(p1, p2, h2, r1, r0, m2, m3);
-            compute::kpm_spmv_diagonal(p0, p1, h2, r0, r1, m4, m5);
-
-            p0 = p1;
-            p1 = p2;
-        }
-        auto const max2 = map.index(n + 1, num_moments);
-        compute::kpm_spmv_diagonal(map[max1 - 1], map[max2], h2, r0, r1, m4, m5);
 
         collect(n, m2, m3);
         collect(n + 1, m4, m5);
@@ -137,18 +95,18 @@ void opt_size_and_interleaved(C& collect, Vector r0, Vector r1, Matrix const& h2
 \******************************************************************/
 
 /**
- Reference implementation, no optimizations, no special requirements
+ Basic implementation with an optional size optimization (when applicable)
 
- Calculates moments for multiple indices in the same row -- the Moments class
- knows which final values to collect. Both diagonal and off-diagonal moments
- can be computed, but the diagonal version of this function is more efficient
- for that special case.
+ See the diagonal version of this function for more information.
  */
-template<class C, class Vector, class Matrix, requires_offdiagonal<C> = 1>
-void basic(C& collect, Vector r0, Vector r1, Matrix const& h2) {
+template<class Collector, class Vector, class Matrix, requires_offdiagonal<Collector> = 1>
+void basic(Collector& collect, Vector r0, Vector r1, Matrix const& h2,
+           SliceMap const& map, bool opt_size) {
     auto const num_moments = collect.size();
     for (auto n = idx_t{2}; n < num_moments; ++n) {
-        compute::kpm_spmv(0, h2.rows(), h2, r1, r0);
+        auto const size = opt_size ? map.optimal_size(n, num_moments) : h2.rows();
+
+        compute::kpm_spmv(0, size, h2, r1, r0); // r0 = matrix * r1 - r0
 
         r1.swap(r0);
         collect(n, r1);
@@ -156,73 +114,31 @@ void basic(C& collect, Vector r0, Vector r1, Matrix const& h2) {
 }
 
 /**
- Optimal size optimization, requires a specially ordered matrix as input
+ Optimized implementation: interleave two consecutive moment calculations
 
  See the diagonal version of this function for more information.
  */
 template<class C, class Vector, class Matrix, requires_offdiagonal<C> = 1>
-void opt_size(C& collect, Vector r0, Vector r1, Matrix const& h2, SliceMap const& map) {
-    auto const num_moments = collect.size();
-    for (auto n = idx_t{2}; n < num_moments; ++n) {
-        auto const opt_size = map.optimal_size(n, num_moments);
-
-        compute::kpm_spmv(0, opt_size, h2, r1, r0); // r0 = matrix * r1 - r0
-
-        r1.swap(r0);
-        collect(n, r1);
-    }
-}
-
-/**
- Interleave two moment calculations, requires a specially ordered matrix as input
-
- See the diagonal version of this function for more information.
- */
-template<class C, class Vector, class Matrix, requires_offdiagonal<C> = 1>
-void interleaved(C& collect, Vector r0, Vector r1, Matrix const& h2, SliceMap const& map) {
+void interleaved(C& collect, Vector r0, Vector r1, Matrix const& h2,
+                 SliceMap const& map, bool opt_size) {
     auto const num_moments = collect.size();
     assert(num_moments % 2 == 0);
 
     // Interleave moments `n` and `n + 1` for better data locality
     for (auto n = idx_t{2}; n < num_moments; n += 2) {
-        auto const max = map.last_index();
-        for (auto k = idx_t{0}, p0 = idx_t{0}, p1 = idx_t{0}; k <= max; ++k) {
-            auto const p2 = map[k];
-            compute::kpm_spmv(p1, p2, h2, r1, r0);
-            compute::kpm_spmv(p0, p1, h2, r0, r1);
+        auto const max1 = opt_size ? map.index(n,     num_moments) : map.last_index();
+        auto const max2 = opt_size ? map.index(n + 1, num_moments) : map.last_index();
 
-            p0 = p1;
-            p1 = p2;
+        for (auto k = idx_t{0}, start0 = idx_t{0}, start1 = idx_t{0}; k <= max1; ++k) {
+            auto const end0 = map[k];
+            auto const end1 = (k == max1) ? map[max2] : start0;
+
+            compute::kpm_spmv(start0, end0, h2, r1, r0);
+            compute::kpm_spmv(start1, end1, h2, r0, r1);
+
+            start1 = start0;
+            start0 = end0;
         }
-        compute::kpm_spmv(map[max - 1], map[max], h2, r0, r1);
-
-        collect(n, r0);
-        collect(n + 1, r1);
-    }
-}
-
-/**
- Optimal size + interleaved
- */
-template<class C, class Vector, class Matrix, requires_offdiagonal<C> = 1>
-void opt_size_and_interleaved(C& collect, Vector r0, Vector r1, Matrix const& h2,
-                              SliceMap const& map) {
-    auto const num_moments = collect.size();
-    assert(num_moments % 2 == 0);
-
-    // Interleave moments `n` and `n + 1` for better data locality
-    for (auto n = idx_t{2}; n < num_moments; n += 2) {
-        auto const max1 = map.index(n, num_moments);
-        for (auto k = idx_t{0}, p0 = idx_t{0}, p1 = idx_t{0}; k <= max1; ++k) {
-            auto const p2 = map[k];
-            compute::kpm_spmv(p1, p2, h2, r1, r0);
-            compute::kpm_spmv(p0, p1, h2, r0, r1);
-
-            p0 = p1;
-            p1 = p2;
-        }
-        auto const max2 = map.index(n + 1, num_moments);
-        compute::kpm_spmv(map[max1 - 1], map[max2], h2, r0, r1);
 
         collect(n, r0);
         collect(n + 1, r1);
