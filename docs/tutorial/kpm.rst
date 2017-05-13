@@ -141,7 +141,7 @@ which computes the total density of states (DOS) in a system:
     model = pb.Model(graphene.monolayer(), pb.rectangle(400, 2))
     kpm = pb.kpm(model)
 
-    dos = kpm.calc_dos(energy=np.linspace(-2.7, 2.7, 500), broadening=0.06, num_random=4)
+    dos = kpm.calc_dos(energy=np.linspace(-2.7, 2.7, 500), broadening=0.06, num_random=16)
     dos.plot()
 
 The example system here is a very long but narrow (400 x 2 nm) rectangle of graphene, i.e. a zigzag
