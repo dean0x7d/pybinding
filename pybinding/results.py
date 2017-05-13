@@ -433,11 +433,6 @@ class StructureMap(SpatialMap):
         from .system import (plot_sites, plot_hoppings, plot_periodic_boundaries,
                              structure_plot_properties)
 
-        ax = plt.gca()
-        ax.set_aspect('equal', 'datalim')
-        ax.set_xlabel('x (nm)')
-        ax.set_ylabel('y (nm)')
-
         def to_radii(data):
             if not isinstance(site_radius, (tuple, list)):
                 return site_radius
@@ -462,6 +457,9 @@ class StructureMap(SpatialMap):
         plot_periodic_boundaries(self.positions, hop, self.boundaries, self.data,
                                  num_periods, **props)
 
+        plt.gca().set_aspect('equal', 'datalim')
+        plt.xlabel("{} (nm)".format(props["axes"][0]))
+        plt.ylabel("{} (nm)".format(props["axes"][1]))
         pltutils.despine(trim=True)
         pltutils.add_margin()
 
