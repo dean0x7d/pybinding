@@ -290,6 +290,8 @@ class SpatialMap:
 
     def __getitem__(self, idx):
         """Same rules as numpy indexing"""
+        if hasattr(idx, "contains"):
+            idx = idx.contains(*self.positions)  # got a Shape object -> evaluate it
         return self.__class__(self._data[idx], self._sites[idx])
 
     def cropped(self, **limits):
@@ -404,6 +406,8 @@ class StructureMap(SpatialMap):
 
     def __getitem__(self, idx):
         """Same rules as numpy indexing"""
+        if hasattr(idx, "contains"):
+            idx = idx.contains(*self.positions)  # got a Shape object -> evaluate it
         return self.__class__(self.data[idx], self._sites[idx], self._hoppings[idx],
                               [b[idx] for b in self._boundaries])
 
@@ -532,6 +536,9 @@ class Structure:
 
     def __getitem__(self, idx):
         """Same rules as numpy indexing"""
+        if hasattr(idx, "contains"):
+            idx = idx.contains(*self.positions)  # got a Shape object -> evaluate it
+
         return Structure(self._sites[idx], self._hoppings[idx],
                          [b[idx] for b in self._boundaries])
 
