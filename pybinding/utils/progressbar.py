@@ -168,6 +168,7 @@ class ProgressBar:
 
     def start(self):
         self.running = True
+        self.value = 0
 
         for capture in self.captures:
             capture.start()
