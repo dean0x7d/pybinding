@@ -39,6 +39,8 @@ autodoc_default_flags = ['members', 'special-members', 'inherited-members']
 autodoc_allowed_special_members = ['__call__', '__getitem__']
 generate_from_files = ['api.rst']
 
+mathjax_path = ("https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?"
+                "config=TeX-AMS-MML_HTMLorMML")
 intersphinx_mapping = {'python': ('https://docs.python.org/3', None),
                        'numpy': ('https://docs.scipy.org/doc/numpy/', None),
                        'scipy': ('https://docs.scipy.org/doc/scipy/reference/', None),
