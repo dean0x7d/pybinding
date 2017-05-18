@@ -1,5 +1,10 @@
 # Changelog
 
+### v0.9.2 | in development
+
+* Fixed broken documentation links when using the online search function.
+
+
 ### v0.9.1 | 2017-04-28
 
 * Fixed an issue with multi-orbital models where onsite/hopping modifiers would return unexpected

@@ -1,0 +1,6 @@
+cmake
+numpy
+scipy
+matplotlib
+nbconvert
+numpydoc

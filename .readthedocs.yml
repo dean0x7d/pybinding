@@ -1,4 +1,4 @@
-conda:
-  file: support/rtd_environment.yml
 python:
+  version: 3.5
   setup_py_install: true
+requirements_file: support/rtd_requirements.txt
