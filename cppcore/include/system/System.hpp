@@ -43,6 +43,10 @@ struct System {
     /// account the number of orbitals/spins at each lattice site.
     idx_t hamiltonian_size() const;
 
+    /// Total number of non-zero values which need to be reserved for a Hamiltonian.
+    /// This function takes multi-orbital hopping terms into account.
+    idx_t hamiltonian_nnz() const;
+
     /// Translate the given System site index into its corresponding Hamiltonian indices
     ArrayXi to_hamiltonian_indices(idx_t system_index) const;
 

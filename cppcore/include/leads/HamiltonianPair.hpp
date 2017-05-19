@@ -7,7 +7,7 @@ namespace detail {
     template<class scalar_t>
     Hamiltonian make_h0(System const& lead_system, HamiltonianModifiers const& modifiers) {
         auto h0 = std::make_shared<SparseMatrixX<scalar_t>>();
-        cpb::detail::build_main(*h0, lead_system, modifiers);
+        cpb::detail::build_main(*h0, lead_system, modifiers, /*simple_build*/true);
         h0->makeCompressed();
         cpb::detail::throw_if_invalid(*h0);
         return h0;

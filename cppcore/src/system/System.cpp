@@ -28,6 +28,23 @@ idx_t System::hamiltonian_size() const {
     return result;
 }
 
+idx_t System::hamiltonian_nnz() const {
+    auto const onsite_nnz = std::accumulate(
+        compressed_sublattices.begin(), compressed_sublattices.end(), idx_t{0},
+        [](idx_t n, CompressedSublattices::It const& sub) {
+            return n + sub.num_sites() * sub.num_orbitals() * sub.num_orbitals();
+        }
+    );
+    auto const hopping_nnz = std::accumulate(
+        hopping_blocks.begin(), hopping_blocks.end(), idx_t{0},
+        [&](idx_t n, HoppingBlocks::Iterator const& block) {
+            auto const term_size = lattice(block.family_id()).energy.size();
+            return n + static_cast<idx_t>(block.size()) * term_size;
+        }
+    );
+    return onsite_nnz + 2 * hopping_nnz;
+}
+
 ArrayXi System::to_hamiltonian_indices(idx_t system_index) const {
     for (auto const& sub : compressed_sublattices) {
         if (sub.sys_start() <= system_index && system_index < sub.sys_end()) {

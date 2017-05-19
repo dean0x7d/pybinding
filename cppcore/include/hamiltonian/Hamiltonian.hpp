@@ -73,22 +73,48 @@ namespace detail {
 
 template<class scalar_t>
 void build_main(SparseMatrixX<scalar_t>& matrix, System const& system,
-                HamiltonianModifiers const& modifiers) {
+                HamiltonianModifiers const& modifiers, bool simple_build) {
     auto const size = system.hamiltonian_size();
     matrix.resize(size, size);
 
-    auto const has_onsite_energy = system.lattice.has_onsite_energy() || !modifiers.onsite.empty();
-    auto const num_per_row = system.lattice.max_hoppings() + has_onsite_energy;
-    matrix.reserve(ArrayXi::Constant(size, num_per_row));
+    if (simple_build) {
+        // Fast path: No generators were used (only unit cell replication + modifiers)
+        // so we can easily predict the maximum number of non-zero values per row.
+        auto const has_onsite_energy = system.lattice.has_onsite_energy()
+                                       || !modifiers.onsite.empty();
+        auto const num_per_row = system.lattice.max_hoppings() + has_onsite_energy;
+        matrix.reserve(ArrayXi::Constant(size, num_per_row));
 
-    modifiers.apply_to_onsite<scalar_t>(system, [&](idx_t i, idx_t j, scalar_t onsite) {
-        matrix.insert(i, j) = onsite;
-    });
+        modifiers.apply_to_onsite<scalar_t>(system, [&](idx_t i, idx_t j, scalar_t onsite) {
+            matrix.insert(i, j) = onsite;
+        });
 
-    modifiers.apply_to_hoppings<scalar_t>(system, [&](idx_t i, idx_t j, scalar_t hopping) {
-        matrix.insert(i, j) = hopping;
-        matrix.insert(j, i) = num::conjugate(hopping);
-    });
+        modifiers.apply_to_hoppings<scalar_t>(system, [&](idx_t i, idx_t j, scalar_t hopping) {
+            matrix.insert(i, j) = hopping;
+            matrix.insert(j, i) = num::conjugate(hopping);
+        });
+    } else {
+        // Slow path: Users can do anything with generators which makes the number of non-zeros
+        // per row difficult to count (possible but not worth it over building from triplets).
+        auto triplets = std::vector<Eigen::Triplet<scalar_t>>();
+        triplets.reserve(system.hamiltonian_nnz());
+
+        // Helper lambda which does a `idx_t` -> `storage_idx_t` cast for the indices.
+        auto to_triplet = [](idx_t i, idx_t j, scalar_t value) -> Eigen::Triplet<scalar_t> {
+            return {static_cast<storage_idx_t>(i), static_cast<storage_idx_t>(j), value};
+        };
+
+        modifiers.apply_to_onsite<scalar_t>(system, [&](idx_t i, idx_t j, scalar_t onsite) {
+            triplets.push_back(to_triplet(i, j, onsite));
+        });
+
+        modifiers.apply_to_hoppings<scalar_t>(system, [&](idx_t i, idx_t j, scalar_t hopping) {
+            triplets.push_back(to_triplet(i, j, hopping));
+            triplets.push_back(to_triplet(j, i, num::conjugate(hopping)));
+        });
+
+        matrix.setFromTriplets(triplets.begin(), triplets.end());
+    }
 }
 
 template<class scalar_t>
@@ -136,10 +162,11 @@ inline bool is(Hamiltonian const& h) {
 }
 
 template<class scalar_t>
-Hamiltonian make(System const& system, HamiltonianModifiers const& modifiers, Cartesian k_vector) {
+Hamiltonian make(System const& system, HamiltonianModifiers const& modifiers,
+                 Cartesian k_vector, bool simple_build) {
     auto matrix = std::make_shared<SparseMatrixX<scalar_t>>();
 
-    detail::build_main(*matrix, system, modifiers);
+    detail::build_main(*matrix, system, modifiers, simple_build);
     detail::build_periodic(*matrix, system, modifiers, k_vector);
 
     matrix->makeCompressed();

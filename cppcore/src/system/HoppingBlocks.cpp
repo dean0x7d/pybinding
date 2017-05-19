@@ -48,13 +48,13 @@ void HoppingBlocks::reserve(ArrayXi const& counts) {
 void HoppingBlocks::append(HopID family_id, ArrayXi&& rows, ArrayXi&& cols) {
     assert(rows.size() == cols.size());
     auto& block = blocks[family_id.as<size_t>()];
-    block.resize(rows.size());
+    block.reserve(block.size() + rows.size());
 
     for (auto i = 0; i < rows.size(); ++i) {
         auto m = rows[i];
         auto n = cols[i];
         if (m > n) { std::swap(m, n); } // upper triangular format
-        block[i] = {m, n};
+        block.emplace_back(m, n);
     }
 
     // Maintain upper triangular format

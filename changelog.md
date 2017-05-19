@@ -4,6 +4,8 @@
 
 * Fixed broken documentation links when using the online search function.
 
+* Fixed slow Hamiltonian build when hopping generators are used.
+
 
 ### v0.9.1 | 2017-04-28
 

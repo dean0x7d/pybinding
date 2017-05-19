@@ -46,23 +46,26 @@ TEST_CASE("to_hamiltonian_indices") {
     };
 
     SECTION("single-orbital") {
-        auto const model = Model(lattice::square(), shape::rectangle(3, 3));
+        auto const model = Model(lattice::square(), Primitive(3, 3));
         auto const& system = *model.system();
 
         REQUIRE(system.num_sites() == 9);
         REQUIRE(system.hamiltonian_size() == 9);
+        REQUIRE(system.hamiltonian_nnz() == 33);
         REQUIRE(system.to_hamiltonian_indices(0).matrix() == vec({0}));
         REQUIRE(system.to_hamiltonian_indices(4).matrix() == vec({4}));
         REQUIRE(system.to_hamiltonian_indices(8).matrix() == vec({8}));
     }
 
     SECTION("multi-orbital") {
-        auto const model = Model(lattice::square_multiorbital(), shape::rectangle(1, 2));
+        auto const model = Model(lattice::square_multiorbital(), Primitive(1, 2));
         auto const& system = *model.system();
 
         REQUIRE(system.num_sites() == 8);
         REQUIRE(system.hamiltonian_size() == 16);
+        REQUIRE(system.hamiltonian_nnz() == 96);
         REQUIRE(system.to_hamiltonian_indices(0).matrix() == vec({0}));
+        REQUIRE(system.to_hamiltonian_indices(1).matrix() == vec({1}));
         REQUIRE(system.to_hamiltonian_indices(2).matrix() == vec({2, 3}));
         REQUIRE(system.to_hamiltonian_indices(3).matrix() == vec({4, 5}));
         REQUIRE(system.to_hamiltonian_indices(4).matrix() == vec({6, 7}));

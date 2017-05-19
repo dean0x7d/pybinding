@@ -87,6 +87,7 @@ std::shared_ptr<System const> const& Model::system() const {
 }
 
 Hamiltonian const& Model::hamiltonian() const {
+    system();
     if (!_hamiltonian) {
         hamiltonian_build_time.timeit([&]{
             _hamiltonian = make_hamiltonian();
@@ -97,6 +98,7 @@ Hamiltonian const& Model::hamiltonian() const {
 
 Leads const& Model::leads() const {
     system();
+    hamiltonian();
     _leads.make_hamiltonian(hamiltonian_modifiers, is_double(), is_complex());
     return _leads;
 }
@@ -151,13 +153,16 @@ std::shared_ptr<System> Model::make_system() const {
 
 Hamiltonian Model::make_hamiltonian() const {
     auto const& built_system = *system();
+    auto const& modifiers = hamiltonian_modifiers;
+    auto const& k = wave_vector;
+    auto const simple_build = hopping_generators.empty();
 
     if (!is_complex()) {
         try {
             if (!is_double()) {
-                return ham::make<float>(built_system, hamiltonian_modifiers, wave_vector);
+                return ham::make<float>(built_system, modifiers, k, simple_build);
             } else {
-                return ham::make<double>(built_system, hamiltonian_modifiers, wave_vector);
+                return ham::make<double>(built_system, modifiers, k, simple_build);
             }
         } catch (ComplexOverride const&) {
             complex_override = true;
@@ -165,9 +170,9 @@ Hamiltonian Model::make_hamiltonian() const {
     }
 
     if (!is_double()) {
-        return ham::make<std::complex<float>>(built_system, hamiltonian_modifiers, wave_vector);
+        return ham::make<std::complex<float>>(built_system, modifiers, k, simple_build);
     } else {
-        return ham::make<std::complex<double>>(built_system, hamiltonian_modifiers, wave_vector);
+        return ham::make<std::complex<double>>(built_system, modifiers, k, simple_build);
     }
 }
 

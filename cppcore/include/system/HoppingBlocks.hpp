@@ -29,6 +29,14 @@ struct COO {
 /**
  Hopping coordinates arranged in per-family blocks
 
+ A hopping here represents a connection between two sites, not orbitals.
+ The `row` and `col` index sites which are connected by a hopping family
+ represented by numerical ID (the sparse matrix `data`). If a hopping
+ family has an energy matrix (instead of a scalar) then it will need to
+ be expanded to get the full orbital-to-orbital hoppings. But this happens
+ at a later stage. This data structure is only concerned with site-to-site
+ hoppings arranged in per-family blocks.
+
  Each block corresponds to a COO sparse matrix where all the elements in
  the data array are the same and correspond to the index of the block,
  i.e. the hopping family ID:
@@ -46,6 +54,10 @@ struct COO {
  Because the data array is trivial, it doesn't actually need to be stored.
  The full COO sparse matrix can be reconstructed by appending all the blocks
  and reconstructing the implicit data array.
+
+ The row-col coordinate pairs are unique (over all blocks) and sorted to
+ maintain an upper triangular matrix per block (implied hermiticity supplies
+ the lower triangular portion and is not actually stored in memory).
  */
 class HoppingBlocks {
 public:
@@ -94,7 +106,8 @@ public:
     Iterator begin() const { return blocks.begin(); }
     Iterator end() const { return blocks.end(); }
 
-    /// Number of non-zeros in this COO sparse matrix, i.e. the total number of hoppings
+    /// Number of non-zeros in this COO sparse matrix, i.e. the total number of hoppings.
+    /// This only includes the upper triangular part (i.e. does not include 2x for hermiticity).
     idx_t nnz() const;
 
     /// Reserve space the given number of hoppings per family
