@@ -27,7 +27,7 @@ def elapsed(template="Elapsed: {}"):
 def eta(template="ETA: {}"):
     def widget(pbar):
         if pbar.value == 0:
-            return "--:--:--"
+            return template.format("--:--:--")
         else:
             remaining = pbar.elapsed_seconds * (1 / pbar.percent - 1)
             return template.format(datetime.timedelta(seconds=int(remaining)))
