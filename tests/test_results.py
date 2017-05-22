@@ -97,11 +97,14 @@ def test_structure_map(model):
 
 
 def test_structure_map_plot(compare_figure):
+    import matplotlib.pyplot as plt
+
     model = pb.Model(graphene.monolayer(), pb.rectangle(0.8))
     structure_map = model.structure_map(model.system.x * model.system.y)
 
     with compare_figure() as chk:
         structure_map.plot(site_radius=(0.03, 0.05))
+        plt.gca().set_aspect("equal", "datalim")
     assert chk.passed
 
 
