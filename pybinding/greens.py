@@ -8,7 +8,7 @@ from .support.deprecated import LoudDeprecationWarning
 
 __all__ = ['Greens', 'kpm', 'kpm_cuda']
 
-Greens = chebyshev.KernelPolynomialMethod
+Greens = chebyshev.KPM
 
 
 def kpm(*args, **kwargs):

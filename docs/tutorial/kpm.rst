@@ -48,8 +48,8 @@ entire energy spectrum at once. In this way, the two approaches complement each 
 Builtin methods
 ---------------
 
-Before using any of the computation methods, the main :class:`.KernelPolynomialMethod` object
-needs to be created for a specific model:
+Before using any of the computation methods, the main :class:`.KPM` object needs to be created
+for a specific model:
 
 .. code-block:: python
     :emphasize-lines: 0
@@ -62,8 +62,8 @@ needs to be created for a specific model:
 LDOS
 ****
 
-The :meth:`~.KernelPolynomialMethod.calc_ldos` method makes it very easy to calculate the local
-density of states (LDOS). In the next example we'll use a large square sheet of pristine graphene:
+The :meth:`.KPM.calc_ldos` method makes it very easy to calculate the local density of states
+(LDOS). In the next example we'll use a large square sheet of pristine graphene:
 
 .. plot::
     :context: close-figs
@@ -96,8 +96,8 @@ attribute, i.e. `ldos.data` in this specific case.
 
 Tight-binding systems have lattice sites at discrete positions, which in principle means that we
 cannot freely choose just any position for LDOS calculations. However, as a convenience the
-:meth:`~.KernelPolynomialMethod.calc_ldos` method will automatically find a valid site closest
-to the given target position. We can optionally also choose a specific sublattice:
+:meth:`.KPM.calc_ldos` method will automatically find a valid site closest to the given target
+position. We can optionally also choose a specific sublattice:
 
 .. code-block:: python
    :emphasize-lines: 0
@@ -134,8 +134,8 @@ antisymmetric around zero energy with respect to one another.
 DOS
 ***
 
-The following example demonstates the usage of the :meth:`~.KernelPolynomialMethod.calc_dos` method
-which computes the total density of states (DOS) in a system:
+The following example demonstates the usage of the :meth:`.KPM.calc_dos` method which computes
+the total density of states (DOS) in a system:
 
 .. plot::
     :context: close-figs
@@ -167,10 +167,10 @@ the smaller `num_random` needs to be for the same result quality.
 Spatial LDOS
 ************
 
-To see the spatial distribution of the density of states, we could call the :meth:`~.KernelPolynomialMethod.calc_ldos`
+To see the spatial distribution of the density of states, we could call the :meth:`.KPM.calc_ldos`
 method for several positions and populate a :class:`SpatialMap`. However, this would be tedious and
-slow, so instead we have :meth:`~.KernelPolynomialMethod.calc_spatial_ldos` which makes this much
-simpler. Let's use a strained bit of graphene as an example:
+slow, so instead we have :meth:`.KPM.calc_spatial_ldos` which makes this much simpler. Let's use
+a strained bit of graphene as an example:
 
 .. plot::
     :context: close-figs
@@ -203,10 +203,10 @@ simpler. Let's use a strained bit of graphene as an example:
 The bump produces purely out-of-plane strain so the xy-plane does not show any signs of the
 deformation. Switching to the xz-plane reveals the bump.
 
-The :meth:`~.KernelPolynomialMethod.calc_spatial_ldos` takes the same `energy` and `broadening`
-arguments as we've seen before. KPM computes the entire spectrum simultaneously, so it's
-practically "free" to compute the spatial LDOS at multiple energy values in one calculation
-(this is in contrast to :meth:`.Solver.calc_spatial_ldos` which only targets a single energy).
+The :meth:`.KPM.calc_spatial_ldos` method takes the same `energy` and `broadening` arguments as
+we've seen before. KPM computes the entire spectrum simultaneously, so it's practically "free"
+to compute the spatial LDOS at multiple energy values in one calculation (this is in contrast
+to :meth:`.Solver.calc_spatial_ldos` which only targets a single energy).
 
 The `shape` argument specifies the area where the LDOS is to be calculated, i.e. the sites which
 are contained within the given shape. We could just specify the same shape as the model, thus
@@ -240,8 +240,8 @@ a specific energy.
 Green's function
 ****************
 
-The :meth:`~.KernelPolynomialMethod.calc_greens` can then be used to calculate Green's function
-corresponding to Hamiltonian matrix element `i,j` for the desired energy range and broadening:
+The :meth:`.KPM.calc_greens` can then be used to calculate Green's function corresponding to
+Hamiltonian matrix element `i,j` for the desired energy range and broadening:
 
 .. code-block:: python
     :emphasize-lines: 0
@@ -254,10 +254,10 @@ The result is raw Green's function data for the given matrix element.
 Conductivity
 ************
 
-The :meth:`~.KernelPolynomialMethod.calc_conductivity` method computes the conductivity as a
-function of chemical potential. The implementation uses the Kubo-Bastin formula expanded in terms
-of Chebyshev polynomials, as described in https://doi.org/10.1103/PhysRevLett.114.116602. The
-following example calculates the conductivity tensor for the quantum Hall effect in graphene with
+The :meth:`.KPM.calc_conductivity` method computes the conductivity as a function of chemical
+potential. The implementation uses the Kubo-Bastin formula expanded in terms of Chebyshev
+polynomials, as described in https://doi.org/10.1103/PhysRevLett.114.116602. The following
+example calculates the conductivity tensor for the quantum Hall effect in graphene with
 a magnetic field:
 
 .. code-block:: python
@@ -362,11 +362,10 @@ Low-level interface
 
 The KPM-based calculation methods presented so far have been user-friendly and aimed at computing
 a single physical property of a model. Pybinding also offers a low-level KPM interface via the
-:meth:`~.KernelPolynomialMethod.moments` method. It can be used to generally compute KPM expansion
-moments of the form :math:`\mu_n = <\beta|op \cdot T_n(H)|\alpha>`. For more information on how
-to use these moments to reconstruct various functions, see
-`Rev. Mod. Phys. 78, 275 (2006) <https://doi.org/10.1103/RevModPhys.78.275>`_ which explains
-everything in great detail.
+:meth:`.KPM.moments` method. It can be used to generally compute KPM expansion moments of the
+form :math:`\mu_n = <\beta|op \cdot T_n(H)|\alpha>`. For more information on how to use these
+moments to reconstruct various functions, see `Rev. Mod. Phys. 78, 275 (2006) <https://doi.org/10.1103/RevModPhys.78.275>`_
+which explains everything in great detail.
 
 We'll just leave a quick example here. The following code calculates the LDOS in the center
 of a rectangular graphene flake. This is exactly like the first example in the LDOS section above,

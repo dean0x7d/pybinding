@@ -15,7 +15,7 @@ from .system import System
 from .utils.time import timed
 from .support.deprecated import LoudDeprecationWarning
 
-__all__ = ['KernelPolynomialMethod', 'kpm', 'kpm_cuda', 'SpatialLDOS',
+__all__ = ['KPM', 'kpm', 'kpm_cuda', 'SpatialLDOS',
            'jackson_kernel', 'lorentz_kernel', 'dirichlet_kernel']
 
 
@@ -62,16 +62,18 @@ class SpatialLDOS:
                               labels=dict(variable="E (eV)", data="LDOS", columns="orbitals"))
 
 
-class KernelPolynomialMethod:
+class KPM:
     """The common interface for various KPM implementations
-    
+
     It should not be created directly but via specific functions
     like :func:`kpm` or :func:`kpm_cuda`.
-    
+
     All implementations are based on: https://doi.org/10.1103/RevModPhys.78.275
     """
 
     def __init__(self, impl):
+        if isinstance(impl, Model):
+            raise TypeError("You're probably looking for `pb.kpm()` (lowercase).")
         self.impl = impl
 
     @property
@@ -85,7 +87,7 @@ class KernelPolynomialMethod:
 
     @property
     def system(self) -> System:
-        """The tight-binding system (shortcut for `KernelPolynomialMethod.model.system`)"""
+        """The tight-binding system (shortcut for `KPM.model.system`)"""
         return System(self.impl.system)
 
     @property
@@ -125,9 +127,9 @@ class KernelPolynomialMethod:
         num_moments : int
             The number of moments to calculate.
         alpha : array_like
-            The starting state vector of the KPM iteration. 
+            The starting state vector of the KPM iteration.
         beta : Optional[array_like]
-            If not given, defaults to :math:`\beta = \alpha`. 
+            If not given, defaults to :math:`\beta = \alpha`.
         op : Optional[csr_matrix]
             Operator in the form of a sparse matrix. If omitted, an identity matrix
             is assumed: :math:`\mu_n = <\beta|T_n(H)|\alpha>`.
@@ -209,7 +211,7 @@ class KernelPolynomialMethod:
             Width, in energy, of the smallest detail which can be resolved.
             Lower values result in longer calculation time.
         shape : Shape
-            Determines the site positions at which to do the calculation. 
+            Determines the site positions at which to do the calculation.
         sublattice : str
             Only look for sites of a specific sublattice, within the `shape`.
             The default value considers any sublattice.
@@ -235,7 +237,7 @@ class KernelPolynomialMethod:
             Width, in energy, of the smallest detail which can be resolved.
             Lower values result in longer calculation time.
         num_random : int
-            The number of random vectors to use for the stochastic calculation of KPM moments. 
+            The number of random vectors to use for the stochastic calculation of KPM moments.
             Larger numbers improve the quality of the result but also increase calculation time
             linearly. Fortunately, result quality also improves with system size, so the DOS of
             very large systems can be calculated accurately with only a small number of random
@@ -275,7 +277,7 @@ class KernelPolynomialMethod:
     def calc_conductivity(self, chemical_potential, broadening, temperature,
                           direction="xx", volume=1.0, num_random=1, num_points=1000):
         """Calculate Kubo-Bastin electrical conductivity as a function of chemical potential
- 
+
         The return value is in units of the conductance quantum (e^2 / hbar) not taking into
         account spin or any other degeneracy.
 
@@ -295,7 +297,7 @@ class KernelPolynomialMethod:
         volume : Optional[float]
             The volume of the system.
         num_random : int
-            The number of random vectors to use for the stochastic calculation of KPM moments. 
+            The number of random vectors to use for the stochastic calculation of KPM moments.
             Larger numbers improve the quality of the result but also increase calculation time
             linearly. Fortunately, result quality also improves with system size, so the DOS of
             very large systems can be calculated accurately with only a small number of random
@@ -356,14 +358,14 @@ def kpm(model, energy_range=None, kernel="default", num_threads="auto", silent=F
         :func:`jackson_kernel` or :func:`lorentz_kernel`. The Jackson kernel is used
         by default.
     num_threads : int
-        The number of CPU threads to use for calculations. This is automatically set 
+        The number of CPU threads to use for calculations. This is automatically set
         to the number of logical cores available on the current machine.
     silent : bool
         Don't show any progress messages.
 
     Returns
     -------
-    :class:`~pybinding.chebyshev.KernelPolynomialMethod`
+    :class:`~pybinding.chebyshev.KPM`
     """
     if kernel != "default":
         kwargs["kernel"] = kernel
@@ -373,7 +375,7 @@ def kpm(model, energy_range=None, kernel="default", num_threads="auto", silent=F
         kwargs["progress_callback"] = _ComputeProgressReporter()
     if silent:
         del kwargs["progress_callback"]
-    return KernelPolynomialMethod(_cpp.kpm(model, energy_range or (0, 0), **kwargs))
+    return KPM(_cpp.kpm(model, energy_range or (0, 0), **kwargs))
 
 
 def kpm_cuda(model, energy_range=None, kernel="default", **kwargs):
@@ -390,13 +392,13 @@ def kpm_cuda(model, energy_range=None, kernel="default", **kwargs):
 
     Returns
     -------
-    :class:`~pybinding.chebyshev.KernelPolynomialMethod`
+    :class:`~pybinding.chebyshev.KPM`
     """
     try:
         if kernel != "default":
             kwargs["kernel"] = kernel
         # noinspection PyUnresolvedReferences
-        return KernelPolynomialMethod(_cpp.kpm_cuda(model, energy_range or (0, 0), **kwargs))
+        return KPM(_cpp.kpm_cuda(model, energy_range or (0, 0), **kwargs))
     except AttributeError:
         raise Exception("The module was compiled without CUDA support.\n"
                         "Use a different KPM implementation or recompile the module with CUDA.")
@@ -437,7 +439,7 @@ def dirichlet_kernel():
     a truncated series which results in lots of oscillation in the reconstructed function.
     Therefore, this kernel should almost never be used. It's only here in case the raw
     moment values are needed for some other purpose. Note that `required_num_moments()`
-    returns `N = pi / sigma` for compatibility with the Jackson kernel, but there is 
+    returns `N = pi / sigma` for compatibility with the Jackson kernel, but there is
     no actual broadening associated with the Dirichlet kernel.
     """
     return _cpp.dirichlet_kernel()
@@ -577,4 +579,4 @@ def _kpm_python(model, energy_range=None, kernel="default", **kwargs):
     """Basic Python/SciPy implementation of KPM"""
     if kernel == "default":
         kernel = jackson_kernel()
-    return KernelPolynomialMethod(_PythonImpl(model, energy_range or (0, 0), kernel, **kwargs))
+    return KPM(_PythonImpl(model, energy_range or (0, 0), kernel, **kwargs))
