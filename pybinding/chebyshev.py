@@ -15,14 +15,14 @@ from .system import System
 from .utils.time import timed
 from .support.deprecated import LoudDeprecationWarning
 
-__all__ = ['KernelPolynomialMethod', 'kpm', 'kpm_cuda',
+__all__ = ['KernelPolynomialMethod', 'kpm', 'kpm_cuda', 'SpatialLDOS',
            'jackson_kernel', 'lorentz_kernel', 'dirichlet_kernel']
 
 
 class SpatialLDOS:
     """Holds the results of :meth:`KPM.calc_spatial_ldos`
 
-    It's a product of a :class:`Series` and a :class:`StructureMap`.
+    It behaves like a product of a :class:`.Series` and a :class:`.StructureMap`.
     """
 
     def __init__(self, data, energy, structure):
@@ -31,12 +31,16 @@ class SpatialLDOS:
         self.structure = structure
 
     def structure_map(self, energy):
-        """Return a :class:`StructureMap` of the spatial LDOS at the given energy
-        
+        """Return a :class:`.StructureMap` of the spatial LDOS at the given energy
+
         Parameters
         ----------
         energy : float
             Produce a structure map for LDOS data closest to this energy value.
+
+        Returns
+        -------
+        :class:`.StructureMap`
         """
         idx = np.argmin(abs(self.energy - energy))
         return self.structure.with_data(self.data[idx])
@@ -48,6 +52,10 @@ class SpatialLDOS:
         ----------
         position : array_like
         sublattice : Optional[str]
+
+        Returns
+        -------
+        :class:`.Series`
         """
         idx = self.structure.find_nearest(position, sublattice)
         return results.Series(self.energy, self.data[:, idx],

@@ -83,7 +83,10 @@ center of our square system where we expect to see the well-known LDOS shape of 
 
 Thanks to KPM, the calculation of this local property is very fast: about 0.1 seconds for the
 example above with a 60 x 60 nm sheet of graphene. The broadening parameter offers the possibility
-for performance tuning -- calculation time is inversely proportional to broadening width.
+for performance tuning -- calculation time is inversely proportional to broadening width. KPM
+performs the computation for the entire spectrum simultaneously, so the selected energy range and
+the number of sample points have almost no effect on performance. The broadening width (i.e. the
+precision of the results) is the main factor which determines the duration of the calculation.
 
 The result of the calculation is a :class:`.Series` object which contains the LDOS data, the energy
 array for which it was calculated, and the associated data labels. This allows the
@@ -159,6 +162,79 @@ For this example, we keep `num_random` low to keep the calculation time under 1 
 this number would smooth out the DOS further. Luckily, the stochastic evaluation converges as a
 function of both the system size and number of random samples. Thus, the larger the model system,
 the smaller `num_random` needs to be for the same result quality.
+
+
+Spatial LDOS
+************
+
+To see the spatial distribution of the density of states, we could call the :meth:`~.KernelPolynomialMethod.calc_ldos`
+method for several positions and populate a :class:`SpatialMap`. However, this would be tedious and
+slow, so instead we have :meth:`~.KernelPolynomialMethod.calc_spatial_ldos` which makes this much
+simpler. Let's use a strained bit of graphene as an example:
+
+.. plot::
+    :context: close-figs
+    :alt: Modeling out-of-plane strain in graphene (Gaussian bump)
+
+    def gaussian_bump_strain(height, sigma):
+        """Out-of-plane deformation (bump)"""
+        @pb.site_position_modifier
+        def displacement(x, y, z):
+            dz = height * np.exp(-(x**2 + y**2) / sigma**2)  # gaussian
+            return x, y, z + dz  # only the height changes
+
+        @pb.hopping_energy_modifier
+        def strained_hoppings(energy, x1, y1, z1, x2, y2, z2):
+            d = np.sqrt((x1-x2)**2 + (y1-y2)**2 + (z1-z2)**2)  # strained neighbor distance
+            return energy * np.exp(-3.37 * (d / graphene.a_cc - 1))  # see strain section
+
+        return displacement, strained_hoppings
+
+    model = pb.Model(graphene.monolayer().with_offset([-graphene.a / 2, 0]),
+                     pb.regular_polygon(num_sides=6, radius=4.5),
+                     gaussian_bump_strain(height=1.6, sigma=1.6))
+
+    plt.figure(figsize=(6.7, 2.2))
+    plt.subplot(121, title="xy-plane", ylim=[-5, 5])
+    model.plot()
+    plt.subplot(122, title="xz-plane")
+    model.plot(axes="xz")
+
+The bump produces purely out-of-plane strain so the xy-plane does not show any signs of the
+deformation. Switching to the xz-plane reveals the bump.
+
+The :meth:`~.KernelPolynomialMethod.calc_spatial_ldos` takes the same `energy` and `broadening`
+arguments as we've seen before. KPM computes the entire spectrum simultaneously, so it's
+practically "free" to compute the spatial LDOS at multiple energy values in one calculation
+(this is in contrast to :meth:`.Solver.calc_spatial_ldos` which only targets a single energy).
+
+The `shape` argument specifies the area where the LDOS is to be calculated, i.e. the sites which
+are contained within the given shape. We could just specify the same shape as the model, thus
+taking all sites into consideration, but the calculation is faster for smaller areas so we'll
+narrow our focus. Our model shape is hexagonal, but we're only interested in the LDOS at the bump
+so we can look at a smaller circular area:
+
+.. plot::
+    :context: close-figs
+    :alt: Spatial distribution of the density of states for strained graphene
+
+    kpm = pb.kpm(model)
+    spatial_ldos = kpm.calc_spatial_ldos(energy=np.linspace(-3, 3, 100), broadening=0.2,  # eV
+                                         shape=pb.circle(radius=2.8))  # only within the shape
+    plt.figure(figsize=(6.7, 6))
+    gridspec = plt.GridSpec(2, 2, height_ratios=[1, 0.3], hspace=0)
+
+    energies = [0.0, 0.75, 0.0, 0.75]  # eV
+    planes = ["xy", "xy", "xz", "xz"]
+
+    for g, energy, axes in zip(gridspec, energies, planes):
+        plt.subplot(g, title="E = {} eV, {}-plane".format(energy, axes))
+        smap = spatial_ldos.structure_map(energy)
+        smap.plot(site_radius=(0.02, 0.15), axes=axes)
+
+The result of the calculation is a :class:`~.chebyshev.SpatialLDOS` object which stores the
+spatial LDOS for several energy values. Calling :meth:`.SpatialLDOS.structure_map` selects
+a specific energy.
 
 
 Green's function
