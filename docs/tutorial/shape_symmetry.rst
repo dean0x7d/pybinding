@@ -120,8 +120,8 @@ lattice vector :math:`a_2`, the points in k-space are given as `[0, pi/d]` inste
     bands.plot(point_labels=['$-\pi / 3 a_{cc}$', '$\pi / 3 a_{cc}$'])
 
 
-Complex structures
-------------------
+1D periodic supercell
+---------------------
 
 Up to now, we used :func:`.translational_symmetry` with `True` or `False` parameters to enable
 or disable periodicity in certain directions. We can also pass a number to indicate the desired
@@ -183,7 +183,6 @@ structure.
 The period length of the translation in the :math:`a_1` direction is set to 3.8 nm. This ensures
 that the inner ring shape is preserved and the periodic boundaries are placed on the outer edges.
 
-
 .. plot::
     :context: close-figs
     :alt: Graphene ring nanoribbon band structure
@@ -192,6 +191,51 @@ that the inner ring shape is preserved and the periodic boundaries are placed on
     a = 3.8  # [nm] unit cell length
     bands = solver.calc_bands(-pi/a, pi/a)
     bands.plot(point_labels=['$-\pi / a$', '$\pi / a$'])
+
+
+2D periodic supercell
+---------------------
+
+A 2D periodic system made up of just a primitive cell was already covered in the :doc:`bands`
+section. Here, we'll create a system with a periodic unit cell which is larger than the primitive
+cell. Similar to the 1D case, this is accomplished by giving :func:`.translational_symmetry`
+specific lengths for the translation directions. As an example, we'll take a look at a graphene
+antidot superlattice:
+
+.. plot::
+    :context: close-figs
+    :alt: Graphene antidot superlattice
+
+    width = 2.5
+    rectangle = pb.rectangle(x=width * 1.2, y=width * 1.2)
+    dot = pb.circle(radius=0.4)
+
+    model = pb.Model(
+        graphene.monolayer_4atom(),
+        rectangle - dot,
+        pb.translational_symmetry(a1=width, a2=width)
+    )
+    plt.figure(figsize=(5, 5))
+    model.plot()
+    model.lattice.plot_vectors(position=[2, -3.5], scale=3)
+
+The antidot unit cell is created using a :doc:`composite shape </advanced/shapes>`. Note that the
+width of the rectangle is made to be slightly larger than the period length. Just like the 1D case,
+this is necessary in order to give :func:`.translational_symmetry` some room to cut off the edges
+of the system and create periodic boundaries as needed. If the unit cell size is smaller then the
+period length, translational symmetry cannot be applied.
+
+In the figure above, notice that 6 translations of the unit cell are presented and it appears as
+if 2 are missing. This is only in appearance. By default, :meth:`.Model.plot` shows just the
+first-nearest translations of the unit cell. It just so happens that the 2 which appear missing
+are second-nearest translations. To see this in the figure, we can set the `num_periods` argument
+to a higher value:
+
+.. plot::
+    :context: close-figs
+
+    plt.figure(figsize=(5, 5))
+    model.plot(num_periods=2)
 
 
 Example

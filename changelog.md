@@ -28,6 +28,8 @@
 
 * Plotting the structure of large or periodic systems is slightly faster now.
 
+* Added 2D periodic supercells to the "Shape and symmetry" section of the tutorial.
+
 * Fixed broken documentation links when using the online search function.
 
 * Fixed slow Hamiltonian build when hopping generators are used.
