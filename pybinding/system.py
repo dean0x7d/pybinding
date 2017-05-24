@@ -4,6 +4,7 @@ import itertools
 
 import numpy as np
 import matplotlib.pyplot as plt
+from matplotlib.collections import LineCollection
 
 from . import _cpp
 from . import pltutils
@@ -194,6 +195,7 @@ def structure_plot_properties(axes='xyz', site=None, hopping=None, boundary=None
 
 def decorate_structure_plot(axes='xy', add_margin=True, **_):
     plt.gca().set_aspect('equal')
+    plt.gca().autoscale_view()
     plt.xlabel("{} (nm)".format(axes[0]))
     plt.ylabel("{} (nm)".format(axes[1]))
     if add_margin:
@@ -288,7 +290,6 @@ def plot_sites(positions, data, radius=0.025, offset=(0, 0, 0), blend=1.0,
         col.set_array(data)
 
         ax.add_collection(col)
-        ax.autoscale_view()
 
         def dynamic_scale(active_ax):
             """Rescale the circumference line width and radius based on data units"""
@@ -357,17 +358,21 @@ def plot_hoppings(positions, hoppings, width=1.0, offset=(0, 0, 0), blend=1.0, c
         return
 
     kwargs = with_defaults(kwargs, zorder=-1)
+    num_unique_hoppings = hoppings.data.max() + 1
 
-    cmap = kwargs.get('cmap', [color])
-    if cmap == 'auto':
-        cmap = ['#666666', '#1b9e77', '#e6ab02', '#7570b3', '#e7298a', '#66a61e', '#a6761d']
+    if "cmap" in kwargs:
+        cmap = kwargs["cmap"]
+        if cmap == 'auto':
+            cmap = ['#666666', '#1b9e77', '#e6ab02', '#7570b3', '#e7298a', '#66a61e', '#a6761d']
 
-    # create colormap from discrete colors
-    if isinstance(cmap, (list, tuple)):
-        unique_hop_ids = np.arange(hoppings.data.max() + 1)
-        kwargs['cmap'], kwargs['norm'] = pltutils.direct_cmap_norm(unique_hop_ids, cmap, blend)
+        # create colormap from discrete colors
+        if isinstance(cmap, (list, tuple)):
+            unique_hop_ids = np.arange(num_unique_hoppings)
+            kwargs['cmap'], kwargs['norm'] = pltutils.direct_cmap_norm(unique_hop_ids, cmap, blend)
+        else:
+            kwargs['cmap'] = cmap
     else:
-        kwargs['cmap'] = cmap
+        color = pltutils.blend_colors(color, "white", blend)
 
     rotate = functools.partial(rotate_axes, axes=axes)
     positions, offset = map(rotate, (positions, offset))
@@ -386,22 +391,20 @@ def plot_hoppings(positions, hoppings, width=1.0, offset=(0, 0, 0), blend=1.0, c
     pos = np.array(positions[:ndims]).T + np.array(offset[:ndims])
 
     if not boundary:
-        lines = ((pos[i], pos[j]) for i, j in zip(hoppings.row, hoppings.col))
+        lines = np.stack([pos[hoppings.row], pos[hoppings.col]], axis=1)
     else:
         sign, shift = boundary
         shift = rotate(shift)[:ndims]
         if sign > 0:
-            lines = ((pos[i] + shift, pos[j]) for i, j in zip(hoppings.row, hoppings.col))
+            lines = np.stack([pos[hoppings.row] + shift, pos[hoppings.col]], axis=1)
         else:
-            lines = ((pos[i], pos[j] - shift) for i, j in zip(hoppings.row, hoppings.col))
+            lines = np.stack([pos[hoppings.row], pos[hoppings.col] - shift], axis=1)
 
     if ndims == 2:
-        from matplotlib.collections import LineCollection
-
-        col = LineCollection(lines, **kwargs)
-        col.set_array(hoppings.data)
+        col = LineCollection(lines, colors=color, **kwargs)
+        if "cmap" in kwargs:
+            col.set_array(hoppings.data)
         ax.add_collection(col)
-        ax.autoscale_view()
 
         def dynamic_scale(active_ax):
             """Rescale the line width based on data units"""
@@ -416,8 +419,9 @@ def plot_hoppings(positions, hoppings, width=1.0, offset=(0, 0, 0), blend=1.0, c
         from mpl_toolkits.mplot3d.art3d import Line3DCollection
 
         had_data = ax.has_data()
-        col = Line3DCollection(list(lines), lw=width, **kwargs)
-        col.set_array(hoppings.data)
+        col = Line3DCollection(lines, colors=color, lw=width, **kwargs)
+        if "cmap" in kwargs:
+            col.set_array(hoppings.data)
         ax.add_collection3d(col)
 
         ax.set_zmargin(0.5)

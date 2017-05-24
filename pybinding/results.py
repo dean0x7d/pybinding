@@ -435,7 +435,7 @@ class StructureMap(SpatialMap):
             Additional plot arguments as specified in :func:`.structure_plot_properties`.
         """
         from .system import (plot_sites, plot_hoppings, plot_periodic_boundaries,
-                             structure_plot_properties)
+                             structure_plot_properties, decorate_structure_plot)
 
         def to_radii(data):
             if not isinstance(site_radius, (tuple, list)):
@@ -461,11 +461,7 @@ class StructureMap(SpatialMap):
         plot_periodic_boundaries(self.positions, hop, self.boundaries, self.data,
                                  num_periods, **props)
 
-        plt.gca().set_aspect("equal")
-        plt.xlabel("{} (nm)".format(props["axes"][0]))
-        plt.ylabel("{} (nm)".format(props["axes"][1]))
-        pltutils.despine(trim=True)
-        pltutils.add_margin()
+        decorate_structure_plot(**props)
 
         if collection:
             plt.sci(collection)

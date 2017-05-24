@@ -26,6 +26,8 @@
 * `StructureMap` can now be sliced using a shape. E.g. `s = pb.rectangle(5, 5); smap2 = smap[s]`
   which returns a smaller structure map cut down to the given shape.
 
+* Plotting the structure of large or periodic systems is slightly faster now.
+
 * Fixed broken documentation links when using the online search function.
 
 * Fixed slow Hamiltonian build when hopping generators are used.
