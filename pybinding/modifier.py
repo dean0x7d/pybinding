@@ -227,7 +227,9 @@ def site_state_modifier(min_neighbors=0):
 
 @decorator_decorator
 def site_position_modifier(*_):
-    """Modify the position of lattice sites, e.g.\  to apply geometric deformations
+    """site_position_modifier()
+    
+    Modify the position of lattice sites, e.g.\  to apply geometric deformations
 
     Notes
     -----

@@ -82,6 +82,7 @@ tight-binding model, such as various fields, defects or geometric deformations.
 
     constant_potential
     force_double_precision
+    force_complex_numbers
 
 
 .. rubric:: Experimental
