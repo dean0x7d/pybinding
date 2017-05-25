@@ -43,5 +43,5 @@ plt.show()
 
 solver = pb.solver.lapack(model)
 bands = solver.calc_bands(-pi/graphene.a, pi/graphene.a)
-bands.plot(point_labels=['$-\pi / a$', '$\pi / a$'])
+bands.plot(point_labels=[r"$-\pi / a$", r"$\pi / a$"])
 plt.show()

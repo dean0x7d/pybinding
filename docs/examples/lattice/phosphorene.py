@@ -81,10 +81,10 @@ ay = 0.332
 kx = pi / ax
 ky = pi / ay
 bands = solver.calc_bands([kx, ky], [kx, 0], [0, 0], [0, ky], [kx, ky])
-bands.plot(point_labels=['S', 'Y', '$\Gamma$', 'X', 'S'])
+bands.plot(point_labels=["S", "Y", r"$\Gamma$", "X", "S"])
 plt.show()
 
 
 model.lattice.plot_brillouin_zone(decorate=False)
-bands.plot_kpath(point_labels=['S', 'Y', '$\Gamma$', 'X', 'S'])
+bands.plot_kpath(point_labels=["S", "Y", r"$\Gamma$", "X", "S"])
 plt.show()

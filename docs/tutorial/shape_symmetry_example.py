@@ -32,7 +32,7 @@ plt.show()
 solver = pb.solver.arpack(model, k=10)
 a = 3.8  # [nm] unit cell length
 bands = solver.calc_bands(-pi/a, pi/a)
-bands.plot(point_labels=['$-\pi / a$', '$\pi / a$'])
+bands.plot(point_labels=[r'$-\pi / a$', r'$\pi / a$'])
 plt.show()
 
 

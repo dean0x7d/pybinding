@@ -16,4 +16,5 @@ def example_file(request):
 def test_docs(example_file):
     """Make sure all example files execute without error"""
     filename = str(example_file)
-    exec(compile(open(filename, 'rb').read(), filename, 'exec'), {})
+    with open(filename, "rb") as file:
+        exec(compile(file.read(), filename, "exec"), {})
