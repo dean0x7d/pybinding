@@ -182,6 +182,11 @@ def structure_plot_properties(axes='xyz', site=None, hopping=None, boundary=None
     -------
     dict
     """
+    # Also accept the plural form (`sites` and `hoppings`) since
+    # this is a common mistake and source of frustration.
+    site = kwargs.pop("sites", site)
+    hopping = kwargs.pop("hoppings", hopping)
+
     invalid_args = kwargs.keys() - {'add_margin'}
     if invalid_args:
         raise RuntimeError("Invalid arguments: {}".format(','.join(invalid_args)))

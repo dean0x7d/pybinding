@@ -30,6 +30,9 @@
 
 * Added 2D periodic supercells to the "Shape and symmetry" section of the tutorial.
 
+* Added a few more examples to the "Plotting guide" (view rotation, separating sites and hoppings
+  and composing multiple plots).
+
 * Fixed broken documentation links when using the online search function.
 
 * Fixed slow Hamiltonian build when hopping generators are used.

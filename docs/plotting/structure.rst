@@ -124,3 +124,49 @@ call the :func:`.pltutils.respine` function.
     model = pb.Model(graphene.monolayer(), graphene.hexagon_ac(1))
     model.plot()
     pb.pltutils.respine()
+
+
+Plot only sites or only hoppings
+--------------------------------
+
+It can sometimes be useful to separate the plotting of sites and hoppings. Notably, for large
+systems drawing a huge number of hopping lines can become quite slow and they may even be too
+small to actually see in the figure. In such cases, removing the hoppings can speed up plotting
+considerably. Another use case is for the composition of multiple plots -- see the next page for
+an example.
+
+.. plot::
+    :context: close-figs
+
+    plt.figure(figsize=(7, 3))
+    model = pb.Model(graphene.monolayer(), graphene.hexagon_ac(1))
+
+    plt.subplot(121, title="Only sites")
+    model.plot(hopping={"width": 0})
+
+    plt.subplot(122, title="Only hoppings")
+    model.plot(site={"radius": 0})
+
+
+Rotating the view
+-----------------
+
+By default, all structure plots show the xy-plane. The view can be rotated by settings the `axes`
+argument to a string consisting of any combination of the letters "x", "y" and "z".
+
+.. plot::
+    :context: close-figs
+
+    model = pb.Model(graphene.monolayer().with_offset([-graphene.a / 2, 0]),
+                     pb.regular_polygon(num_sides=6, radius=1.8),
+                     graphene.gaussian_bump(height=0.7, sigma=0.7))
+
+    plt.figure(figsize=(6.9, 7.5))
+    plt.subplot(221, title="xy", ylim=[-1.8, 1.8])
+    model.plot()
+    plt.subplot(222, title="xz")
+    model.plot(axes="xz")
+    plt.subplot(223, title="yx", xlim=[-1.8, 1.8])
+    model.plot(axes="yx")
+    plt.subplot(224, title="zy")
+    model.plot(axes="zy")

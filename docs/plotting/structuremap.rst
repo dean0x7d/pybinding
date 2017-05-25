@@ -127,3 +127,32 @@ hoppings would be too small to see. Contour plots look much better in this case.
     smap = model.structure_map(np.cos(0.5 * model.system.y))
     smap.plot_contourf()
     pb.pltutils.colorbar()
+
+
+Composing multiple plots
+------------------------
+
+Various plotting methods or even different invocations of the same method can be composed to
+create nice figures. For example, we may want to use different colormaps to distinguish between
+sublattices A and B when plotting some data on top of the structure of graphene. Below, the first
+pass plots only the hopping lines, the second pass draws the sites of sublattice A and the third
+draws sublattice B. The darkness of the color indicates the intensity of the mapped data, while
+blue/red distinguishes the sublattices.
+
+.. plot::
+    :context: close-figs
+
+    model = pb.Model(graphene.monolayer(), graphene.hexagon_ac(1))
+    custom_data = 2 * model.system.x * (model.system.y + 1)
+    smap = model.structure_map(custom_data)
+
+    plt.figure(figsize=(6.8, 3))
+    plt.subplot(121, title="Regular plot")
+    smap.plot()
+
+    plt.subplot(122, title="Composite plot")
+    smap.plot(site_radius=0)  # only draw hopping lines, no sites
+    a_only = smap[smap.sublattices == "A"]
+    a_only.plot(cmap="Blues", hopping={'width': 0})  # A sites, no hoppings
+    b_only = smap[smap.sublattices == "B"]
+    b_only.plot(cmap="Reds", hopping={'width': 0})  # B sites, no hoppings
