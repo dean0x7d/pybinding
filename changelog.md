@@ -1,6 +1,6 @@
 # Changelog
 
-### v0.9.2 | in development
+### v0.9.2 | 2017-05-26
 
 ##### New KPM features and improvements
 
