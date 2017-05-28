@@ -52,7 +52,7 @@ before_install:
   conda config --set always_yes yes --set changeps1 no
   conda config --add channels conda-forge
   conda update -q conda
-  conda create -q -n test-env python=$PYTHON nomkl numpy scipy matplotlib pytest cmake ccache
+  conda create -q -n test-env python=$PYTHON scipy matplotlib kwant pytest cmake ccache
   source activate test-env
   conda info -a
 install:

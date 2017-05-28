@@ -1,5 +1,10 @@
 # Changelog
 
+### v0.9.3 | In development
+
+* Now compatible with Kwant v1.3.x.
+
+
 ### v0.9.2 | 2017-05-26
 
 ##### New KPM features and improvements

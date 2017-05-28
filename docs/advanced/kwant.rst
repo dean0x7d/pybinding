@@ -13,13 +13,6 @@ builder -- see the :doc:`/benchmarks/index`.
 
     :nbexport:`Download this page as a Jupyter notebook <self>`
 
-.. note::
-
-    Pybinding has builtin computational routines for large finite-sized systems as well as
-    periodic systems in 1 to 3 dimensions. At the time of writing, Kwant v1.2.2 cannot model
-    periodic systems with more than 1 dimension in a straightforward way. To find out more
-    about pybinding's handling of periodic systems, take a look at the :doc:`/tutorial/index`.
-
 
 Exporting a model
 -----------------
@@ -39,7 +32,7 @@ the following lines of pseudo-code:
     smatrix = kwant.smatrix(system)
     ...  # call smatrix methods
 
-Now if we want to use pybinding, we can just replace the first part:
+If we want to use pybinding to build the model, we can just replace the first part:
 
 .. code-block:: python
     :emphasize-lines: 0
@@ -209,7 +202,7 @@ required to calculate the transmission:
     pb.pltutils.legend(loc='upper left', reverse=True)
 
 For each system size, the transmission is calculated as a function of barrier height for 100
-values. Even though pybinding reconstruct the entire model every time the barrier is changed, the
+values. Even though pybinding reconstructs the entire model every time the barrier is changed, the
 system build time is so fast that it doesn't affect the total calculation time. In fact, the
 extremely fast build actually enables pybinding to outperform Kwant in the overall
 calculation. Even though Kwant only repopulates field data at each loop iteration, this still
@@ -231,7 +224,7 @@ starting case is always real with single precision and from there the data type 
 promoted as needed by the model. For example, adding translationally symmetry or a magnetic field
 will cause the builder to switch to complex numbers -- this is detected automatically. On the other
 hand, the switch to double precision needs to be requested by the user. The onsite and hopping
-energy :ref:`modifiers <modifiers_api>` have an optional `double` parameter which can be set to
+energy :ref:`modifiers <modifiers_api>` have an optional `is_double` parameter which can be set to
 `True`. The builder switches to double precision if requested by at least one modifier.
 Alternatively, :func:`.force_double_precision` can be given to a :class:`.Model` as a direct
 parameter.

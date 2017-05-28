@@ -1,7 +1,7 @@
 #! /usr/bin/env python3
 """Transport through a barrier
 
-The `main()` function build identical models in pybinding and kwant and then calculates
+The `main()` function builds identical models in pybinding and kwant and then calculates
 the transmission using `kwant.smatrix`. The results are plotted to verify that they are
 identical.
 
@@ -105,8 +105,8 @@ def main():
     with pb.utils.timed("kwant:"):
         kwant_transmission = measure_kwant(width, length, electron_energy, barrier_heights)
 
-    plt.plot(barrier_heights, pb_transmission, lw=1, label="pybinding")
-    plt.plot(barrier_heights, kwant_transmission, lw=2.5, ls="--", label="kwant")
+    plt.plot(barrier_heights, pb_transmission, label="pybinding")
+    plt.plot(barrier_heights, kwant_transmission, ls="--", label="kwant")
     plt.ylabel("transmission")
     plt.xlabel("barrier height (eV)")
     plt.axvline(electron_energy, 0, 0.5, color="gray", ls=":")

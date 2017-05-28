@@ -43,30 +43,20 @@ else:
         return smatrix.transmission(1, 0)
 
 
-    def square_lattice(d, t):
-        lat = pb.Lattice(a1=[d, 0], a2=[0, d])
-        lat.add_sublattices(('A', [0, 0], 4 * t))
-        lat.add_hoppings(([0, 1], 'A', 'A', -t),
-                         ([1, 0], 'A', 'A', -t))
-        return lat
+    def pb_model(v=0, length=2, width=10):
+        def square_lattice(d, t):
+            lat = pb.Lattice(a1=[d, 0], a2=[0, d])
+            lat.add_sublattices(("A", [0, 0], 4 * t))
+            lat.add_hoppings(([0, 1], "A", "A", -t),
+                             ([1, 0], "A", "A", -t))
+            return lat
 
-
-    def potential_well(v, x_start=0, x_end=1):
         @pb.onsite_energy_modifier
-        def func(energy, x):
-            cond = np.logical_and(x >= x_start, x <= x_end)
-            energy[cond] += -v
+        def potential_well(energy, x):
+            energy[np.logical_and(x >= 0, x <= 1)] -= v
             return energy
 
-        return func
-
-
-    def pb_model(v=0, length=2, width=10):
-        model = pb.Model(
-            square_lattice(d=1, t=1),
-            pb.rectangle(x=length, y=width),
-            potential_well(v)
-        )
+        model = pb.Model(square_lattice(d=1, t=1), pb.rectangle(length, width), potential_well)
         model.attach_lead(-1, pb.line([0, -width / 2 - 0.1], [0, width / 2]))
         model.attach_lead(+1, pb.line([0, -width / 2 - 0.1], [0, width / 2]))
         return model

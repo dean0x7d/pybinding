@@ -10,10 +10,10 @@ except ImportError:
     kwant_installed = False
 
 
-def _warn_if_not_empty(args):
-    if args:
+def _warn_if_not_empty(args, params):
+    if args or params:
         warnings.warn(
-            "Additional `args` are ignored because pybinding's Hamiltonian is immutable.\n"
+            "Additional `args/params` are ignored because pybinding's Hamiltonian is immutable.\n"
             "Complete the model with all parameters before calling tokwant() conversion."
         )
 
@@ -43,15 +43,15 @@ class KwantFiniteSystem(FiniteSystem):
     def pos(self, index):
         return self._pos[index]
 
-    def hamiltonian(self, i, j, *args):
-        _warn_if_not_empty(args)
+    def hamiltonian(self, i, j, *args, params=None):
+        _warn_if_not_empty(args, params)
         return self.hamiltonian[i, j]
 
     def hamiltonian_submatrix(self, args=(), to_sites=None, from_sites=None,
-                              sparse=False, return_norb=False):
+                              sparse=False, return_norb=False, *, params=None):
         if to_sites is not None or from_sites is not None:
             raise RuntimeError("Not supported")
-        _warn_if_not_empty(args)
+        _warn_if_not_empty(args, params)
 
         matrix = self.hamiltonian.tocoo() if sparse else self.hamiltonian.todense()
         if not return_norb:
@@ -72,16 +72,16 @@ class KwantInfiniteSystem(InfiniteSystem):
         self.h0 = pb_lead.h0
         self.h1 = pb_lead.h1
 
-    def hamiltonian(self, i, j, *args):
-        _warn_if_not_empty(args)
+    def hamiltonian(self, i, j, *args, params=None):
+        _warn_if_not_empty(args, params)
         return self.h0[i, j]
 
-    def cell_hamiltonian(self, args=(), sparse=False):
-        _warn_if_not_empty(args)
+    def cell_hamiltonian(self, args=(), sparse=False, *, params=None):
+        _warn_if_not_empty(args, params)
         return self.h0.tocoo() if sparse else self.h0.todense()
 
-    def inter_cell_hopping(self, args=(), sparse=False):
-        _warn_if_not_empty(args)
+    def inter_cell_hopping(self, args=(), sparse=False, *, params=None):
+        _warn_if_not_empty(args, params)
         return self.h1.tocoo() if sparse else self.h1.todense()
 
 
