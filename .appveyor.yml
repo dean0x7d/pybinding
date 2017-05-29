@@ -34,10 +34,9 @@ test_script:
 - cmake --build . --config Release --target tests -- /v:m
 deploy_script:
 - ps: |
-    pip install -U -q wheel
-    pip install -q twine
-    cd $env:APPVEYOR_BUILD_FOLDER
     if ($env:APPVEYOR_REPO_TAG -eq "true") {
+      pip install -U -q wheel twine
+      cd $env:APPVEYOR_BUILD_FOLDER
       $env:PB_NATIVE_SIMD = "OFF"
       python setup.py bdist_wheel
       twine upload -u $env:PYPI_USER -p $env:PYPI_PASS --skip-existing dist\*.whl
