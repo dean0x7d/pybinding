@@ -4,7 +4,7 @@ import numpy as np
 
 import pybinding as pb
 from pybinding.support.kwant import kwant_installed
-from pybinding.repository import graphene
+from pybinding.repository import graphene, group6_tmd
 
 
 if not kwant_installed:
@@ -72,3 +72,38 @@ else:
         pb_result = np.array([calc_transmission(pb_model(v).tokwant(), energy) for v in vs])
 
         assert pytest.fuzzy_equal(pb_result, kwant_result)
+
+
+    @pytest.mark.parametrize("lattice, norb", [
+        (graphene.monolayer(), 1),
+        (group6_tmd.monolayer_3band("MoS2"), 3),
+    ])
+    def test_hamiltonian_submatrix_orbitals(lattice, norb):
+        """Return the number of orbitals at each site in addition to the Hamiltonian"""
+        model = pb.Model(lattice, pb.rectangle(1, 1))
+        kwant_sys = model.tokwant()
+
+        matrix, to_norb, from_norb = kwant_sys.hamiltonian_submatrix(sparse=True, return_norb=True)
+        assert matrix.shape == model.hamiltonian.shape
+        assert to_norb.size == model.system.num_sites
+        assert from_norb.size == model.system.num_sites
+        assert np.all(to_norb == norb)
+        assert np.all(from_norb == norb)
+
+
+    def test_hamiltonian_submatrix_sites():
+        """The `to_sites` and `from_sites` arguments are not supported"""
+        kwant_sys = pb.Model(graphene.monolayer(), pb.rectangle(1, 1)).tokwant()
+
+        with pytest.raises(RuntimeError) as excinfo:
+            kwant_sys.hamiltonian_submatrix(to_sites=1, from_sites=1)
+        assert "not supported" in str(excinfo.value)
+
+
+    def test_warnings():
+        """Extra arguments and ignored by pybinding -- warn users"""
+        kwant_sys = pb.Model(graphene.monolayer(), pb.rectangle(1, 1)).tokwant()
+        with pytest.warns(UserWarning):
+            kwant_sys.hamiltonian_submatrix(sparse=True, args=(1,))
+        with pytest.warns(UserWarning):
+            kwant_sys.hamiltonian_submatrix(sparse=True, params=dict(v=1))

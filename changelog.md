@@ -2,7 +2,7 @@
 
 ### v0.9.3 | In development
 
-* Now compatible with Kwant v1.3.x.
+* Added support for Kwant v1.3.x and improved `Model.tokwant()` exporting of multi-orbital models.
 
 * Fixed errors when compiling with GCC 6.
 

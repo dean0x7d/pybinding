@@ -13,8 +13,9 @@ except ImportError:
 def _warn_if_not_empty(args, params):
     if args or params:
         warnings.warn(
-            "Additional `args/params` are ignored because pybinding's Hamiltonian is immutable.\n"
-            "Complete the model with all parameters before calling tokwant() conversion."
+            "Additional `args/params` are ignored because pybinding's Hamiltonian is immutable. "
+            "Complete the model with all parameters before calling the `tokwant()` conversion.",
+            stacklevel=3
         )
 
 
@@ -23,8 +24,8 @@ class Graph:
 
     Only the `num_nodes` attribute seems to be required, at least for `smatrix`.
     """
-    def __init__(self, hamiltonian):
-        self.num_nodes = hamiltonian.shape[0]
+    def __init__(self, num_nodes):
+        self.num_nodes = num_nodes
 
 
 class KwantFiniteSystem(FiniteSystem):
@@ -34,8 +35,8 @@ class KwantFiniteSystem(FiniteSystem):
     however it seems to work well for `smatrix`.
     """
     def __init__(self, pb_model):
-        self.hamiltonian = pb_model.hamiltonian
-        self.graph = Graph(self.hamiltonian)
+        self.pb_model = pb_model
+        self.graph = Graph(pb_model.system.num_sites)
         self._pos = np.array(pb_model.system.positions[:pb_model.lattice.ndim]).T
         self.leads = [KwantInfiniteSystem(l) for l in pb_model.leads]
         self.lead_interfaces = [l.indices for l in pb_model.leads]
@@ -45,21 +46,23 @@ class KwantFiniteSystem(FiniteSystem):
 
     def hamiltonian(self, i, j, *args, params=None):
         _warn_if_not_empty(args, params)
-        return self.hamiltonian[i, j]
+        return self.pb_model.hamiltonian[i, j]
 
     def hamiltonian_submatrix(self, args=(), to_sites=None, from_sites=None,
                               sparse=False, return_norb=False, *, params=None):
         if to_sites is not None or from_sites is not None:
-            raise RuntimeError("Not supported")
+            raise RuntimeError("The `to_sites` and `from_sites` arguments are not supported")
         _warn_if_not_empty(args, params)
 
-        matrix = self.hamiltonian.tocoo() if sparse else self.hamiltonian.todense()
+        ham = self.pb_model.hamiltonian
+        matrix = ham.tocoo() if sparse else ham.todense()
         if not return_norb:
             return matrix
         else:
-            size = self.hamiltonian.shape[0]
-            to_norb = np.ones(size)
-            from_norb = np.ones(size)
+            subs = self.pb_model.system.sublattices
+            norb = self.pb_model.system.impl.compressed_sublattices.orbital_counts
+            to_norb = norb[subs]
+            from_norb = to_norb
             return matrix, to_norb, from_norb
 
 
