@@ -4,6 +4,8 @@
 
 * Now compatible with Kwant v1.3.x.
 
+* Fixed errors when compiling with GCC 6.
+
 
 ### v0.9.2 | 2017-05-26
 

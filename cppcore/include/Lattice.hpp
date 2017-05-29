@@ -41,7 +41,7 @@ public:
         friend bool operator==(HoppingTerm const& a, HoppingTerm const& b) {
             auto const left = std::tie(a.relative_index, a.from, a.to);
             auto const right = std::tie(b.relative_index, b.from, b.to);
-            auto const right_conjugate = std::tie(-b.relative_index, b.to, b.from);
+            auto const right_conjugate = std::make_tuple(-b.relative_index, b.to, b.from);
             return left == right || left == right_conjugate;
         }
 

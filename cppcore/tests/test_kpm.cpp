@@ -149,8 +149,8 @@ TEST_CASE("OptimizedHamiltonian reordering", "[kpm]") {
         auto const i1 = model.system()->find_nearest({0,  0.35f, 0}, "A");
         auto const i2 = model.system()->find_nearest({0, -0.35f, 0}, "B");
         auto const idx1 = std::vector<idx_t>{i1, i2};
-        auto const j1 = model.system()->find_nearest({0.12f, 0.28f, 0}, "B");
-        auto const j2 = model.system()->find_nearest({0, 0.35f, 0}, "B");
+        auto const j1 = model.system()->find_nearest({ 0.12f, 0.28f, 0}, "B");
+        auto const j2 = model.system()->find_nearest({-0.12f, 0.28f, 0}, "B");
         auto const idx2 = std::vector<idx_t>{j1, j2};
         oh.optimize_for({idx1, idx2}, bounds.scaling_factors());
 

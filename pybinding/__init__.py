@@ -16,7 +16,21 @@ if sys.platform.startswith("linux"):
     import scipy.spatial
     sys.setdlopenflags(sys.getdlopenflags() | os.RTLD_GLOBAL)
 
-import _pybinding as _cpp
+try:
+    import _pybinding as _cpp
+except ImportError as e:
+    if "GLIBCXX" in str(e):
+        msg = ("The version of libstdc++.so found in this environment is older than "
+               "the GCC which was used to compile pybinding. If you're using conda, "
+               "its internal libstdc++ may be masking the system library. Switching "
+               "to the conda-forge channel and removing the outdated library should "
+               "fix the issue. You can use the following commands:                \n"
+               "  conda config --add channels conda-forge                         \n"
+               "  conda update --all                                              \n"
+               "  conda uninstall libgcc                                            ")
+        raise ImportError(msg).with_traceback(e.__traceback__)
+    else:
+        raise
 
 from .model import *
 from .lattice import *
