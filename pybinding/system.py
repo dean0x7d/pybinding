@@ -157,8 +157,9 @@ class System(Structure):
         **kwargs
             Additional plot arguments as specified in :func:`.structure_plot_properties`.
         """
-        kwargs.setdefault("site", {}).setdefault("radius", self.lattice.site_radius_for_plot())
-        super().plot(num_periods, **kwargs)
+        props = structure_plot_properties(**kwargs)
+        props["site"].setdefault("radius", self.lattice.site_radius_for_plot())
+        super().plot(num_periods, **props)
 
 
 def structure_plot_properties(axes='xyz', site=None, hopping=None, boundary=None, **kwargs):
@@ -477,9 +478,9 @@ def plot_periodic_boundaries(positions, hoppings, boundaries, data, num_periods=
     # periodic unit cells
     for level, blend in enumerate(blend_gradient, start=1):
         shift_set = _make_shift_set(boundaries, level)
-        for shift in shift_set:
-            plot_sites(positions, data, offset=shift, blend=blend, **props['site'])
-            plot_hoppings(positions, hoppings, offset=shift, blend=blend, **props['hopping'])
+        for s in shift_set:
+            plot_sites(positions, data, offset=s, **{"blend": blend, **props["site"]})
+            plot_hoppings(positions, hoppings, offset=s, **{"blend": blend, **props["hopping"]})
 
     # periodic boundary hoppings
     for level, blend in enumerate(blend_gradient, start=1):
@@ -491,8 +492,8 @@ def plot_periodic_boundaries(positions, hoppings, boundaries, data, num_periods=
             if (shift + sign * boundary.shift) not in prev_shift_set:
                 continue  # skip existing
 
-            plot_hoppings(positions, boundary.hoppings.tocoo(), offset=shift, blend=blend,
-                          boundary=(sign, boundary.shift), **props['boundary'])
+            plot_hoppings(positions, boundary.hoppings.tocoo(), offset=shift,
+                          boundary=(sign, boundary.shift), **{"blend": blend, **props["boundary"]})
 
 
 def plot_site_indices(system):
