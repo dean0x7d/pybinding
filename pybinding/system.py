@@ -67,6 +67,11 @@ class System(Structure):
         return Lattice.from_impl(self.impl.lattice)
 
     @property
+    def expanded_positions(self):
+        """`positions` expanded to `hamiltonian_size` by replicating for each orbital"""
+        return self.impl.expanded_positions
+
+    @property
     def hamiltonian_size(self) -> int:
         """The size of the Hamiltonian matrix constructed from this system
 

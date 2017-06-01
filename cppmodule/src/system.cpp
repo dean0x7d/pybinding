@@ -78,6 +78,7 @@ void wrap_system(py::module& m) {
         .def_readonly("hopping_blocks", &System::hopping_blocks)
         .def_readonly("boundaries", &System::boundaries)
         .def_property_readonly("hamiltonian_size", &System::hamiltonian_size)
+        .def_property_readonly("expanded_positions", &System::expanded_positions)
         .def("__getstate__", [](System const& s) {
             return py::dict("lattice"_a=s.lattice, "positions"_a=s.positions,
                             "compressed_sublattices"_a=s.compressed_sublattices,

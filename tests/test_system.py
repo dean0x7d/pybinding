@@ -1,7 +1,8 @@
 import pytest
 
+import numpy as np
 import pybinding as pb
-from pybinding.repository import graphene
+from pybinding.repository import graphene, group6_tmd
 
 models = {
     'graphene-monolayer': [graphene.monolayer(), graphene.hexagon_ac(1)],
@@ -50,6 +51,11 @@ def test_api():
     with pytest.raises(IndexError) as excinfo:
         system.find_nearest([0, 0], 'invalid_sublattice')
     assert "There is no sublattice" in str(excinfo.value)
+
+    assert np.allclose(system.expanded_positions.x, system.positions.x)
+
+    s = pb.Model(group6_tmd.monolayer_3band("MoS2"), pb.primitive(2, 2)).system
+    assert s.expanded_positions.x.size == s.positions.x.size * 3
 
 
 def test_sites():
