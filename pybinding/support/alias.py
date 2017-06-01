@@ -25,6 +25,11 @@ class AliasArray(np.ndarray):
     [True, False, True, True]
     >>> list(a != "A")
     [False, True, False, False]
+    >>> import pickle
+    >>> s = pickle.dumps(a)
+    >>> a2 = pickle.loads(s)
+    >>> list(a2 == "A")
+    [True, False, True, True]
     """
     def __new__(cls, array, mapping):
         obj = np.asarray(array).view(cls)
@@ -58,6 +63,15 @@ class AliasArray(np.ndarray):
         else:
             return super().__ne__(other)
 
+    def __reduce__(self):
+        r = super().__reduce__()
+        state = r[2] + (self.mapping,)
+        return r[0], r[1], state
+
+    def __setstate__(self, state):
+        self.mapping = state[-1]
+        super().__setstate__(state[:-1])
+
 
 # noinspection PyAbstractClass
 class AliasCSRMatrix(csr_matrix):
@@ -73,6 +87,11 @@ class AliasCSRMatrix(csr_matrix):
     [True, False, True]
     >>> list(m[:2].data == 'A')
     [True, False]
+    >>> import pickle
+    >>> s = pickle.dumps(m)
+    >>> m2 = pickle.loads(s)
+    >>> list(m2.data == 'A')
+    [True, False, True]
     """
     def __init__(self, *args, **kwargs):
         mapping = kwargs.pop('mapping', {})
