@@ -125,8 +125,8 @@ download_dependency(simdpp 2.0-rc2
                     /v\${VERSION}.tar.gz */simdpp)
 target_include_directories(cppcore SYSTEM PUBLIC ${SIMDPP_INCLUDE_DIR})
 
-include(cppformat)
-target_link_libraries(cppcore PUBLIC cppformat)
+include(fmt)
+target_link_libraries(cppcore PUBLIC fmt)
 
 if(PB_NATIVE_SIMD AND NOT MSVC) # MSVC does not have anything like a /arch:native flag
     target_compile_options(cppcore PUBLIC -march=native)

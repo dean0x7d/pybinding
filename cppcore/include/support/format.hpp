@@ -1,5 +1,6 @@
 #pragma once
-#include <format.h>
+#include <fmt/format.h>
+#include <fmt/ostream.h>
 
 namespace fmt {
 
