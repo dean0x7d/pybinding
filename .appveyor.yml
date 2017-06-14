@@ -9,12 +9,11 @@ environment:
   PYPI_PASS:
     secure: gqNQRQIXkXmSul5JkOKj4owHUprr3Q4gJ6U6Mtlgm4M=
   matrix:
-  - PYTHON: 3.5
-  - PYTHON: 3.6
+  - CONDA: 35
+  - CONDA: 36
 install:
 - git submodule update -q --init --recursive
 - ps: |
-    $env:CONDA = "35"
     if ($env:PLATFORM -eq "x64") {
       $env:CMAKE_ARCH = "x64"
       $env:CONDA = "$env:CONDA-x64"
@@ -24,9 +23,8 @@ install:
     conda config --set always_yes yes --set changeps1 no
     conda config --add channels conda-forge
     conda update -q conda
-    conda create -q -n test-env python=$env:PYTHON numpy scipy matplotlib pytest
+    conda install -q numpy scipy matplotlib pytest
     conda info -a
-- activate test-env
 build_script:
 - mkdir build && cd build && cmake -A "%CMAKE_ARCH%" -DPB_WERROR=ON -DPB_NATIVE_SIMD=OFF ..
 - cmake --build . --config Release -- /m /v:m /logger:"%AppVeyorLogger%"
