@@ -152,20 +152,6 @@ class System(Structure):
 
         return np.concatenate(reduced_data)
 
-    def plot(self, num_periods=1, **kwargs):
-        """Plot the structure: sites, hoppings and periodic boundaries (if any)
-
-        Parameters
-        ----------
-        num_periods : int
-            Number of times to repeat the periodic boundaries.
-        **kwargs
-            Additional plot arguments as specified in :func:`.structure_plot_properties`.
-        """
-        props = structure_plot_properties(**kwargs)
-        props["site"].setdefault("radius", self.lattice.site_radius_for_plot())
-        super().plot(num_periods, **props)
-
 
 def structure_plot_properties(axes='xyz', site=None, hopping=None, boundary=None, **kwargs):
     """Process structure plot properties

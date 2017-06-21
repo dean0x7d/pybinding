@@ -535,8 +535,11 @@ class Structure:
         if hasattr(idx, "contains"):
             idx = idx.contains(*self.positions)  # got a Shape object -> evaluate it
 
-        return Structure(self._sites[idx], self._hoppings[idx],
-                         [b[idx] for b in self._boundaries])
+        sliced = Structure(self._sites[idx], self._hoppings[idx],
+                           [b[idx] for b in self._boundaries])
+        if hasattr(self, "lattice"):
+            sliced.lattice = self.lattice
+        return sliced
 
     def find_nearest(self, position, sublattice=""):
         """Find the index of the atom closest to the given position
@@ -588,6 +591,8 @@ class Structure:
                              structure_plot_properties, decorate_structure_plot)
 
         props = structure_plot_properties(**kwargs)
+        if hasattr(self, "lattice"):
+            props["site"].setdefault("radius", self.lattice.site_radius_for_plot())
 
         plot_hoppings(self.positions, self._hoppings, **props['hopping'])
         plot_sites(self.positions, self.sublattices, **props['site'])

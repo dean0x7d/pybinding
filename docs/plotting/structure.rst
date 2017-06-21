@@ -161,7 +161,7 @@ argument to a string consisting of any combination of the letters "x", "y" and "
                      pb.regular_polygon(num_sides=6, radius=1.8),
                      graphene.gaussian_bump(height=0.7, sigma=0.7))
 
-    plt.figure(figsize=(6.9, 7.5))
+    plt.figure(figsize=(6.8, 7.5))
     plt.subplot(221, title="xy", ylim=[-1.8, 1.8])
     model.plot()
     plt.subplot(222, title="xz")
@@ -170,3 +170,27 @@ argument to a string consisting of any combination of the letters "x", "y" and "
     model.plot(axes="yx")
     plt.subplot(224, title="zy")
     model.plot(axes="zy")
+
+
+Slicing layers
+--------------
+
+For multilayer materials, it is sometimes useful to plot each layer individually.
+
+
+.. plot::
+    :context: close-figs
+
+    model = pb.Model(graphene.bilayer().with_offset([graphene.a/2, 0]),
+                     pb.regular_polygon(num_sides=6, radius=1))
+
+    plt.figure(figsize=(6.8, 1.8))
+    plt.subplot(131, title="both layers")
+    model.plot()
+
+    plt.subplot(132, title="bottom layer")
+    s = model.system
+    s[s.z < 0].plot()
+
+    plt.subplot(133, title="top layer")
+    s[s.z >= 0].plot()

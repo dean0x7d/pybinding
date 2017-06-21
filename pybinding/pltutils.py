@@ -373,9 +373,14 @@ def direct_cmap_norm(data, colors, blend=1):
     # colormap with an boundary norm to match the unique data points
     from matplotlib.colors import ListedColormap, BoundaryNorm
     cmap = ListedColormap(colors)
-    boundaries = np.append(np.unique(data), np.inf)
-    norm = BoundaryNorm(boundaries, len(boundaries) - 1)
 
+    data = np.asarray(data)
+    if data.dtype.kind == "i":
+        boundaries = np.append(np.arange(data.max() + 1), np.inf)
+    else:
+        boundaries = np.append(np.unique(data), np.inf)
+
+    norm = BoundaryNorm(boundaries, len(boundaries) - 1)
     return cmap, norm
 
 
