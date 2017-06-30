@@ -32,6 +32,50 @@ TEST_CASE("SitePositionModifier") {
     REQUIRE(model.system()->positions.y[1] == Approx(1));
 }
 
+TEST_CASE("State and position modifier ordering") {
+    auto model = Model(lattice::square_2atom(), Primitive(2));
+
+    auto delete_site = SiteStateModifier([](Eigen::Ref<ArrayX<bool>> state,
+                                            CartesianArrayConstRef position,
+                                            string_view sublattice) {
+        if (sublattice == "A" && position.x()[0] < 0) {
+            state[0] = false;
+        }
+    });
+
+    auto move_site = PositionModifier([](CartesianArrayRef position, string_view sublattice) {
+        if (sublattice == "A") {
+            position.x()[0] = 10;
+        }
+    });
+
+    SECTION("State before position") {
+        REQUIRE(model.system()->num_sites() == 4);
+        REQUIRE(model.system()->positions.x[0] == Approx(-1));
+        REQUIRE(model.system()->positions.x[1] == Approx(0));
+
+        model.add(delete_site);
+        model.add(move_site);
+
+        REQUIRE(model.system()->num_sites() == 3);
+        REQUIRE(model.system()->positions.x[0] == Approx(0));
+    }
+
+    SECTION("Position before state") {
+        REQUIRE(model.system()->num_sites() == 4);
+        REQUIRE(model.system()->positions.x[0] == Approx(-1));
+        REQUIRE(model.system()->positions.x[1] == Approx(0));
+
+        model.add(move_site);
+        model.add(delete_site);
+
+        REQUIRE(model.system()->num_sites() == 4);
+        REQUIRE(model.system()->positions.x[0] == Approx(10));
+        REQUIRE(model.system()->positions.x[1] == Approx(0));
+
+    }
+}
+
 struct OnsiteEnergyOp {
     template<class Array>
     void operator()(Array energy) {

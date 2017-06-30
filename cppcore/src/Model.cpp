@@ -48,12 +48,12 @@ void Model::attach_lead(int direction, Shape const& shape) {
 }
 
 void Model::add(SiteStateModifier const& m) {
-    system_modifiers.state.push_back(m);
+    system_modifiers.emplace_back(m);
     clear_structure();
 }
 
 void Model::add(PositionModifier const& m) {
-    system_modifiers.position.push_back(m);
+    system_modifiers.emplace_back(m);
     clear_structure();
 }
 
@@ -127,27 +127,12 @@ std::string Model::report() {
 std::shared_ptr<System> Model::make_system() const {
     auto foundation = shape ? Foundation(lattice, shape)
                             : Foundation(lattice, primitive);
-    if (symmetry)
+    if (symmetry) {
         symmetry.apply(foundation);
+    }
 
-    if (!system_modifiers.empty()) {
-        for (auto const& site_state_modifier : system_modifiers.state) {
-            for (auto const& pair : lattice.get_sublattices()) {
-                auto slice = foundation[pair.second.unique_id];
-                site_state_modifier.apply(slice.get_states(), slice.get_positions(), pair.first);
-            }
-
-            if (site_state_modifier.min_neighbors > 0) {
-                remove_dangling(foundation, site_state_modifier.min_neighbors);
-            }
-        }
-
-        for (auto const& position_modifier : system_modifiers.position) {
-            for (auto const& pair : lattice.get_sublattices()) {
-                auto slice = foundation[pair.second.unique_id];
-                position_modifier.apply(slice.get_positions(), pair.first);
-            }
-        }
+    for (auto const& modifier : system_modifiers) {
+        apply(modifier, foundation);
     }
 
     _leads.create_attachment_area(foundation);

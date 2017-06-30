@@ -54,11 +54,6 @@ public: // get parameters
     Shape const& get_shape() const { return shape; }
     TranslationalSymmetry const& get_symmetry() const { return symmetry; }
 
-    std::vector<SiteStateModifier> state_modifiers() const { return system_modifiers.state; }
-    std::vector<PositionModifier> position_modifiers() const { return system_modifiers.position; }
-    std::vector<OnsiteModifier> onsite_modifiers() const { return hamiltonian_modifiers.onsite; }
-    std::vector<HoppingModifier> hopping_modifiers() const { return hamiltonian_modifiers.hopping; }
-
 public: // get properties
     std::shared_ptr<System const> const& system() const;
     Hamiltonian const& hamiltonian() const;
@@ -98,7 +93,7 @@ private:
     TranslationalSymmetry symmetry;
     Cartesian wave_vector = {0, 0, 0};
 
-    SystemModifiers system_modifiers;
+    std::vector<SystemModifier> system_modifiers;
     HamiltonianModifiers hamiltonian_modifiers;
     HoppingGenerators hopping_generators;
 
