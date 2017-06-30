@@ -6,9 +6,7 @@
 using namespace cpb;
 
 
-PYBIND11_PLUGIN(_pybinding) {
-    auto m = py::module("_pybinding");
-
+PYBIND11_MODULE(_pybinding, m) {
     wrap_greens(m);
     wrap_lattice(m);
     wrap_leads(m);
@@ -50,6 +48,4 @@ PYBIND11_PLUGIN(_pybinding) {
 #else
     m.attr("__version__") = py::str("dev");
 #endif
-
-    return m.ptr();
 }
