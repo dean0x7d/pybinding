@@ -62,10 +62,9 @@ add_library(cppcore
     include/system/Foundation.hpp
     include/system/HoppingBlocks.hpp
     include/system/Shape.hpp
+    include/system/StructureModifiers.hpp
     include/system/Symmetry.hpp
     include/system/System.hpp
-    include/system/Generators.hpp
-    include/system/SystemModifiers.hpp
     include/utils/Chrono.hpp
     include/KPM.hpp
     include/Lattice.hpp
@@ -90,9 +89,9 @@ add_library(cppcore
     src/system/Foundation.cpp
     src/system/HoppingBlocks.cpp
     src/system/Shape.cpp
+    src/system/StructureModifiers.cpp
     src/system/Symmetry.cpp
     src/system/System.cpp
-    src/system/SystemModifiers.cpp
     src/utils/Chrono.cpp
     src/KPM.cpp
     src/Lattice.cpp

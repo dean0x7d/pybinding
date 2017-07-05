@@ -1,5 +1,4 @@
-#include "system/SystemModifiers.hpp"
-#include "system/Generators.hpp"
+#include "system/StructureModifiers.hpp"
 #include "hamiltonian/HamiltonianModifiers.hpp"
 #include "wrappers.hpp"
 using namespace cpb;

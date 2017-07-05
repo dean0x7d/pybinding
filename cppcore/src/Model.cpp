@@ -48,12 +48,12 @@ void Model::attach_lead(int direction, Shape const& shape) {
 }
 
 void Model::add(SiteStateModifier const& m) {
-    system_modifiers.emplace_back(m);
+    structure_modifiers.emplace_back(m);
     clear_structure();
 }
 
 void Model::add(PositionModifier const& m) {
-    system_modifiers.emplace_back(m);
+    structure_modifiers.emplace_back(m);
     clear_structure();
 }
 
@@ -68,7 +68,7 @@ void Model::add(HoppingModifier const& m) {
 }
 
 void Model::add(HoppingGenerator const& g) {
-    hopping_generators.push_back(g);
+    structure_modifiers.emplace_back(g);
     lattice.register_hopping_energy(g.name, g.energy);
     clear_structure();
 }
@@ -131,21 +131,41 @@ std::shared_ptr<System> Model::make_system() const {
         symmetry.apply(foundation);
     }
 
-    for (auto const& modifier : system_modifiers) {
+    auto const it = std::find_if(structure_modifiers.begin(), structure_modifiers.end(),
+                                 [](StructureModifier const& m) { return requires_system(m); });
+    auto const foundation_modifiers = make_range(structure_modifiers.begin(), it);
+    auto const system_modifiers = make_range(it, structure_modifiers.end());
+
+    for (auto const& modifier : foundation_modifiers) {
         apply(modifier, foundation);
     }
 
     _leads.create_attachment_area(foundation);
     _leads.make_structure(foundation);
 
-    return std::make_shared<System>(foundation, symmetry, hopping_generators);
+    auto sys = std::make_shared<System>(lattice);
+    detail::populate_system(*sys, foundation);
+    if (symmetry) {
+        detail::populate_boundaries(*sys, foundation, symmetry);
+    }
+
+    for (auto const& modifier : system_modifiers) {
+        apply(modifier, *sys);
+    }
+
+    if (sys->num_sites() == 0) { throw std::runtime_error{"Impossible system: 0 sites"}; }
+
+    return sys;
 }
 
 Hamiltonian Model::make_hamiltonian() const {
     auto const& built_system = *system();
     auto const& modifiers = hamiltonian_modifiers;
     auto const& k = wave_vector;
-    auto const simple_build = hopping_generators.empty();
+    auto const simple_build = std::none_of(
+        structure_modifiers.begin(), structure_modifiers.end(),
+        [](StructureModifier const& m) { return is_generator(m); }
+    );
 
     if (!is_complex()) {
         try {

@@ -2,7 +2,6 @@
 #include "Lattice.hpp"
 #include "system/CompressedSublattices.hpp"
 #include "system/HoppingBlocks.hpp"
-#include "system/Generators.hpp"
 
 #include "numeric/dense.hpp"
 #include "numeric/sparse.hpp"
@@ -31,8 +30,6 @@ struct System {
     std::vector<Boundary> boundaries;
 
     System(Lattice const& lattice) : lattice(lattice) {}
-    System(Foundation const& foundation, TranslationalSymmetry const& symmetry,
-           HoppingGenerators const& hopping_generators);
 
     /// The total number of lattice sites i.e. unique positions. Note that a single site may
     /// consist of several orbitals/spins which means that the size of the Hamiltonian matrix
@@ -72,7 +69,6 @@ namespace detail {
     void populate_system(System& system, Foundation const& foundation);
     void populate_boundaries(System& system, Foundation const& foundation,
                              TranslationalSymmetry const& symmetry);
-    void add_extra_hoppings(System& system, HoppingGenerator const& gen);
 } // namespace detail
 
 } // namespace cpb

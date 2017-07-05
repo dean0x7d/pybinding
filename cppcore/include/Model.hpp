@@ -2,8 +2,7 @@
 #include "system/System.hpp"
 #include "system/Shape.hpp"
 #include "system/Symmetry.hpp"
-#include "system/SystemModifiers.hpp"
-#include "system/Generators.hpp"
+#include "system/StructureModifiers.hpp"
 #include "leads/Leads.hpp"
 #include "hamiltonian/Hamiltonian.hpp"
 #include "hamiltonian/HamiltonianModifiers.hpp"
@@ -73,9 +72,9 @@ public: // get information
     double hamiltonian_build_seconds() const { return hamiltonian_build_time.elapsed_seconds(); }
 
 public:
-    void clear_system_modifiers() { system_modifiers.clear(); }
+    void clear_structure_modifiers() { structure_modifiers.clear(); }
     void clear_hamiltonian_modifiers() { hamiltonian_modifiers.clear(); }
-    void clear_all_modifiers() { clear_system_modifiers(); clear_hamiltonian_modifiers(); }
+    void clear_all_modifiers() { clear_structure_modifiers(); clear_hamiltonian_modifiers(); }
 
 private:
     std::shared_ptr<System> make_system() const;
@@ -93,9 +92,8 @@ private:
     TranslationalSymmetry symmetry;
     Cartesian wave_vector = {0, 0, 0};
 
-    std::vector<SystemModifier> system_modifiers;
+    std::vector<StructureModifier> structure_modifiers;
     HamiltonianModifiers hamiltonian_modifiers;
-    HoppingGenerators hopping_generators;
 
     mutable std::shared_ptr<System const> _system;
     mutable Hamiltonian _hamiltonian;

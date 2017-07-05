@@ -5,21 +5,6 @@
 
 namespace cpb {
 
-System::System(Foundation const& foundation, TranslationalSymmetry const& symmetry,
-               HoppingGenerators const& hopping_generators)
-    : lattice(foundation.get_lattice()) {
-    detail::populate_system(*this, foundation);
-    if (symmetry) {
-        detail::populate_boundaries(*this, foundation, symmetry);
-    }
-
-    for (auto const& gen : hopping_generators) {
-        detail::add_extra_hoppings(*this, gen);
-    }
-
-    if (num_sites() == 0) { throw std::runtime_error{"Impossible system: 0 sites"}; }
-}
-
 idx_t System::hamiltonian_size() const {
     auto result = idx_t{0};
     for (auto const& sub : compressed_sublattices) {
@@ -170,14 +155,6 @@ void populate_boundaries(System& system, Foundation const& foundation,
             system.boundaries.push_back(std::move(boundary));
         }
     }
-}
-
-void add_extra_hoppings(System& system, HoppingGenerator const& gen) {
-    auto const& lattice = system.lattice;
-    auto const sublattices = system.compressed_sublattices.decompressed();
-    auto const family_id = lattice.hopping_family(gen.name).family_id;
-    auto pairs = gen.make(system.positions, {sublattices, lattice.sub_name_map()});
-    system.hopping_blocks.append(family_id, std::move(pairs.from), std::move(pairs.to));
 }
 
 } // namespace detail
