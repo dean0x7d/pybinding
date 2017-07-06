@@ -16,6 +16,23 @@ void apply(SiteStateModifier const& m, Foundation& f) {
     }
 }
 
+void apply(SiteStateModifier const& m, System& s) {
+    if (s.is_valid.size() == 0) {
+        s.is_valid = ArrayX<bool>::Constant(s.num_sites(), true);
+    }
+
+    for (auto const& sub : s.compressed_sublattices) {
+        m.apply(s.is_valid.segment(sub.sys_start(), sub.num_sites()),
+                s.positions.segment(sub.sys_start(), sub.num_sites()),
+                s.lattice.sublattice_name(SubID(sub.alias_id())));
+    }
+
+    if (m.min_neighbors > 0) {
+        throw std::runtime_error("Eliminating dangling bonds after a generator "
+                                 "has not been implemented yet");
+    }
+}
+
 void apply(PositionModifier const& m, Foundation& f) {
     for (auto const& pair : f.get_lattice().get_sublattices()) {
         auto slice = f[pair.second.unique_id];
@@ -23,7 +40,16 @@ void apply(PositionModifier const& m, Foundation& f) {
     }
 }
 
+void apply(PositionModifier const& m, System& s) {
+    for (auto const& sub : s.compressed_sublattices) {
+        m.apply(s.positions.segment(sub.sys_start(), sub.num_sites()),
+                s.lattice.sublattice_name(SubID(sub.alias_id())));
+    }
+}
+
 void apply(HoppingGenerator const& g, System& s) {
+    detail::remove_invalid(s);
+
     auto const& lattice = s.lattice;
     auto const sublattices = s.compressed_sublattices.decompressed();
     auto const family_id = lattice.hopping_family(g.name).family_id;

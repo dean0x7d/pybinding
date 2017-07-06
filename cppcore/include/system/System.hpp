@@ -28,6 +28,7 @@ struct System {
     CompressedSublattices compressed_sublattices;
     HoppingBlocks hopping_blocks;
     std::vector<Boundary> boundaries;
+    ArrayX<bool> is_valid;
 
     System(Lattice const& lattice) : lattice(lattice) {}
 
@@ -69,6 +70,7 @@ namespace detail {
     void populate_system(System& system, Foundation const& foundation);
     void populate_boundaries(System& system, Foundation const& foundation,
                              TranslationalSymmetry const& symmetry);
+    void remove_invalid(System& system);
 } // namespace detail
 
 } // namespace cpb

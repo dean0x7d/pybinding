@@ -71,6 +71,10 @@ public:
 
     /// Start a new sublattice block or increment the site count for the existing block
     void add(SubAliasID id, idx_t norb);
+
+    /// Remove sites for which `keep == false`
+    void filter(VectorX<bool> const& keep);
+
     /// Verify that the stored data is correct: `sum(site_counts) == num_sites`
     void verify(idx_t num_sites) const;
 

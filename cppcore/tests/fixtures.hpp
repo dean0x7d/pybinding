@@ -37,3 +37,9 @@ cpb::HoppingModifier force_double_precision();
 cpb::HoppingModifier force_complex_numbers();
 
 } // namespace field
+
+namespace generator {
+
+cpb::HoppingGenerator do_nothing_hopping(std::string const& name = "_t");
+
+} // namespace generator

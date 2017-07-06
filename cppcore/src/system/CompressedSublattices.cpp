@@ -20,6 +20,22 @@ void CompressedSublattices::add(SubAliasID id, idx_t norb) {
     }
 }
 
+void CompressedSublattices::filter(VectorX<bool> const& keep) {
+    using std::begin;
+
+    auto new_counts = std::vector<storage_idx_t>();
+    new_counts.reserve(data.size());
+
+    for (auto const& sub : *this) {
+        new_counts.push_back(std::accumulate(begin(keep) + sub.sys_start(),
+                                             begin(keep) + sub.sys_end(), storage_idx_t{0}));
+    }
+
+    for (auto i = size_t{0}; i < data.size(); ++i) {
+        data[i].num_sites = new_counts[i];
+    }
+}
+
 void CompressedSublattices::verify(idx_t num_sites) const {
     using std::begin; using std::end;
 

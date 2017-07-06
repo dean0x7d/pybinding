@@ -318,4 +318,19 @@ ArrayX<T> make_integer_range(idx_t size) {
     return result;
 }
 
+template<class Vector, class Bools>
+Vector slice(Vector const& v, Bools const& keep) {
+    using std::begin; using std::end;
+    auto const original_size = v.size();
+    auto const result_size = std::accumulate(begin(keep), end(keep), idx_t{0});
+
+    auto result = Vector(result_size);
+    auto count = 0;
+    for (auto i = idx_t{0}; i < original_size; ++i) {
+        if (keep[i])
+            result[count++] = v[i];
+    }
+    return result;
+};
+
 } // namespace cpb

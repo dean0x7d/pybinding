@@ -75,6 +75,8 @@ void apply(SiteStateModifier const& m, Foundation& f);
 void apply(PositionModifier const& m, Foundation& f);
 
 template<class M> void apply(M const&, System&) {}
+void apply(SiteStateModifier const& m, System& s);
+void apply(PositionModifier const& m, System& s);
 void apply(HoppingGenerator const& g, System& s);
 
 template<class M> constexpr bool requires_system(M const&) { return false; }

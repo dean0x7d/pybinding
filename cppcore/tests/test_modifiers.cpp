@@ -7,29 +7,87 @@ TEST_CASE("SiteStateModifier") {
     auto model = Model(lattice::square_2atom(), Primitive(2));
     REQUIRE(model.system()->num_sites() == 4);
 
-    auto remove_site = [](Eigen::Ref<ArrayX<bool>> state, CartesianArrayConstRef, string_view s) {
-        if (s == "A") {
+    auto count = std::unordered_map<std::string, idx_t>();
+
+    auto remove_site = [&](Eigen::Ref<ArrayX<bool>> state, CartesianArrayConstRef, string_view s) {
+        count[s] = state.size();
+        if (s == "A" && state.size() != 0) {
             state[0] = false;
         }
     };
-    model.add(SiteStateModifier(remove_site));
-    REQUIRE(model.system()->num_sites() == 3);
-    model.add(SiteStateModifier(remove_site, 1));
-    REQUIRE(model.system()->num_sites() == 2);
-    model.add(SiteStateModifier(remove_site, 2));
-    REQUIRE_THROWS(model.system());
+
+    SECTION("Apply to foundation") {
+        model.add(SiteStateModifier(remove_site));
+        REQUIRE(model.system()->num_sites() == 3);
+        REQUIRE(count["A"] == 2);
+        REQUIRE(count["B"] == 2);
+
+        model.add(SiteStateModifier(remove_site, 1));
+        REQUIRE(model.system()->num_sites() == 2);
+        REQUIRE(count["A"] == 2);
+        REQUIRE(count["B"] == 2);
+
+        model.add(SiteStateModifier(remove_site, 2));
+        REQUIRE_THROWS(model.system());
+        REQUIRE(count["A"] == 2);
+        REQUIRE(count["B"] == 2);
+    }
+
+    SECTION("Apply to system") {
+        model.add(SiteStateModifier(remove_site));
+        model.add(generator::do_nothing_hopping());
+
+        model.add(SiteStateModifier(remove_site));
+        REQUIRE(model.system()->num_sites() == 2);
+        REQUIRE(count["A"] == 1);
+        REQUIRE(count["B"] == 2);
+
+        model.add(generator::do_nothing_hopping("_t2"));
+        model.add(SiteStateModifier(remove_site));
+        REQUIRE(model.system()->num_sites() == 2);
+        REQUIRE(count["A"] == 0);
+        REQUIRE(count["B"] == 2);
+
+        model.add(SiteStateModifier(remove_site, 1));
+        REQUIRE_THROWS_WITH(model.system(), Catch::Contains("has not been implemented yet"));
+        REQUIRE(count["A"] == 0);
+        REQUIRE(count["B"] == 2);
+    }
 }
 
 TEST_CASE("SitePositionModifier") {
-    auto model = Model(lattice::square_2atom());
-    REQUIRE(model.system()->positions.y[1] == Approx(0.5));
+    auto model = Model(lattice::square_2atom(), shape::rectangle(2, 2));
+    REQUIRE(model.system()->num_sites() == 6);
+    REQUIRE(model.system()->positions.y[1] == Approx(-1));
 
-    model.add(PositionModifier([](CartesianArrayRef position, string_view sublattice) {
+    auto count = std::unordered_map<std::string, idx_t>();
+    constexpr auto moved_pos = 10.0f;
+
+    auto move_site = PositionModifier([&](CartesianArrayRef position, string_view sublattice) {
+        count[sublattice] = position.size();
         if (sublattice == "B") {
-            position.y()[0] = 1;
+            position.y().setConstant(moved_pos);
         }
-    }));
-    REQUIRE(model.system()->positions.y[1] == Approx(1));
+    });
+
+    SECTION("Apply to foundation") {
+        model.add(move_site);
+        model.eval();
+        REQUIRE(count["A"] == 25);
+        REQUIRE(count["B"] == 25);
+        REQUIRE(model.system()->num_sites() == 6);
+        REQUIRE(model.system()->positions.y.segment(4, 2).isApproxToConstant(moved_pos));
+    }
+
+    SECTION("Apply to system") {
+        model.add(generator::do_nothing_hopping());
+        model.add(move_site);
+        model.eval();
+        REQUIRE(count["A"] == 4);
+        REQUIRE(count["B"] == 2);
+        REQUIRE(model.system()->num_sites() == 6);
+        REQUIRE(model.system()->positions.y.segment(4, 2).isApproxToConstant(moved_pos));
+    }
 }
 
 TEST_CASE("State and position modifier ordering") {

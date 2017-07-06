@@ -62,6 +62,17 @@ void HoppingBlocks::append(HopID family_id, ArrayXi&& rows, ArrayXi&& cols) {
     block.erase(std::unique(block.begin(), block.end()), block.end());
 }
 
+void HoppingBlocks::filter(VectorX<bool> const& keep) {
+    using std::begin; using std::end;
+
+    num_sites = std::accumulate(begin(keep), end(keep), idx_t{0});
+    for (auto& block : blocks) {
+        block.erase(std::remove_if(block.begin(), block.end(), [&](COO coo) {
+            return !keep[coo.row] || !keep[coo.col];
+        }), block.end());
+    }
+}
+
 SparseMatrixX<storage_idx_t> HoppingBlocks::tocsr() const {
     auto csr = SparseMatrixX<storage_idx_t>(num_sites, num_sites);
     csr.reserve(nnz());

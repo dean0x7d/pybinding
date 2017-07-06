@@ -153,6 +153,8 @@ std::shared_ptr<System> Model::make_system() const {
         apply(modifier, *sys);
     }
 
+    detail::remove_invalid(*sys);
+
     if (sys->num_sites() == 0) { throw std::runtime_error{"Impossible system: 0 sites"}; }
 
     return sys;

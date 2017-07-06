@@ -185,3 +185,14 @@ cpb::HoppingModifier force_complex_numbers() {
 }
 
 } // namespace field
+
+
+namespace generator {
+
+cpb::HoppingGenerator do_nothing_hopping(std::string const& name) {
+    return {name, 0, [](cpb::CartesianArray const&, SubIdRef) {
+        return HoppingGenerator::Result{ArrayXi{}, ArrayXi{}};
+    }};
+}
+
+} // namespace generator

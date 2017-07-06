@@ -157,5 +157,21 @@ void populate_boundaries(System& system, Foundation const& foundation,
     }
 }
 
+void remove_invalid(System& s) {
+    if (s.is_valid.size() == 0) { return; }
+
+    s.positions.x = slice(s.positions.x, s.is_valid);
+    s.positions.y = slice(s.positions.y, s.is_valid);
+    s.positions.z = slice(s.positions.z, s.is_valid);
+    s.compressed_sublattices.filter(s.is_valid);
+    s.hopping_blocks.filter(s.is_valid);
+
+    for (auto& b : s.boundaries) {
+        b.hopping_blocks.filter(s.is_valid);
+    }
+
+    s.is_valid.resize(0);
+}
+
 } // namespace detail
 } // namespace cpb

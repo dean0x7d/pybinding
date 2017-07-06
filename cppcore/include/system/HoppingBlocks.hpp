@@ -121,6 +121,9 @@ public:
     /// Append a range of coordinates to the given family block
     void append(HopID family_id, ArrayXi&& rows, ArrayXi&& cols);
 
+    /// Remove sites for which `keep == false`
+    void filter(VectorX<bool> const& keep);
+
     /// Return the matrix in the CSR sparse matrix format
     SparseMatrixX<storage_idx_t> tocsr() const;
 
