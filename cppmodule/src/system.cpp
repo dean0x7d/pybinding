@@ -2,7 +2,23 @@
 #include "wrappers.hpp"
 using namespace cpb;
 
+template<class T>
+void wrap_registry(py::module& m, char const* name) {
+    py::class_<T>(m, name)
+        .def_property_readonly("name_map", &T::name_map)
+        .def("__getstate__", [](T const& r) {
+            return py::dict("energies"_a=r.get_energies(), "names"_a=r.get_names());
+        })
+        .def("__setstate__", [](T& r, py::dict d) {
+            new (&r) T(d["energies"].cast<std::vector<MatrixXcd>>(),
+                       d["names"].cast<std::vector<std::string>>());
+        });
+}
+
 void wrap_system(py::module& m) {
+    wrap_registry<SiteRegistry>(m, "SiteRegistry");
+    wrap_registry<HoppingRegistry>(m, "HoppingRegistry");
+
     py::class_<CartesianArray>(m, "CartesianArray")
         .def_property_readonly("x", [](CartesianArray const& a) { return arrayref(a.x); })
         .def_property_readonly("y", [](CartesianArray const& a) { return arrayref(a.y); })
@@ -72,7 +88,8 @@ void wrap_system(py::module& m) {
     py::class_<System, std::shared_ptr<System>>(m, "System")
         .def("find_nearest", &System::find_nearest, "position"_a, "sublattice"_a="")
         .def("to_hamiltonian_indices", &System::to_hamiltonian_indices)
-        .def_readonly("lattice", &System::lattice)
+        .def_readonly("site_registry", &System::site_registry)
+        .def_readonly("hopping_registry", &System::hopping_registry)
         .def_readonly("positions", &System::positions)
         .def_readonly("compressed_sublattices", &System::compressed_sublattices)
         .def_readonly("hopping_blocks", &System::hopping_blocks)
@@ -80,13 +97,21 @@ void wrap_system(py::module& m) {
         .def_property_readonly("hamiltonian_size", &System::hamiltonian_size)
         .def_property_readonly("expanded_positions", &System::expanded_positions)
         .def("__getstate__", [](System const& s) {
-            return py::dict("lattice"_a=s.lattice, "positions"_a=s.positions,
+            return py::dict("site_registry"_a=s.site_registry,
+                            "hopping_registry"_a=s.hopping_registry,
+                            "positions"_a=s.positions,
                             "compressed_sublattices"_a=s.compressed_sublattices,
                             "hopping_blocks"_a=s.hopping_blocks,
                             "boundaries"_a=s.boundaries);
         })
         .def("__setstate__", [](System& s, py::dict d) {
-            new (&s) System(d["lattice"].cast<decltype(s.lattice)>());
+            if (d.contains("lattice")) {
+                auto const lattice = d["lattice"].cast<Lattice>();
+                new (&s) System(lattice.site_registry(), lattice.hopping_registry());
+            } else {
+                new (&s) System(d["site_registry"].cast<decltype(s.site_registry)>(),
+                                d["hopping_registry"].cast<decltype(s.hopping_registry)>());
+            }
             s.positions = d["positions"].cast<decltype(s.positions)>();
             s.compressed_sublattices =
                 d["compressed_sublattices"].cast<decltype(s.compressed_sublattices)>();

@@ -1,4 +1,5 @@
 #pragma once
+#include "system/Registry.hpp"
 #include "system/System.hpp"
 #include "system/Shape.hpp"
 #include "system/Symmetry.hpp"
@@ -17,11 +18,11 @@ namespace cpb {
 
 class Model {
 public:
-    Model(Lattice const& lattice) : lattice(lattice) {}
+    Model(Lattice const& lattice);
 
     /// The arguments can any type accepted by `Model::add()`
     template<class... Args>
-    Model(Lattice const& lattice, Args&&... args) : lattice(lattice) {
+    Model(Lattice const& lattice, Args&&... args) : Model(lattice) {
         detail::eval_ordered({(add(std::forward<Args>(args)), 0)...});
     }
 
@@ -42,6 +43,8 @@ public: // add parameters
     void set_wave_vector(Cartesian const& k);
 
 public:
+    /// Are any of the onsite or hopping energies given as matrices instead of scalars?
+    bool is_multiorbital() const;
     /// Uses double precision values in the Hamiltonian matrix?
     bool is_double() const;
     /// Uses complex values in the Hamiltonian matrix?
@@ -49,6 +52,8 @@ public:
 
 public: // get parameters
     Lattice const& get_lattice() const { return lattice; }
+    SiteRegistry const& get_site_registry() const { return site_registry; }
+    HoppingRegistry const& get_hopping_registry() const { return hopping_registry; }
     Primitive const& get_primitive() const { return primitive; }
     Shape const& get_shape() const { return shape; }
     TranslationalSymmetry const& get_symmetry() const { return symmetry; }
@@ -87,6 +92,9 @@ private:
 
 private:
     Lattice lattice;
+    SiteRegistry site_registry;
+    HoppingRegistry hopping_registry;
+
     Primitive primitive;
     Shape shape;
     TranslationalSymmetry symmetry;

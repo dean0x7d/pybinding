@@ -105,8 +105,7 @@ namespace detail {
 
 template<class scalar_t, class Fn>
 void HamiltonianModifiers::apply_to_onsite(System const& system, Fn lambda) const {
-    auto const& lattice = system.lattice;
-    auto const has_intrinsic_onsite = lattice.has_onsite_energy();
+    auto const has_intrinsic_onsite = system.site_registry.has_nonzero_energy();
     if (!has_intrinsic_onsite && onsite.empty()) {
         return;
     }
@@ -118,8 +117,9 @@ void HamiltonianModifiers::apply_to_onsite(System const& system, Fn lambda) cons
 
         if (has_intrinsic_onsite) {
             // Intrinsic lattice onsite energy -- just replicate the value at each site
-            auto const& site_family = lattice[SubID(sub.alias_id())];
-            auto const intrinsic_energy = num::force_cast<scalar_t>(site_family.energy);
+            auto const intrinsic_energy = num::force_cast<scalar_t>(
+                system.site_registry.energy(sub.id())
+            );
 
             auto start = idx_t{0};
             for (auto const& value : intrinsic_energy) {
@@ -133,7 +133,7 @@ void HamiltonianModifiers::apply_to_onsite(System const& system, Fn lambda) cons
             auto onsite_ref = (norb == 1) ? arrayref(onsite_energy.data(), nsites)
                                           : arrayref(onsite_energy.data(), norb, norb, nsites);
             auto const position_ref = system.positions.segment(sub.sys_start(), nsites);
-            auto const sub_name = lattice.sublattice_name(SubID(sub.alias_id()));
+            auto const sub_name = system.site_registry.name(sub.id());
 
             for (auto const& modifier : onsite) {
                 modifier.apply(onsite_ref, position_ref, sub_name);
@@ -240,14 +240,15 @@ template<class scalar_t, class SystemOrBoundary, class Fn>
 void HamiltonianModifiers::apply_to_hoppings_impl(System const& system,
                                                   SystemOrBoundary const& system_or_boundary,
                                                   Fn lambda) const {
-    auto const& lattice = system.lattice;
+    auto const& hopping_registry = system.hopping_registry;
 
     // Fast path: Modifiers don't need to be applied and the single-orbital model
     // allows direct mapping between sites and Hamiltonian matrix elements.
-    if (hopping.empty() && !lattice.has_multiple_orbitals()) {
+    if (hopping.empty() && !hopping_registry.has_multiple_orbitals()) {
         for (auto const& block : system_or_boundary.hopping_blocks) {
-            auto const& hopping_family = lattice(block.family_id());
-            auto const energy = num::force_cast<scalar_t>(hopping_family.energy);
+            auto const energy = num::force_cast<scalar_t>(
+                hopping_registry.energy(block.family_id())
+            );
 
             auto const value = energy(0, 0); // single orbital
             for (auto const& coo : block.coordinates()) {
@@ -263,11 +264,11 @@ void HamiltonianModifiers::apply_to_hoppings_impl(System const& system,
     for (auto const& block : system_or_boundary.hopping_blocks) {
         if (block.size() == 0) { continue; }
 
-        auto const& hopping_family = lattice(block.family_id());
-        auto const hopping_name = lattice.hopping_family_name(block.family_id());
-        auto const index_translator = IndexTranslator(system, hopping_family.energy);
+        auto const& hopping_energy = hopping_registry.energy(block.family_id());
+        auto const hopping_name = hopping_registry.name(block.family_id());
+        auto const index_translator = IndexTranslator(system, hopping_energy);
 
-        auto buffer = HoppingBuffer<scalar_t>(hopping_family.energy, block.size());
+        auto buffer = HoppingBuffer<scalar_t>(hopping_energy, block.size());
         for (auto const coo_slice : sliced(block.coordinates(), buffer.size)) {
             auto size = idx_t{0};
             for (auto const& coo : coo_slice) {

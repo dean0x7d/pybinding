@@ -28,30 +28,16 @@ Lattice::Lattice(Cartesian a1, Cartesian a2, Cartesian a3) {
 }
 
 void Lattice::add_sublattice(string_view name, Cartesian position, double onsite_energy) {
-    add_sublattice(name, position, MatrixXcd::Constant(1, 1, onsite_energy).eval());
+    add_sublattice(name, position, detail::canonical_onsite_energy(onsite_energy));
 }
 
 void Lattice::add_sublattice(string_view name, Cartesian position, VectorXd const& onsite_energy) {
-    auto const size = onsite_energy.size();
-    auto mat = MatrixXcd::Zero(size, size).eval();
-    mat.diagonal() = onsite_energy.cast<std::complex<double>>();
-    add_sublattice(name, position, mat);
+    add_sublattice(name, position, detail::canonical_onsite_energy(onsite_energy));
 }
 
 void Lattice::add_sublattice(string_view name, Cartesian position,
                              MatrixXcd const& onsite_energy) {
-    if (onsite_energy.rows() != onsite_energy.cols()) {
-        throw std::logic_error("The onsite hopping term must be a real vector or a square matrix");
-    }
-    if (onsite_energy.rows() == 0) {
-        throw std::logic_error("The onsite hopping term can't be zero-dimensional");
-    }
-    if (!onsite_energy.diagonal().imag().isZero()) {
-        throw std::logic_error("The main diagonal of the onsite hopping term must be real");
-    }
-    if (!onsite_energy.isUpperTriangular() && onsite_energy != onsite_energy.adjoint()) {
-        throw std::logic_error("The onsite hopping matrix must be upper triangular or Hermitian");
-    }
+    detail::check_onsite_energy(onsite_energy);
 
     auto const hermitian_view = onsite_energy.selfadjointView<Eigen::Upper>();
     auto const unique_id = make_unique_sublattice_id(name);
@@ -67,15 +53,13 @@ void Lattice::add_alias(string_view alias_name, string_view original_name, Carte
 }
 
 void Lattice::register_hopping_energy(std::string const& name, std::complex<double> energy) {
-    register_hopping_energy(name, MatrixXcd::Constant(1, 1, energy));
+    register_hopping_energy(name, detail::canonical_hopping_energy(energy));
 }
 
 void Lattice::register_hopping_energy(std::string const& name, MatrixXcd const& energy) {
     if (name.empty()) { throw std::logic_error("Hopping name can't be blank"); }
 
-    if (energy.rows() == 0 || energy.cols() == 0) {
-        throw std::logic_error("Hoppings can't be zero-dimensional");
-    }
+    detail::check_hopping_energy(energy);
 
     auto const unique_id = HopID(hoppings.size());
     auto const is_unique_name = hoppings.insert({name, {energy, unique_id, {}}}).second;
@@ -116,7 +100,7 @@ void Lattice::add_hopping(Index3D relative_index, string_view from_sub, string_v
 
 void Lattice::add_hopping(Index3D relative_index, string_view from_sub, string_view to_sub,
                           std::complex<double> energy) {
-    add_hopping(relative_index, from_sub, to_sub, MatrixXcd::Constant(1, 1, energy));
+    add_hopping(relative_index, from_sub, to_sub, detail::canonical_hopping_energy(energy));
 }
 
 void Lattice::add_hopping(Index3D relative_index, string_view from_sub, string_view to_sub,
@@ -182,26 +166,6 @@ Lattice::HoppingFamily const& Lattice::hopping_family(HopID id) const {
         throw std::out_of_range("There is no hopping with ID = {}"_format(id.value()));
     }
     return it->second;
-}
-
-string_view Lattice::sublattice_name(SubID id) const {
-    using Pair = Sublattices::value_type;
-    auto const it = std::find_if(sublattices.begin(), sublattices.end(),
-                                 [&](Pair const& p) { return p.second.unique_id == id; });
-    if (it == sublattices.end()) {
-        throw std::out_of_range("There is no sublattice with ID = {}"_format(id.value()));
-    }
-    return it->first;
-}
-
-string_view Lattice::hopping_family_name(HopID id) const {
-    using Pair = Hoppings::value_type;
-    auto const it = std::find_if(hoppings.begin(), hoppings.end(),
-                                 [&](Pair const& p) { return p.second.family_id == id; });
-    if (it == hoppings.end()) {
-        throw std::out_of_range("There is no hopping with ID = {}"_format(id.value()));
-    }
-    return it->first;
 }
 
 int Lattice::max_hoppings() const {
@@ -276,38 +240,39 @@ bool Lattice::has_onsite_energy() const {
     });
 }
 
-bool Lattice::has_multiple_orbitals() const {
-    return std::any_of(sublattices.begin(), sublattices.end(), [](Sublattices::const_reference r) {
-        return r.second.energy.cols() != 1;
-    });
-}
-
-bool Lattice::has_complex_hoppings() const {
-    return std::any_of(hoppings.begin(), hoppings.end(), [](Hoppings::const_reference r) {
-        return !r.second.energy.imag().isZero();
-    }) || std::any_of(sublattices.begin(), sublattices.end(), [](Sublattices::const_reference r) {
-        return !r.second.energy.imag().isZero();
-    });
-}
-
 OptimizedUnitCell Lattice::optimized_unit_cell() const {
     return OptimizedUnitCell(*this);
 }
 
-NameMap Lattice::sub_name_map() const {
-    auto map = NameMap();
-    for (auto const& p : sublattices) {
-        map[p.first] = p.second.unique_id.value();
+SiteRegistry Lattice::site_registry() const {
+    auto const num_unique_subs = std::count_if(
+        sublattices.begin(), sublattices.end(),
+        [](Sublattices::const_reference r) {
+            return SubID(r.second.alias_id) == r.second.unique_id;
+        }
+    );
+
+    auto energies = std::vector<MatrixXcd>(num_unique_subs);
+    auto names = std::vector<std::string>(num_unique_subs);
+    for (auto const& pair : sublattices) {
+        auto const& sub = pair.second;
+        if (SubID(sub.alias_id) != sub.unique_id) { continue; }
+
+        energies.at(sub.unique_id.value()) = sub.energy;
+        names.at(sub.unique_id.value()) = pair.first;
     }
-    return map;
+    return {energies, names};
 }
 
-NameMap Lattice::hop_name_map() const {
-    auto map = NameMap();
-    for (auto const& p : hoppings) {
-        map[p.first] = p.second.family_id.value();
+HoppingRegistry Lattice::hopping_registry() const {
+    auto energies = std::vector<MatrixXcd>(hoppings.size());
+    auto names = std::vector<std::string>(hoppings.size());
+    for (auto const& pair : hoppings) {
+        auto const& hop = pair.second;
+        energies.at(hop.family_id.value()) = hop.energy;
+        names.at(hop.family_id.value()) = pair.first;
     }
-    return map;
+    return {energies, names};
 }
 
 SubID Lattice::make_unique_sublattice_id(string_view name) {

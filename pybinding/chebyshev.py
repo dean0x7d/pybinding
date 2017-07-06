@@ -88,7 +88,7 @@ class KPM:
     @property
     def system(self) -> System:
         """The tight-binding system (shortcut for `KPM.model.system`)"""
-        return System(self.impl.system)
+        return System(self.impl.system, self.model.lattice)
 
     @property
     def scaling_factors(self) -> tuple:

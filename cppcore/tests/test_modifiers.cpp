@@ -198,10 +198,11 @@ TEST_CASE("HoppingGenerator") {
         }));
 
         REQUIRE_FALSE(model.is_complex());
-        REQUIRE(model.get_lattice().get_hoppings().size() == 2);
+        REQUIRE(model.get_lattice().get_hoppings().size() == 1);
+        REQUIRE(model.get_hopping_registry().size() == 2);
         REQUIRE(model.system()->hopping_blocks.nnz() == 1);
 
-        auto const hop_names = model.get_lattice().hop_name_map();
+        auto const hop_names = model.get_hopping_registry().name_map();
         auto const hopping_it = hop_names.find("t2");
         REQUIRE(hopping_it != hop_names.end());
         auto const hopping_id = hopping_it->second;

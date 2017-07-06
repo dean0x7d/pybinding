@@ -75,8 +75,6 @@ void wrap_lattice(py::module& m) {
         .def_property_readonly("vectors", &Lattice::get_vectors)
         .def_property_readonly("sublattices", &Lattice::get_sublattices)
         .def_property_readonly("hoppings", &Lattice::get_hoppings)
-        .def_property_readonly("sub_name_map", &Lattice::sub_name_map)
-        .def_property_readonly("hop_name_map", &Lattice::hop_name_map)
         .def_property("offset", &Lattice::get_offset, &Lattice::set_offset)
         .def_property("min_neighbors", &Lattice::get_min_neighbors, &Lattice::set_min_neighbors)
         .def("__getstate__", [](Lattice const& l) {

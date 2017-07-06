@@ -4,7 +4,7 @@
 using namespace cpb;
 
 TEST_CASE("CompressedSublattices") {
-    auto inject = [](CompressedSublattices& cs, idx_t size, SubAliasID id, idx_t norb) {
+    auto inject = [](CompressedSublattices& cs, idx_t size, SiteID id, idx_t norb) {
         for (auto i = 0; i < size; ++i) {
             cs.add(id, norb);
         }
@@ -14,16 +14,16 @@ TEST_CASE("CompressedSublattices") {
     auto cs = CompressedSublattices();
     auto ds = VectorX<storage_idx_t>(size);
 
-    inject(cs, 10, SubAliasID{1}, 1);
+    inject(cs, 10, SiteID{1}, 1);
     ds.segment(0, 10).setConstant(1);
 
-    inject(cs, 15, SubAliasID{0}, 2);
+    inject(cs, 15, SiteID{0}, 2);
     ds.segment(10, 15).setConstant(0);
 
-    inject(cs, 2, SubAliasID{2}, 2);
+    inject(cs, 2, SiteID{2}, 2);
     ds.segment(25, 2).setConstant(2);
 
-    inject(cs, 3, SubAliasID{4}, 3);
+    inject(cs, 3, SiteID{4}, 3);
     ds.segment(27, 3).setConstant(4);
 
     REQUIRE(cs.decompressed().matrix() == ds);

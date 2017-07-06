@@ -61,6 +61,7 @@ add_library(cppcore
     include/system/CompressedSublattices.hpp
     include/system/Foundation.hpp
     include/system/HoppingBlocks.hpp
+    include/system/Registry.hpp
     include/system/Shape.hpp
     include/system/StructureModifiers.hpp
     include/system/Symmetry.hpp
@@ -88,6 +89,7 @@ add_library(cppcore
     src/system/CompressedSublattices.cpp
     src/system/Foundation.cpp
     src/system/HoppingBlocks.cpp
+    src/system/Registry.cpp
     src/system/Shape.cpp
     src/system/StructureModifiers.cpp
     src/system/Symmetry.cpp

@@ -48,7 +48,7 @@ class Solver:
     @property
     def system(self) -> System:
         """The tight-binding system attached to this solver (shortcut for Solver.model.system)"""
-        return System(self.impl.system)
+        return System(self.impl.system, self.model.lattice)
 
     @property
     def eigenvalues(self) -> np.ndarray:

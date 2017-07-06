@@ -66,7 +66,7 @@ ArrayXXdCM KPM::calc_ldos(ArrayXd const& energy, double broadening, Cartesian po
 
 ArrayXXdCM KPM::calc_spatial_ldos(ArrayXd const& energy, double broadening, Shape const& shape,
                                   string_view sublattice) const {
-    if (model.get_lattice().has_multiple_orbitals()) {
+    if (model.is_multiorbital()) {
         throw std::runtime_error("This function doesn't currently support multi-orbital models");
     }
 
@@ -136,9 +136,8 @@ ArrayXd KPM::calc_conductivity(ArrayXd const& chemical_potential, double broaden
         throw std::logic_error("Invalid direction: must be 'xx', 'xy', 'zz', or similar.");
     }
 
-    auto const is_multiorbital = model.get_lattice().has_multiple_orbitals();
     auto const& system = *model.system();
-    auto const& p = is_multiorbital ? system.expanded_positions() : system.positions;
+    auto const& p = model.is_multiorbital() ? system.expanded_positions() : system.positions;
     auto map = std::unordered_map<char, ArrayXf const*>{{'x', &p.x}, {'y', &p.y}, {'z', &p.z}};
 
     calculation_timer.tic();

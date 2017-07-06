@@ -24,7 +24,7 @@ class _CppSites(AbstractSites):
     def __init__(self, impl: _cpp.System):
         self._positions = impl.positions
         self._cs = impl.compressed_sublattices
-        self._lattice = impl.lattice
+        self._registry = impl.site_registry
 
     @property
     def x(self):
@@ -40,7 +40,7 @@ class _CppSites(AbstractSites):
 
     @property
     def ids(self):
-        return AliasArray(self._cs.decompressed(), self._lattice.sub_name_map)
+        return AliasArray(self._cs.decompressed(), self._registry.name_map)
 
     def __getitem__(self, item):
         return Sites([v[item] for v in self.positions], self.ids[item])
@@ -51,20 +51,19 @@ class System(Structure):
 
     Stores positions, sublattice and hopping IDs for all lattice sites.
     """
-    def __init__(self, impl: _cpp.System):
+    def __init__(self, impl: _cpp.System, lattice=None):
         super().__init__(_CppSites(impl), impl.hopping_blocks, impl.boundaries)
         self.impl = impl
+        self.lattice = lattice
 
     def __getstate__(self):
-        return self.impl
+        return self.__dict__
 
-    def __setstate__(self, impl):
-        self.__init__(impl)
-
-    @property
-    def lattice(self) -> Lattice:
-        """:class:`.Lattice` specification"""
-        return Lattice.from_impl(self.impl.lattice)
+    def __setstate__(self, state):
+        if isinstance(state, dict):
+            self.__init__(state["impl"], state["lattice"])
+        else:
+            self.__init__(state)
 
     @property
     def expanded_positions(self):

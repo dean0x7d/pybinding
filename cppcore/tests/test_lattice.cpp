@@ -1,6 +1,6 @@
 #include <catch.hpp>
 
-#include "Lattice.hpp"
+#include "Model.hpp"
 using namespace cpb;
 
 TEST_CASE("Lattice") {
@@ -31,9 +31,9 @@ TEST_CASE("Lattice") {
     }
 
     SECTION("Add multi-orbital sublattice") {
-        REQUIRE_FALSE(lattice.has_multiple_orbitals());
+        REQUIRE_FALSE(Model(lattice).is_multiorbital());
         lattice.add_sublattice("A", {0, 0, 0}, VectorXd::Constant(2, 0.0).eval());
-        REQUIRE(lattice.has_multiple_orbitals());
+        REQUIRE(Model(lattice).is_multiorbital());
 
         REQUIRE_FALSE(lattice.has_diagonal_terms());
         REQUIRE_FALSE(lattice.has_onsite_energy());
@@ -79,12 +79,12 @@ TEST_CASE("Lattice") {
                             "Hopping name can't be blank");
 
         lattice.register_hopping_energy("t1", 1.0);
-        REQUIRE_FALSE(lattice.has_complex_hoppings());
+        REQUIRE_FALSE(Model(lattice).is_complex());
         REQUIRE_THROWS_WITH(lattice.register_hopping_energy("t1", 1.0),
                             "Hopping 't1' already exists");
 
         lattice.register_hopping_energy("t2", std::complex<double>{0, 1.0});
-        REQUIRE(lattice.has_complex_hoppings());
+        REQUIRE(Model(lattice).is_complex());
     }
 
     SECTION("Add scalar hoppings") {

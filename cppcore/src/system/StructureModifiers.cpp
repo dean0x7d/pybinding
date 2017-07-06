@@ -24,7 +24,7 @@ void apply(SiteStateModifier const& m, System& s) {
     for (auto const& sub : s.compressed_sublattices) {
         m.apply(s.is_valid.segment(sub.sys_start(), sub.num_sites()),
                 s.positions.segment(sub.sys_start(), sub.num_sites()),
-                s.lattice.sublattice_name(SubID(sub.alias_id())));
+                s.site_registry.name(sub.id()));
     }
 
     if (m.min_neighbors > 0) {
@@ -43,17 +43,16 @@ void apply(PositionModifier const& m, Foundation& f) {
 void apply(PositionModifier const& m, System& s) {
     for (auto const& sub : s.compressed_sublattices) {
         m.apply(s.positions.segment(sub.sys_start(), sub.num_sites()),
-                s.lattice.sublattice_name(SubID(sub.alias_id())));
+                s.site_registry.name(sub.id()));
     }
 }
 
 void apply(HoppingGenerator const& g, System& s) {
     detail::remove_invalid(s);
 
-    auto const& lattice = s.lattice;
     auto const sublattices = s.compressed_sublattices.decompressed();
-    auto const family_id = lattice.hopping_family(g.name).family_id;
-    auto pairs = g.make(s.positions, {sublattices, lattice.sub_name_map()});
+    auto const family_id = s.hopping_registry.id(g.name);
+    auto pairs = g.make(s.positions, {sublattices, s.site_registry.name_map()});
     s.hopping_blocks.append(family_id, std::move(pairs.from), std::move(pairs.to));
 }
 

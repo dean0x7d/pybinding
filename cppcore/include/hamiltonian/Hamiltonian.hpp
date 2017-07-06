@@ -72,7 +72,7 @@ private:
 namespace detail {
 
 template<class scalar_t>
-void build_main(SparseMatrixX<scalar_t>& matrix, System const& system,
+void build_main(SparseMatrixX<scalar_t>& matrix, System const& system, Lattice const& lattice,
                 HamiltonianModifiers const& modifiers, bool simple_build) {
     auto const size = system.hamiltonian_size();
     matrix.resize(size, size);
@@ -80,8 +80,8 @@ void build_main(SparseMatrixX<scalar_t>& matrix, System const& system,
     if (simple_build) {
         // Fast path: No generators were used (only unit cell replication + modifiers)
         // so we can easily predict the maximum number of non-zero values per row.
-        auto const has_diagonal = system.lattice.has_diagonal_terms() || !modifiers.onsite.empty();
-        auto const num_per_row = system.lattice.max_hoppings() + has_diagonal;
+        auto const has_diagonal = lattice.has_diagonal_terms() || !modifiers.onsite.empty();
+        auto const num_per_row = lattice.max_hoppings() + has_diagonal;
         matrix.reserve(ArrayXi::Constant(size, num_per_row));
 
         modifiers.apply_to_onsite<scalar_t>(system, [&](idx_t i, idx_t j, scalar_t onsite) {
@@ -161,11 +161,11 @@ inline bool is(Hamiltonian const& h) {
 }
 
 template<class scalar_t>
-Hamiltonian make(System const& system, HamiltonianModifiers const& modifiers,
-                 Cartesian k_vector, bool simple_build) {
+Hamiltonian make(System const& system, Lattice const& lattice,
+                 HamiltonianModifiers const& modifiers, Cartesian k_vector, bool simple_build) {
     auto matrix = std::make_shared<SparseMatrixX<scalar_t>>();
 
-    detail::build_main(*matrix, system, modifiers, simple_build);
+    detail::build_main(*matrix, system, lattice, modifiers, simple_build);
     detail::build_periodic(*matrix, system, modifiers, k_vector);
 
     matrix->makeCompressed();

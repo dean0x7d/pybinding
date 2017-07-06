@@ -4,7 +4,8 @@
 namespace cpb { namespace leads {
 
 Structure::Structure(Foundation const& foundation, Spec const& lead)
-    : system(foundation.get_lattice()) {
+    : system(foundation.get_lattice().site_registry(),
+             foundation.get_lattice().hopping_registry()) {
     auto const& lattice = foundation.get_lattice();
     auto const& finalized_indices = foundation.get_finalized_indices();
 
@@ -27,7 +28,7 @@ Structure::Structure(Foundation const& foundation, Spec const& lead)
     /*system*/ {
         auto const size = static_cast<int>(indices.size());
         system.positions.resize(size);
-        system.hopping_blocks = {size, lattice.hop_name_map()};
+        system.hopping_blocks = {size, system.hopping_registry.name_map()};
 
         for (auto const& site : slice) {
             if (!junction.is_valid[site.get_slice_idx()]) {
@@ -36,7 +37,7 @@ Structure::Structure(Foundation const& foundation, Spec const& lead)
             auto const index = lead_index(finalized_indices[site]);
 
             system.positions[index] = site.get_position() + shift;
-            system.compressed_sublattices.add(site.get_alias_id(), site.get_norb());
+            system.compressed_sublattices.add(SiteID{site.get_alias_id()}, site.get_norb());
 
             site.for_each_neighbor([&](Site neighbor, Hopping hopping) {
                 auto const neighbor_index = lead_index(finalized_indices[neighbor]);
@@ -50,7 +51,7 @@ Structure::Structure(Foundation const& foundation, Spec const& lead)
 
     system.boundaries.push_back([&]{
         auto const size = static_cast<int>(indices.size());
-        auto hopping_blocks = HoppingBlocks(size, lattice.hop_name_map());
+        auto hopping_blocks = HoppingBlocks(size, system.hopping_registry.name_map());
 
         for (auto const& site : slice) {
             if (!junction.is_valid[site.get_slice_idx()]) {

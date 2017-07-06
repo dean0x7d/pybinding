@@ -108,7 +108,7 @@ class Model(_cpp.Model):
     @property
     def system(self) -> System:
         """Structural data like site positions and hoppings, see :class:`.System` for details"""
-        return System(super().system)
+        return System(super().system, self.lattice)
 
     @property
     def hamiltonian(self) -> csr_matrix:
@@ -123,7 +123,7 @@ class Model(_cpp.Model):
     @property
     def leads(self):
         """List of :class:`.Lead` objects"""
-        return Leads(super().leads)
+        return Leads(super().leads, self.lattice)
 
     @property
     def shape(self):

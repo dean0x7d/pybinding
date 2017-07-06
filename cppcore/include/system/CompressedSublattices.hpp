@@ -15,7 +15,7 @@ namespace cpb {
 class CompressedSublattices {
 public:
     struct Element {
-        SubAliasID alias_id; ///< the alias ID of each sublattice (unique among elements)
+        SiteID id; ///< the alias ID of each sublattice (unique among elements)
         storage_idx_t num_sites; ///< number of sublattice sites in the final system
         storage_idx_t num_orbitals; ///< number of orbitals on this sublattice
     };
@@ -31,7 +31,7 @@ public:
         It(std::vector<Element>::const_iterator it) : it(it) {}
 
         /// Directly correspond to fields in `Element`
-        SubAliasID alias_id() const { return it->alias_id; }
+        SiteID id() const { return it->id; }
         idx_t num_sites() const { return it->num_sites; }
         idx_t num_orbitals() const { return it->num_orbitals; }
 
@@ -70,7 +70,7 @@ public:
                           ArrayXi const& orbital_counts);
 
     /// Start a new sublattice block or increment the site count for the existing block
-    void add(SubAliasID id, idx_t norb);
+    void add(SiteID id, idx_t norb);
 
     /// Remove sites for which `keep == false`
     void filter(VectorX<bool> const& keep);

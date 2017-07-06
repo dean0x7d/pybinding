@@ -30,9 +30,10 @@ class Lead:
     Leads can only be created using :meth:`.Model.attach_lead`
     and accessed using :attr:`.Model.leads`.
     """
-    def __init__(self, impl: _cpp.Lead, index):
+    def __init__(self, impl: _cpp.Lead, index, lattice):
         self.impl = impl
         self.index = index
+        self.lattice = lattice
 
     @property
     def indices(self) -> np.ndarray:
@@ -42,7 +43,7 @@ class Lead:
     @property
     def system(self) -> System:
         """Structural information, see :class:`.System`"""
-        return System(self.impl.system)
+        return System(self.impl.system, self.lattice)
 
     @property
     def h0(self) -> csr_matrix:
@@ -183,11 +184,12 @@ class Lead:
 
 
 class Leads:
-    def __init__(self, impl: _cpp.Leads):
+    def __init__(self, impl: _cpp.Leads, lattice):
         self.impl = impl
+        self.lattice = lattice
 
     def __getitem__(self, index):
-        return Lead(self.impl[index], index)
+        return Lead(self.impl[index], index, self.lattice)
 
     def __len__(self):
         return len(self.impl)

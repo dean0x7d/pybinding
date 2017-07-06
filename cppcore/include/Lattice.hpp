@@ -1,23 +1,9 @@
 #pragma once
-#include "numeric/dense.hpp"
-#include "detail/opaque_alias.hpp"
+#include "system/Registry.hpp"
 
 #include <vector>
-#include <string>
-#include <unordered_map>
 
 namespace cpb {
-
-// TODO: replace with proper string_view
-using string_view = std::string const&;
-
-/// Sublattice and hopping ID data types
-using SubID = detail::OpaqueIntegerAlias<class SubIDTag>;
-using SubAliasID = detail::OpaqueIntegerAlias<class SubAliasIDTag>;
-using HopID = detail::OpaqueIntegerAlias<class HopIDTag>;
-
-/// Map from friendly sublattice/hopping name to numeric ID
-using NameMap = std::unordered_map<std::string, storage_idx_t>;
 
 class OptimizedUnitCell;
 
@@ -118,41 +104,20 @@ public: // properties
     /// Get a single vector -- Expects: index < lattice.ndim()
     Cartesian vector(size_t index) const { return vectors[index]; }
 
-    /// Access sublattice information by name or ID
-    Sublattice const& sublattice(string_view name) const;
-    Sublattice const& sublattice(SubID id) const;
-    Sublattice const& operator[](string_view name) const { return sublattice(name); }
-    Sublattice const& operator[](SubID id) const { return sublattice(id); }
-    /// Assess hopping family information by name or ID
-    HoppingFamily const& hopping_family(string_view name) const;
-    HoppingFamily const& hopping_family(HopID id) const;
-    HoppingFamily const& operator()(string_view name) const { return hopping_family(name); }
-    HoppingFamily const& operator()(HopID id) const { return hopping_family(id); }
-
-    /// Return name for this ID
-    string_view sublattice_name(SubID id) const;
-    /// Return name for this ID
-    string_view hopping_family_name(HopID id) const;
-
     /// Get the maximum possible number of hoppings from any site of this lattice
     int max_hoppings() const;
     /// Does at least one sublattice have non-zero onsite energy on the main diagonal?
     bool has_diagonal_terms() const;
     /// Does at least one sublattice have non-zero onsite energy (including off-diagonal terms)?
     bool has_onsite_energy() const;
-    /// Does at least one sublattice have multiple orbitals?
-    bool has_multiple_orbitals() const;
-    /// Is at least one hopping complex?
-    bool has_complex_hoppings() const;
 
 public: // optimized access
     /// Return the optimized version of the lattice structure -- see `OptimizedLatticeStructure`
     OptimizedUnitCell optimized_unit_cell() const;
-
-    /// Mapping from friendly sublattice names to their unique IDs
-    NameMap sub_name_map() const;
-    /// Mapping from friendly hopping names to their unique IDs
-    NameMap hop_name_map() const;
+    /// Site information for the system builder
+    SiteRegistry site_registry() const;
+    /// Hopping information for the system builder
+    HoppingRegistry hopping_registry() const;
 
 public: // utilities
     /// Calculate the spatial position of a unit cell or a sublattice site if specified
@@ -167,6 +132,14 @@ public: // utilities
     Vector3f translate_coordinates(Cartesian position) const;
 
 private:
+    /// Access sublattice information by name or ID
+    Sublattice const& sublattice(string_view name) const;
+    Sublattice const& sublattice(SubID id) const;
+
+    /// Assess hopping family information by name or ID
+    HoppingFamily const& hopping_family(string_view name) const;
+    HoppingFamily const& hopping_family(HopID id) const;
+
     SubID make_unique_sublattice_id(string_view name);
 
 private:

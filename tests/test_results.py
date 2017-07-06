@@ -93,7 +93,7 @@ def test_structure_map(model):
     tmp = structure_map[structure_map.x < 0.05]
     assert structure_map.hoppings.nnz == 41
     assert tmp.hoppings.nnz == 21
-    assert tmp.hoppings.tocsr().data.mapping == model.lattice.impl.hop_name_map
+    assert tmp.hoppings.tocsr().data.mapping == model.system.impl.hopping_registry.name_map
 
 
 def test_structure_map_plot(compare_figure):

@@ -39,8 +39,8 @@ idx_t HoppingBlocks::nnz() const {
 }
 
 void HoppingBlocks::reserve(ArrayXi const& counts) {
-    assert(counts.size() == static_cast<idx_t>(blocks.size()));
-    for (auto i = size_t{0}; i < blocks.size(); ++i) {
+    assert(counts.size() <= static_cast<idx_t>(blocks.size()));
+    for (auto i = idx_t{0}; i < counts.size(); ++i) {
         blocks[i].reserve(counts[i]);
     }
 }

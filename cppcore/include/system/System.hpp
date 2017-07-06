@@ -2,6 +2,7 @@
 #include "Lattice.hpp"
 #include "system/CompressedSublattices.hpp"
 #include "system/HoppingBlocks.hpp"
+#include "system/Registry.hpp"
 
 #include "numeric/dense.hpp"
 #include "numeric/sparse.hpp"
@@ -23,14 +24,17 @@ struct Range { idx_t start, end; };
 struct System {
     struct Boundary;
 
-    Lattice lattice;
+    SiteRegistry site_registry;
+    HoppingRegistry hopping_registry;
+
     CartesianArray positions;
     CompressedSublattices compressed_sublattices;
     HoppingBlocks hopping_blocks;
     std::vector<Boundary> boundaries;
     ArrayX<bool> is_valid;
 
-    System(Lattice const& lattice) : lattice(lattice) {}
+    System(SiteRegistry const& site_registry, HoppingRegistry const& hopping_registry)
+        : site_registry(site_registry), hopping_registry(hopping_registry) {}
 
     /// The total number of lattice sites i.e. unique positions. Note that a single site may
     /// consist of several orbitals/spins which means that the size of the Hamiltonian matrix

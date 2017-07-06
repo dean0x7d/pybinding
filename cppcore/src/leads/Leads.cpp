@@ -18,14 +18,14 @@ void Leads::make_structure(Foundation const& foundation) {
     }
 }
 
-void Leads::make_hamiltonian(HamiltonianModifiers const& modifiers,
+void Leads::make_hamiltonian(Lattice const& lattice, HamiltonianModifiers const& modifiers,
                              bool is_double, bool is_complex) {
     if (!hamiltonians.empty()) {
         return;
     }
 
     for (auto const& structure : structures) {
-        hamiltonians.emplace_back(structure.system, modifiers, is_double, is_complex);
+        hamiltonians.emplace_back(structure.system, lattice, modifiers, is_double, is_complex);
     }
 }
 

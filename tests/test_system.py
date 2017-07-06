@@ -36,7 +36,7 @@ def test_expected(model, baseline, plot_if_fails):
     system = model.system
     expected = baseline(system)
     plot_if_fails(system, expected, "plot")
-    assert pytest.fuzzy_equal(system, expected, 1.e-4, 1.e-6)
+    assert pytest.fuzzy_equal(system.impl, expected.impl, 1.e-4, 1.e-6)
 
 
 def test_api():
@@ -50,7 +50,7 @@ def test_api():
 
     with pytest.raises(IndexError) as excinfo:
         system.find_nearest([0, 0], 'invalid_sublattice')
-    assert "There is no sublattice" in str(excinfo.value)
+    assert "There is no Site named" in str(excinfo.value)
 
     assert np.allclose(system.expanded_positions.x, system.positions.x)
 

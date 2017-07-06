@@ -25,7 +25,7 @@ def test_polygon_expected(polygon, baseline, plot_if_fails):
     expected = baseline(model.system)
     plot_if_fails(model.system, expected, "plot")
     plot_if_fails(polygon, polygon, "plot")
-    assert pytest.fuzzy_equal(model.system, expected, 1.e-4, 1.e-6)
+    assert pytest.fuzzy_equal(model.system.impl, expected.impl, 1.e-4, 1.e-6)
 
 
 def test_polygon_api():
@@ -54,7 +54,7 @@ def test_freeform(baseline, plot_if_fails):
     expected = baseline(model.system)
     plot_if_fails(model.system, expected, 'plot')
     plot_if_fails(shape, shape, 'plot')
-    assert pytest.fuzzy_equal(model.system, expected, 1.e-4, 1.e-6)
+    assert pytest.fuzzy_equal(model.system.impl, expected.impl, 1.e-4, 1.e-6)
 
 
 def test_freeform_plot():

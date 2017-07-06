@@ -49,7 +49,8 @@ public:
     void make_structure(Foundation const& foundation);
 
     /// Create a Hamiltonian pair for each lead
-    void make_hamiltonian(HamiltonianModifiers const& modifiers, bool is_double, bool is_complex);
+    void make_hamiltonian(Lattice const& lattice, HamiltonianModifiers const& modifiers,
+                          bool is_double, bool is_complex);
 
     /// Clear any existing structural data, implies clearing Hamiltonian
     void clear_structure();

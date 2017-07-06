@@ -5,6 +5,11 @@
 
 namespace cpb {
 
+Model::Model(Lattice const& lattice)
+    : lattice(lattice),
+      site_registry(lattice.site_registry()),
+      hopping_registry(lattice.hopping_registry()) {}
+
 void Model::add(Primitive new_primitive) {
     primitive = new_primitive;
     for (auto i = lattice.ndim(); i < 3; ++i) {
@@ -69,8 +74,12 @@ void Model::add(HoppingModifier const& m) {
 
 void Model::add(HoppingGenerator const& g) {
     structure_modifiers.emplace_back(g);
-    lattice.register_hopping_energy(g.name, g.energy);
+    hopping_registry.register_family(g.name, MatrixXcd::Constant(1, 1, g.energy));
     clear_structure();
+}
+
+bool Model::is_multiorbital() const {
+    return site_registry.has_multiple_orbitals() || hopping_registry.has_multiple_orbitals();
 }
 
 bool Model::is_double() const {
@@ -78,8 +87,8 @@ bool Model::is_double() const {
 }
 
 bool Model::is_complex() const {
-    return lattice.has_complex_hoppings() || hamiltonian_modifiers.any_complex()
-           || symmetry || complex_override;
+    return site_registry.any_complex_terms() || hopping_registry.any_complex_terms()
+           || hamiltonian_modifiers.any_complex() || symmetry || complex_override;
 }
 
 std::shared_ptr<System const> const& Model::system() const {
@@ -104,7 +113,7 @@ Hamiltonian const& Model::hamiltonian() const {
 Leads const& Model::leads() const {
     system();
     hamiltonian();
-    _leads.make_hamiltonian(hamiltonian_modifiers, is_double(), is_complex());
+    _leads.make_hamiltonian(lattice, hamiltonian_modifiers, is_double(), is_complex());
     return _leads;
 }
 
@@ -143,7 +152,7 @@ std::shared_ptr<System> Model::make_system() const {
     _leads.create_attachment_area(foundation);
     _leads.make_structure(foundation);
 
-    auto sys = std::make_shared<System>(lattice);
+    auto sys = std::make_shared<System>(site_registry, hopping_registry);
     detail::populate_system(*sys, foundation);
     if (symmetry) {
         detail::populate_boundaries(*sys, foundation, symmetry);
@@ -172,9 +181,9 @@ Hamiltonian Model::make_hamiltonian() const {
     if (!is_complex()) {
         try {
             if (!is_double()) {
-                return ham::make<float>(built_system, modifiers, k, simple_build);
+                return ham::make<float>(built_system, lattice, modifiers, k, simple_build);
             } else {
-                return ham::make<double>(built_system, modifiers, k, simple_build);
+                return ham::make<double>(built_system, lattice, modifiers, k, simple_build);
             }
         } catch (ComplexOverride const&) {
             complex_override = true;
@@ -182,9 +191,9 @@ Hamiltonian Model::make_hamiltonian() const {
     }
 
     if (!is_double()) {
-        return ham::make<std::complex<float>>(built_system, modifiers, k, simple_build);
+        return ham::make<std::complex<float>>(built_system, lattice, modifiers, k, simple_build);
     } else {
-        return ham::make<std::complex<double>>(built_system, modifiers, k, simple_build);
+        return ham::make<std::complex<double>>(built_system, lattice, modifiers, k, simple_build);
     }
 }
 

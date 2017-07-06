@@ -23,7 +23,7 @@ idx_t System::hamiltonian_nnz() const {
     auto const hopping_nnz = std::accumulate(
         hopping_blocks.begin(), hopping_blocks.end(), idx_t{0},
         [&](idx_t n, HoppingBlocks::Iterator const& block) {
-            auto const term_size = lattice(block.family_id()).energy.size();
+            auto const term_size = hopping_registry.energy(block.family_id()).size();
             return n + static_cast<idx_t>(block.size()) * term_size;
         }
     );
@@ -52,10 +52,10 @@ Range System::sublattice_range(string_view sublattice) const {
         return {0, num_sites()};
     } else {
         // Only check sites belonging to the target sublattice
-        auto const target_id = lattice[sublattice].alias_id;
+        auto const target_id = site_registry.id(sublattice);
         auto const it = std::find_if(
             compressed_sublattices.begin(), compressed_sublattices.end(),
-            [&](CompressedSublattices::It const& sub) { return sub.alias_id() == target_id; }
+            [&](CompressedSublattices::It const& sub) { return sub.id() == target_id; }
         );
         if (it == compressed_sublattices.end()) {
             throw std::runtime_error("System::sublattice_range() This should never happen");
@@ -99,12 +99,11 @@ CartesianArray System::expanded_positions() const {
 namespace detail {
 
 void populate_system(System& system, Foundation const& foundation) {
-    auto const& lattice = foundation.get_lattice();
     auto const& finalized_indices = foundation.get_finalized_indices();
 
     auto const size = finalized_indices.size();
     system.positions.resize(size);
-    system.hopping_blocks = {size, lattice.hop_name_map()};
+    system.hopping_blocks = {size, system.hopping_registry.name_map()};
     system.hopping_blocks.reserve(finalized_indices.max_hoppings_per_family());
 
     for (auto const& site : foundation) {
@@ -112,7 +111,7 @@ void populate_system(System& system, Foundation const& foundation) {
         if (index < 0) { continue; } // invalid site
 
         system.positions[index] = site.get_position();
-        system.compressed_sublattices.add(site.get_alias_id(), site.get_norb());
+        system.compressed_sublattices.add(SiteID{site.get_alias_id()}, site.get_norb());
 
         site.for_each_neighbor([&](Site neighbor, Hopping hopping) {
             auto const neighbor_index = finalized_indices[neighbor];
@@ -128,14 +127,13 @@ void populate_system(System& system, Foundation const& foundation) {
 
 void populate_boundaries(System& system, Foundation const& foundation,
                          TranslationalSymmetry const& symmetry) {
-    auto const& lattice = foundation.get_lattice();
     auto const& finalized_indices = foundation.get_finalized_indices();
     auto const size = finalized_indices.size();
 
     for (const auto& translation : symmetry.translations(foundation)) {
         auto boundary = System::Boundary();
         boundary.shift = translation.shift_lenght;
-        boundary.hopping_blocks = {size, lattice.hop_name_map()};
+        boundary.hopping_blocks = {size, system.hopping_registry.name_map()};
 
         for (auto const& site : foundation[translation.boundary_slice]) {
             auto const index = finalized_indices[site];
