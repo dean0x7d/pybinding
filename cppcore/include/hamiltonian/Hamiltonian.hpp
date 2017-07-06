@@ -80,9 +80,8 @@ void build_main(SparseMatrixX<scalar_t>& matrix, System const& system,
     if (simple_build) {
         // Fast path: No generators were used (only unit cell replication + modifiers)
         // so we can easily predict the maximum number of non-zero values per row.
-        auto const has_onsite_energy = system.lattice.has_onsite_energy()
-                                       || !modifiers.onsite.empty();
-        auto const num_per_row = system.lattice.max_hoppings() + has_onsite_energy;
+        auto const has_diagonal = system.lattice.has_diagonal_terms() || !modifiers.onsite.empty();
+        auto const num_per_row = system.lattice.max_hoppings() + has_diagonal;
         matrix.reserve(ArrayXi::Constant(size, num_per_row));
 
         modifiers.apply_to_onsite<scalar_t>(system, [&](idx_t i, idx_t j, scalar_t onsite) {

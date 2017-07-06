@@ -14,11 +14,13 @@ TEST_CASE("Lattice") {
                             "Sublattice name can't be blank");
 
         lattice.add_sublattice("A", {0, 0, 0});
+        REQUIRE_FALSE(lattice.has_diagonal_terms());
         REQUIRE_FALSE(lattice.has_onsite_energy());
         REQUIRE_THROWS_WITH(lattice.add_sublattice("A", {0, 0, 0}),
                             "Sublattice 'A' already exists");
 
         lattice.add_sublattice("B", {0, 0, 0}, 1.0);
+        REQUIRE(lattice.has_diagonal_terms());
         REQUIRE(lattice.has_onsite_energy());
 
         lattice.add_alias("B2", "B", {1, 0, 0});
@@ -32,6 +34,9 @@ TEST_CASE("Lattice") {
         REQUIRE_FALSE(lattice.has_multiple_orbitals());
         lattice.add_sublattice("A", {0, 0, 0}, VectorXd::Constant(2, 0.0).eval());
         REQUIRE(lattice.has_multiple_orbitals());
+
+        REQUIRE_FALSE(lattice.has_diagonal_terms());
+        REQUIRE_FALSE(lattice.has_onsite_energy());
 
         auto const zero_dim = MatrixXcd::Zero(0, 0).eval();
         REQUIRE_THROWS_WITH(lattice.add_sublattice("zero_dim", {0, 0, 0}, zero_dim),
@@ -61,6 +66,12 @@ TEST_CASE("Lattice") {
         auto upper_triangular = MatrixXcd::Zero(2, 2).eval();
         upper_triangular(0, 1) = std::complex<double>{0.0, 1.0};
         REQUIRE_NOTHROW(lattice.add_sublattice("upper_triangular", {0, 0, 0}, upper_triangular));
+        REQUIRE_FALSE(lattice.has_diagonal_terms());
+        REQUIRE(lattice.has_onsite_energy());
+
+        REQUIRE_NOTHROW(lattice.add_sublattice("diagonal", {0, 0, 0}, VectorXd::Ones(3).eval()));
+        REQUIRE(lattice.has_diagonal_terms());
+        REQUIRE(lattice.has_onsite_energy());
     }
 
     SECTION("Register hoppings") {

@@ -136,7 +136,9 @@ public: // properties
 
     /// Get the maximum possible number of hoppings from any site of this lattice
     int max_hoppings() const;
-    /// Does at least one sublattice have non-zero onsite energy?
+    /// Does at least one sublattice have non-zero onsite energy on the main diagonal?
+    bool has_diagonal_terms() const;
+    /// Does at least one sublattice have non-zero onsite energy (including off-diagonal terms)?
     bool has_onsite_energy() const;
     /// Does at least one sublattice have multiple orbitals?
     bool has_multiple_orbitals() const;

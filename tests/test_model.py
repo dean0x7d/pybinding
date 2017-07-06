@@ -108,3 +108,19 @@ def test_multiorbital_hamiltonian():
                                            [4, 6]])
     assert pytest.fuzzy_equal(h[2:4, 4:6], [[0, 2],
                                             [4, 6]])
+
+    def lattice_with_zero_diagonal():
+        lat = pb.Lattice([1])
+        lat.add_sublattices(("A", [0], [[0, 3j],
+                                        [0,  0]]))
+        return lat
+
+    model = pb.Model(lattice_with_zero_diagonal(), pb.primitive(3))
+    h = model.hamiltonian.todense()
+
+    assert model.system.num_sites == 3
+    assert h.shape[0] == 6
+    assert pytest.fuzzy_equal(h, h.H)
+    assert pytest.fuzzy_equal(h[:2, :2], h[-2:, -2:])
+    assert pytest.fuzzy_equal(h[:2, :2], [[0, 3j],
+                                          [-3j, 0]])

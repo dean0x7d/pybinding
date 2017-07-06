@@ -264,9 +264,15 @@ Lattice Lattice::with_min_neighbors(int number) const {
     return new_lattice;
 }
 
-bool Lattice::has_onsite_energy() const {
+bool Lattice::has_diagonal_terms() const {
     return std::any_of(sublattices.begin(), sublattices.end(), [](Sublattices::const_reference r) {
         return !r.second.energy.diagonal().isZero();
+    });
+}
+
+bool Lattice::has_onsite_energy() const {
+    return std::any_of(sublattices.begin(), sublattices.end(), [](Sublattices::const_reference r) {
+        return !r.second.energy.isZero();
     });
 }
 
