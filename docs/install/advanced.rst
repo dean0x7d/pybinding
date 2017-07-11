@@ -63,7 +63,7 @@ Once you have everything, follow the steps below to compile and install pybindin
 
 .. rubric:: Windows
 
-#. Install `Visual Studio 2015 Community <https://www.visualstudio.com/products/visual-studio-community-vs>`_.
+#. Install `Visual Studio 2017 Community <https://www.visualstudio.com/vs/community/>`_.
    The Visual C++ compiler is required, so make sure to select it during the customization step
    of the installation (C++ may not be installed by default).
 #. Install `CMake`_.

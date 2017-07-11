@@ -117,7 +117,7 @@ std::vector<ArrayXcd> KPM::calc_greens_vector(idx_t row, std::vector<idx_t> cons
     auto const size = model.hamiltonian().rows();
     auto const row_error = row < 0 || row > size;
     auto const col_error = std::any_of(cols.begin(), cols.end(),
-                                       [&](int col) { return col < 0 || col > size; });
+                                       [&](idx_t col) { return col < 0 || col > size; });
     if (row_error || col_error) {
         throw std::logic_error("KPM::calc_greens(i,j): invalid value for i or j.");
     }

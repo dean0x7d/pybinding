@@ -38,7 +38,7 @@ void basic(Collector& collect, Vector r0, Vector r1, Matrix const& h2,
     auto const num_moments = collect.size();
     assert(num_moments % 2 == 0);
 
-    constexpr auto zero = Collector::zero();
+    auto const zero = Collector::zero();
     for (auto n = 2; n <= num_moments / 2; ++n) {
         auto m2 = zero, m3 = zero;
         auto const size = opt_size ? map.optimal_size(n, num_moments) : h2.rows();
@@ -66,7 +66,7 @@ void interleaved(Collector& collect, Vector r0, Vector r1, Matrix const& h2,
 
     // Interleave moments `n` and `n + 1` for better data locality
     // Diagonal + interleaved computes 4 moments per iteration
-    constexpr auto zero = Collector::zero();
+    auto const zero = Collector::zero();
     for (auto n = idx_t{2}; n <= num_moments / 2; n += 2) {
         auto m2 = zero, m3 = zero, m4 = zero, m5 = zero;
         auto const max1 = opt_size ? map.index(n,     num_moments) : map.last_index();
