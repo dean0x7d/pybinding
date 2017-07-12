@@ -7,6 +7,11 @@ namespace cpb {
 
 void Model::add(Primitive new_primitive) {
     primitive = new_primitive;
+    for (auto i = lattice.ndim(); i < 3; ++i) {
+        if (primitive.size[i] != 1) {
+            throw std::logic_error("Primitive shape has more dimensions than the lattice");
+        }
+    }
     clear_structure();
 }
 

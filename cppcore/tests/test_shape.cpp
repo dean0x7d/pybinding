@@ -3,6 +3,11 @@
 #include "fixtures.hpp"
 using namespace cpb;
 
+TEST_CASE("Primitive") {
+    REQUIRE_THROWS_WITH(Model(lattice::square(), Primitive(2, 2, 2)),
+                        Catch::Contains("more dimensions than the lattice"));
+}
+
 TEST_CASE("FreeformShape", "[shape]") {
     auto const contains = [](CartesianArrayConstRef p) -> ArrayX<bool> { return p.x() > 0.5f; };
     auto const shape = FreeformShape(contains, {1, 1, 1}, {0.5f, 0.5f, 0.5f});
