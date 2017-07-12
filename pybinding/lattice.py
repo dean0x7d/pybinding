@@ -421,7 +421,9 @@ class Lattice:
 
                 return magic * sqrt(site_area / pi)
             else:
-                raise RuntimeError("Not implemented for 3D lattices")
+                magic = 0.18
+                average_vec_length = sum(np.linalg.norm(v) for v in lattice.vectors) / 3
+                return magic * average_vec_length
 
         def shortest_site_spacing(lattice):
             from scipy.spatial.distance import pdist
