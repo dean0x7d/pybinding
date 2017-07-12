@@ -2,6 +2,7 @@
 #include <complex>
 
 #include "Model.hpp"
+#include "detail/algorithm.hpp"
 using namespace cpb;
 
 namespace static_test_typelist {
@@ -33,4 +34,25 @@ TEST_CASE("Symmetry masks") {
             {1, 0, 0}, {1, 0, 1}, {1, 1, 0}, {1, 1, 1}
         }));
     }
+}
+
+TEST_CASE("sliced") {
+    auto const v = []{
+        auto result = std::vector<int>(10);
+        std::iota(result.begin(), result.end(), 0);
+        return result;
+    }();
+    REQUIRE_THAT(v, Catch::Equals(std::vector<int>{0, 1, 2, 3, 4, 5, 6, 7, 8, 9}));
+
+    auto vectors = std::vector<std::vector<int>>();
+    for (auto const& slice : sliced(v, 3)) {
+        auto tmp = std::vector<int>();
+        std::copy(slice.begin(), slice.end(), std::back_inserter(tmp));
+        vectors.push_back(tmp);
+    }
+    REQUIRE(vectors.size() == 4);
+    REQUIRE_THAT(vectors[0], Catch::Equals(std::vector<int>{0, 1, 2}));
+    REQUIRE_THAT(vectors[1], Catch::Equals(std::vector<int>{3, 4, 5}));
+    REQUIRE_THAT(vectors[2], Catch::Equals(std::vector<int>{6, 7, 8}));
+    REQUIRE_THAT(vectors[3], Catch::Equals(std::vector<int>{9}));
 }

@@ -218,12 +218,12 @@ struct HoppingBuffer {
           hoppings(size * unit_hopping.size()),
           pos1(size), pos2(size) {}
 
-    /// Replicate each value from the `unit_hopping` matrix `size` times
-    void reset_hoppings() {
+    /// Replicate each value from the `unit_hopping` matrix `num` times
+    void reset_hoppings(idx_t num) {
         auto start = idx_t{0};
         for (auto const& value : unit_hopping) {
-            hoppings.segment(start, size).setConstant(value);
-            start += size;
+            hoppings.segment(start, num).setConstant(value);
+            start += num;
         }
     }
 
@@ -269,8 +269,6 @@ void HamiltonianModifiers::apply_to_hoppings_impl(System const& system,
 
         auto buffer = HoppingBuffer<scalar_t>(hopping_family.energy, block.size());
         for (auto const coo_slice : sliced(block.coordinates(), buffer.size)) {
-            buffer.reset_hoppings();
-
             auto size = idx_t{0};
             for (auto const& coo : coo_slice) {
                 buffer.pos1[size] = system.positions[coo.row];
@@ -278,6 +276,7 @@ void HamiltonianModifiers::apply_to_hoppings_impl(System const& system,
                 ++size;
             }
 
+            buffer.reset_hoppings(size);
             for (auto const& modifier : hopping) {
                 modifier.apply(buffer.hoppings_ref(size), buffer.pos1.head(size),
                                buffer.pos2.head(size), hopping_name);
