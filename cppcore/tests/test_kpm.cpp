@@ -171,6 +171,18 @@ TEST_CASE("OptimizedHamiltonian reordering", "[kpm]") {
     }
 }
 
+TEST_CASE("OptimizedHamiltonian scaling") {
+    auto model = Model(graphene::monolayer(), shape::rectangle(0.6f, 0.8f));
+    auto oh = kpm::OptimizedHamiltonian(model.hamiltonian(), kpm::MatrixFormat::CSR, true);
+    auto bounds = kpm::Bounds(-12, 10); // ensures `scale.b != 0`
+    oh.optimize_for({0, 0}, bounds.scaling_factors());
+    auto scaled = oh.matrix().get<SparseMatrixX<float>>();
+
+    // Because `scale.b != 0` the scaled Hamiltonian matrix should get
+    // a non-zero diagonal even if the original matrix didn't have one.
+    REQUIRE(scaled.nonZeros() == model.hamiltonian().non_zeros() + model.hamiltonian().rows());
+}
+
 struct TestGreensResult {
     ArrayXcd g_ii, g_ij;
 

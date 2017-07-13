@@ -111,13 +111,6 @@ void OptimizedHamiltonian::create_reordered(Indices const& idx, Scale<> s) {
         // corresponding to the h2_row of the reordered matrix
         auto const row = index_queue[h2_row];
         h_view.for_each_in_row(row, [&](storage_idx_t col, scalar_t value) {
-            // A diagonal element may need to be inserted into the reordered matrix
-            // even if the original matrix doesn't have an element on the main diagonal
-            if (scale.b != 0 && !diagonal_inserted && col > row) {
-                h2.insert(h2_row, h2_row) = -scale.b * inverted_a;
-                diagonal_inserted = true;
-            }
-
             // This may be a new index, map it
             if (reorder_map[col] < 0) {
                 reorder_map[col] = static_cast<storage_idx_t>(index_queue.size());
@@ -136,6 +129,12 @@ void OptimizedHamiltonian::create_reordered(Indices const& idx, Scale<> s) {
 
             h2.insert(h2_row, h2_col) = h2_value;
         });
+
+        // A diagonal element may need to be inserted into the reordered matrix
+        // even if the original matrix doesn't have an element on the main diagonal
+        if (scale.b != 0 && !diagonal_inserted) {
+            h2.insert(h2_row, h2_row) = -scale.b * inverted_a;
+        }
 
         // Reached the end of a slice
         if (h2_row == slice_border_indices.back() - 1) {
