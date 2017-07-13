@@ -92,7 +92,7 @@ def changelog():
 
     with open("changelog.md") as file:
         log = file.read()
-    match = re.search(r"### ([\s\S]*?)\n###\s", log)
+    match = re.search(r"## ([\s\S]*?)\n##\s", log)
     return match.group(1) if match else ""
 
 
