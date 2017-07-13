@@ -33,7 +33,7 @@ test_script:
 deploy_script:
 - ps: |
     if ($env:APPVEYOR_REPO_TAG -eq "true") {
-      pip install -U -q wheel twine
+      conda install -q setuptools wheel twine
       cd $env:APPVEYOR_BUILD_FOLDER
       $env:PB_NATIVE_SIMD = "OFF"
       python setup.py bdist_wheel
