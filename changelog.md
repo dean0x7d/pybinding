@@ -1,6 +1,6 @@
 # Changelog
 
-## v0.9.4 | in development
+## v0.9.4 | 2017-07-13
 
 * Fixed issues with multi-orbital models: matrix onsite terms were not set correctly if all the
   elements on the main diagonal were zero ([#5](https://github.com/dean0x7d/pybinding/issues/5)),
