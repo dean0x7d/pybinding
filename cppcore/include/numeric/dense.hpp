@@ -180,7 +180,8 @@ private:
 public:
     CartesianArray() = default;
     CartesianArray(idx_t size) : x(size), y(size), z(size) {}
-    CartesianArray(ArrayXf const& x, ArrayXf const& y, ArrayXf const& z) : x(x), y(y), z(z) {}
+    CartesianArray(ArrayXf x, ArrayXf y, ArrayXf z)
+        : x(std::move(x)), y(std::move(y)), z(std::move(z)) {}
 
     CartesianRef operator[](idx_t i) { return {x[i], y[i], z[i]}; }
     Cartesian operator[](idx_t i) const { return {x[i], y[i], z[i]}; }
@@ -332,5 +333,28 @@ Vector slice(Vector const& v, Bools const& keep) {
     }
     return result;
 };
+
+/// Concatenate two 1D arrays/vectors
+template<class Vector>
+Vector concat(Ref<Vector const> v1, Ref<Vector const> v2) {
+    using std::begin; using std::end;
+    auto result = Vector(v1.size() + v2.size());
+    std::copy(begin(v1), end(v1), begin(result));
+    std::copy(begin(v2), end(v2), begin(result) + v1.size());
+    return result;
+}
+
+template<class Vector, typename R = Ref<Vector const>>
+Vector concat(Vector const& v1, Vector const& v2) {
+    return concat(R(v1), R(v2));
+}
+
+/// Concatenate two Cartesian arrays
+inline CartesianArray concat(CartesianArrayConstRef const& ca1,
+                             CartesianArrayConstRef const& ca2) {
+    return {concat(ca1.x(), ca2.x()),
+            concat(ca1.y(), ca2.y()),
+            concat(ca1.z(), ca2.z())};
+}
 
 } // namespace cpb

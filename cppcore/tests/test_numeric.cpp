@@ -50,3 +50,36 @@ TEST_CASE("Aligned size") {
     REQUIRE((num::aligned_size<std::complex<double>, 16>(2) == 2));
     REQUIRE((num::aligned_size<std::complex<float>, 32>(9) == 12));
 }
+
+TEST_CASE("concat") {
+    auto const x1 = ArrayXf::Constant(3, 1).eval();
+    auto const x2 = ArrayXf::LinSpaced(3, 2, 4).eval();
+    auto expected_x = ArrayXf(6);
+    expected_x << 1, 1, 1, 2, 3, 4;
+
+    auto const result_x = concat(x1, x2);
+    REQUIRE(result_x.isApprox(expected_x));
+
+    auto const y1 = ArrayXf::Constant(3, 2).eval();
+    auto const y2 = ArrayXf::LinSpaced(3, 3, 5).eval();
+    auto expected_y = ArrayXf(6);
+    expected_y << 2, 2, 2, 3, 4, 5;
+
+    auto const result_y = concat(y1, y2);
+    REQUIRE(result_y.isApprox(expected_y));
+
+    auto const z1 = ArrayXf::Constant(3, 0).eval();
+    auto const z2 = ArrayXf::Constant(3, -1).eval();
+    auto expected_z = ArrayXf(6);
+    expected_z << 0, 0, 0, -1, -1, -1;
+
+    auto const result_z = concat(z1, z2);
+    REQUIRE(result_z.isApprox(expected_z));
+
+    auto const r1 = CartesianArray(x1, y1, z1);
+    auto const r2 = CartesianArray(x2, y2, z2);
+    auto const result = concat(r1, r2);
+    REQUIRE(result.x.isApprox(expected_x));
+    REQUIRE(result.y.isApprox(expected_y));
+    REQUIRE(result.z.isApprox(expected_z));
+}
