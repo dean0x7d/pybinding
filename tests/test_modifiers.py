@@ -295,6 +295,23 @@ def test_hopping_energy():
     assert model.hamiltonian.dtype == np.complex128
 
 
+def test_site_generator():
+    """Generated some disordered sites"""
+    @pb.site_generator("New", energy=0.4)
+    def site_gen():
+        x = [10, 20, 30]
+        y = [1, 2, 3]
+        z = [0, -1, -2]
+        return x, y, z
+
+    model = pb.Model(graphene.monolayer(), graphene.hexagon_ac(1), site_gen)
+    s = model.system[model.system.x >= 10]
+    assert s.num_sites == 3
+    assert pytest.fuzzy_equal(s.x, [10, 20, 30])
+    assert pytest.fuzzy_equal(s.y, [1, 2, 3])
+    assert pytest.fuzzy_equal(s.z, [0, -1, -2])
+
+
 def test_hopping_generator():
     """Generated next-nearest hoppings should produce the same result as the builtin lattice"""
     from scipy.spatial import cKDTree

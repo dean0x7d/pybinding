@@ -6,6 +6,9 @@
 
 namespace cpb {
 
+/// Alternative CSR mapping of hopping IDs
+using HoppingCSR = SparseMatrixX<storage_idx_t>;
+
 /**
  A simple row and column index pair
  */
@@ -124,8 +127,11 @@ public:
     /// Remove sites for which `keep == false`
     void filter(VectorX<bool> const& keep);
 
+    /// Account for the addition of new sites (no new hoppings)
+    void add_sites(idx_t num_new_sites);
+
     /// Return the matrix in the CSR sparse matrix format
-    SparseMatrixX<storage_idx_t> tocsr() const;
+    HoppingCSR tocsr() const;
 
 private:
     idx_t num_sites; ///< number of lattice sites, i.e. the size of the square matrix

@@ -39,6 +39,21 @@ void extract_modifier_result(T& v, py::object const& o) {
 
 } // anonymous namespace
 
+template<class T>
+void init_site_generator(SiteGenerator& self, string_view name, T const& energy, py::object make) {
+    new (&self) SiteGenerator(
+        name, detail::canonical_onsite_energy(energy),
+        [make](CartesianArrayConstRef p, CompressedSublattices const& s, HoppingBlocks const& h) {
+            py::gil_scoped_acquire guard{};
+            auto result = make(p.x(), p.y(), p.z(), &s, &h);
+            auto t = py::reinterpret_borrow<py::tuple>(result);
+            return CartesianArray(t[0].cast<ArrayXf>(),
+                                  t[1].cast<ArrayXf>(),
+                                  t[2].cast<ArrayXf>());
+        }
+    );
+};
+
 void wrap_modifiers(py::module& m) {
     py::class_<SubIdRef>(m, "SubIdRef")
         .def_property_readonly("ids", [](SubIdRef const& s) { return arrayref(s.ids); })
@@ -68,6 +83,11 @@ void wrap_modifiers(py::module& m) {
                 extract_modifier_result<ArrayXf>(p.z(), t[2]);
             });
         });
+
+    py::class_<SiteGenerator>(m, "SiteGenerator")
+        .def("__init__", init_site_generator<std::complex<double>>)
+        .def("__init__", init_site_generator<VectorXd>)
+        .def("__init__", init_site_generator<MatrixXcd>);
 
     py::class_<HoppingGenerator>(m, "HoppingGenerator")
         .def("__init__", [](HoppingGenerator& self, std::string const& name,

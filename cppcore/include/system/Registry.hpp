@@ -64,6 +64,7 @@ void check_onsite_energy(MatrixXcd const& energy);
 /// Convert the onsite energy into the canonical format
 MatrixXcd canonical_onsite_energy(std::complex<double> energy);
 MatrixXcd canonical_onsite_energy(VectorXd const& energy);
+inline MatrixXcd canonical_onsite_energy(MatrixXcd const& energy) { return energy; }
 
 /// Check that the hopping energy matrix satisfies all the requirements
 void check_hopping_energy(MatrixXcd const& energy);

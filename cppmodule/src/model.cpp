@@ -12,6 +12,7 @@ void wrap_model(py::module& m) {
         .def("add", &Model::add | resolve<PositionModifier const&>())
         .def("add", &Model::add | resolve<OnsiteModifier const&>())
         .def("add", &Model::add | resolve<HoppingModifier const&>())
+        .def("add", &Model::add | resolve<SiteGenerator const&>())
         .def("add", &Model::add | resolve<HoppingGenerator const&>())
         .def("attach_lead", &Model::attach_lead)
         .def("set_wave_vector", &Model::set_wave_vector, "k"_a, R"(
@@ -22,6 +23,7 @@ void wrap_model(py::module& m) {
             k : array_like
                 Wave vector in reciprocal space.
         )")
+        .def_property_readonly("lattice", &Model::get_lattice)
         .def_property_readonly("system", &Model::system)
         .def_property_readonly("raw_hamiltonian", &Model::hamiltonian)
         .def_property_readonly("hamiltonian", [](Model const& self) {

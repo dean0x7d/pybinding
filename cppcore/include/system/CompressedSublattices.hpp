@@ -70,7 +70,7 @@ public:
                           ArrayXi const& orbital_counts);
 
     /// Start a new sublattice block or increment the site count for the existing block
-    void add(SiteID id, idx_t norb);
+    void add(SiteID id, idx_t norb, idx_t count = 1);
 
     /// Remove sites for which `keep == false`
     void filter(VectorX<bool> const& keep);

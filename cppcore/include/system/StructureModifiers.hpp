@@ -1,5 +1,6 @@
 #pragma once
-#include "Lattice.hpp"
+#include "CompressedSublattices.hpp"
+#include "HoppingBlocks.hpp"
 
 #include "numeric/dense.hpp"
 
@@ -46,6 +47,29 @@ struct SubIdRef {
 };
 
 /**
+ Introduces a new site family (with new sub_id)
+
+ This can be used to create new sites independent of the translations of the main unit cell
+ as define by the `Lattice` class. It's useful for disorder or terminating system edges with
+ atoms of a different element.
+ */
+class SiteGenerator {
+public:
+    using Function = std::function<
+        CartesianArray(CartesianArrayConstRef, CompressedSublattices const&, HoppingBlocks const&)
+    >;
+
+    std::string name; ///< friendly site family identifier
+    MatrixXcd energy; ///< onsite energy - also added to the site registry
+    Function make; ///< function which will generate the new site positions
+
+    SiteGenerator(string_view name, MatrixXcd const& energy, Function const& make)
+        : name(name), energy(energy), make(make) {}
+
+    explicit operator bool() const { return static_cast<bool>(make); }
+};
+
+/**
  Introduces a new hopping family (with new hop_id) via a list of index pairs
 
  This can be used to create new hoppings independent of the main Lattice definition.
@@ -77,12 +101,15 @@ void apply(PositionModifier const& m, Foundation& f);
 template<class M> void apply(M const&, System&) {}
 void apply(SiteStateModifier const& m, System& s);
 void apply(PositionModifier const& m, System& s);
+void apply(SiteGenerator const& g, System& s);
 void apply(HoppingGenerator const& g, System& s);
 
 template<class M> constexpr bool requires_system(M const&) { return false; }
+constexpr bool requires_system(SiteGenerator const&) { return true; }
 constexpr bool requires_system(HoppingGenerator const&) { return true; }
 
 template<class M> constexpr bool is_generator(M const&) { return false; }
+constexpr bool is_generator(SiteGenerator const&) { return true; }
 constexpr bool is_generator(HoppingGenerator const&) { return true; }
 
 /**

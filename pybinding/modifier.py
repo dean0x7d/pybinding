@@ -18,7 +18,7 @@ from .utils.misc import decorator_decorator
 
 __all__ = ['constant_potential', 'force_double_precision', 'force_complex_numbers',
            'hopping_energy_modifier', 'hopping_generator', 'onsite_energy_modifier',
-           'site_position_modifier', 'site_state_modifier']
+           'site_generator', 'site_position_modifier', 'site_state_modifier']
 
 
 def _process_modifier_args(args, keywords, requested_argnames):
@@ -453,6 +453,41 @@ def _make_generator(func, kind, name, energy, keywords):
             return func(*args, **kwargs)
 
     return Generator()
+
+
+@decorator_decorator
+def site_generator(name, energy):
+    """Introduce a new site family (with a new `sub_id`) via a list of site positions
+
+    This can be used to create new sites independent of the main :class:`Lattice` definition.
+    It's especially useful for creating disorder or terminating system edges with atoms of
+    a different element.
+
+    Parameters
+    ----------
+    name : string
+        Friendly identifier for the new site family.
+    energy : Union[float, complex, array_like]
+        Base hopping energy value -- scalar or matrix.
+
+    Notes
+    -----
+    The function parameters must be a combination of any number of the following:
+
+    x, y, z : np.ndarray
+        Lattice site position.
+    sublattices : CompressedSublattices
+        TBD
+    hoppings : Hoppings
+        TBD
+
+    The function must return:
+
+    Tuple[np.ndarray, np.ndarray, np.ndarray]
+        Tuple of (x, y, z) arrays which indicate the positions of the new sites.
+    """
+    return functools.partial(_make_generator, kind=_cpp.SiteGenerator,
+                             name=name, energy=energy, keywords="x, y, z, sublattices, hoppings")
 
 
 @decorator_decorator

@@ -47,7 +47,7 @@ void wrap_system(py::module& m) {
         });
 
     py::class_<HoppingBlocks>(m, "HoppingBlocks")
-        .def_property_readonly("nnz", [](HoppingBlocks const& hb) { return hb.nnz(); })
+        .def_property_readonly("nnz", &HoppingBlocks::nnz)
         .def("tocsr", [](HoppingBlocks const& hb) {
             auto type = py::module::import("pybinding.support.alias").attr("AliasCSRMatrix");
             return type(hb.tocsr(), "mapping"_a=hb.get_name_map());

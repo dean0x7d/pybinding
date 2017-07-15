@@ -12,11 +12,11 @@ CompressedSublattices::CompressedSublattices(ArrayXi const& alias_ids, ArrayXi c
     }
 }
 
-void CompressedSublattices::add(SiteID id, idx_t norb) {
+void CompressedSublattices::add(SiteID id, idx_t norb, idx_t count) {
     if (data.empty() || data.back().id != id) {
-        data.push_back({id, 1, static_cast<storage_idx_t>(norb)});
+        data.push_back({id, static_cast<storage_idx_t>(count), static_cast<storage_idx_t>(norb)});
     } else {
-        data.back().num_sites += 1;
+        data.back().num_sites += static_cast<storage_idx_t>(count);
     }
 }
 

@@ -73,8 +73,12 @@ void HoppingBlocks::filter(VectorX<bool> const& keep) {
     }
 }
 
-SparseMatrixX<storage_idx_t> HoppingBlocks::tocsr() const {
-    auto csr = SparseMatrixX<storage_idx_t>(num_sites, num_sites);
+void HoppingBlocks::add_sites(idx_t num_new_sites) {
+    num_sites += num_new_sites;
+}
+
+HoppingCSR HoppingBlocks::tocsr() const {
+    auto csr = HoppingCSR(num_sites, num_sites);
     csr.reserve(nnz());
     for (auto const& block : *this) {
         for (auto const& coo : block.coordinates()) {

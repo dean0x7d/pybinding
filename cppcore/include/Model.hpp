@@ -38,6 +38,7 @@ public: // add parameters
     void add(OnsiteModifier const& m);
     void add(HoppingModifier const& m);
 
+    void add(SiteGenerator const& g);
     void add(HoppingGenerator const& g);
 
     void set_wave_vector(Cartesian const& k);

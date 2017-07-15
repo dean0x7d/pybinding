@@ -72,6 +72,12 @@ void Model::add(HoppingModifier const& m) {
     clear_hamiltonian();
 }
 
+void Model::add(SiteGenerator const& g) {
+    structure_modifiers.emplace_back(g);
+    site_registry.register_family(g.name, g.energy);
+    clear_structure();
+}
+
 void Model::add(HoppingGenerator const& g) {
     structure_modifiers.emplace_back(g);
     hopping_registry.register_family(g.name, MatrixXcd::Constant(1, 1, g.energy));

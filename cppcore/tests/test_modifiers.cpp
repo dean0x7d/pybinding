@@ -177,6 +177,69 @@ TEST_CASE("HoppingEnergyModifier") {
     REQUIRE(h.non_zeros() == 0);
 }
 
+TEST_CASE("SiteGenerator") {
+    auto model = Model([]{
+        auto lattice = Lattice({1, 0, 0}, {0, 1, 0});
+        lattice.add_sublattice("A", {0, 0, 0});
+        lattice.add_sublattice("B", {0, 0, 0});
+        lattice.register_hopping_energy("t1", 1.0);
+        return lattice;
+    }());
+    REQUIRE_FALSE(model.is_complex());
+    REQUIRE(model.get_lattice().get_hoppings().size() == 1);
+    REQUIRE(model.system()->hopping_blocks.nnz() == 0);
+
+    SECTION("Errors") {
+        auto const noop = [](CartesianArrayConstRef, CompressedSublattices const&,
+                             HoppingBlocks const&) { return CartesianArray(); };
+
+        auto const complex_vector = MatrixXcd::Constant(1, 2, 2.0);
+        REQUIRE_THROWS_WITH(model.add(SiteGenerator("C", complex_vector, noop)),
+                            Catch::Contains("must be a real vector or a square matrix"));
+
+        auto const complex_matrix = MatrixXcd::Constant(2, 2, {1.0, 1.0});
+        REQUIRE_THROWS_WITH(model.add(SiteGenerator("C", complex_matrix, noop)),
+                            Catch::Contains("diagonal of the onsite hopping term must be real"));
+    }
+
+    SECTION("Structure") {
+        auto const energy = MatrixXcd::Constant(1, 1, 2.0);
+        model.add(SiteGenerator("C", energy, [](CartesianArrayConstRef,
+                                                CompressedSublattices const&,
+                                                HoppingBlocks const&) {
+            auto const size = 5;
+            auto x = ArrayXf::Constant(size, 1);
+            auto y = ArrayXf::LinSpaced(size, 1, 5);
+            auto z = ArrayXf::Constant(size, 0);
+            return CartesianArray(x, y, z);
+        }));
+
+        REQUIRE_FALSE(model.is_complex());
+        REQUIRE(model.get_lattice().get_sublattices().size() == 2);
+        REQUIRE(model.get_site_registry().size() == 3);
+        REQUIRE(model.system()->compressed_sublattices.alias_ids().size() == 3);
+        REQUIRE(model.system()->num_sites() == 7);
+
+        REQUIRE(model.system()->positions[0].isApprox(Cartesian{0, 0, 0}));
+        REQUIRE(model.system()->positions[1].isApprox(Cartesian{0, 0, 0}));
+        REQUIRE(model.system()->positions[2].isApprox(Cartesian{1, 1, 0}));
+        REQUIRE(model.system()->positions[3].isApprox(Cartesian{1, 2, 0}));
+        REQUIRE(model.system()->positions[4].isApprox(Cartesian{1, 3, 0}));
+        REQUIRE(model.system()->positions[5].isApprox(Cartesian{1, 4, 0}));
+        REQUIRE(model.system()->positions[6].isApprox(Cartesian{1, 5, 0}));
+
+        auto const names = model.get_site_registry().name_map();
+        auto const it = names.find("C");
+        REQUIRE(it != names.end());
+
+        auto const id = it->second;
+        auto const& cs = model.system()->compressed_sublattices;
+        REQUIRE(cs.alias_ids()[2] == id);
+        REQUIRE(cs.orbital_counts()[2] == 1);
+        REQUIRE(cs.site_counts()[2] == 5);
+    }
+}
+
 TEST_CASE("HoppingGenerator") {
     auto model = Model([]{
         auto lattice = Lattice({1, 0, 0}, {0, 1, 0});

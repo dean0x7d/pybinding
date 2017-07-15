@@ -132,7 +132,7 @@ class Lead:
             Color of the shaded area.
         """
         lead_spec = self.impl.spec
-        vectors = self.impl.system.lattice.vectors
+        vectors = self.lattice.vectors
         if len(lead_spec.shape.vertices) != 2 or len(vectors) != 2:
             raise RuntimeError("This only works for 2D systems")
 
