@@ -61,10 +61,9 @@ void apply(SiteGenerator const& g, System& s) {
 void apply(HoppingGenerator const& g, System& s) {
     detail::remove_invalid(s);
 
-    auto const sublattices = s.compressed_sublattices.decompressed();
-    auto const family_id = s.hopping_registry.id(g.name);
-    auto pairs = g.make(s.positions, {sublattices, s.site_registry.name_map()});
-    s.hopping_blocks.append(family_id, std::move(pairs.from), std::move(pairs.to));
+    auto pairs = g.make(s);
+    s.hopping_blocks.append(s.hopping_registry.id(g.name),
+                            std::move(pairs.from), std::move(pairs.to));
 }
 
 } // namespace cpb

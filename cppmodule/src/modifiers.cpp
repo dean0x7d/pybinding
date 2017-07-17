@@ -54,11 +54,23 @@ void init_site_generator(SiteGenerator& self, string_view name, T const& energy,
     );
 };
 
-void wrap_modifiers(py::module& m) {
-    py::class_<SubIdRef>(m, "SubIdRef")
-        .def_property_readonly("ids", [](SubIdRef const& s) { return arrayref(s.ids); })
-        .def_readonly("name_map", &SubIdRef::name_map);
+template<class T>
+void init_hopping_generator(HoppingGenerator& self, std::string const& name,
+                            T const& energy, py::object make) {
+    new (&self) HoppingGenerator(
+        name, detail::canonical_hopping_energy(energy),
+        [make](System const& s) {
+            py::gil_scoped_acquire guard{};
+            auto const& p = CartesianArrayConstRef(s.positions);
+            auto sites_type = py::module::import("pybinding.system").attr("_CppSites");
+            auto result = make(p.x(), p.y(), p.z(), sites_type(&s));
+            auto t = py::reinterpret_borrow<py::tuple>(result);
+            return HoppingGenerator::Result{t[0].cast<ArrayXi>(), t[1].cast<ArrayXi>()};
+        }
+    );
+}
 
+void wrap_modifiers(py::module& m) {
     py::class_<SiteStateModifier>(m, "SiteStateModifier")
         .def("__init__", [](SiteStateModifier& self, py::object apply, int min_neighbors) {
             new (&self) SiteStateModifier(
@@ -90,17 +102,8 @@ void wrap_modifiers(py::module& m) {
         .def("__init__", init_site_generator<MatrixXcd>);
 
     py::class_<HoppingGenerator>(m, "HoppingGenerator")
-        .def("__init__", [](HoppingGenerator& self, std::string const& name,
-                            std::complex<double> energy, py::object make) {
-            new (&self) HoppingGenerator(
-                name, energy,
-                [make](CartesianArray const& p, SubIdRef sub) {
-                    py::gil_scoped_acquire guard{};
-                    auto t = py::tuple(make(arrayref(p.x), arrayref(p.y), arrayref(p.z), sub));
-                    return HoppingGenerator::Result{t[0].cast<ArrayXi>(), t[1].cast<ArrayXi>()};
-                }
-            );
-        });
+        .def("__init__", init_hopping_generator<std::complex<double>>)
+        .def("__init__", init_hopping_generator<MatrixXcd>);
 
     py::class_<OnsiteModifier>(m, "OnsiteModifier")
         .def("__init__", [](OnsiteModifier& self, py::object apply,

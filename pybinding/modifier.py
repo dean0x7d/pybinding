@@ -12,7 +12,7 @@ import numpy as np
 from . import _cpp
 from .system import Sites
 from .support.inspect import get_call_signature
-from .support.alias import AliasArray, AliasIndex, SplitName
+from .support.alias import AliasIndex, SplitName
 from .support.deprecated import LoudDeprecationWarning
 from .utils.misc import decorator_decorator
 
@@ -39,9 +39,7 @@ def _process_modifier_args(args, keywords, requested_argnames):
         orbs = 1, 1
 
     def process(obj):
-        if isinstance(obj, _cpp.SubIdRef):
-            return AliasArray(obj.ids, obj.name_map)
-        elif isinstance(obj, str):
+        if isinstance(obj, str):
             return AliasIndex(SplitName(obj), shape, orbs)
         elif obj.size == shape[0]:
             obj.shape = shape
@@ -51,7 +49,7 @@ def _process_modifier_args(args, keywords, requested_argnames):
 
     kwargs = {k: process(v) for k, v in zip(keywords, args) if k in requested_argnames}
 
-    if "sites" in requested_argnames:
+    if "sites" in requested_argnames and "sites" not in kwargs:
         kwargs["sites"] = Sites((kwargs[k] for k in ("x", "y", "z")), kwargs["sub_id"])
 
     return kwargs
@@ -510,9 +508,9 @@ def hopping_generator(name, energy):
 
     x, y, z : np.ndarray
         Lattice site position.
-    sub_id : np.ndarray
-        Sublattice identifier: can be checked for equality with sublattice names
-        specified in :class:`.Lattice`.
+    sites : :class:`.Sites`
+        Information about sites families, positions and various utility functions.
+        See :class:`.Sites` for details.
 
     The function must return:
 
@@ -520,4 +518,4 @@ def hopping_generator(name, energy):
         Arrays of index pairs which form the new hoppings.
     """
     return functools.partial(_make_generator, kind=_cpp.HoppingGenerator,
-                             name=name, energy=energy, keywords="x, y, z, sub_id")
+                             name=name, energy=energy, keywords="x, y, z, sites")

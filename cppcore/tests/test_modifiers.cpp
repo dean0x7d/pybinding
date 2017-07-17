@@ -253,7 +253,7 @@ TEST_CASE("HoppingGenerator") {
     REQUIRE(model.system()->hopping_blocks.nnz() == 0);
 
     SECTION("Add real generator") {
-        model.add(HoppingGenerator("t2", 2.0, [](CartesianArray const&, SubIdRef) {
+        model.add(HoppingGenerator("t2", 2.0, [](System const&) {
             auto r = HoppingGenerator::Result{ArrayXi(1), ArrayXi(1)};
             r.from << 0;
             r.to   << 1;
@@ -273,7 +273,7 @@ TEST_CASE("HoppingGenerator") {
     }
 
     SECTION("Add complex generator") {
-        model.add(HoppingGenerator("t2", {0.0, 1.0}, [](CartesianArray const&, SubIdRef) {
+        model.add(HoppingGenerator("t2", std::complex<double>{0.0, 1.0}, [](System const&) {
             return HoppingGenerator::Result{ArrayXi(), ArrayXi()};
         }));
 
@@ -282,7 +282,7 @@ TEST_CASE("HoppingGenerator") {
     }
 
     SECTION("Upper triangular form should be preserved") {
-        model.add(HoppingGenerator("t2", 2.0, [](CartesianArray const&, SubIdRef) {
+        model.add(HoppingGenerator("t2", 2.0, [](System const&) {
             auto r = HoppingGenerator::Result{ArrayXi(2), ArrayXi(2)};
             r.from << 0, 1;
             r.to   << 1, 0;

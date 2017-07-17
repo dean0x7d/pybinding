@@ -190,7 +190,7 @@ cpb::HoppingModifier force_complex_numbers() {
 namespace generator {
 
 cpb::HoppingGenerator do_nothing_hopping(std::string const& name) {
-    return {name, 0, [](cpb::CartesianArray const&, SubIdRef) {
+    return {name, 0.0, [](System const&) {
         return HoppingGenerator::Result{ArrayXi{}, ArrayXi{}};
     }};
 }

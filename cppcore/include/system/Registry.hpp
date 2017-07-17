@@ -70,6 +70,7 @@ inline MatrixXcd canonical_onsite_energy(MatrixXcd const& energy) { return energ
 void check_hopping_energy(MatrixXcd const& energy);
 /// Convert the hopping energy into the canonical format
 MatrixXcd canonical_hopping_energy(std::complex<double> energy);
+inline MatrixXcd canonical_hopping_energy(MatrixXcd const& energy) { return energy; }
 
 } // namespace detail
 } // namespace cpb

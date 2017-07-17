@@ -80,7 +80,7 @@ void Model::add(SiteGenerator const& g) {
 
 void Model::add(HoppingGenerator const& g) {
     structure_modifiers.emplace_back(g);
-    hopping_registry.register_family(g.name, MatrixXcd::Constant(1, 1, g.energy));
+    hopping_registry.register_family(g.name, g.energy);
     clear_structure();
 }
 

@@ -39,14 +39,6 @@ public:
 };
 
 /**
- Helper class for passing sublattice information
- */
-struct SubIdRef {
-    ArrayX<storage_idx_t> const& ids;
-    std::unordered_map<std::string, storage_idx_t> name_map;
-};
-
-/**
  Introduces a new site family (with new sub_id)
 
  This can be used to create new sites independent of the translations of the main unit cell
@@ -82,14 +74,16 @@ public:
         ArrayXi from;
         ArrayXi to;
     };
-    using Function = std::function<Result(cpb::CartesianArray const&, SubIdRef)>;
+    using Function = std::function<Result(System const&)>;
 
     std::string name; ///< friendly hopping identifier - will be added to lattice registry
-    std::complex<double> energy; ///< hopping energy - also added to lattice registry
+    MatrixXcd energy; ///< hopping energy - also added to hopping registry
     Function make; ///< function which will generate the new hopping index pairs
 
-    HoppingGenerator(std::string const& name, std::complex<double> energy, Function const& make)
+    HoppingGenerator(string_view name, MatrixXcd const& energy, Function const& make)
         : name(name), energy(energy), make(make) {}
+    HoppingGenerator(string_view name, std::complex<double> energy, Function const& make)
+        : HoppingGenerator(name, MatrixXcd::Constant(1, 1, energy), make) {}
 
     explicit operator bool() const { return static_cast<bool>(make); }
 };
