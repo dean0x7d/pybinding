@@ -38,6 +38,14 @@ TEST_CASE("CompressedSublattices") {
     REQUIRE_THROWS_WITH(cs.start_index(4), Catch::Contains("invalid num_orbitals"));
 }
 
+TEST_CASE("HoppingBlocks") {
+    auto model = Model(lattice::square(), Primitive(6, 4));
+    auto const& hb = model.system()->hopping_blocks;
+
+    auto const neighbor_counts = hb.count_neighbors();
+    REQUIRE(neighbor_counts.sum() == 2 * 4 + 3 * 12 + 4 * 8);
+}
+
 TEST_CASE("to_hamiltonian_indices") {
     auto vec = [](std::initializer_list<storage_idx_t> const& init) -> VectorXi {
         auto v = VectorXi(static_cast<idx_t>(init.size()));

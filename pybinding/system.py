@@ -100,6 +100,10 @@ class System(Structure):
         """
         return self.impl.find_nearest(position, sublattice)
 
+    def count_neighbors(self):
+        """Return the number of neighbors for each site"""
+        return self.impl.hopping_blocks.count_neighbors()
+
     def to_hamiltonian_indices(self, system_idx):
         """Translate the given system index into its corresponding Hamiltonian indices
         

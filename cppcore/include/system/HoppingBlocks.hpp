@@ -113,6 +113,9 @@ public:
     /// This only includes the upper triangular part (i.e. does not include 2x for hermiticity).
     idx_t nnz() const;
 
+    /// Return the number of neighbors for each site
+    ArrayXi count_neighbors() const;
+
     /// Reserve space the given number of hoppings per family
     void reserve(ArrayXi const& counts);
 

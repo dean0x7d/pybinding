@@ -38,6 +38,17 @@ idx_t HoppingBlocks::nnz() const {
     });
 }
 
+ArrayXi HoppingBlocks::count_neighbors() const {
+    auto counts = ArrayXi::Zero(num_sites).eval();
+    for (auto const& block : blocks) {
+        for (auto const& coo : block) {
+            counts[coo.row] += 1;
+            counts[coo.col] += 1;
+        }
+    }
+    return counts;
+}
+
 void HoppingBlocks::reserve(ArrayXi const& counts) {
     assert(counts.size() <= static_cast<idx_t>(blocks.size()));
     for (auto i = idx_t{0}; i < counts.size(); ++i) {
