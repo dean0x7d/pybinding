@@ -41,12 +41,12 @@ void extract_modifier_result(T& v, py::object const& o) {
 
 template<class T>
 void init_site_generator(SiteGenerator& self, string_view name, T const& energy, py::object make) {
+    auto system_type = py::module::import("pybinding.system").attr("System");
     new (&self) SiteGenerator(
         name, detail::canonical_onsite_energy(energy),
-        [make](CartesianArrayConstRef p, CompressedSublattices const& s, HoppingBlocks const& h) {
+        [make, system_type](System const& s) {
             py::gil_scoped_acquire guard{};
-            auto result = make(p.x(), p.y(), p.z(), &s, &h);
-            auto t = py::reinterpret_borrow<py::tuple>(result);
+            auto t = make(system_type(&s)).cast<py::tuple>();
             return CartesianArray(t[0].cast<ArrayXf>(),
                                   t[1].cast<ArrayXf>(),
                                   t[2].cast<ArrayXf>());
@@ -57,14 +57,12 @@ void init_site_generator(SiteGenerator& self, string_view name, T const& energy,
 template<class T>
 void init_hopping_generator(HoppingGenerator& self, std::string const& name,
                             T const& energy, py::object make) {
+    auto system_type = py::module::import("pybinding.system").attr("System");
     new (&self) HoppingGenerator(
         name, detail::canonical_hopping_energy(energy),
-        [make](System const& s) {
+        [make, system_type](System const& s) {
             py::gil_scoped_acquire guard{};
-            auto const& p = CartesianArrayConstRef(s.positions);
-            auto sites_type = py::module::import("pybinding.system").attr("_CppSites");
-            auto result = make(p.x(), p.y(), p.z(), sites_type(&s));
-            auto t = py::reinterpret_borrow<py::tuple>(result);
+            auto t = make(system_type(&s)).cast<py::tuple>();
             return HoppingGenerator::Result{t[0].cast<ArrayXi>(), t[1].cast<ArrayXi>()};
         }
     );

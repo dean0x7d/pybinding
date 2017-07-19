@@ -50,7 +50,7 @@ void apply(PositionModifier const& m, System& s) {
 void apply(SiteGenerator const& g, System& s) {
     detail::remove_invalid(s);
 
-    auto const new_positions = g.make(s.positions, s.compressed_sublattices, s.hopping_blocks);
+    auto const new_positions = g.make(s);
     auto const norb = g.energy.rows();
     auto const nsites = new_positions.size();
     s.compressed_sublattices.add(s.site_registry.id(g.name), norb, nsites);

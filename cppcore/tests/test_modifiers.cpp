@@ -190,8 +190,7 @@ TEST_CASE("SiteGenerator") {
     REQUIRE(model.system()->hopping_blocks.nnz() == 0);
 
     SECTION("Errors") {
-        auto const noop = [](CartesianArrayConstRef, CompressedSublattices const&,
-                             HoppingBlocks const&) { return CartesianArray(); };
+        auto const noop = [](System const&) { return CartesianArray(); };
 
         auto const complex_vector = MatrixXcd::Constant(1, 2, 2.0);
         REQUIRE_THROWS_WITH(model.add(SiteGenerator("C", complex_vector, noop)),
@@ -204,9 +203,7 @@ TEST_CASE("SiteGenerator") {
 
     SECTION("Structure") {
         auto const energy = MatrixXcd::Constant(1, 1, 2.0);
-        model.add(SiteGenerator("C", energy, [](CartesianArrayConstRef,
-                                                CompressedSublattices const&,
-                                                HoppingBlocks const&) {
+        model.add(SiteGenerator("C", energy, [](System const&) {
             auto const size = 5;
             auto x = ArrayXf::Constant(size, 1);
             auto y = ArrayXf::LinSpaced(size, 1, 5);

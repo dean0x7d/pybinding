@@ -47,9 +47,7 @@ public:
  */
 class SiteGenerator {
 public:
-    using Function = std::function<
-        CartesianArray(CartesianArrayConstRef, CompressedSublattices const&, HoppingBlocks const&)
-    >;
+    using Function = std::function<CartesianArray(System const&)>;
 
     std::string name; ///< friendly site family identifier
     MatrixXcd energy; ///< onsite energy - also added to the site registry

@@ -27,32 +27,39 @@ def _process_modifier_args(args, keywords, requested_argnames):
     Also process any special args like 'sub_id', 'hop_id' and 'sites'.
     """
     prime_arg = args[0]
-    if prime_arg.ndim > 1:
-        # Move axis so that sites are first -- makes a nicer modifier interface
-        norb1, norb2, nsites = prime_arg.shape
-        prime_arg = np.moveaxis(prime_arg, 2, 0)
-        args = [prime_arg] + list(args[1:])
-        shape = nsites, 1, 1
-        orbs = norb1, norb2
-    else:
-        shape = prime_arg.shape
-        orbs = 1, 1
+    if isinstance(prime_arg, np.ndarray):
+        if prime_arg.ndim > 1:
+            # Move axis so that sites are first -- makes a nicer modifier interface
+            norb1, norb2, nsites = prime_arg.shape
+            prime_arg = np.moveaxis(prime_arg, 2, 0)
+            args = [prime_arg] + list(args[1:])
+            shape = nsites, 1, 1
+            orbs = norb1, norb2
+        else:
+            shape = prime_arg.shape
+            orbs = 1, 1
 
     def process(obj):
         if isinstance(obj, str):
             return AliasIndex(SplitName(obj), shape, orbs)
-        elif obj.size == shape[0]:
+        elif isinstance(obj, np.ndarray) and obj.size == shape[0]:
             obj.shape = shape
             return obj
         else:
             return obj
 
-    kwargs = {k: process(v) for k, v in zip(keywords, args) if k in requested_argnames}
+    kwargs = dict(zip(keywords, args))
+    requested_kwargs = {k: process(v) for k, v in kwargs.items()
+                        if k in requested_argnames}
 
     if "sites" in requested_argnames and "sites" not in kwargs:
-        kwargs["sites"] = Sites((kwargs[k] for k in ("x", "y", "z")), kwargs["sub_id"])
+        requested_kwargs["sites"] = Sites((kwargs[k] for k in ("x", "y", "z")), kwargs["sub_id"])
 
-    return kwargs
+    if "system" in keywords:
+        requested_kwargs.update({p: getattr(kwargs["system"], p) for p in "xyz"
+                                 if p in requested_argnames})
+
+    return requested_kwargs
 
 
 def _check_modifier_spec(func, keywords, has_sites=False):
@@ -474,10 +481,8 @@ def site_generator(name, energy):
 
     x, y, z : np.ndarray
         Lattice site position.
-    sublattices : CompressedSublattices
-        TBD
-    hoppings : Hoppings
-        TBD
+    system : :class:`.System`
+        Structural data of the model constructed so far. See :class:`.System` for details.
 
     The function must return:
 
@@ -485,7 +490,7 @@ def site_generator(name, energy):
         Tuple of (x, y, z) arrays which indicate the positions of the new sites.
     """
     return functools.partial(_make_generator, kind=_cpp.SiteGenerator,
-                             name=name, energy=energy, keywords="x, y, z, sublattices, hoppings")
+                             name=name, energy=energy, keywords="system, x, y, z")
 
 
 @decorator_decorator
@@ -508,9 +513,8 @@ def hopping_generator(name, energy):
 
     x, y, z : np.ndarray
         Lattice site position.
-    sites : :class:`.Sites`
-        Information about sites families, positions and various utility functions.
-        See :class:`.Sites` for details.
+    system : :class:`.System`
+        Structural data of the model constructed so far. See :class:`.System` for details.
 
     The function must return:
 
@@ -518,4 +522,4 @@ def hopping_generator(name, energy):
         Arrays of index pairs which form the new hoppings.
     """
     return functools.partial(_make_generator, kind=_cpp.HoppingGenerator,
-                             name=name, energy=energy, keywords="x, y, z, sites")
+                             name=name, energy=energy, keywords="system, x, y, z")
