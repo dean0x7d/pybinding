@@ -334,6 +334,60 @@ def test_hopping_generator():
     expected = pb.Model(graphene.monolayer(2), graphene.hexagon_ac(1))
     assert pytest.fuzzy_equal(model.hamiltonian, expected.hamiltonian)
 
+    @pb.hopping_generator("t_new", energy=1.0)
+    def bad_generator():
+        """Different array lengths"""
+        return [0, 1, 2], [0, 1]
+
+    model = pb.Model(graphene.monolayer(), pb.primitive(3, 3), bad_generator)
+    with pytest.raises(RuntimeError) as excinfo:
+        model.eval()
+    assert "the number of `from` and `to` indices must be equal" in str(excinfo.value)
+
+
+def test_site_and_hopping_interaction():
+    """Add a new row of sites and connect them just like the rest of the lattice"""
+    d = 1.0
+    v = 1.5
+    t = 1.0
+
+    def square_lattice():
+        lat = pb.Lattice(a1=[d, 0], a2=[0, d])
+        lat.add_sublattices(("A", [0, 0], v))
+        lat.add_hoppings(([0, 1], "A", "A", t),
+                         ([1, 0], "A", "A", t))
+        return lat
+
+    @pb.site_generator(name="B", energy=v)
+    def edge_sites(system):
+        edge_atoms = system.count_neighbors() < 4
+        x, y, z = (v[edge_atoms] for v in system.positions)
+
+        top_edge_only = np.isclose(y, y.max())
+        x, y, z = (v[top_edge_only] for v in (x, y, z))
+
+        y += d
+        return x, y, z
+
+    @pb.hopping_generator(name="t_edge", energy=t)
+    def edge_hoppings(system, y):
+        new_sites = system.sub == "B"
+        edge_atoms = np.logical_and(system.sub != "B", system.count_neighbors() < 4)
+        top_edge_only = np.logical_and(edge_atoms, np.isclose(y, y[edge_atoms].max()))
+        return new_sites, top_edge_only
+
+    @pb.hopping_generator(name="t_edge2", energy=t)
+    def edge_hoppings2(system):
+        edge_idx = np.flatnonzero(system.sub == "B")
+        to_idx = edge_idx[1:]
+        from_idx = edge_idx[:-1]
+        return to_idx, from_idx
+
+    model = pb.Model(square_lattice(), pb.primitive(6, 4),
+                     edge_sites, edge_hoppings, edge_hoppings2)
+    expected = pb.Model(square_lattice(), pb.primitive(6, 5))
+    assert pytest.fuzzy_equal(model.hamiltonian, expected.hamiltonian)
+
 
 def test_wrapper_return():
     """Make sure the wrapper return type conversion is working"""

@@ -418,7 +418,7 @@ def force_complex_numbers():
     return f
 
 
-def _make_generator(func, kind, name, energy, keywords):
+def _make_generator(func, kind, name, energy, keywords, process_result=lambda x, *_: x):
     """Turn a regular function into a generator of the desired kind
 
     Parameters
@@ -429,6 +429,8 @@ def _make_generator(func, kind, name, energy, keywords):
         Modifier base class.
     keywords : str
         String of comma separated names: the expected arguments of a modifier function.
+    process_result : Callable
+        Apply additional processing on the generator result
     """
     keywords = [word.strip() for word in keywords.split(",")]
     _check_modifier_spec(func, keywords)
@@ -436,7 +438,8 @@ def _make_generator(func, kind, name, energy, keywords):
 
     def generator_func(*args):
         requested_kwargs = _process_modifier_args(args, keywords, requested_argnames)
-        return func(**requested_kwargs)
+        result = func(**requested_kwargs)
+        return process_result(result, *args)
 
     class Generator(kind):
         callsig = getattr(func, 'callsig', None)
@@ -519,7 +522,16 @@ def hopping_generator(name, energy):
     The function must return:
 
     Tuple[np.ndarray, np.ndarray]
-        Arrays of index pairs which form the new hoppings.
+        A pair of arrays of indices which form the new hoppings.
     """
-    return functools.partial(_make_generator, kind=_cpp.HoppingGenerator,
-                             name=name, energy=energy, keywords="system, x, y, z")
+    def process_result(result, system):
+        def process(v):
+            v = np.asarray(v)
+            if v.dtype == np.bool_ and v.size == system.num_sites:
+                return np.flatnonzero(v)
+            else:
+                return v
+        return tuple(process(v) for v in result)
+
+    return functools.partial(_make_generator, kind=_cpp.HoppingGenerator, name=name, energy=energy,
+                             process_result=process_result, keywords="system, x, y, z")

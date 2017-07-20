@@ -57,7 +57,11 @@ void HoppingBlocks::reserve(ArrayXi const& counts) {
 }
 
 void HoppingBlocks::append(HopID family_id, ArrayXi&& rows, ArrayXi&& cols) {
-    assert(rows.size() == cols.size());
+    if (rows.size() != cols.size()) {
+        throw std::runtime_error("When generating hoppings, the number of "
+                                 "`from` and `to` indices must be equal");
+    }
+
     auto& block = blocks[family_id.as<size_t>()];
     block.reserve(block.size() + rows.size());
 
