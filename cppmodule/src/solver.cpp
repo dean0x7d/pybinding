@@ -18,9 +18,8 @@ void wrap_solver(py::module& m) {
 #ifdef CPB_USE_FEAST
     auto const feast_defaults = FEASTConfig();
     py::class_<Solver<FEAST>, BaseSolver>(m, "FEAST")
-        .def("__init__", [](Solver<FEAST>& self, Model const& model,
-                            std::pair<float, float> energy, int size_guess,
-                            bool recycle, bool verbose) {
+        .def(py::init([](Model const& model, std::pair<float, float> energy, int size_guess,
+                         bool recycle, bool verbose) {
                  FEASTConfig config;
                  config.energy_min = energy.first;
                  config.energy_max = energy.second;
@@ -28,8 +27,7 @@ void wrap_solver(py::module& m) {
                  config.recycle_subspace = recycle;
                  config.is_verbose = verbose;
 
-                 new (&self) Solver<FEAST>(model, config);
-
+                 return new Solver<FEAST>(model, config);
              },
              "model"_a, "energy_range"_a, "initial_size_guess"_a,
              "recycle_subspace"_a=feast_defaults.recycle_subspace,

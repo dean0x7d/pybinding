@@ -10,13 +10,13 @@ void wrap_shape(py::module& m) {
 
     using RefX = Eigen::Ref<Eigen::ArrayXf const>;
     py::class_<Shape>(m, "Shape")
-        .def("__init__", [](Shape& s, Shape::Vertices const& vertices, py::object f) {
+        .def(py::init([](Shape::Vertices const& vertices, py::object f) {
             auto contains = [f](CartesianArrayConstRef p) {
                 py::gil_scoped_acquire guard;
                 return f(p.x(), p.y(), p.z()).cast<ArrayX<bool>>();
             };
-            new (&s) Shape(vertices, contains);
-        })
+            return new Shape(vertices, contains);
+        }))
         .def("contains", [](Shape const& s, RefX x, RefX y, RefX z) {
             return s.contains({x, y, z});
         }, "x"_a, "y"_a, "z"_a, R"(
@@ -39,13 +39,13 @@ void wrap_shape(py::module& m) {
         .def(py::init<Polygon::Vertices const&>());
 
     py::class_<FreeformShape, Shape>(m, "FreeformShape")
-         .def("__init__", [](FreeformShape& s, py::object f, Cartesian width, Cartesian center) {
+         .def(py::init([](py::object f, Cartesian width, Cartesian center) {
              auto contains = [f](CartesianArrayConstRef p) {
                  py::gil_scoped_acquire guard;
                  return f(p.x(), p.y(), p.z()).cast<ArrayX<bool>>();
              };
-             new (&s) FreeformShape(contains, width, center);
-         });
+             return new FreeformShape(contains, width, center);
+         }));
 
     py::class_<TranslationalSymmetry>(m, "TranslationalSymmetry")
         .def(py::init<float, float, float>());

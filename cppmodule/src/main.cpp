@@ -40,12 +40,12 @@ PYBIND11_MODULE(_pybinding, m) {
     m.def("get_cpu_frequency", MKL_Get_Cpu_Frequency);
     // The max threads count may change later but at init time it's usually
     // equal to the physical core count which is useful information.
-    m.attr("physical_core_count") = py::cast(MKL_Get_Max_Threads());
+    m.attr("physical_core_count") = MKL_Get_Max_Threads();
 #endif
 
 #ifdef CPB_VERSION
-    m.attr("__version__") = py::str(CPB_VERSION);
+    m.attr("__version__") = CPB_VERSION;
 #else
-    m.attr("__version__") = py::str("dev");
+    m.attr("__version__") = "dev";
 #endif
 }

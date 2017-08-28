@@ -40,9 +40,9 @@ void extract_modifier_result(T& v, py::object const& o) {
 } // anonymous namespace
 
 template<class T>
-void init_site_generator(SiteGenerator& self, string_view name, T const& energy, py::object make) {
+SiteGenerator* init_site_generator(string_view name, T const& energy, py::object make) {
     auto system_type = py::module::import("pybinding.system").attr("System");
-    new (&self) SiteGenerator(
+    return new SiteGenerator(
         name, detail::canonical_onsite_energy(energy),
         [make, system_type](System const& s) {
             py::gil_scoped_acquire guard{};
@@ -55,10 +55,10 @@ void init_site_generator(SiteGenerator& self, string_view name, T const& energy,
 };
 
 template<class T>
-void init_hopping_generator(HoppingGenerator& self, std::string const& name,
-                            T const& energy, py::object make) {
+HoppingGenerator* init_hopping_generator(std::string const& name, T const& energy,
+                                         py::object make) {
     auto system_type = py::module::import("pybinding.system").attr("System");
-    new (&self) HoppingGenerator(
+    return new HoppingGenerator(
         name, detail::canonical_hopping_energy(energy),
         [make, system_type](System const& s) {
             py::gil_scoped_acquire guard{};
@@ -70,8 +70,8 @@ void init_hopping_generator(HoppingGenerator& self, std::string const& name,
 
 void wrap_modifiers(py::module& m) {
     py::class_<SiteStateModifier>(m, "SiteStateModifier")
-        .def("__init__", [](SiteStateModifier& self, py::object apply, int min_neighbors) {
-            new (&self) SiteStateModifier(
+        .def(py::init([](py::object apply, int min_neighbors) {
+            return new SiteStateModifier(
                 [apply](Eigen::Ref<ArrayX<bool>> state, CartesianArrayConstRef p, string_view s) {
                     py::gil_scoped_acquire guard{};
                     auto result = apply(
@@ -81,32 +81,31 @@ void wrap_modifiers(py::module& m) {
                 },
                 min_neighbors
             );
-        }, "apply"_a, "min_neighbors"_a=0);
+        }), "apply"_a, "min_neighbors"_a=0);
 
     py::class_<PositionModifier>(m, "PositionModifier")
-        .def("__init__", [](PositionModifier& self, py::object apply) {
-            new (&self) PositionModifier([apply](CartesianArrayRef p, string_view sub) {
+        .def(py::init([](py::object apply) {
+            return new PositionModifier([apply](CartesianArrayRef p, string_view sub) {
                 py::gil_scoped_acquire guard{};
                 auto t = py::tuple(apply(arrayref(p.x()), arrayref(p.y()), arrayref(p.z()), sub));
                 extract_modifier_result<ArrayXf>(p.x(), t[0]);
                 extract_modifier_result<ArrayXf>(p.y(), t[1]);
                 extract_modifier_result<ArrayXf>(p.z(), t[2]);
             });
-        });
+        }));
 
     py::class_<SiteGenerator>(m, "SiteGenerator")
-        .def("__init__", init_site_generator<std::complex<double>>)
-        .def("__init__", init_site_generator<VectorXd>)
-        .def("__init__", init_site_generator<MatrixXcd>);
+        .def(py::init(&init_site_generator<std::complex<double>>))
+        .def(py::init(&init_site_generator<VectorXd>))
+        .def(py::init(&init_site_generator<MatrixXcd>));
 
     py::class_<HoppingGenerator>(m, "HoppingGenerator")
-        .def("__init__", init_hopping_generator<std::complex<double>>)
-        .def("__init__", init_hopping_generator<MatrixXcd>);
+        .def(py::init(&init_hopping_generator<std::complex<double>>))
+        .def(py::init(&init_hopping_generator<MatrixXcd>));
 
     py::class_<OnsiteModifier>(m, "OnsiteModifier")
-        .def("__init__", [](OnsiteModifier& self, py::object apply,
-                            bool is_complex, bool is_double) {
-            new (&self) OnsiteModifier(
+        .def(py::init([](py::object apply, bool is_complex, bool is_double) {
+            return new OnsiteModifier(
                 [apply](ComplexArrayRef energy, CartesianArrayConstRef p, string_view sublattice) {
                     py::gil_scoped_acquire guard{};
                     auto result = apply(
@@ -116,14 +115,13 @@ void wrap_modifiers(py::module& m) {
                 },
                 is_complex, is_double
             );
-        }, "apply"_a, "is_complex"_a=false, "is_double"_a=false)
+        }), "apply"_a, "is_complex"_a=false, "is_double"_a=false)
         .def_readwrite("is_complex", &OnsiteModifier::is_complex)
         .def_readwrite("is_double", &OnsiteModifier::is_double);
 
     py::class_<HoppingModifier>(m, "HoppingModifier")
-        .def("__init__", [](HoppingModifier& self, py::object apply,
-                            bool is_complex, bool is_double) {
-            new (&self) HoppingModifier(
+        .def(py::init([](py::object apply, bool is_complex, bool is_double) {
+            return new HoppingModifier(
                 [apply](ComplexArrayRef energy, CartesianArrayConstRef p1,
                         CartesianArrayConstRef p2, string_view hopping_family) {
                     py::gil_scoped_acquire guard{};
@@ -135,7 +133,7 @@ void wrap_modifiers(py::module& m) {
                 },
                 is_complex, is_double
             );
-        }, "apply"_a, "is_complex"_a=false, "is_double"_a=false)
+        }), "apply"_a, "is_complex"_a=false, "is_double"_a=false)
         .def_readwrite("is_complex", &HoppingModifier::is_complex)
         .def_readwrite("is_double", &HoppingModifier::is_double);
 }

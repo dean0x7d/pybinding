@@ -104,14 +104,16 @@ void wrap_greens(py::module& m) {
     wrap_kpm_strategy(m, "kpm");
 
     py::class_<kpm::OptimizedHamiltonian>(m, "OptimizedHamiltonian")
-        .def("__init__", [](kpm::OptimizedHamiltonian& self, Hamiltonian const& h, int index) {
-            new (&self) kpm::OptimizedHamiltonian(h, kpm::MatrixFormat::CSR, true);
+        .def(py::init([](Hamiltonian const& h, int index) {
+            auto self = new kpm::OptimizedHamiltonian(h, kpm::MatrixFormat::CSR, true);
 
             auto indices = std::vector<idx_t>(h.rows());
             std::iota(indices.begin(), indices.end(), 0);
             auto bounds = kpm::Bounds(h, kpm::Config{}.lanczos_precision);
-            self.optimize_for({index, indices}, bounds.scaling_factors());
-        })
+            self->optimize_for({index, indices}, bounds.scaling_factors());
+
+            return self;
+        }))
         .def_property_readonly("matrix", [](kpm::OptimizedHamiltonian const& self) {
             return var::apply_visitor(ReturnMatrix{}, self.matrix());
         })

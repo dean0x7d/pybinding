@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.1)
-project(pybinding_cppcore)
+project(pybinding_cppcore CXX)
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/cmake")
 
