@@ -1,5 +1,11 @@
 # Changelog
 
+## v0.9.5 | In development
+
+* Fixed installation errors due to the encoding of the `changelog.md` file 
+  ([#7](https://github.com/dean0x7d/pybinding/issues/7)).
+
+
 ## v0.9.4 | 2017-07-13
 
 * Fixed issues with multi-orbital models: matrix onsite terms were not set correctly if all the

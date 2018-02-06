@@ -90,7 +90,7 @@ def changelog():
     if not os.path.exists("changelog.md"):
         return ""
 
-    with open("changelog.md") as file:
+    with open("changelog.md", encoding="utf-8") as file:
         log = file.read()
     match = re.search(r"## ([\s\S]*?)\n##\s", log)
     return match.group(1) if match else ""
