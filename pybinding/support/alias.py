@@ -148,9 +148,9 @@ class AliasIndex:
     >>> list(l[ai != "B"])
     [1, 2, 3]
     >>> np.logical_and([True, False, True], ai == "A")
-    array([ True, False,  True], dtype=bool)
+    array([ True, False,  True])
     >>> np.logical_and([True, False, True], ai != "A")
-    array([False, False, False], dtype=bool)
+    array([False, False, False])
     >>> bool(ai == "A")
     True
     >>> bool(ai != "A")
