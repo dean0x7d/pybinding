@@ -292,14 +292,14 @@ class Lattice:
         Examples
         --------
         >>> lat = Lattice(a1=[0, 1], a2=[0.5, 0.5])
-        >>> np.allclose(lat.reciprocal_vectors(), [[4*pi, 0, 0], [-2*pi, 2*pi, 0]])
+        >>> np.allclose(lat.reciprocal_vectors(), [[-2*pi, 2*pi, 0], [4*pi, 0, 0]])
         True
         """
         n = self.ndim
         mat = np.column_stack(self.vectors)[:n]
         mat = 2 * pi * np.linalg.inv(mat).T
         mat = np.vstack([mat, np.zeros(shape=(3 - n, n))])
-        return [v.squeeze() for v in reversed(np.hsplit(mat, n))]
+        return [v.squeeze() for v in np.hsplit(mat, n)]
 
     def brillouin_zone(self):
         """Return a list of vertices which form the Brillouin zone (1D and 2D only)

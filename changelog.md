@@ -15,6 +15,9 @@
 
 * Dropped support for Python 3.5. You must have Python 3.6 or newer to install this version.
 
+* Fixed reversed order of `Lattice.reciprocal_vectors()`: it should be `a_n * b_n = 2pi` but it was
+  accidentally `a_n * b_{N-n} = 2pi`.
+
 
 ## v0.9.4 | 2017-07-13
 
