@@ -1,6 +1,9 @@
 import numpy as np
-from matplotlib.collections import Collection, allow_rasterization
-
+try:
+    from matplotlib.collections import Collection, allow_rasterization
+except ImportError:
+    from matplotlib.collections import Collection
+    from matplotlib.artist import allow_rasterization
 
 # noinspection PyAbstractClass
 class CircleCollection(Collection):
