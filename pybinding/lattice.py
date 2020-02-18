@@ -292,7 +292,7 @@ class Lattice:
         Examples
         --------
         >>> lat = Lattice(a1=[0, 1], a2=[0.5, 0.5])
-        >>> np.allclose(lat.reciprocal_vectors(), [[4*pi, 0, 0], [-2*pi, 2*pi, 0]])
+        >>> np.allclose(lat.reciprocal_vectors(), [[-2*pi, 2*pi, 0], [4*pi, 0, 0]])
         True
         """
         n = self.ndim
