@@ -118,7 +118,7 @@ void populate_system(System& system, Foundation const& foundation) {
             if (neighbor_index < 0) { return; } // invalid neighbor
 
             if (!hopping.is_conjugate) { // only make half the matrix, other half is the conjugate
-                system.hopping_blocks.add(hopping.family_id, index, neighbor_index);
+                system.hopping_blocks.add(hopping.family_id, index, neighbor_index, hopping.is_conjugate);
             }
         });
     }
@@ -145,7 +145,7 @@ void populate_boundaries(System& system, Foundation const& foundation,
                 auto const neighbor_index = finalized_indices[neighbor];
                 if (neighbor_index < 0) { return; }
 
-                boundary.hopping_blocks.add(hopping.family_id, index, neighbor_index);
+                boundary.hopping_blocks.add(hopping.family_id, index, neighbor_index, hopping.is_conjugate);
             });
         }
 

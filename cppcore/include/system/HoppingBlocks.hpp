@@ -15,11 +15,19 @@ using HoppingCSR = SparseMatrixX<storage_idx_t>;
 struct COO {
     storage_idx_t row;
     storage_idx_t col;
+    bool is_conjugate;
 
     COO() = default;
+
     COO(idx_t row, idx_t col)
-        : row(static_cast<storage_idx_t>(row)),
-          col(static_cast<storage_idx_t>(col)) {}
+            : row(static_cast<storage_idx_t>(row)),
+              col(static_cast<storage_idx_t>(col)),
+              is_conjugate(false) {}
+
+    COO(idx_t row, idx_t col, bool is_conjugate)
+            : row(static_cast<storage_idx_t>(row)),
+              col(static_cast<storage_idx_t>(col)),
+              is_conjugate(is_conjugate) {}
 
     friend bool operator==(COO const& a, COO const& b) {
         return std::tie(a.row, a.col) == std::tie(b.row, b.col);
@@ -120,8 +128,8 @@ public:
     void reserve(ArrayXi const& counts);
 
     /// Add a single coordinate pair to the given family block
-    void add(HopID family_id, idx_t row, idx_t col) {
-        blocks[family_id.as<size_t>()].push_back({row, col});
+    void add(HopID family_id, idx_t row, idx_t col, bool is_conjugate) {
+        blocks[family_id.as<size_t>()].push_back({row, col, is_conjugate});
     }
 
     /// Append a range of coordinates to the given family block

@@ -42,7 +42,7 @@ Structure::Structure(Foundation const& foundation, Spec const& lead)
             site.for_each_neighbor([&](Site neighbor, Hopping hopping) {
                 auto const neighbor_index = lead_index(finalized_indices[neighbor]);
                 if (neighbor_index >= 0 && !hopping.is_conjugate) {
-                    system.hopping_blocks.add(hopping.family_id, index, neighbor_index);
+                    system.hopping_blocks.add(hopping.family_id, index, neighbor_index, hopping.is_conjugate);
                 }
             });
         }
@@ -68,7 +68,7 @@ Structure::Structure(Foundation const& foundation, Spec const& lead)
             shifted_site.for_each_neighbor([&](Site neighbor, Hopping hopping) {
                 auto const neighbor_index = lead_index(finalized_indices[neighbor]);
                 if (neighbor_index >= 0) {
-                    hopping_blocks.add(hopping.family_id, index, neighbor_index);
+                    hopping_blocks.add(hopping.family_id, index, neighbor_index, hopping.is_conjugate);
                 }
             });
         }

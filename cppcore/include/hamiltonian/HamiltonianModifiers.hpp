@@ -177,12 +177,20 @@ public:
         for (auto i = ham_start.row; i < ham_start.row + term_size.row; ++i) {
             for (auto j = ham_start.col; j < ham_start.col + term_size.col; ++j) {
                 for (auto const& coo : coordinates) {
-                    auto const ham_row = i + (coo.row - sys_start.row) * term_size.row;
-                    auto const ham_col = j + (coo.col - sys_start.col) * term_size.col;
 
                     auto const value = *data++;
+                    // if conjugate should be transposed coo.row <-> coo.col, i <-> j
                     if (value != scalar_t{0}) {
-                        lambda(ham_row, ham_col, value);
+                        if (coo.is_conjugate) {
+                            auto const ham_row = j + (coo.row - sys_start.col) * term_size.row;
+                            auto const ham_col = i + (coo.col - sys_start.row) * term_size.col;
+                            lambda(ham_row, ham_col, num::conjugate(value));
+                        }
+                        else {
+                            auto const ham_row = i + (coo.row - sys_start.row) * term_size.row;
+                            auto const ham_col = j + (coo.col - sys_start.col) * term_size.col;
+                            lambda(ham_row, ham_col, value);
+                        }
                     }
                 }
             }
@@ -252,7 +260,13 @@ void HamiltonianModifiers::apply_to_hoppings_impl(System const& system,
 
             auto const value = energy(0, 0); // single orbital
             for (auto const& coo : block.coordinates()) {
-                lambda(coo.row, coo.col, value);
+                // check if should be conjugated, this wasn't done at the initial stage
+                if (coo.is_conjugate) {
+                    lambda(coo.row, coo.col, num::conjugate(value));
+                }
+                else {
+                    lambda(coo.row, coo.col, value);
+                }
             }
         }
 
