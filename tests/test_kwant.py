@@ -38,8 +38,8 @@ else:
 
     # noinspection PyUnresolvedReferences
     def calc_transmission(system, energy, v=None):
-        args = [v] if v is not None else ()
-        smatrix = kwant.smatrix(system, energy, args=args)
+        params = {'v': v} if v is not None else {}
+        smatrix = kwant.smatrix(system, energy, params=params)
         return smatrix.transmission(1, 0)
 
 
