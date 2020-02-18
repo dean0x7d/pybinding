@@ -13,8 +13,8 @@ from .utils.compare_figures import CompareFigure
 from .utils.fuzzy_equal import FuzzyEqual
 
 
-def pytest_namespace():
-    return {'fuzzy_equal': FuzzyEqual}
+def pytest_configure():
+    pytest.fuzzy_equal = FuzzyEqual
 
 
 def pytest_addoption(parser):
