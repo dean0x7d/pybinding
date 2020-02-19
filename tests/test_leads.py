@@ -79,10 +79,10 @@ def test_empty(ring_model):
     assert "no sites in lead junction" in str(excinfo.value)
 
 
-def test_attach():
+def test_attach(square_model):
     """Attach 2 leads to a square lattice system"""
     w, h = 2, 3
-    model = square_model(w, h)
+    model = square_model
     model.attach_lead(-1, pb.line([0, -h/2], [0, h/2]))
     model.attach_lead(+1, pb.line([0, -h/2], [0, h/2]))
     assert len(model.leads) == 2
