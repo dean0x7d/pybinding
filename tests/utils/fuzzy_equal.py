@@ -21,7 +21,7 @@ def _assertdispatch(func):
             self.stack.append(context)
 
         is_pb_savable = any(hasattr(actual, s) for s in ['__getstate__', '__getinitargs__'])
-        kind = pb.save if is_pb_savable else actual.__class__
+        kind = type(pb.save) if is_pb_savable else actual.__class__
         dispatcher.dispatch(kind)(self, actual, expected)
 
         if context is not None and self.stack:
@@ -148,7 +148,7 @@ class FuzzyEqual:
         for key in actual:
             self._assert(actual[key], expected[key], context="['{}']".format(key))
 
-    @_assert.register(pb.save)
+    @_assert.register(type(pb.save))
     def _(self, actual, expected):
         specials = [s for s in ['__getstate__', '__getinitargs__'] if hasattr(actual, s)]
         for s in specials:
