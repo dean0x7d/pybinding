@@ -16,7 +16,6 @@ def ring_model():
     return pb.Model(graphene.monolayer(), ring(3, 5))
 
 
-@pytest.fixture
 def square_model(width=2, height=3):
     def square_lattice(d=1, t=1):
         lat = pb.Lattice(a1=[d, 0], a2=[0, d])
