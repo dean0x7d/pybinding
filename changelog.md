@@ -10,6 +10,9 @@
   [#21](https://github.com/dean0x7d/pybinding/issues/21), and 
   [#23](https://github.com/dean0x7d/pybinding/issues/23).
 
+* Dropped support for Python 3.5. You must have Python 3.6 or newer to install this version.
+
+
 ## v0.9.4 | 2017-07-13
 
 * Fixed issues with multi-orbital models: matrix onsite terms were not set correctly if all the

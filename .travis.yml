@@ -9,19 +9,25 @@ matrix:
   include:
   - os: linux
     compiler: gcc-4.8
-    env: PYTHON=3.5
-  - os: linux
-    compiler: gcc-4.8
-    env: PYTHON=3.6
-  - os: osx
-    osx_image: xcode7.3
-    env: PYTHON=3.5
-  - os: osx
-    osx_image: xcode7.3
     env: PYTHON=3.6
   - os: linux
     compiler: gcc-4.8
-    env: PYTHON=3.6 SDIST DEBUG
+    env: PYTHON=3.7
+  - os: linux
+    compiler: gcc-4.8
+    env: PYTHON=3.8
+  - os: osx
+    osx_image: xcode7.3
+    env: PYTHON=3.6
+  - os: osx
+    osx_image: xcode7.3
+    env: PYTHON=3.7
+  - os: osx
+    osx_image: xcode7.3
+    env: PYTHON=3.8
+  - os: linux
+    compiler: gcc-4.8
+    env: PYTHON=3.7 SDIST DEBUG
     install:
     # call cmake first to download dependencies which will be included in the sdist
     - (mkdir build && cd build && cmake -DPYTHON_EXECUTABLE=$(which python) ..)

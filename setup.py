@@ -12,8 +12,8 @@ from setuptools.command.build_ext import build_ext
 from setuptools.command.egg_info import manifest_maker
 
 
-if sys.version_info[:2] < (3, 5):
-    print("Python >= 3.5 is required.")
+if sys.version_info[:2] < (3, 6):
+    print("Python >= 3.6 is required.")
     sys.exit(-1)
 
 
@@ -118,8 +118,9 @@ setup(
         'License :: OSI Approved :: BSD License',
         'Programming Language :: C++',
         'Programming Language :: Python :: 3 :: Only',
-        'Programming Language :: Python :: 3.5',
         'Programming Language :: Python :: 3.6',
+        'Programming Language :: Python :: 3.7',
+        'Programming Language :: Python :: 3.8',
         'Programming Language :: Python :: Implementation :: CPython',
     ],
 

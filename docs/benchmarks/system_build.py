@@ -5,7 +5,7 @@ Usage: Make sure you have all the requirements and then run this script using py
 The considered system sizes can be changed in the `__name__ == '__main__'` section at
 the bottom.
 
-Requires Python >= 3.5 and the following packages which can be installed using pip:
+Requires Python >= 3.6 and the following packages which can be installed using pip:
   - memory_profiler
   - psutil (memory_profiler will be slow without it)
 

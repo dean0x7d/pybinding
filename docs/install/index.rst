@@ -3,7 +3,7 @@ Installation
 
 Pybinding can be installed on Windows, Linux or Mac, with the following prerequisites:
 
-* `Python`_ 3.5 or newer (Python 2.x is not supported)
+* `Python`_ 3.6 or newer (Python 2.x is not supported)
 * The `SciPy`_ stack of scientific packages, with required versions:
 
   * numpy >= v1.12
