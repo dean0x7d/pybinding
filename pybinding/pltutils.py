@@ -1,4 +1,5 @@
 """Collection of utility functions for matplotlib"""
+import warnings
 from contextlib import contextmanager, suppress
 
 import numpy as np
@@ -10,6 +11,20 @@ from .utils import with_defaults
 
 __all__ = ['cm2inch', 'colorbar', 'despine', 'despine_all', 'get_palette', 'legend', 'respine',
            'set_palette', 'use_style']
+
+
+def _set_smart_bounds(spine, value):
+    """Hold on to the deprecated `set_smart_bounds()` for a little while longer
+
+    `set_smart_bounds()` was deprecated in matplotlib 3.2 and will be removed in the future.
+    This compatibility function ensures that we can keep using the function (while it's still
+    there) without any deprecation warnings. And when it is removed, suppress `AttributeError`
+    to make it a no-op. It's purely aesthetic change to the plots, but it's nice to keep it
+    while it's there.
+    """
+    with warnings.catch_warnings(), suppress(AttributeError):
+        warnings.simplefilter("ignore", mpl.MatplotlibDeprecationWarning)
+        spine.set_smart_bounds(value)
 
 
 @contextmanager
@@ -76,7 +91,7 @@ def despine(trim=False):
         ax.yaxis.set_major_locator(plt.MaxNLocator(nbins="auto", steps=[1, 2, 5, 10]))
 
         for v, side in [('x', 'bottom'), ('y', 'left')]:
-            ax.spines[side].set_smart_bounds(True)
+            _set_smart_bounds(ax.spines[side], True)
             ticks = getattr(ax, "get_{}ticks".format(v))()
             vmin, vmax = getattr(ax, "get_{}lim".format(v))()
             ticks = ticks[(ticks >= vmin) & (ticks <= vmax)]
@@ -105,7 +120,7 @@ def respine():
     ax = plt.gca()
     for side in ['top', 'right', 'bottom', 'left']:
         ax.spines[side].set_visible(True)
-        ax.spines[side].set_smart_bounds(False)
+        _set_smart_bounds(ax.spines[side], False)
     ax.xaxis.set_ticks_position('both')
     ax.yaxis.set_ticks_position('both')
 

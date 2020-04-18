@@ -1,6 +1,7 @@
 import os
 import shutil
 import tempfile
+import warnings
 from contextlib import suppress
 
 import matplotlib as mpl
@@ -50,12 +51,16 @@ class CompareFigure:
         self._original_rc = mpl.rcParams.copy()
         self._original_units_registry = matplotlib.units.registry.copy()
 
-        matplotlib.style.use(style)
-        mpl.use('Agg', warn=False)
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", matplotlib.MatplotlibDeprecationWarning)
+            matplotlib.style.use(style)
+        mpl.use('Agg')
 
     def _exit_style(self):
-        mpl.rcParams.clear()
-        mpl.rcParams.update(self._original_rc)
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", matplotlib.MatplotlibDeprecationWarning)
+            mpl.rcParams.clear()
+            mpl.rcParams.update(self._original_rc)
         matplotlib.units.registry.clear()
         matplotlib.units.registry.update(self._original_units_registry)
 
