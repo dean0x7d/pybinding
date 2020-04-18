@@ -125,7 +125,7 @@ def monolayer_4atom(onsite=(0, 0)):
 
 
 def bilayer(gamma3=False, gamma4=False, onsite=(0, 0, 0, 0)):
-    """Bilayer lattice in the AB-stacked form (Bernal-stacked)
+    r"""Bilayer lattice in the AB-stacked form (Bernal-stacked)
 
     * :math:`\gamma_0` is the single-layer hopping within the top layer (A1/B1)
       and bottom layer (A2/B2)

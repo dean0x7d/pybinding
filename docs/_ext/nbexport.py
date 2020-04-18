@@ -184,11 +184,11 @@ class NBTranslator(nodes.NodeVisitor):
         self.visit_literal_block(node)
 
     def visit_math(self, node):
-        self.write_markdown("${}$".format(node['latex']))
+        self.write_markdown("${}$".format(node.astext()))
         raise nodes.SkipNode
 
-    def visit_displaymath(self, node):
-        self.write_markdown("$$\n{}\n$$\n\n".format(node['latex'].strip()))
+    def visit_math_block(self, node):
+        self.write_markdown("$$\n{}\n$$\n\n".format(node.astext().strip()))
         raise nodes.SkipNode
 
     def unknown_visit(self, node):

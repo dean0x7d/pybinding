@@ -16,7 +16,7 @@ _default_3band_params = {  # from https://doi.org/10.1103/PhysRevB.88.085433
 
 
 def monolayer_3band(name, override_params=None):
-    """Monolayer of a group 6 TMD using the nearest-neighbor 3-band model
+    r"""Monolayer of a group 6 TMD using the nearest-neighbor 3-band model
 
     Parameters
     ----------

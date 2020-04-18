@@ -17,9 +17,12 @@ from sphinx.jinja2glue import BuiltinTemplateLoader
 from sphinx.util.osutil import ensuredir
 from sphinx.util.inspect import safe_getattr
 from sphinx.ext.autosummary.generate import find_autosummary_in_files
+from sphinx.util import logging
+
+logger = logging.getLogger(__name__)
 
 
-def get_members(obj, typ, include_public=()):
+def get_members(app, obj, typ, include_public=()):
     __all__ = getattr(obj, '__all__', [])
     skip_all = not __all__
     __all__ += include_public
@@ -27,7 +30,7 @@ def get_members(obj, typ, include_public=()):
     items = []
     for name in dir(obj):
         try:
-            documenter = get_documenter(safe_getattr(obj, name), obj)
+            documenter = get_documenter(app, safe_getattr(obj, name), obj)
         except AttributeError:
             continue
         if documenter.objtype == typ:
@@ -44,10 +47,10 @@ def generate_autosummary_docs(sources, app, suffix='.rst', output_dir=None,
     showed_sources = list(sorted(sources))
     if len(showed_sources) > 20:
         showed_sources = showed_sources[:10] + ['...'] + showed_sources[-10:]
-    app.info('[autosummary] generating autosummary for: %s' % ', '.join(showed_sources))
+    logger.info('[autosummary] generating autosummary for: %s' % ', '.join(showed_sources))
 
     if output_dir:
-        app.info('[autosummary] writing to %s' % output_dir)
+        logger.info('[autosummary] writing to %s' % output_dir)
 
     if base_path is not None:
         sources = [os.path.join(base_path, filename) for filename in sources]
@@ -79,7 +82,7 @@ def generate_autosummary_docs(sources, app, suffix='.rst', output_dir=None,
         try:
             name, obj, parent, mod_name = import_by_name(name)
         except ImportError as e:
-            app.warn('[autosummary] failed to import %r: %s' % (name, e))
+            logger.warning('[autosummary] failed to import %r: %s' % (name, e))
             continue
 
         fn = os.path.join(path, name + suffix)
@@ -89,7 +92,7 @@ def generate_autosummary_docs(sources, app, suffix='.rst', output_dir=None,
 
         new_files.append(fn)
         with open(fn, 'w') as f:
-            doc = get_documenter(obj, parent)
+            doc = get_documenter(app, obj, parent)
 
             if template_name is not None:
                 template = template_env.get_template(template_name)
@@ -102,14 +105,14 @@ def generate_autosummary_docs(sources, app, suffix='.rst', output_dir=None,
             ns = {}
             if doc.objtype == 'module':
                 ns['members'] = dir(obj)
-                ns['functions'], ns['all_functions'] = get_members(obj, 'function')
-                ns['classes'], ns['all_classes'] = get_members(obj, 'class')
-                ns['exceptions'], ns['all_exceptions'] = get_members(obj, 'exception')
+                ns['functions'], ns['all_functions'] = get_members(app, obj, 'function')
+                ns['classes'], ns['all_classes'] = get_members(app, obj, 'class')
+                ns['exceptions'], ns['all_exceptions'] = get_members(app, obj, 'exception')
             elif doc.objtype == 'class':
                 ns['members'] = dir(obj)
                 include_public = app.config.autodoc_allowed_special_members
-                ns['methods'], ns['all_methods'] = get_members(obj, 'method', include_public)
-                ns['attributes'], ns['all_attributes'] = get_members(obj, 'attribute')
+                ns['methods'], ns['all_methods'] = get_members(app, obj, 'method', include_public)
+                ns['attributes'], ns['all_attributes'] = get_members(app, obj, 'attribute')
 
             parts = name.split('.')
             if doc.objtype in ('method', 'attribute'):
@@ -141,7 +144,7 @@ def process_generate_options(app):
     if not genfiles:
         return
 
-    ext = app.config.source_suffix[0]
+    ext = '.rst'
     genfiles = [genfile + (not genfile.endswith(ext) and ext or '') for genfile in genfiles]
     generate_autosummary_docs(genfiles, app, suffix=ext, builder=app.builder, base_path=app.srcdir)
 
