@@ -5,7 +5,7 @@ prune cppcore/deps/catch
 
 graft cppmodule
 prune cppmodule/deps/pybind11
-recursive-include cppmodule/deps/pybind11 CMakeLists.txt *.cmake pybind11/*.h
+recursive-include cppmodule/deps/pybind11 CMakeLists.txt *.cmake pybind11/*.h pybind11/detail/*.h
 
 graft docs
 prune docs/_api

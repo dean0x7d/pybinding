@@ -96,7 +96,7 @@ struct arrayref_caster {
         return result;
     }
 
-    static PYBIND11_DESCR name() { return type_descr(_("numpy.ndarray")); }
+    static constexpr auto name = _("numpy.ndarray");
 };
 
 template<bool is_const>
@@ -123,7 +123,7 @@ struct csrref_caster {
         return result.release();
     }
 
-    static PYBIND11_DESCR name() { return type_descr(_("scipy.sparse.csr_matrix")); }
+    static constexpr auto name = _("scipy.sparse.csr_matrix");
 };
 
 template<> struct type_caster<cpb::num::AnyCsrConstRef> : csrref_caster {};
