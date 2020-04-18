@@ -382,7 +382,7 @@ def sweep(factory, plot=lambda r: r.plot(), labels=None, tags=None, silent=False
     zero = np.zeros_like(energy, np.float32)
 
     def make_result(data):
-        sweep_data = np.vstack(v.squeeze() if v is not None else zero for v in data)
+        sweep_data = np.vstack([v.squeeze() if v is not None else zero for v in data])
         return Sweep(x, energy, sweep_data, labels, tags)
 
     if silent:
@@ -416,7 +416,7 @@ def ndsweep(factory, plot=None, labels=None, tags=None, silent=False):
     zero = np.zeros_like(energy, np.float32)
 
     def make_result(data):
-        sweep_data = np.vstack(v.squeeze() if v is not None else zero for v in data)
+        sweep_data = np.vstack([v.squeeze() if v is not None else zero for v in data])
         return NDSweep(variables, sweep_data, labels, tags)
 
     if silent:

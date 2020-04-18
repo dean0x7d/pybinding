@@ -76,11 +76,11 @@ def test_multiorbital_hamiltonian():
         return lat
 
     model = pb.Model(lattice(), pb.primitive(3))
-    h = model.hamiltonian.todense()
+    h = model.hamiltonian.toarray()
 
     assert model.system.num_sites == 3
     assert h.shape[0] == 6
-    assert pytest.fuzzy_equal(h, h.H)
+    assert pytest.fuzzy_equal(h, h.T.conjugate())
     assert pytest.fuzzy_equal(h[:2, :2], h[-2:, -2:])
     assert pytest.fuzzy_equal(h[:2, :2], [[  1, 3j],
                                           [-3j, 2]])
@@ -96,11 +96,11 @@ def test_multiorbital_hamiltonian():
         return 2 * energy
 
     model = pb.Model(lattice(), pb.primitive(3), onsite, hopping)
-    h = model.hamiltonian.todense()
+    h = model.hamiltonian.toarray()
 
     assert model.system.num_sites == 3
     assert h.shape[0] == 6
-    assert pytest.fuzzy_equal(h, h.H)
+    assert pytest.fuzzy_equal(h, h.T.conjugate())
     assert pytest.fuzzy_equal(h[:2, :2], h[-2:, -2:])
     assert pytest.fuzzy_equal(h[:2, :2], [[  3, 9j],
                                           [-9j,  6]])
@@ -116,11 +116,11 @@ def test_multiorbital_hamiltonian():
         return lat
 
     model = pb.Model(lattice_with_zero_diagonal(), pb.primitive(3))
-    h = model.hamiltonian.todense()
+    h = model.hamiltonian.toarray()
 
     assert model.system.num_sites == 3
     assert h.shape[0] == 6
-    assert pytest.fuzzy_equal(h, h.H)
+    assert pytest.fuzzy_equal(h, h.T.conjugate())
     assert pytest.fuzzy_equal(h[:2, :2], h[-2:, -2:])
     assert pytest.fuzzy_equal(h[:2, :2], [[0, 3j],
                                           [-3j, 0]])
