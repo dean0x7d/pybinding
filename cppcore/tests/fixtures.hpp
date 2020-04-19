@@ -6,6 +6,8 @@ namespace lattice {
 cpb::Lattice square(float a = 1.f, float t = 1.f);
 cpb::Lattice square_2atom(float a = 1.f, float t1 = 1.f, float t2 = 2.f);
 cpb::Lattice square_multiorbital();
+cpb::Lattice checkerboard_multiorbital();
+cpb::Lattice hexagonal_complex();
 
 } // namespace lattice
 

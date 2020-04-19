@@ -55,6 +55,53 @@ Lattice square_multiorbital() {
     return lattice;
 }
 
+Lattice checkerboard_multiorbital() {
+    constexpr auto i1 = num::get_complex_t<double>{constant::i1};
+
+    auto lattice = Lattice({1, 0, 0}, {0, 1, 0});
+    // complex multi-orbital hopping and complex onsite energy
+    auto hopping = MatrixXcd(2, 2);
+    hopping << 2.0 + 2.0 * i1, 3.0 + 3.0 * i1, 4.0 + 4.0 * i1, 5.0 + 5.0 * i1;
+    auto delta = MatrixXcd(2, 2);
+    delta << 1.0, i1, -i1, 1.0;
+
+    lattice.add_sublattice("A", {  0,   0, 0}, (-delta).eval());
+    lattice.add_sublattice("B", {0.5, 0.5, 0}, delta);
+
+    lattice.register_hopping_energy("t", hopping);
+
+    lattice.add_hopping({ 0,  0, 0}, "A", "B", "t");
+    lattice.add_hopping({ 0, -1, 0}, "A", "B", "t");
+    lattice.add_hopping({-1,  0, 0}, "A", "B", "t");
+    lattice.add_hopping({-1, -1, 0}, "A", "B", "t");
+
+    return lattice;
+}
+
+Lattice hexagonal_complex() {
+    constexpr auto i1 = num::get_complex_t<double>{constant::i1};
+    // lattice vectors
+    auto a1 = Cartesian{ 0.5f, 0.5f * sqrt(3.0f), 0};
+    auto a2 = Cartesian{-0.5f, 0.5f * sqrt(3.0f), 0};
+    // positions
+    auto const pos_a = Cartesian{0,                       0, 0};
+    auto const pos_b = Cartesian{0, -1.0f/3 * sqrt(3.0f), 0};
+
+    auto lattice = Lattice(a1, a2);
+
+    lattice.add_sublattice("A", pos_a);
+    lattice.add_sublattice("B", pos_b);
+    // complex hoppings
+    lattice.register_hopping_energy("t1", -i1);
+    lattice.register_hopping_energy("t2", 2.0 * i1);
+    lattice.register_hopping_energy("t3", 3.0 * i1);
+
+    lattice.add_hopping({0, 0, 0}, "A", "B", "t1");
+    lattice.add_hopping({0, 1, 0}, "A", "B", "t2");
+    lattice.add_hopping({1, 0, 0}, "A", "B", "t3");
+
+    return lattice;
+}
 
 } // namespace lattice
 

@@ -124,3 +124,31 @@ def test_multiorbital_hamiltonian():
     assert pytest.fuzzy_equal(h[:2, :2], h[-2:, -2:])
     assert pytest.fuzzy_equal(h[:2, :2], [[0, 3j],
                                           [-3j, 0]])
+
+
+def test_complex_multiorbital_hamiltonian():
+    def checkerboard_lattice(delta, t):
+        lat = pb.Lattice(a1=[1, 0], a2=[0, 1])
+        lat.add_sublattices(('A', [0, 0],    -delta),
+                            ('B', [1/2, 1/2], delta))
+        lat.add_hoppings(
+            ([0,   0], 'A', 'B', t),
+            ([0,  -1], 'A', 'B', t),
+            ([-1,  0], 'A', 'B', t),
+            ([-1, -1], 'A', 'B', t),
+        )
+        return lat
+
+    hopp_t = np.array([[2 + 2j, 3 + 3j],
+                       [4 + 4j, 5 + 5j]])      # multi-orbital hopping
+    onsite_en = np.array([[1, 1j], [-1j, 1]])  # onsite energy
+
+    model = pb.Model(checkerboard_lattice(onsite_en, hopp_t),
+                     pb.translational_symmetry(True, True))
+    h = model.hamiltonian.toarray()
+
+    assert model.system.num_sites == 2
+    assert h.shape[0] == 4
+    assert pytest.fuzzy_equal(h, h.T.conjugate())  # check if Hermitian
+    assert pytest.fuzzy_equal(h[:2, :2], -h[-2:, -2:])  # onsite energy on A and B is opposite
+    assert pytest.fuzzy_equal(h[:2, 2:4], 4 * hopp_t)  # hopping A <-> B is 4 * hopp_t

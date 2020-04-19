@@ -83,6 +83,63 @@ TEST_CASE("to_hamiltonian_indices") {
     }
 }
 
+TEST_CASE("complex_valued_hoppings") {
+    SECTION("single-orbital-complex") {
+        using constant::i1;
+        auto const lattice = lattice::hexagonal_complex();
+        // distance from A to three neighbor sites
+        auto const d1 = Cartesian{0.0f, -1.0f / 3 * sqrt(3.0f), 0.0f};
+        auto const d2 = Cartesian{d1 + Cartesian{ 0.5f, 0.5f * sqrt(3.0f), 0.0f}};
+        auto const d3 = Cartesian{d1 + Cartesian{-0.5f, 0.5f * sqrt(3.0f), 0.0f}};
+        // hoppings
+        auto const t1 = -i1;
+        auto const t2 = 2.0f * i1;
+        auto const t3 = 3.0f * i1;
+
+        auto model = Model(lattice, TranslationalSymmetry(1, 1));
+        using constant::pi;
+        // set the wavevector to K point
+        auto const k_vector = Cartesian{2 * pi, 0, 0};
+        model.set_wave_vector(k_vector);
+
+        auto const& system = *model.system();
+        auto const& matrix = ham::get_reference<std::complex<float>>(model.hamiltonian());
+
+        auto const expected_hopping = t1 * exp(i1 * k_vector.dot(d1)) +
+                                      t2 * exp(i1 * k_vector.dot(d2)) +
+                                      t3 * exp(i1 * k_vector.dot(d3));
+
+        REQUIRE(system.num_sites() == 2);
+        REQUIRE(system.hamiltonian_size() == 2);
+        REQUIRE(system.hamiltonian_nnz() == 4);
+        REQUIRE(num::approx_equal(matrix.coeff(0, 1).real(),  expected_hopping.real()));
+        REQUIRE(num::approx_equal(matrix.coeff(0, 1).imag(),  expected_hopping.imag()));
+        REQUIRE(num::approx_equal(matrix.coeff(1, 0).real(),  expected_hopping.real()));
+        REQUIRE(num::approx_equal(matrix.coeff(1, 0).imag(), -expected_hopping.imag()));
+    }
+
+    SECTION("multi-orbital-complex") {
+        auto const model = Model(lattice::checkerboard_multiorbital(),
+                                 TranslationalSymmetry(1, 1),
+                                 field::force_double_precision());
+        auto const& system = *model.system();
+        auto const& matrix = ham::get_reference<std::complex<double>>(model.hamiltonian());
+
+        constexpr auto i1 = num::get_complex_t<double>{constant::i1};
+        auto expected_hopping = MatrixXcd(2, 2);
+        expected_hopping << 2.0 + 2.0 * i1,
+                            3.0 + 3.0 * i1,
+                            4.0 + 4.0 * i1,
+                            5.0 + 5.0 * i1;
+
+        REQUIRE(system.num_sites() == 2);
+        REQUIRE(system.hamiltonian_size() == 4);
+        REQUIRE(system.hamiltonian_nnz() == 16);
+        REQUIRE(matrix.block(0, 0, 2, 2).isApprox((-matrix.block(2, 2, 2, 2)).eval()));
+        REQUIRE(matrix.block(0, 2, 2, 2).isApprox(4.0 * expected_hopping));
+    }
+}
+
 TEST_CASE("sublattice_range") {
     auto const model = Model(lattice::square_multiorbital(), shape::rectangle(1, 2));
     auto const& system = *model.system();
