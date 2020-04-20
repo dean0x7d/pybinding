@@ -18,6 +18,9 @@
 * Fixed reversed order of `Lattice.reciprocal_vectors()`: it should be `a_n * b_n = 2pi` but it was
   accidentally `a_n * b_{N-n} = 2pi`.
 
+* Fixed incorrect Hamiltonian construction in cases where complex hoppings were used together
+  with translational symmetry.
+
 
 ## v0.9.4 | 2017-07-13
 

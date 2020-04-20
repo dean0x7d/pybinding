@@ -53,7 +53,7 @@ std::vector<Translation> TranslationalSymmetry::translations(Foundation const& f
 
         // check if the direction already exists
         for (auto const& t : translations) {
-            if (t.direction == direction || t.direction == -direction) {
+            if (t.direction == direction) {
                 return;
             }
         }

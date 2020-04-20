@@ -145,7 +145,9 @@ void populate_boundaries(System& system, Foundation const& foundation,
                 auto const neighbor_index = finalized_indices[neighbor];
                 if (neighbor_index < 0) { return; }
 
-                boundary.hopping_blocks.add(hopping.family_id, index, neighbor_index);
+                if (!hopping.is_conjugate) {
+                    boundary.hopping_blocks.add(hopping.family_id, index, neighbor_index);
+                }
             });
         }
 

@@ -13,11 +13,12 @@ def trestle(d=0.2, t1=0.8 + 0.6j, t2=2):
     )
     lat.add_hoppings(
         (0, 'A', 'B', t1),
-        (1, 'A', 'B', t1),
+        (1, 'A', 'B', t1.conjugate()),
         (1, 'A', 'A', t2),
         (1, 'B', 'B', t2)
     )
     return lat
+
 
 lattice = trestle()
 lattice.plot()
