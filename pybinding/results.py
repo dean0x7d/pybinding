@@ -361,8 +361,11 @@ class SpatialMap:
         """
         levels = np.linspace(self.data.min(), self.data.max(), num=num_levels)
         x, y, _ = self.positions
-        kwargs = with_defaults(kwargs, levels=levels, rasterized=True)
+        kwargs = with_defaults(kwargs, levels=levels)
         contourf = plt.tricontourf(x, y, self.data, **kwargs)
+        # Each collection has to be rasterized, `tricontourf()` does not accept `rasterized=True`
+        for collection in contourf.collections:
+            collection.set_rasterized(True)
         self._decorate_plot()
         return contourf
 
