@@ -71,14 +71,6 @@ nbexport_execute = False
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
 
-# The suffix(es) of source filenames.
-# You can specify multiple suffix as a list of string:
-source_suffix = ['.rst', '.md']
-
-source_parsers = {
-    '.md': CommonMarkParser,
-}
-
 # The encoding of source files.
 # source_encoding = 'utf-8-sig'
 
@@ -349,8 +341,16 @@ def autodoc_process_signature(app, what, name, obj, options, signature, return_a
         return "({})".format(",".join(s)), ""
 
 
+class WorkaroundCommonMarkParser(CommonMarkParser):
+    """Workaround recommonmark issue https://github.com/readthedocs/recommonmark/issues/177"""
+    def visit_document(self, _):
+        pass
+
+
 def setup(app):
     app.connect('builder-inited', copy_changelog)
     app.connect('autodoc-skip-member', autodoc_skip_member)
     app.connect('autodoc-process-signature', autodoc_process_signature)
     app.add_config_value('autodoc_allowed_special_members', [], 'env')
+    app.add_source_suffix('.md', 'markdown')
+    app.add_source_parser(WorkaroundCommonMarkParser)
