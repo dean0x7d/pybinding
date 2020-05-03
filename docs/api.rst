@@ -85,12 +85,21 @@ tight-binding model, such as various fields, defects or geometric deformations.
     force_complex_numbers
 
 
-.. rubric:: Experimental
+.. _generators_api:
+
+Generators
+----------
+
+The following decorators are used to create functions which add features to a
+tight-binding model, such as hoppings and sites.
+
+.. rubric:: Decorators
 
 .. autosummary::
     :toctree: _api
 
     hopping_generator
+    site_generator
 
 
 .. _compute_api:

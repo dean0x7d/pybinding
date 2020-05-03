@@ -28,6 +28,7 @@ are presented in a straightforward way and will be easy to pick up on the fly.
     shape_symmetry
     fields
     strain
+    generators
     solvers
     kpm
     scattering

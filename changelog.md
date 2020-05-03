@@ -24,6 +24,9 @@
 * Fixed incorrect Hamiltonian construction in cases where complex hoppings were used together
   with translational symmetry.
 
+* Added `@site_generator` which can be used to add new sites independent of the main `Lattice` 
+  definition. This is useful for creating heterostructures or defects with various add-atoms.
+  See the new "Generators" section of the tutorial.
 
 ## v0.9.4 | 2017-07-13
 

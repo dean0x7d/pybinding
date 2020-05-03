@@ -9,4 +9,3 @@ require additional work like compiling the code manually. Proceed with caution.
 
     cuda
     feast
-    generator
