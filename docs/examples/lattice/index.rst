@@ -34,6 +34,16 @@ Monolayer graphene
     :alt: Monolayer graphene lattice, Brillouin zone and band structure
 
 
+Monolayer graphene with Rashba spin-orbit coupling
+--------------------------------------------------
+
+:download:`Source code </examples/lattice/monolayer_graphene_soc.py>`
+
+.. plot:: examples/lattice/monolayer_graphene_soc.py
+    :include-source:
+    :alt: Monolayer graphene with Rashba SOC, Brillouin zone and band structure
+
+
 Monolayer graphene NN
 ---------------------
 
