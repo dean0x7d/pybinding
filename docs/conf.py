@@ -35,7 +35,11 @@ extensions = [
 ]
 
 autodoc_member_order = 'groupwise'
-autodoc_default_flags = ['members', 'special-members', 'inherited-members']
+autodoc_default_options = {
+    'members': None,
+    'special-members': None,
+    'inherited-members': None
+}
 autodoc_allowed_special_members = ['__call__', '__getitem__']
 generate_from_files = ['api.rst']
 
