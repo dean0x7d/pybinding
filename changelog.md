@@ -13,6 +13,9 @@
 * Fixed compatibility with new versions of `matplotlib`: import error
   ([#11](https://github.com/dean0x7d/pybinding/issues/11)) and various warnings.
 
+* Fixed failure to compile the project from source code due to the Eigen library's URL change
+  ([#14](https://github.com/dean0x7d/pybinding/issues/14)).
+
 * Dropped support for Python 3.5. You must have Python 3.6 or newer to install this version.
 
 * Fixed reversed order of `Lattice.reciprocal_vectors()`: it should be `a_n * b_n = 2pi` but it was

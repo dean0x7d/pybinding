@@ -114,8 +114,8 @@ enable_warnings(cppcore)
 
 include(download)
 download_dependency(eigen3 3.3.3
-                    https://bitbucket.org/eigen/eigen/get
-                    \${VERSION}.tar.gz */Eigen)
+                    https://gitlab.com/libeigen/eigen/-/archive/\${VERSION}
+                    eigen-\${VERSION}.tar.gz */Eigen)
 target_include_directories(cppcore SYSTEM PUBLIC ${EIGEN3_INCLUDE_DIR})
 download_dependency(variant 1.1.4
                     https://raw.githubusercontent.com/mapbox/variant/v\${VERSION}/include
