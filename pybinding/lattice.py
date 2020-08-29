@@ -355,6 +355,8 @@ class Lattice:
                       head_width=vnorm * head_width, head_length=vnorm * head_length)
             pltutils.annotate_box(r"${}_{}$".format(name, i+1), position[:2] + v2d / 2,
                                   fontsize='large', bbox=dict(lw=0, alpha=0.6))
+        pltutils.despine(trim=True)
+        pltutils.add_margin()
 
     def plot_vectors(self, position, scale=1.0):
         """Plot lattice vectors in the xy plane

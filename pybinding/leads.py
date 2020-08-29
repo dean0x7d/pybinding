@@ -164,6 +164,8 @@ class Lead:
         v = rescale_lattice_vector(vectors[lead_spec.axis] * lead_spec.sign)
         plot_arrow(xy=(a + b) / 2, vec=v, spec=lead_spec)
         plot_polygon(w=shade_width * v)
+        pltutils.despine(trim=True)
+        pltutils.add_margin()
 
     def plot_bands(self, start=-pi, end=pi, step=0.05, **kwargs):
         """Plot the band structure of an infinite lead

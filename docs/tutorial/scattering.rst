@@ -120,9 +120,9 @@ figure above, the band plots of the leads are:
     :context: close-figs
 
     plt.figure(figsize=(6.7, 3))
-    plt.subplot('121')
+    plt.subplot(121)
     model.leads[0].plot_bands()
-    plt.subplot('122')
+    plt.subplot(122)
     model.leads[1].plot_bands()
 
 This is expected as lead 0 has armchair edges, while lead 1 has zigzag edges.
@@ -170,10 +170,10 @@ or right of the PN junction. We can quickly check this by plotting the band stru
     :context: close-figs
 
     plt.figure(figsize=(6.7, 3))
-    plt.subplot('121')
+    plt.subplot(121)
     model.leads[0].plot_bands()
     plt.ylim(-10, 10)
-    plt.subplot('122')
+    plt.subplot(122)
     model.leads[1].plot_bands()
     plt.ylim(-10, 10)
 
