@@ -15,8 +15,8 @@ installing some dependencies.
 
 .. rubric:: Windows
 
-#. Install the `Visual C++ 2015 Runtime
-   <https://www.microsoft.com/en-us/download/details.aspx?id=53587>`_.
+#. Install the `Visual C++ Runtime
+   <https://support.microsoft.com/en-us/help/2977003/the-latest-supported-visual-c-downloads>`_.
 
 #. Install numpy, scipy and matplotlib binaries from `Christoph Gohlke
    <http://www.lfd.uci.edu/~gohlke/pythonlibs/>`_.
@@ -63,7 +63,7 @@ Once you have everything, follow the steps below to compile and install pybindin
 
 .. rubric:: Windows
 
-#. Install `Visual Studio 2017 Community <https://www.visualstudio.com/vs/community/>`_.
+#. Install `Visual Studio Community <https://www.visualstudio.com/vs/community/>`_.
    The Visual C++ compiler is required, so make sure to select it during the customization step
    of the installation (C++ may not be installed by default).
 #. Install `CMake`_.

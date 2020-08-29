@@ -1,5 +1,5 @@
 version: '{build}'
-os: Visual Studio 2015
+os: Visual Studio 2019
 platform:
 - x86
 - x64
@@ -11,12 +11,19 @@ environment:
   matrix:
   - CONDA: 36
   - CONDA: 37
+  - CONDA: 38
+matrix:
+  exclude:
+  - platform: x86
+    CONDA: 38
 install:
 - git submodule update -q --init --recursive
 - ps: |
     if ($env:PLATFORM -eq "x64") {
       $env:CMAKE_ARCH = "x64"
       $env:CONDA = "$env:CONDA-x64"
+    } else {
+      $env:CMAKE_ARCH = "Win32"
     }
     $env:AppVeyorLogger = "C:\Program Files\AppVeyor\BuildAgent\Appveyor.MSBuildLogger.dll"
     $env:PATH = "C:\Miniconda$env:CONDA\;C:\Miniconda$env:CONDA\Scripts\;$env:PATH"
