@@ -1,4 +1,5 @@
 import math
+import numbers
 from functools import singledispatch, update_wrapper
 
 import numpy as np
@@ -47,6 +48,9 @@ def _assert_fuzzy_equal(actual, expected, rtol, atol):
     E    expected: [5, 4, 6]
     E    indices:  [1, 3, 4]
     """
+    if len(actual) != 0 and not isinstance(actual[0], numbers.Number):
+        raise TypeError("`_assert_fuzzy_equal` only works on arrays of numbers")
+
     actual, expected = map(np.asanyarray, (actual, expected))
     if actual.shape != expected.shape:
         raise AssertionError("\n".join([
