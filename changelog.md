@@ -1,22 +1,43 @@
 # Changelog
 
-## v0.9.5 | In development
+## v0.9.5 | 2020-08-30
 
-* Fixed installation errors due to the encoding of the `changelog.md` file 
-  ([#7](https://github.com/dean0x7d/pybinding/issues/7)).
+It has been a long time since the last version was released. The Python ecosystem has changed
+quite a bit in the meantime and this has led to a number of compatibility issues when installing
+or running pybinding. The main purpose of this new version is to bring this library back to life
+with lots of compatibility fixes and general modernization. 
+
+That said, a couple of new features have also snuck in: site and hopping generators should help
+with the creation of more general models that were not possible before. They make it possible to
+create heterostructures and systems with various forms of disorder.  
+
+Thank you to [@MAndelkovic (Miša Anđelković)](https://github.com/MAndelkovic)
+for making this release possible! And thanks to everyone who reported the various issues.
+
+#### Necromancy
 
 * Fixed compatibility issues with Python 3.7 and 3.8. Notably, this fixes the deadlocks as 
   reported in [#17](https://github.com/dean0x7d/pybinding/issues/17),
   [#21](https://github.com/dean0x7d/pybinding/issues/21), and 
   [#23](https://github.com/dean0x7d/pybinding/issues/23).
 
-* Fixed compatibility with new versions of `matplotlib`: import error
-  ([#11](https://github.com/dean0x7d/pybinding/issues/11)) and various warnings.
+* Fixed compatibility with new versions of `matplotlib`: the `allow_rasterization` import error
+  ([#11](https://github.com/dean0x7d/pybinding/issues/11)), various warnings, and smaller visual
+  glitches.
 
-* Fixed failure to compile the project from source code due to the Eigen library's URL change
-  ([#14](https://github.com/dean0x7d/pybinding/issues/14)).
+* Fixed installation errors due to the encoding of the `changelog.md` file 
+  ([#7](https://github.com/dean0x7d/pybinding/issues/7)).
+
+* Fixed failure to compile the project from source code because the Eigen library's download URL 
+  changed ([#14](https://github.com/dean0x7d/pybinding/issues/14)).
+
+* Fixed deprecation warnings from the latest versions of `numpy`.
+
+* Fixed documentation generation with `sphinx` v2.x. 
 
 * Dropped support for Python 3.5. You must have Python 3.6 or newer to install this version.
+
+#### General bug fixes
 
 * Fixed reversed order of `Lattice.reciprocal_vectors()`: it should be `a_n * b_n = 2pi` but it was
   accidentally `a_n * b_{N-n} = 2pi`.
@@ -24,9 +45,26 @@
 * Fixed incorrect Hamiltonian construction in cases where complex hoppings were used together
   with translational symmetry.
 
+#### New features
+
 * Added `@site_generator` which can be used to add new sites independent of the main `Lattice` 
   definition. This is useful for creating heterostructures or defects with various add-atoms.
   See the new "Generators" section of the tutorial.
+
+* `@hopping_generator` has been promoted to a regular feature and added to the tutorial. It's 
+  useful for creating additional local hoppings around existing sites or connecting completely new 
+  sites which were added by a `@site_generator`.
+
+* Added `System.count_neighbors()` which counts the neighbors each site has. Useful for finding 
+  edge atoms. Generators can request `system` as an argument so that they can stitch new atoms 
+  to the edges. See the API reference for `@site_generator` and `@hopping_generator`.
+
+* `@site_state_modifier`s and `@site_position_modifier`s can now be freely ordered. Before this,
+  all state modifiers would be evaluated first and then all position modifiers. Now, they will
+  be evaluated in the exact order in which they are given to `Model`. Take care: this may change 
+  the behavior of some existing models but it will give more control to create new models which
+  not possible before.
+
 
 ## v0.9.4 | 2017-07-13
 
