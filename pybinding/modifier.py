@@ -180,7 +180,7 @@ def _make_modifier(func, kind, init, keywords, has_sites=True, num_return=1, can
 
 @decorator_decorator
 def site_state_modifier(min_neighbors=0):
-    """Modify the state (valid or invalid) of lattice sites, e.g.\  to create vacancies
+    """Modify the state (valid or invalid) of lattice sites, e.g. to create vacancies
 
     Parameters
     ----------
@@ -234,7 +234,7 @@ def site_state_modifier(min_neighbors=0):
 def site_position_modifier(*_):
     """site_position_modifier()
     
-    Modify the position of lattice sites, e.g.\  to apply geometric deformations
+    Modify the position of lattice sites, e.g. to apply geometric deformations
 
     Notes
     -----
@@ -277,7 +277,7 @@ def site_position_modifier(*_):
 
 @decorator_decorator
 def onsite_energy_modifier(is_double=False, **kwargs):
-    """Modify the onsite energy, e.g.\  to apply an electric field
+    """Modify the onsite energy, e.g. to apply an electric field
 
     Parameters
     ----------
@@ -330,7 +330,7 @@ def onsite_energy_modifier(is_double=False, **kwargs):
 
 @decorator_decorator
 def hopping_energy_modifier(is_double=False, is_complex=False, **kwargs):
-    """Modify the hopping energy, e.g.\  to apply a magnetic field
+    """Modify the hopping energy, e.g. to apply a magnetic field
 
     Parameters
     ----------

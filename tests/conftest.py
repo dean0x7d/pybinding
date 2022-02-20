@@ -67,7 +67,7 @@ def compare_figure(request):
     return CompareFigure(request)
 
 
-@pytest.yield_fixture
+@pytest.fixture
 def plot_if_fails(request):
     """This fixture will plot the actual and expected data if the test fails"""
     class Gather:

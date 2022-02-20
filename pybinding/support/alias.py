@@ -45,7 +45,7 @@ class AliasArray(np.ndarray):
         if other in self.mapping:
             return super().__eq__(self.mapping[other])
         else:
-            result = np.zeros(len(self), dtype=np.bool)
+            result = np.zeros(len(self), dtype=bool)
             for k, v in self.mapping.items():
                 if k == other:
                     result = np.logical_or(result, super().__eq__(v))
@@ -159,8 +159,8 @@ class AliasIndex:
     'A'
     >>> hash(ai) == hash("A")
     True
-    >>> int(ai.eye)
-    1
+    >>> all(ai.eye == 1)
+    True
     >>> np.allclose(AliasIndex("A", 1, (2, 2)).eye, np.eye(2))
     True
     """
@@ -223,10 +223,10 @@ class SplitName(str):
         return self.split("|")[0]
 
     def __eq__(self, other):
-        return super().__eq__(other) or self.first == other
+        return super().__eq__(other) is True or self.first == other
 
     def __ne__(self, other):
-        return super().__ne__(other) and self.first != other
+        return super().__ne__(other) is True and self.first != other
 
     def __hash__(self):
         return super().__hash__()

@@ -314,7 +314,7 @@ class KPM:
         if volume != 1.0:
             data /= volume
         return results.Series(chemical_potential, data,
-                              labels=dict(variable=r"$\mu$ (eV)", data="$\sigma (e^2/h)$"))
+                              labels=dict(variable=r"$\mu$ (eV)", data=r"$\sigma (e^2/h)$"))
 
 
 class _ComputeProgressReporter:

@@ -19,7 +19,7 @@ __all__ = ['Bands', 'Eigenvalues', 'NDSweep', 'Series', 'SpatialMap', 'Structure
 
 def _make_crop_indices(obj, limits):
     """Return the indices into `obj` which retain only the data within the given limits"""
-    idx = np.ones(obj.num_sites, dtype=np.bool)
+    idx = np.ones(obj.num_sites, dtype=bool)
     for name, limit in limits.items():
         v = getattr(obj, name)
         idx = np.logical_and(idx, v >= limit[0])
