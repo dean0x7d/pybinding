@@ -21,7 +21,10 @@ def _assertdispatch(func):
         if context is not None:
             self.stack.append(context)
 
-        is_pb_savable = any(hasattr(actual, s) for s in ['__getstate__', '__getinitargs__'])
+        is_pb_savable = (
+            actual is not None
+            and any(hasattr(actual, s) for s in ['__getstate__', '__getinitargs__'])
+        )
         kind = type(pb.save) if is_pb_savable else actual.__class__
         dispatcher.dispatch(kind)(self, actual, expected)
 

@@ -1,5 +1,4 @@
-set(PYBIND11_CPP_STANDARD ${PB_CPP_STANDARD} CACHE STRING "Match core library")
-set(PYBIND11_PYTHON_VERSION 3.5 CACHE STRING "Minimum required Python version")
+set(PYBIND11_PYTHON_VERSION 3.8 CACHE STRING "Minimum required Python version")
 add_subdirectory(deps/pybind11 EXCLUDE_FROM_ALL)
 
 pybind11_add_module(_pybinding THIN_LTO
@@ -23,6 +22,7 @@ enable_warnings(_pybinding)
 target_include_directories(_pybinding PRIVATE include)
 
 target_link_libraries(_pybinding PRIVATE cppcore)
+target_compile_definitions(_pybinding PRIVATE PYBIND11_NO_ASSERT_GIL_HELD_INCREF_DECREF)
 if(NOT MSVC)  # match default visibility of core library and extension module
     target_compile_options(cppcore PUBLIC -fvisibility=hidden)
 endif()

@@ -269,7 +269,7 @@ void HamiltonianModifiers::apply_to_hoppings_impl(System const& system,
         auto const index_translator = IndexTranslator(system, hopping_energy);
 
         auto buffer = HoppingBuffer<scalar_t>(hopping_energy, block.size());
-        for (auto const coo_slice : sliced(block.coordinates(), buffer.size)) {
+        for (auto const& coo_slice : sliced(block.coordinates(), buffer.size)) {
             auto size = idx_t{0};
             for (auto const& coo : coo_slice) {
                 buffer.pos1[size] = system.positions[coo.row];

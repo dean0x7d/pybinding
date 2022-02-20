@@ -12,8 +12,8 @@ from setuptools.command.build_ext import build_ext
 from setuptools.command.egg_info import manifest_maker
 
 
-if sys.version_info[:2] < (3, 6):
-    print("Python >= 3.6 is required.")
+if sys.version_info[:2] < (3, 8):
+    print("Python >= 3.8 is required.")
     sys.exit(-1)
 
 
@@ -28,11 +28,11 @@ class CMakeBuild(build_ext):
         try:
             out = check_output(["cmake", "--version"])
         except OSError:
-            raise RuntimeError("CMake not found. Version 3.1 or newer is required")
+            raise RuntimeError("CMake not found. Version 3.5 or newer is required")
 
         cmake_version = LooseVersion(re.search(r'version\s*([\d.]+)', out.decode()).group(1))
-        if cmake_version < "3.1.0":
-            raise RuntimeError("CMake 3.1 or newer is required")
+        if cmake_version < "3.5.0":
+            raise RuntimeError("CMake 3.5 or newer is required")
 
         for ext in self.extensions:
             self.build_extension(ext)

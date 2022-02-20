@@ -5,7 +5,4 @@ add_library(fmt STATIC EXCLUDE_FROM_ALL
             ${FMT_INCLUDE_DIR}/fmt/format.cc
             ${FMT_INCLUDE_DIR}/fmt/ostream.cc)
 target_include_directories(fmt SYSTEM PUBLIC ${FMT_INCLUDE_DIR})
-if(NOT WIN32)
-    target_compile_options(fmt PUBLIC ${PB_CPP_STANDARD})
-endif()
 set_target_properties(fmt PROPERTIES POSITION_INDEPENDENT_CODE TRUE)

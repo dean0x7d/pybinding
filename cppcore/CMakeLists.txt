@@ -8,7 +8,6 @@ option(PB_TESTS "Enable testing" ON)
 option(PB_NATIVE_SIMD "Enable all instruction sets supported by the local machine" ON)
 option(PB_MKL "Use Intel's Math Kernel Library" OFF)
 option(PB_CUDA "Enable compilation of components written in CUDA" OFF)
-set(PB_CPP_STANDARD "-std=c++11" CACHE STRING "Required C++ standard flag")
 
 add_library(cppcore
     include/compute/eigen3/lanczos.hpp
@@ -100,11 +99,7 @@ add_library(cppcore
     src/Model.cpp
 )
 add_library(pybinding::cppcore ALIAS cppcore)
-
 target_include_directories(cppcore PUBLIC include)
-if(NOT WIN32)
-    target_compile_options(cppcore PUBLIC ${PB_CPP_STANDARD})
-endif()
 
 find_package(Threads REQUIRED)
 target_link_libraries(cppcore PUBLIC Threads::Threads)
