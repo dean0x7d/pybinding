@@ -1,0 +1,35 @@
+name: tests
+on: push
+jobs:
+  build:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        python-version: ["3.8", "3.9", "3.10", "3.11", "3.12"]
+    steps:
+    - uses: actions/checkout@v3
+      with:
+        submodules: true
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ matrix.python-version }}
+    - name: Install dependencies
+      run: python -m pip install wheel scipy "matplotlib<3.8" pytest ninja
+    - name: Set up MSVC
+      if: runner.os == 'Windows'
+      uses: ilammy/msvc-dev-cmd@v1
+    - name: ccache
+      uses: hendrikmuhs/ccache-action@v1
+    - name: Build
+      run: |
+        cmake -G Ninja -B build -DPB_WERROR=ON
+        cmake --build build
+    - name: Test
+      run: cmake --build build --target tests
+    - name: Test package
+      run: |
+        python -m pip install .
+        python -c "import pybinding as pb; exit(pb.tests())"
