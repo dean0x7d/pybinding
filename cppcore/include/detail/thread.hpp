@@ -53,7 +53,7 @@ public:
         q.pop();
         lk.unlock();
         production_cv.notify_one();
-        return std::move(val);
+        return val;
     }
 
     void push(const T& item) {

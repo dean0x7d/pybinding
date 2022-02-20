@@ -147,7 +147,7 @@ struct Velocity {
             }
         }
 
-        return std::move(result);
+        return result;
     }
 };
 
