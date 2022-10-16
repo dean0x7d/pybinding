@@ -116,7 +116,7 @@ download_dependency(variant 1.1.4
                     https://raw.githubusercontent.com/mapbox/variant/v\${VERSION}/include
                     mapbox/variant.hpp mapbox/recursive_wrapper.hpp mapbox/variant_visitor.hpp)
 target_include_directories(cppcore SYSTEM PUBLIC ${VARIANT_INCLUDE_DIR})
-download_dependency(simdpp 2.0-rc2
+download_dependency(simdpp 2.1
                     https://github.com/p12tic/libsimdpp/archive
                     /v\${VERSION}.tar.gz */simdpp)
 target_include_directories(cppcore SYSTEM PUBLIC ${SIMDPP_INCLUDE_DIR})
@@ -125,7 +125,11 @@ include(fmt)
 target_link_libraries(cppcore PUBLIC fmt)
 
 if(PB_NATIVE_SIMD AND NOT MSVC) # MSVC does not have anything like a /arch:native flag
-    target_compile_options(cppcore PUBLIC -march=native)
+    include(CheckCXXCompilerFlag)
+    check_cxx_compiler_flag(-march=native PB_HAS_ARCH_NATIVE)
+    if(PB_HAS_ARCH_NATIVE)
+        target_compile_options(cppcore PUBLIC -march=native)
+    endif()
 endif()
 
 if(PB_MKL)
@@ -140,7 +144,7 @@ if(PB_CUDA)
 endif()
 
 if(PB_TESTS)
-    set(catch_url https://raw.githubusercontent.com/philsquared/Catch/v\${VERSION}/single_include)
-    download_dependency(catch 1.8.1 ${catch_url} catch.hpp)
+    set(catch_url https://raw.githubusercontent.com/catchorg/Catch2/v\${VERSION}/single_include/catch2)
+    download_dependency(catch 2.13.10 ${catch_url} catch.hpp)
     add_subdirectory(tests)
 endif()

@@ -8,6 +8,8 @@
 # define SIMDPP_ARCH_X86_SSE3
 #elif defined(__SSE2__) || defined(_M_X64) || _M_IX86_FP == 2
 # define SIMDPP_ARCH_X86_SSE2
+#elif defined(__ARM_NEON)
+# define SIMDPP_ARCH_ARM_NEON
 #endif
 
 #if defined(__FMA__) || (defined(_MSC_VER) && defined(__AVX2__))
@@ -138,8 +140,13 @@ split_loop_t<step> split_loop(scalar_t const* p, idx_t start, idx_t end) {
  RAII class which disables floating-point denormals (flush-to-zero mode)
  */
 struct scope_disable_denormals {
+#if SIMDPP_USE_SSE2
     CPB_ALWAYS_INLINE scope_disable_denormals() { _MM_SET_FLUSH_ZERO_MODE(_MM_FLUSH_ZERO_ON); }
     CPB_ALWAYS_INLINE ~scope_disable_denormals() { _MM_SET_FLUSH_ZERO_MODE(_MM_FLUSH_ZERO_OFF); }
+#else // ARM NEON defaults for flush-to-zero
+    scope_disable_denormals() {}
+    ~scope_disable_denormals() {}
+#endif
 };
 
 namespace detail {
@@ -179,7 +186,41 @@ namespace detail {
             return _mm_castpd_ps(r);
         }
     };
-#endif // SIMDPP_USE_SSE2
+#else // generic SIMD on ARM NEON or anything other than SSE/AVX
+    template<>
+    struct Gather<float64x2> {
+        CPB_ALWAYS_INLINE
+        static float64x2 call(double const* data, std::int32_t const* indices) {
+            auto const low = simdpp::load_splat<float64x2>(data + indices[0]);
+            auto const high = simdpp::load_splat<float64x2>(data + indices[1]);
+            return simdpp::zip2_lo(low, high);
+        }
+
+        CPB_ALWAYS_INLINE
+        static float64x2 call(std::complex<double> const* data, std::int32_t const* indices) {
+            return simdpp::load<float64x2>(data + indices[0]);
+        }
+    };
+
+    template<>
+    struct Gather<float32x4> {
+        CPB_ALWAYS_INLINE
+        static float32x4 call(float const* data, std::int32_t const* indices) {
+            auto const a = simdpp::load_splat<float32x4>(data + indices[0]);
+            auto const b = simdpp::load_splat<float32x4>(data + indices[1]);
+            auto const c = simdpp::load_splat<float32x4>(data + indices[2]);
+            auto const d = simdpp::load_splat<float32x4>(data + indices[3]);
+            auto const ac = simdpp::zip4_lo(a, c);
+            auto const bd = simdpp::zip4_lo(b, d);
+            return simdpp::zip4_lo(ac, bd);
+        }
+
+        CPB_ALWAYS_INLINE
+        static float32x4 call(std::complex<float> const* data, std::int32_t const* indices) {
+            return simdpp::bit_cast<float32x4>(Gather<float64x2>::call(reinterpret_cast<double const*>(data), indices));
+        }
+    };
+#endif
 
 #if SIMDPP_USE_AVX && !SIMDPP_USE_AVX2
     template<>
@@ -301,24 +342,24 @@ Vec<N, void> addsub(Vec<N, E1> const& a, Vec<N, E2> const& b) {
 #if SIMDPP_USE_SSE3
 template<class E1, class E2> CPB_ALWAYS_INLINE
 float32x4 addsub(float32<4, E1> const& a, float32<4, E2> const& b) {
-    return _mm_addsub_ps(a.eval(), b.eval());
+    return _mm_addsub_ps(a.eval().native(), b.eval().native());
 }
 
 template<class E1, class E2> CPB_ALWAYS_INLINE
 float64x2 addsub(float64<2, E1> const& a, float64<2, E2> const& b) {
-    return _mm_addsub_pd(a.eval(), b.eval());
+    return _mm_addsub_pd(a.eval().native(), b.eval().native());
 }
 #endif // SIMDPP_USE_SSE3
 
 #if SIMDPP_USE_AVX
 template<class E1, class E2> CPB_ALWAYS_INLINE
 float32x8 addsub(float32<8, E1> const& a, float32<8, E2> const& b) {
-    return _mm256_addsub_ps(a.eval(), b.eval());
+    return _mm256_addsub_ps(a.eval().native(), b.eval().native());
 }
 
 template<class E1, class E2> CPB_ALWAYS_INLINE
 float64x4 addsub(float64<4, E1> const& a, float64<4, E2> const& b) {
-    return _mm256_addsub_pd(a.eval(), b.eval());
+    return _mm256_addsub_pd(a.eval().native(), b.eval().native());
 }
 #endif // SIMDPP_USE_AVX
 

@@ -6,6 +6,8 @@
 
 * Fixed compatibility issues with the latest Python versions (up to 3.12).
 
+* Fixed compilation on Apple Silicon (M1, M2).
+
 * Fixed deprecation warnings from the latest versions of `numpy`.
 
 * Dropped support for Python 3.6 and 3.7. You must have Python 3.8 or newer to install this version.

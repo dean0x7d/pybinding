@@ -52,12 +52,10 @@ def summary():
         return "py-cpuinfo is not installed"
 
     info = info.copy()
-    hz_raw, scale = info['hz_advertised_raw']
-    info['ghz'] = hz_raw * 10**(scale - 9)
     info['physical'] = physical_core_count()
     info['virtual'] = virtual_core_count()
     info['simd'] = _cpp.simd_info()
-    return "{brand}\n{physical}/{virtual} cores @ {ghz:.2g} GHz with {simd}".format_map(info)
+    return "{brand_raw}\n{physical}/{virtual} cores with {simd}".format_map(info)
 
 
 if __name__ == '__main__':
