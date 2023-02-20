@@ -290,8 +290,8 @@ class KPM:
         broadening : float
             Width (in eV) of the smallest detail which can be resolved in the chemical potential.
             Lower values result in longer calculation time.
-        temperature : float
-            Value of temperature for the Fermi-Dirac distribution.
+        temperature : array_like
+            Values of temperature for the Fermi-Dirac distribution.
         direction : Optional[str]
             Direction in which the conductivity is calculated. E.g., "xx", "xy", "zz", etc.
         volume : Optional[float]

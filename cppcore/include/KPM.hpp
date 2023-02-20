@@ -38,8 +38,8 @@ public:
                                              ArrayXd const& energy, double broadening) const;
 
     /// Kubo-Bastin conductivity in `direction` ("xx", "xy", etc.)
-    ArrayXd calc_conductivity(ArrayXd const& chemical_potential, double broadening,
-                              double temperature, string_view direction, idx_t num_random,
+    ArrayXXd calc_conductivity(ArrayXd const& chemical_potential, double broadening,
+                              ArrayXd const& temperature, string_view direction, idx_t num_random,
                               idx_t num_points) const;
 
 private:

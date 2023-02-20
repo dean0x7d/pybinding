@@ -90,17 +90,17 @@ struct GreensFunction {
 struct KuboBastin {
     ArrayXd const& chemical_pot;
     ArrayXd const& energy_samples;
-    double temperature;
+    ArrayXd const& temperature;
     Scale<> s;
 
     template<class scalar_t>
-    ArrayXcd operator()(MatrixX<scalar_t> const& moments) const {
+    ArrayXXcd operator()(MatrixX<scalar_t> const& moments) const {
         using real_t = num::get_real_t<scalar_t>;
         using complex_t = num::get_complex_t<scalar_t>;
 
         auto const scale = Scale<real_t>(s);
-        auto const inv_kbt_sc = static_cast<real_t>(scale.a / (constant::kb * temperature));
-        auto const num_moments = moments.rows();
+        auto const inv_kbt_sc = scale.a / (constant::kb * temperature.cast<real_t>());
+	auto const num_moments = moments.rows();
         auto const scaled_chemical_potential = scale(chemical_pot.cast<real_t>());
         auto const scaled_energy_samples = scale(energy_samples.cast<real_t>());
 
@@ -126,8 +126,8 @@ struct KuboBastin {
             return coeff * (real_t{2} * func.sum() - func(0) - func(func.size() - 1));
         };
 
-        auto fermi_dirac = [&](real_t mi) {
-            return real_t{1} / (real_t{1} + exp((scaled_energy_samples - mi) * inv_kbt_sc));
+        auto fermi_dirac = [&](real_t mi, real_t inv_kbt_sc_j) {
+            return real_t{1} / (real_t{1} + exp((scaled_energy_samples - mi) * inv_kbt_sc_j));
         };
 
         auto sum_nm = transform<ArrayX>(scaled_energy_samples, [&](real_t en) {
@@ -136,9 +136,14 @@ struct KuboBastin {
         });
 
         auto const prefix = scalar_t{4} / (scale.a * scale.a);
-        return transform<ArrayX>(scaled_chemical_potential, [&](real_t mu) {
-            return prefix * integrate(fermi_dirac(mu) * sum_nm);
-        }).template cast<std::complex<double>>();
+	auto result = ArrayXXcd::Zero(inv_kbt_sc.size(), scaled_chemical_potential.size()).eval();
+
+	for (int i = 0; i < inv_kbt_sc.size(); ++i){
+	    result.row(i) += transform<ArrayX>(scaled_chemical_potential, [&](real_t mu) {
+                return prefix * integrate(fermi_dirac(mu, inv_kbt_sc[i]) * sum_nm);
+                }).template cast<std::complex<double>>();
+	}
+	return result;
     }
 };
 

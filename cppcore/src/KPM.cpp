@@ -128,8 +128,8 @@ std::vector<ArrayXcd> KPM::calc_greens_vector(idx_t row, std::vector<idx_t> cons
     return greens_functions;
 }
 
-ArrayXd KPM::calc_conductivity(ArrayXd const& chemical_potential, double broadening,
-                               double temperature, string_view direction, idx_t num_random,
+ArrayXXd KPM::calc_conductivity(ArrayXd const& chemical_potential, double broadening,
+                               ArrayXd const& temperature, string_view direction, idx_t num_random,
                                idx_t num_points) const {
     auto const xyz = std::string("xyz");
     if (direction.size() != 2 || xyz.find_first_of(direction) == std::string::npos) {
