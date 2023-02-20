@@ -186,8 +186,15 @@ def test_conductivity(params, baseline, plot_if_fails):
                   for c in configurations]
 
     energy = np.linspace(-2, 2, 25)
-    results = [kpm.calc_conductivity(energy, broadening=0.5, temperature=0, num_points=200)
-               for kpm in strategies]
+
+    results = []
+    for kpm in strategies:
+        result = kpm.calc_conductivity(energy, broadening=0.5, temperature=[0], num_points=200)
+        result.data = result.data.reshape(-1)
+        results.append(result)
+
+    # results = [kpm.calc_conductivity(energy, broadening=0.5, temperature=[0], num_points=200)
+    #            for kpm in strategies]
 
     expected = results[0].with_data(baseline(results[0].data.astype(np.float32)))
     for i in range(len(results)):
